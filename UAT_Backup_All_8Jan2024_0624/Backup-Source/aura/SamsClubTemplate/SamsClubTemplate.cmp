@@ -1,0 +1,1999 @@
+<aura:component controller="Phoenix_WalgreensCls" implements="flexipage:availableForAllPageTypes,force:hasRecordId,force:appHostable,lightning:isUrlAddressable" access="global">   
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="columns" type="List"/>
+    <lightning:navigation aura:id="navService"/> 
+    <aura:handler name="init" value="{!this}" action="{!c.initRecords}"/>
+    <aura:attribute name="errMsg" type="String" access="global"/>
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.initRecords}"/>
+    <aura:attribute name="BidLineItemListAll" type="Phoenix_Bid_Line_Item__c[]"/>
+    <aura:attribute name="isRelatedLineItemsEmpty" type="boolean" default="true" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="lstSelectedRecords" type="sObject[]" default="[]" description="Use,for store SELECTED sObject Records"/>
+    <aura:attribute name="listOfSearchRecords" type="List" description="Use,for store the list of search records which returns from apex class" />
+    <aura:attribute name="defaultlistOfProductFamily" type="List" />
+    <aura:attribute name="lstSelectedPDRecords" type="sObject[]" default="[]" description="Use,for store SELECTED sObject Records"/>
+    <aura:attribute name="listOfSearchPDRecords" type="List" description="Use,for store the list of search records which returns from apex class" />
+    <aura:attribute name="defaultlistOfProductDirectors" type="List" />
+    <aura:attribute name="SearchKeyWord" type="string"/>
+    <aura:attribute name="SearchKeyWordPD" type="string"/>
+    <aura:attribute name="activeSections" type="List" default="['FilterTerms','FilterInputs']" />
+    <aura:attribute name="objectAPIName" type="string" default=""/>
+    <aura:attribute name="IconName" type="string" default=""/>
+    <aura:attribute name="label" type="string" default="Contracts"/>
+    <aura:attribute name="options" type="List"  />
+    <aura:attribute name="selectedValues" type="List" default="" description="Selected value in Multi Select" />
+    <lightning:navigation aura:id="navigationService" />
+    <aura:handler name="lightningEvent" event="c:RefreshBidLineItemCmpEvt" action="{!c.handleEvent}"/>
+    <aura:attribute name="showSaveCancelBtn" type="boolean" default="false" description="flag for rendered save and cancel buttons in aura:if "/>    
+    <aura:attribute name="isRxChecked" type="boolean" default="false" />
+    <aura:attribute name="isSRxChecked" type="boolean" default="false" />
+    <aura:attribute name="isOtcChecked" type="boolean" default="false" />
+    <aura:attribute name="RxSrxList" type="List"  />
+    <aura:attribute name="crntVipVal" type="decimal"  />
+    <aura:attribute name="VipReadOnly" type="boolean"  />
+    <aura:attribute name="customerId" type="string"  />
+    <aura:attribute name="bidNumber" type="string"  />
+    <aura:attribute name="bidName" type="string"  />
+    <aura:attribute name="BidTypeVal" type="string"  />
+    <aura:attribute name="BidAprrovalStatus" type="string"  />
+    <aura:attribute name="isMarketingApprovePerson" type="string"  />
+    <aura:attribute name="isContractsApprovePerson" type="string"  />
+    <aura:attribute name="showProceedBtn" type="boolean"  />
+    <aura:attribute name="allContractsChecked" type="boolean" default='false'/>
+    <!-- totalvalues -->
+    <!-- New Product Launch Totals Attributes-->
+    <aura:attribute name="OpeningOrderTotal" type="Decimal" />
+    <aura:attribute name="OpeningOrderNetSalesTotal" type="Decimal" />
+    <aura:attribute name="OpeningOrderTPTTotal" type="Decimal" />
+    <aura:attribute name="OpeningOrderTPTPercTotal" type="Decimal" />
+    <!-- New Product Launch Attributes-->
+    <aura:attribute name="ItemsLength" type="Decimal" />
+    <aura:attribute name="CISUTotal" type="Decimal" />
+    <aura:attribute name="CDSUTotal" type="Decimal" />
+    <aura:attribute name="PISUTotal" type="Decimal" />
+    <aura:attribute name="PDSUTotal" type="Decimal" />
+    <aura:attribute name="netSalesIntTotal" type="Decimal" />
+    <aura:attribute name="LCostTotal" type="Decimal" />
+    <aura:attribute name="ThptMrgnDTotal" type="Decimal" />
+    <aura:attribute name="intDeadNetTotal" type="Decimal" /> 
+    <aura:attribute name="actualsales" type="Decimal" /> 
+    <aura:attribute name="indTp" type="Decimal" /> 
+    <aura:attribute name="TPTDollorTotal" type="Decimal" /> 
+    <aura:attribute name="TPMarginPercent" type="Decimal" /> 
+    
+    <aura:attribute name="IndirectTP" type="Decimal" />
+    <aura:attribute name="IndirectTPPercent" type="Decimal" />
+    <aura:attribute name="showSummaryPopup" type="boolean" />
+    <!-- totalvalues -->
+    <!-- units totals -->
+    <aura:attribute name="overrideunits" type="Decimal"/>
+    <aura:attribute name="totalSCMQty" type="Decimal"/>
+    <!-- end-->
+    <!--specific customer attributes-->
+    <aura:attribute name="isSpecificCustomer" type="boolean" />
+    <aura:attribute name="isDirectType" type="boolean" default="false"/>
+    <aura:attribute name="templateType" type="string" default=""/>
+    <aura:attribute name="loggedInUserName" type="string" default=""/>
+    <aura:attribute name="hasDirectorLines" type="boolean" />
+    <aura:attribute name="bidRecord" type="sObject"  />
+    <!--specific customer attributes-->
+    
+    <!--Contract Model section-->
+    <aura:attribute name="showModal" type="boolean" default="false"/>
+    <aura:attribute name="submitModel" type="boolean" default="false"/>
+    
+    <aura:attribute type="List" name="contratcsList"/>
+    <aura:attribute name="mycolumns" type="List"/>
+    <aura:attribute name="selectedCntrcts"  type="list"/>    
+    
+    <!--Positions Attributes-->
+    <aura:attribute name="positionColumns" type="List" />
+    <aura:attribute type="List" name="positionsList" />
+    <aura:attribute name="showPositionsModal" type="boolean" default="false" />
+    <aura:attribute name="selectedPosistions" type="list" />
+    <!--Rebate and Fee type attributes-->
+    <aura:attribute name="isRebateChanged" type="boolean" default="false" />
+    <aura:attribute name="isFeeChanged" type="boolean" default="false" />
+    <aura:handler name="calcEvent" event="c:TotalCalculationEvt" action="{!c.handleCalcEvent}"/>
+    <!--declare events hendlers-->  
+    <aura:handler name="oSelectedRecordEvent" event="c:selectedsObjectRecordsEvent" action="{!c.handleComponentEvent}"/>
+    <aura:attribute name="Message" type="String" default=""/>
+    <aura:attribute name="isMarketingChanged" type="boolean" default="false"/>
+    
+    <aura:handler name="PDSelectedRecordEvent" event="c:ProductDirectorSearchEvent" action="{!c.handleComponentEventProdDir}"/>
+    <aura:attribute name="MessagePD" type="String" default=""/>
+    <aura:attribute name="isReBid" type="boolean" default="false" />
+    <aura:attribute name="tableRef" type="String" default=""/>
+    
+    <!-- Deligation attributes -->
+	<aura:attribute name="deligatedUserName" type="String" default="" />
+    <aura:attribute name="ismarketingDeligator" type="boolean" default="false" />
+    
+    <!-- Added Code By Rama -->
+    <aura:handler name="init" value="this" action="{!c.doInit}"/>
+    <aura:attribute name="userInfo" type="user"/> 
+    <!-- Ended Code By Rama -->  
+       <aura:attribute name="modalMessage" type="string" default="Are you sure you want to submit this bid for approval?"/> 
+    <!-- 100% analysis sync attributes -->
+    <aura:attribute name="showSyncPopup" type="boolean"/>
+    <aura:attribute name="syncConfirmed" type="string" default="NOTCONFIRMED"/>
+    <aura:handler  name="change" value="{!v.syncConfirmed}" action="{!c.proceedToSubmit}"/>
+    <!-- 100% analysis sync attributes -->
+    
+    <lightning:tabset aura:id="Tabset" selectedTabId="EBLI">
+        <lightning:tab label="Input View" id="EBLI" onactive="{!c.initRecords}">      
+            <lightning:card iconName="custom:custom90" title="{!(v.bidNumber+'-'+v.bidName)}">
+                <aura:set attribute="actions">
+                    <lightning:button variant="neutral" label="Back" title="Back" onclick="{! c.backToBid }"/>
+                    <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+                        <lightning:button label="Export" onclick="{!c.downloadCsv}"/>
+                    </aura:if>
+              		<!--<aura:if isTrue="{!and(or(and(or(v.BidAprrovalStatus=='Draft',or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing')),v.BidLineItemListAll.length > 0),and(v.isMarketingApprovePerson==v.loggedInUserName,v.hasDirectorLines==true)),and(v.BidTypeVal == 'New Product Launch',and(v.showProceedBtn==true,v.showSaveCancelBtn==false)))}">-->
+                    <aura:if isTrue="{!and(or(v.BidAprrovalStatus=='Draft',and(or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'),and(v.isMarketingApprovePerson==v.loggedInUserName,v.hasDirectorLines==true))),and(v.BidTypeVal == 'New Product Launch',v.BidLineItemListAll.length > 0),and(v.showProceedBtn==true,v.showSaveCancelBtn==false))}">     
+
+                        <lightning:button label="Update WAC / Lowest Price/SKU" variant="brand" onclick="{!c.updateFields}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!and(v.BidAprrovalStatus=='Draft',and(v.BidLineItemListAll.length > 0,v.showSaveCancelBtn==false))}">
+                        <lightning:button label="Submit For Approval" variant="brand" onclick="{!c.submitFor}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.BidTypeVal!='Volume Review Only'}">
+                        <aura:if isTrue="{!and(v.BidAprrovalStatus!='Draft',and((v.BidAprrovalStatus==(or(or(equals(v.BidTypeVal,'New Product Launch'),equals(v.BidTypeVal,'Customer Rebate Change')),or(equals(v.BidTypeVal,'Price Change'),equals(v.BidTypeVal,'Sales Out Rebate')))?'Marketing':'SCM &amp; Marketing')), and(v.BidLineItemListAll.length > 0,and(v.isMarketingApprovePerson==v.loggedInUserName,and(v.showProceedBtn==true,and(v.showSaveCancelBtn==false,v.hasDirectorLines))))))}">
+                            <lightning:button variant="brand" label="Submit" title="Proceed" onclick="{! c.saveToProceed }"/>
+                        </aura:if>
+                    </aura:if>
+                    <!--<aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Contracts',v.BidLineItemListAll.length > 0),v.isContractsApprovePerson==v.loggedInUserName)}">
+                        <lightning:button variant="neutral" label="Proceed" title="Proceed" onclick="{! c.saveToProceedContracts }"/>
+                    </aura:if> -->                    
+                </aura:set>
+                <p>
+                    <lightning:recordEditForm objectApiName="Phoenix_Bid__c"  recordId="{!v.recordId}" aura:id="bidForm"   onload="{!c.handleOnload}" onsubmit="{!c.onRecordSubmit}" onsuccess="{!c.onRecordSuccess}">
+                        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="BidTerms">
+                            <aura:if isTrue="{!or(v.BidAprrovalStatus=='Draft', and(or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'),and(v.isMarketingApprovePerson==v.loggedInUserName,and(v.showProceedBtn==true,v.hasDirectorLines))))}"> 
+                                <lightning:accordionSection name="BidTerms" label=" Bid Terms and Details">
+                                    <aura:if isTrue="{!v.BidTypeVal=='Product Addition'}">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidCustmr" fieldName="Phoenix_Customer__c" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_CM_Wholesaler_Name__c" onchange="{!c.showSaveCancel}" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div  class="slds-form-element slds-lookup slds-is-close frequired" >
+                                                    <label class="slds-form-element__label">{!v.label}</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showModel}" 
+                                                                                  disabled="{!v.BidTypeVal=='New Customer'}"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select contracts here.."/>
+                                                                    <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                                    </span>
+                                                                </div> 
+                                                                <aura:iteration items="{!v.selectedCntrcts}" var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small" label="{!sr}" name="{!sr}" onremove="{! c.clearCntract }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div> 
+                                            <aura:if isTrue="{!or(or(v.BidTypeVal == 'Price Change', v.BidTypeVal == 'Product Addition'),v.BidTypeVal == 'One Time Buy - Price Load Req')}">
+                                                <div class="slds-col slds-size_1-of-4">
+                                                    <lightning:inputField aura:id="ProactiveReactive" fieldName="Phoenix_Proactive_Reactive__c" onchange="{!c.showSaveCancel}" class="frequired"  />
+                                                </div> 
+                                            </aura:if>
+                                            
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Value_Est_VIP_Type__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div> 
+                                             <div class="slds-col slds-size_1-of-4">
+                                            <lightning:inputField fieldName="Phoenix_Proposed_Admin_Fee_Basis__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                                 <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Initial_Order_Discount_Type__c" aura:id="iodType" onchange="{!c.iodTypeChange}" disabled="{!and(v.BidTypeVal!='RFP Bids',v.BidTypeVal!='Product Addition')}" class="frequired"/>
+                                            </div>
+                                            -->
+                                        </div>
+                                        <div class="slds-grid">
+                                            
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="ProValId" fieldName="Phoenix_Proposed_Value_Admin_Fee__c" onchange="{!c.showSaveCancel}"  disabled="{!v.BidTypeVal!='New Customer'}"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Initial_Order_Discount_of_Days__c" aura:id="iodDays" onchange="{!c.showSaveCancel}" disabled="{!or(or(v.bidRecord.Phoenix_Initial_Order_Discount_Type__c == 'None',v.bidRecord.Phoenix_Initial_Order_Discount_Type__c ==''), and(v.BidTypeVal!='RFP Bids',v.BidTypeVal!='Product Addition'))}" class="frequired"/>
+                                            </div>
+                                            -->
+                                        </div>
+                                        <div class="slds-grid">
+                                            
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4" onchange="{!c.showSaveCancel}" >
+                                                <lightning:inputField aura:id="ProValEstId" fieldName="Phoenix_Proposed_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="{!v.VipReadOnly}"/>
+                                            </div>
+                                            
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="ProValIniId" fieldName="Phoenix_Proposed_Initial_Order_Discount__c" class="frequired" onchange="{!c.showSaveCancel}" disabled="{!or(or(v.bidRecord.Phoenix_Initial_Order_Discount_Type__c == 'None',v.bidRecord.Phoenix_Initial_Order_Discount_Type__c ==''), and(v.BidTypeVal!='RFP Bids',v.BidTypeVal!='Product Addition'))}"/>
+                                            </div>-->
+                                        </div>
+                                        <div class="slds-grid">                                        
+                                            <!--<div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="bidCntrcts" fieldName="Phoenix_Reference_Contracts__c" disabled="true" />
+                                            </div>-->
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="grpVip" fieldName="Phoenix_Group_VIP__c" onchange="{!c.showSaveCancel}"  />
+                                            </div>
+                                            -->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_CD__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <!--Product Position Select Logic Start-->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div class="slds-form-element slds-lookup slds-is-close">
+                                                    <label class="slds-form-element__label">Proposed Position</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id=""
+                                                                     class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                                     style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showProductPositionModel}"
+                                                                                  disabled="{!v.BidTypeVal=='New Customer'}"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select Proposed Position here.." />
+                                                                    <span
+                                                                          class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search"
+                                                                                        size="x-small" alternativeText="icon" />
+                                                                    </span>
+                                                                </div>
+                                                                <aura:iteration items="{!v.selectedPosistions}"
+                                                                                var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small"
+                                                                                    label="{!sr}" name="{!sr}"
+                                                                                    onremove="{! c.clearPosition }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <!--Product Position Select Logic End-->
+                                            
+                                            <aura:if isTrue="{!and(and(v.isMarketingApprovePerson==v.loggedInUserName,v.showProceedBtn==true),or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'))}">
+                                                <div class="slds-col slds-size_1-of-4" style="margin-left: 5px;">
+                                                    
+                                                    <lightning:select label="Marketing Approval (Mark all as)"
+                                                                      aura:id="headerMarketingApproval"
+                                                                      onchange="{!c.onMarketingChange}"
+                                                                      >
+                                                        <option value="">-None-</option>
+                                                        <option value="Approved">Approved</option>
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </lightning:select>
+                                                </div>
+                                            </aura:if>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal=='RFP Bids'}">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidCustm" fieldName="Phoenix_Customer__c" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_CM_Wholesaler_Name__c" onchange="{!c.showSaveCancel}" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div  class="slds-form-element slds-lookup slds-is-close frequired">
+                                                    <label class="slds-form-element__label">{!v.label}</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showModel}" 
+                                                                                  disabled="{!v.BidTypeVal=='New Customer'}"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select contracts here.."/>
+                                                                    <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                                    </span>
+                                                                </div> 
+                                                                <aura:iteration items="{!v.selectedCntrcts}" var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small" label="{!sr}" name="{!sr}" onremove="{! c.clearCntract }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_CD__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Value_Est_VIP_Type__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div> 
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Proposed_Admin_Fee_Basis__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Initial_Order_Discount_Type__c" aura:id="iodType" class="frequired" onchange="{!c.iodTypeChange}" disabled="{!and(v.BidTypeVal!='RFP Bids',v.BidTypeVal!='Product Addition')}"/>
+                                            </div>
+                                            -->
+                                        </div>
+                                        <div class="slds-grid">
+                                            
+                                            
+                                            
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="ProValId" fieldName="Phoenix_Proposed_Value_Admin_Fee__c" onchange="{!c.showSaveCancel}"  disabled="{!v.BidTypeVal!='New Customer'}"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Initial_Order_Discount_of_Days__c" aura:id="iodDays" onchange="{!c.showSaveCancel}" class="frequired" disabled="{!or(or(v.bidRecord.Phoenix_Initial_Order_Discount_Type__c == 'None',v.bidRecord.Phoenix_Initial_Order_Discount_Type__c ==''), and(v.BidTypeVal!='RFP Bids',v.BidTypeVal!='Product Addition'))}"/>
+                                            </div>
+                                            -->
+                                        </div>
+                                        <div class="slds-grid">
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4" onchange="{!c.showSaveCancel}" >
+                                                <lightning:inputField aura:id="ProValEstId" fieldName="Phoenix_Proposed_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="{!v.VipReadOnly}"/>
+                                            </div>-->
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="ProValIniId" fieldName="Phoenix_Proposed_Initial_Order_Discount__c" class="frequired" onchange="{!c.showSaveCancel}" disabled="{!or(or(v.bidRecord.Phoenix_Initial_Order_Discount_Type__c == 'None',v.bidRecord.Phoenix_Initial_Order_Discount_Type__c ==''), and(v.BidTypeVal!='RFP Bids',v.BidTypeVal!='Product Addition'))}"/>
+                                            </div>-->
+                                        </div>
+                                        <div class="slds-grid">                                        
+                                            <!--<div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="bidCntrcts" fieldName="Phoenix_Reference_Contracts__c" disabled="true" />
+                                            </div>-->
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="grpVip" fieldName="Phoenix_Group_VIP__c" onchange="{!c.showSaveCancel}"   />
+                                            </div>-->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidssadays" fieldName="Phoenix_Proposed_SSA_No_of_Days__c" onchange="{!c.showSaveCancel}" disabled="{!and(v.BidTypeVal!='RFP Bids',v.BidTypeVal!='Price Change')}"/>
+                                            </div>
+                                            <!--Product Position Select Logic Start-->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div class="slds-form-element slds-lookup slds-is-close">
+                                                    <label class="slds-form-element__label">Proposed Position</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id=""
+                                                                     class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                                     style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showProductPositionModel}"
+                                                                                  disabled="{!v.BidTypeVal=='New Customer'}"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select Proposed Position here.." />
+                                                                    <span
+                                                                          class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search"
+                                                                                        size="x-small" alternativeText="icon" />
+                                                                    </span>
+                                                                </div>
+                                                                <aura:iteration items="{!v.selectedPosistions}"
+                                                                                var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small"
+                                                                                    label="{!sr}" name="{!sr}"
+                                                                                    onremove="{! c.clearPosition }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <!--Product Position Select Logic End-->
+                                            
+                                            <aura:if isTrue="{!and(and(v.isMarketingApprovePerson==v.loggedInUserName,v.showProceedBtn==true),or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'))}">
+                                                <div class="slds-col slds-size_1-of-4" style="margin-left: 5px;">
+                                                    
+                                                    <lightning:select label="Marketing Approval (Mark all as)"
+                                                                      aura:id="headerMarketingApproval"
+                                                                      onchange="{!c.onMarketingChange}"
+                                                                      >
+                                                        <option value="-None-">-None-</option>
+                                                        <option value="Approved">Approved</option>
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </lightning:select>
+                                                </div>
+                                            </aura:if>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal=='Price Change'}">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidCustm" fieldName="Phoenix_Customer__c" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_CM_Wholesaler_Name__c" onchange="{!c.showSaveCancel}" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div  class="slds-form-element slds-lookup slds-is-close frequired">
+                                                    <label class="slds-form-element__label">{!v.label}</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showModel}" 
+                                                                                  disabled="true"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select contracts here.."/>
+                                                                    <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                                    </span>
+                                                                </div> 
+                                                                <aura:iteration items="{!v.selectedCntrcts}" var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small pillRemove" label="{!sr}" name="{!sr}" onremove="{! c.clearCntract }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>      
+                                            
+                                            <aura:if isTrue="{!or(or(v.BidTypeVal == 'Price Change', v.BidTypeVal == 'Product Addition'),v.BidTypeVal == 'One Time Buy - Price Load Req')}">
+                                                <div class="slds-col slds-size_1-of-4">
+                                                    <lightning:inputField aura:id="ProactiveReactive" class="frequired" fieldName="Phoenix_Proactive_Reactive__c" onchange="{!c.showSaveCancel}"  />
+                                                </div> 
+                                            </aura:if>
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Value_Est_VIP_Type__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div> 
+                                             <div class="slds-col slds-size_1-of-4">
+                                                 <lightning:inputField fieldName="Phoenix_Proposed_Admin_Fee_Basis__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>-->
+                                        </div>
+                                        <div class="slds-grid">
+                                            
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="ProValId" fieldName="Phoenix_Proposed_Value_Admin_Fee__c" onchange="{!c.showSaveCancel}"  disabled="{!v.BidTypeVal!='New Customer'}"/>
+                                            </div>-->
+                                            
+                                        </div>
+                                        <div class="slds-grid">
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4" >
+                                                <lightning:inputField aura:id="ProValEstId" fieldName="Phoenix_Proposed_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="{!v.VipReadOnly}"/>
+                                            </div>-->
+                                            
+                                            
+                                        </div>
+                                        <div class="slds-grid">
+                                            <!--<div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="bidCntrcts" fieldName="Phoenix_Reference_Contracts__c" disabled="true" />
+                                            </div>-->
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="grpVip" fieldName="Phoenix_Group_VIP__c" onchange="{!c.showSaveCancel}"    />
+                                            </div>-->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_CD__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidssadays" fieldName="Phoenix_Proposed_SSA_No_of_Days__c" onchange="{!c.showSaveCancel}" disabled="{!and(v.BidTypeVal!='RFP Bids',v.BidTypeVal!='Price Change')}"/>
+                                                
+                                            </div>
+                                            <!--Product Position Select Logic Start-->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div class="slds-form-element slds-lookup slds-is-close">
+                                                    <label class="slds-form-element__label">Proposed Position</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id=""
+                                                                     class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                                     style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showProductPositionModel}"
+                                                                                  disabled="{!v.BidTypeVal=='New Customer'}"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select Proposed Position here.." />
+                                                                    <span
+                                                                          class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search"
+                                                                                        size="x-small" alternativeText="icon" />
+                                                                    </span>
+                                                                </div>
+                                                                <aura:iteration items="{!v.selectedPosistions}"
+                                                                                var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small"
+                                                                                    label="{!sr}" name="{!sr}"
+                                                                                    onremove="{! c.clearPosition }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <!--Product Position Select Logic End-->
+                                            
+                                            <aura:if isTrue="{!and(and(v.isMarketingApprovePerson==v.loggedInUserName,v.showProceedBtn==true),or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'))}">
+                                                <div class="slds-col slds-size_1-of-4" style="margin-left: 5px;">
+                                                    
+                                                    <lightning:select label="Marketing Approval (Mark all as)"
+                                                                      aura:id="headerMarketingApproval"
+                                                                      onchange="{!c.onMarketingChange}"
+                                                                      >
+                                                        <option value="">-None-</option>
+                                                        <option value="Approved">Approved</option>
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </lightning:select>
+                                                </div>
+                                            </aura:if>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal=='Volume Review Only'}">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidCustm" fieldName="Phoenix_Customer__c" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_CM_Wholesaler_Name__c" onchange="{!c.showSaveCancel}" />
+                                            </div> 
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div  class="slds-form-element slds-lookup slds-is-close frequired">
+                                                    <label class="slds-form-element__label">{!v.label}</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showModel}" 
+                                                                                  disabled="true"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select contracts here.."/>
+                                                                    <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                                    </span>
+                                                                </div> 
+                                                                <aura:iteration items="{!v.selectedCntrcts}" var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small pillRemove" label="{!sr}" name="{!sr}" onremove="{! c.clearCntract }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>      
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_CD__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Value_Est_VIP_Type__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Proposed_Admin_Fee_Basis__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                             <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="bidCntrcts" fieldName="Phoenix_Reference_Contracts__c" disabled="true" />
+                                            </div>-->
+                                        </div>
+                                        <div class="slds-grid">
+                                            
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="ProValId" fieldName="Phoenix_Proposed_Value_Admin_Fee__c" onchange="{!c.showSaveCancel}"  disabled="{!v.BidTypeVal!='New Customer'}"/>
+                                            </div>-->
+                                            <!--Product Position Select Logic Start-->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div class="slds-form-element slds-lookup slds-is-close">
+                                                    <label class="slds-form-element__label">Proposed Position</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id=""
+                                                                     class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                                     style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showProductPositionModel}"
+                                                                                  disabled="{!v.BidTypeVal=='New Customer'}"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select Proposed Position here.." />
+                                                                    <span
+                                                                          class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search"
+                                                                                        size="x-small" alternativeText="icon" />
+                                                                    </span>
+                                                                </div>
+                                                                <aura:iteration items="{!v.selectedPosistions}"
+                                                                                var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small"
+                                                                                    label="{!sr}" name="{!sr}"
+                                                                                    onremove="{! c.clearPosition }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <!--Product Position Select Logic End-->
+                                            <aura:if isTrue="{!and(and(v.isMarketingApprovePerson==v.loggedInUserName,v.showProceedBtn==true),or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'))}">
+                                                <div class="slds-col slds-size_1-of-4" style="margin-left: 5px;">
+                                                    
+                                                    <lightning:select label="Marketing Approval (Mark all as)"
+                                                                      aura:id="headerMarketingApproval"
+                                                                      onchange="{!c.onMarketingChange}"
+                                                                      >
+                                                        <option value="">-None-</option>
+                                                        <option value="Approved">Approved</option>
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </lightning:select>
+                                                </div>
+                                            </aura:if>
+                                        </div>
+                                        <div class="slds-grid">
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4" >
+                                                <lightning:inputField aura:id="ProValEstId" fieldName="Phoenix_Proposed_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="{!v.VipReadOnly}"/>
+                                            </div>-->
+                                            
+                                            
+                                            
+                                        </div>
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                            </div><!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="grpVip" fieldName="Phoenix_Group_VIP__c"  onchange="{!c.showSaveCancel}"   />
+                                            </div>-->
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal=='New Product Launch'}">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidCustmr"
+                                                                      fieldName="Phoenix_Customer__c" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_CM_Wholesaler_Name__c"
+                                                                      onchange="{!c.showSaveCancel}" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_CD__c"
+                                                                      onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <aura:if
+                                                     isTrue="{!or(or(v.BidTypeVal == 'Price Change', v.BidTypeVal == 'Product Addition'),or(v.BidTypeVal == 'One Time Buy - Price Load Req',v.BidTypeVal == 'New Product Launch'))}">
+                                                <div class="slds-col slds-size_1-of-4">
+                                                    <lightning:inputField aura:id="ProactiveReactive"
+                                                                          fieldName="Phoenix_Proactive_Reactive__c"
+                                                                          onchange="{!c.showSaveCancel}" class="frequired" />
+                                                </div>
+                                            </aura:if>
+                                            
+                                        </div>
+                                        <!--<div class="slds-grid">
+                                        </div>-->
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div class="slds-form-element slds-lookup slds-is-close frequired">
+                                                    <label class="slds-form-element__label">{!v.label}</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id=""
+                                                                     class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                                     style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showModel}"
+                                                                                  disabled="{!v.BidTypeVal=='New Customer'}"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select contracts here.." />
+                                                                    <span
+                                                                          class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search"
+                                                                                        size="x-small" alternativeText="icon" />
+                                                                    </span>
+                                                                </div>
+                                                                <aura:iteration items="{!v.selectedCntrcts}" var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small"
+                                                                                    label="{!sr}" name="{!sr}"
+                                                                                    onremove="{! c.clearCntract }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <!--Product Position Select Logic Start-->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div class="slds-form-element slds-lookup slds-is-close">
+                                                    <label class="slds-form-element__label">Proposed Position</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id=""
+                                                                     class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                                     style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showProductPositionModel}"
+                                                                                  disabled="{!v.BidTypeVal=='New Customer'}"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select Proposed Position here.." />
+                                                                    <span
+                                                                          class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search"
+                                                                                        size="x-small" alternativeText="icon" />
+                                                                    </span>
+                                                                </div>
+                                                                <aura:iteration items="{!v.selectedPosistions}"
+                                                                                var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small"
+                                                                                    label="{!sr}" name="{!sr}"
+                                                                                    onremove="{! c.clearPosition }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <!--Product Position Select Logic End-->
+                                            
+                                            <aura:if
+                                                     isTrue="{!and(and(v.isMarketingApprovePerson==v.loggedInUserName,v.showProceedBtn==true),or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'))}">
+                                                <div class="slds-col slds-size_1-of-4" style="margin-left: 5px;">
+                                                    
+                                                    <lightning:select label="Marketing Approval (Mark all as)"
+                                                                      aura:id="headerMarketingApproval"
+                                                                      onchange="{!c.onMarketingChange}">
+                                                        <option value="">-None-</option>
+                                                        <option value="Approved">Approved</option>
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </lightning:select>
+                                                </div>
+                                            </aura:if>
+                                            
+                                        </div>
+                                        <!--  <div class="slds-grid">                                        
+                                        </div>-->
+                                        
+                                    </aura:if>
+                                    
+                                </lightning:accordionSection> 
+                            </aura:if>
+                            <aura:if isTrue="{!not(or(v.BidAprrovalStatus=='Draft', and(or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'),and(v.isMarketingApprovePerson==v.loggedInUserName,and(v.showProceedBtn==true,v.hasDirectorLines)))))}">
+                                <lightning:accordionSection name="BidTerms" label="Bid Terms and Details">
+                                    <aura:if isTrue="{!v.BidTypeVal=='Product Addition'}">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidCustm" fieldName="Phoenix_Customer__c" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_CM_Wholesaler_Name__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div  class="slds-form-element slds-lookup slds-is-close frequired">
+                                                    <label class="slds-form-element__label">{!v.label}</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showModel}" 
+                                                                                  disabled="true"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select contracts here.."/>
+                                                                    <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                                    </span>
+                                                                </div> 
+                                                                <aura:iteration items="{!v.selectedCntrcts}" var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small pillRemove" label="{!sr}" name="{!sr}" onremove="{! c.clearCntract }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>   
+                                            <aura:if isTrue="{!or(or(v.BidTypeVal == 'Price Change', v.BidTypeVal == 'Product Addition'),v.BidTypeVal == 'One Time Buy - Price Load Req')}">
+                                                <div class="slds-col slds-size_1-of-4">
+                                                    <lightning:inputField aura:id="ProactiveReactive" fieldName="Phoenix_Proactive_Reactive__c" onchange="{!c.showSaveCancel}"  disabled="true"/>
+                                                </div> 
+                                            </aura:if>
+                                            
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Value_Est_VIP_Type__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div> 
+                                             <div class="slds-col slds-size_1-of-4">
+                                                 <lightning:inputField fieldName="Phoenix_Proposed_Admin_Fee_Basis__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                                 <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Initial_Order_Discount_Type__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>-->
+                                        </div>
+                                        <div class="slds-grid">
+                                            
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="ProValId" fieldName="Phoenix_Proposed_Value_Admin_Fee__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Initial_Order_Discount_of_Days__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            -->
+                                        </div>
+                                        <div class="slds-grid">
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4" onchange="{!c.showSaveCancel}" >
+                                                <lightning:inputField aura:id="ProValEstId" fieldName="Phoenix_Proposed_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="ProValIId" fieldName="Phoenix_Proposed_Initial_Order_Discount__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>-->
+                                        </div>
+                                        <div class="slds-grid">                                        
+                                            <!--<div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="bidCntrcts" fieldName="Phoenix_Reference_Contracts__c" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="grpVip" fieldName="Phoenix_Group_VIP__c" onchange="{!c.showSaveCancel}"  disabled="true"/>
+                                            </div>
+                                            -->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_CD__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <!--Product Position Select Logic Start-->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div class="slds-form-element slds-lookup slds-is-close">
+                                                    <label class="slds-form-element__label">Proposed Position</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id=""
+                                                                     class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                                     style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showProductPositionModel}"
+                                                                                  disabled="true"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select Proposed Position here.." />
+                                                                    <span
+                                                                          class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search"
+                                                                                        size="x-small" alternativeText="icon" />
+                                                                    </span>
+                                                                </div>
+                                                                <aura:iteration items="{!v.selectedPosistions}"
+                                                                                var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small pillRemove"
+                                                                                    label="{!sr}" name="{!sr}"
+                                                                                    onremove="{! c.clearPosition }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <!--Product Position Select Logic End-->
+                                            
+                                            <aura:if isTrue="{!and(v.isMarketingApprovePerson==v.loggedInUserName,v.showProceedBtn==true)}">
+                                                <div class="slds-col slds-size_1-of-4" style="margin-left: 5px;">
+                                                    
+                                                    <lightning:select label="Marketing Approval (Mark all as)"
+                                                                      aura:id="headerMarketingApprovalr"
+                                                                      onchange="{!c.onMarketingChange}"
+                                                                      disabled="true"
+                                                                      >
+                                                        <option value="">-None-</option>
+                                                        <option value="Approved">Approved</option>
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </lightning:select>
+                                                </div>
+                                            </aura:if>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal=='RFP Bids'}">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidCustm" fieldName="Phoenix_Customer__c" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_CM_Wholesaler_Name__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div> 
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div  class="slds-form-element slds-lookup slds-is-close">
+                                                    <label class="slds-form-element__label">{!v.label}</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showModel}" 
+                                                                                  disabled="true"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select contracts here.."/>
+                                                                    <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                                    </span>
+                                                                </div> 
+                                                                <aura:iteration items="{!v.selectedCntrcts}" var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small pillRemove" label="{!sr}" name="{!sr}" onremove="{! c.clearCntract }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>  
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_CD__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>                                                                  
+                                            
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Value_Est_VIP_Type__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div> 
+                                             <div class="slds-col slds-size_1-of-4">
+                                                 <lightning:inputField fieldName="Phoenix_Proposed_Admin_Fee_Basis__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Initial_Order_Discount_Type__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            -->
+                                        </div>
+                                        <div class="slds-grid">
+                                            
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="ProValId" fieldName="Phoenix_Proposed_Value_Admin_Fee__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Initial_Order_Discount_of_Days__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            -->
+                                        </div>
+                                        <div class="slds-grid">
+                                            <!--<div class="slds-col slds-size_1-of-4" onchange="{!c.showSaveCancel}" >
+                                                <lightning:inputField aura:id="ProValEstId" fieldName="Phoenix_Proposed_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                           
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="ProValId" fieldName="Phoenix_Proposed_Initial_Order_Discount__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>-->
+                                        </div>
+                                        <div class="slds-grid">                                        
+                                            <!--<div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="bidCntrcts" fieldName="Phoenix_Reference_Contracts__c" disabled="true" />
+                                            </div>-->
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="grpVip" fieldName="Phoenix_Group_VIP__c" onchange="{!c.showSaveCancel}"  disabled="true"/>
+                                            </div>-->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidssadays" fieldName="Phoenix_Proposed_SSA_No_of_Days__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            <!--Product Position Select Logic Start-->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div class="slds-form-element slds-lookup slds-is-close">
+                                                    <label class="slds-form-element__label">Proposed Position</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id=""
+                                                                     class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                                     style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showProductPositionModel}"
+                                                                                  disabled="true"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select Proposed Position here.." />
+                                                                    <span
+                                                                          class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search"
+                                                                                        size="x-small" alternativeText="icon" />
+                                                                    </span>
+                                                                </div>
+                                                                <aura:iteration items="{!v.selectedPosistions}"
+                                                                                var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small pillRemove"
+                                                                                    label="{!sr}" name="{!sr}"
+                                                                                    onremove="{! c.clearPosition }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <!--Product Position Select Logic End-->
+                                            
+                                            
+                                            <aura:if isTrue="{!and(v.isMarketingApprovePerson==v.loggedInUserName,v.showProceedBtn==true)}">
+                                                <div class="slds-col slds-size_1-of-4" style="margin-left: 5px;">
+                                                    
+                                                    <lightning:select label="Marketing Approval (Mark all as)"
+                                                                      aura:id="headerMarketingApprovalr"
+                                                                      onchange="{!c.onMarketingChange}"
+                                                                      disabled="true"
+                                                                      >
+                                                        <option value="">-None-</option>
+                                                        <option value="Approved">Approved</option>
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </lightning:select>
+                                                </div>
+                                            </aura:if>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal=='Price Change'}">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidCustm" fieldName="Phoenix_Customer__c" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_CM_Wholesaler_Name__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div  class="slds-form-element slds-lookup slds-is-close">
+                                                    <label class="slds-form-element__label">{!v.label}</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showModel}" 
+                                                                                  disabled="true"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select contracts here.."/>
+                                                                    <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                                    </span>
+                                                                </div> 
+                                                                <aura:iteration items="{!v.selectedCntrcts}" var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small pillRemove" label="{!sr}" name="{!sr}" onremove="{! c.clearCntract }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>       
+                                            <aura:if isTrue="{!or(or(v.BidTypeVal == 'Price Change', v.BidTypeVal == 'Product Addition'),v.BidTypeVal == 'One Time Buy - Price Load Req')}">
+                                                <div class="slds-col slds-size_1-of-4">
+                                                    <lightning:inputField aura:id="ProactiveReactive" fieldName="Phoenix_Proactive_Reactive__c" onchange="{!c.showSaveCancel}"  disabled="true"/>
+                                                </div> 
+                                            </aura:if>
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Value_Est_VIP_Type__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div> 
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Proposed_Admin_Fee_Basis__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>-->
+                                        </div>
+                                        <div class="slds-grid">
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="ProValId" fieldName="Phoenix_Proposed_Value_Admin_Fee__c" onchange="{!c.showSaveCancel}"  disabled="true"/>
+                                            </div>-->
+                                            
+                                        </div>
+                                        <div class="slds-grid">
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4" >
+                                                <lightning:inputField aura:id="ProValEstId" fieldName="Phoenix_Proposed_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>-->
+                                            
+                                            
+                                        </div>
+                                        <div class="slds-grid">
+                                            <!-- <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="bidCntrcts" fieldName="Phoenix_Reference_Contracts__c" disabled="true" />
+                                            </div>-->
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="grpVip" fieldName="Phoenix_Group_VIP__c" onchange="{!c.showSaveCancel}"  disabled="true"/>
+                                            </div>-->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_CD__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidssadays" fieldName="Phoenix_Proposed_SSA_No_of_Days__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                                
+                                            </div>
+                                            <!--Product Position Select Logic Start-->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div class="slds-form-element slds-lookup slds-is-close">
+                                                    <label class="slds-form-element__label">Proposed Position</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id=""
+                                                                     class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                                     style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showProductPositionModel}"
+                                                                                  disabled="true"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select Proposed Position here.." />
+                                                                    <span
+                                                                          class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search"
+                                                                                        size="x-small" alternativeText="icon" />
+                                                                    </span>
+                                                                </div>
+                                                                <aura:iteration items="{!v.selectedPosistions}"
+                                                                                var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small pillRemove"
+                                                                                    label="{!sr}" name="{!sr}"
+                                                                                    onremove="{! c.clearPosition }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <!--Product Position Select Logic End-->
+                                            
+                                            <aura:if isTrue="{!and(v.isMarketingApprovePerson==v.loggedInUserName,v.showProceedBtn==true)}">
+                                                <div class="slds-col slds-size_1-of-4" style="margin-left: 5px;">
+                                                    
+                                                    <lightning:select label="Marketing Approval (Mark all as)"
+                                                                      aura:id="headerMarketingApprovalr"
+                                                                      onchange="{!c.onMarketingChange}"
+                                                                      disabled="true"
+                                                                      >
+                                                        <option value="">-None-</option>
+                                                        <option value="Approved">Approved</option>
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </lightning:select>
+                                                </div>
+                                            </aura:if>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal=='Volume Review Only'}">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidCustm" fieldName="Phoenix_Customer__c" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_CM_Wholesaler_Name__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div  class="slds-form-element slds-lookup slds-is-close">
+                                                    <label class="slds-form-element__label">{!v.label}</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showModel}" 
+                                                                                  disabled="true"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select contracts here.."/>
+                                                                    <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                                    </span>
+                                                                </div> 
+                                                                <aura:iteration items="{!v.selectedCntrcts}" var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small pillRemove" label="{!sr}" name="{!sr}" onremove="{! c.clearCntract }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>                                                                      
+                                            
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_CD__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Value_Est_VIP_Type__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Proposed_Admin_Fee_Basis__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>-->
+                                            <!-- <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="bidCntrcts" fieldName="Phoenix_Reference_Contracts__c" disabled="true" />
+                                            </div>-->
+                                        </div>
+                                        <div class="slds-grid">
+                                            <!--Product Position Select Logic Start-->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div class="slds-form-element slds-lookup slds-is-close">
+                                                    <label class="slds-form-element__label">Proposed Position</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id=""
+                                                                     class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                                     style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showProductPositionModel}"
+                                                                                  disabled="true"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select Proposed Position here.." />
+                                                                    <span
+                                                                          class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search"
+                                                                                        size="x-small" alternativeText="icon" />
+                                                                    </span>
+                                                                </div>
+                                                                <aura:iteration items="{!v.selectedPosistions}"
+                                                                                var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small pillRemove"
+                                                                                    label="{!sr}" name="{!sr}"
+                                                                                    onremove="{! c.clearPosition }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <!--Product Position Select Logic End-->
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="ProValId" fieldName="Phoenix_Proposed_Value_Admin_Fee__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div> -->
+                                            <!-- <aura:if isTrue="{!and(v.isMarketingApprovePerson==v.loggedInUserName,v.showProceedBtn==true)}">
+                                                <div class="slds-col slds-size_1-of-4" style="margin-left: 5px;">
+                                                    
+                                                    <lightning:select label="Marketing Approval (Mark all as)"
+                                                                      aura:id="headerMarketingApprovalr"
+                                                                      onchange="{!c.onMarketingChange}"
+                                                                      disabled="true"
+                                                                      >
+                                                        <option value="">-None-</option>
+                                                        <option value="Approved">Approved</option>
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </lightning:select>
+                                                </div>
+                                            </aura:if>-->
+                                        </div>
+                                        <div class="slds-grid">
+                                            <!--
+                                            <div class="slds-col slds-size_1-of-4" >
+                                                <lightning:inputField aura:id="ProValEstId" fieldName="Phoenix_Proposed_Value_Est_VIP__c" onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>-->
+                                            
+                                            
+                                            
+                                        </div>
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                            </div><!--
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField   aura:id="grpVip" fieldName="Phoenix_Group_VIP__c" onchange="{!c.showSaveCancel}"  disabled="true"/>
+                                            </div>
+-->
+                                        </div>
+                                        
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal=='New Product Launch'}">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidCustmr"
+                                                                      fieldName="Phoenix_Customer__c" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_CM_Wholesaler_Name__c"
+                                                                      onchange="{!c.showSaveCancel}" disabled="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_Current_CD__c"
+                                                                      onchange="{!c.showSaveCancel}" disabled="true" />
+                                            </div>
+                                            <aura:if
+                                                     isTrue="{!or(or(v.BidTypeVal == 'Price Change', v.BidTypeVal == 'Product Addition'),or(v.BidTypeVal == 'One Time Buy - Price Load Req',v.BidTypeVal == 'New Product Launch'))}">
+                                                <div class="slds-col slds-size_1-of-4">
+                                                    <lightning:inputField aura:id="ProactiveReactive"
+                                                                          fieldName="Phoenix_Proactive_Reactive__c"
+                                                                          onchange="{!c.showSaveCancel}" disabled="true" />
+                                                </div>
+                                            </aura:if>
+                                            
+                                        </div>
+                                        <!--<div class="slds-grid">
+                                        </div>-->
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div class="slds-form-element slds-lookup slds-is-close frequired">
+                                                    <label class="slds-form-element__label">{!v.label}</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id=""
+                                                                     class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                                     style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showModel}"
+                                                                                  disabled="true"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select contracts here.." />
+                                                                    <span
+                                                                          class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search"
+                                                                                        size="x-small" alternativeText="icon" />
+                                                                    </span>
+                                                                </div>
+                                                                <aura:iteration items="{!v.selectedCntrcts}" var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small"
+                                                                                    label="{!sr}" name="{!sr}"
+                                                                                    onremove="{! c.clearCntract }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <!--Product Position Select Logic Start-->
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div class="slds-form-element slds-lookup slds-is-close">
+                                                    <label class="slds-form-element__label">Proposed Position</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id=""
+                                                                     class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                                     style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showProductPositionModel}"
+                                                                                  disabled="true"
+                                                                                  updateOn="keyup"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select Proposed Position here.." />
+                                                                    <span
+                                                                          class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search"
+                                                                                        size="x-small" alternativeText="icon" />
+                                                                    </span>
+                                                                </div>
+                                                                <aura:iteration items="{!v.selectedPosistions}"
+                                                                                var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small"
+                                                                                    label="{!sr}" name="{!sr}"
+                                                                                    onremove="{! c.clearPosition }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                            </div>
+                                            <!--Product Position Select Logic End-->
+                                            
+                                            <aura:if
+                                                     isTrue="{!and(and(v.isMarketingApprovePerson==v.loggedInUserName,v.showProceedBtn==true),or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'))}">
+                                                <div class="slds-col slds-size_1-of-4" style="margin-left: 5px;">
+                                                    
+                                                    <lightning:select label="Marketing Approval (Mark all as)"
+                                                                      aura:id="headerMarketingApproval"
+                                                                      onchange="{!c.onMarketingChange}" disabled="true">
+                                                        
+                                                        <option value="">-None-</option>
+                                                        <option value="Approved">Approved</option>
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </lightning:select>
+                                                </div>
+                                            </aura:if>
+                                            
+                                        </div>
+                                        <!--  <div class="slds-grid">                                        
+                                        </div>-->
+                                        
+                                    </aura:if>
+                                    
+                                </lightning:accordionSection> 
+                            </aura:if>
+                        </lightning:accordion>
+                        <center>
+                            <!-- use aura:if for show/hide buttons -->      
+                            <aura:if isTrue="{!v.showSaveCancelBtn}">
+                                <!--button for save and cancel Record after Inline Edit-->
+                                <lightning:button label="Cancel" onclick="{!c.cancel}"/>&nbsp;
+                                <lightning:button label="Save" type="submit" variant="brand"/>&nbsp;   
+                                <!-- <lightning:button variant="brand" label="Save &amp; Close"  onclick="{!c.SaveAndNavigate}"/>-->
+                            </aura:if> 
+                        </center>
+                    </lightning:recordEditForm>
+                </p>
+                <aura:if isTrue="{!v.submitModel}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" 
+                             aria-modal="true" aria-describedby="modal-content-id-1" 
+                             class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                                    Submit Bid For Approval</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <p><div style="text-align:center;padding-bottom:3px;">{!v.modalMessage}</div>
+                                </p>
+                            </div>
+                            <!--Modal/Popup Box Footer Starts here-->
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral"
+                                                  label="No"
+                                                  title="No"
+                                                  onclick="{! c.hideSubmitModel }"/>
+                                <lightning:button variant="brand"
+                                                  label="Yes"
+                                                  title="Yes"
+                                                  onclick="{!c.proceedToSubmit}"/>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+                  <!-- 100% analysis sync component -->
+                <aura:if isTrue="{!v.showSyncPopup}">
+                    <c:Vision_SyncVolumeTo100PerAnalysis showSyncPopup="{!v.showSyncPopup}" syncConfirmed="{!v.syncConfirmed}" 
+                                                         bidId="{!v.bidRecord.Id}" accId="{!v.customerId}" bidType="{!v.bidRecord.Phoenix_Bid_Type__c}"/> 
+                </aura:if>
+                <!-- 100% analysis sync component -->
+                <aura:if isTrue="{!v.showModal}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" 
+                             aria-modal="true" aria-describedby="modal-content-id-1" 
+                             class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close"
+                                                      onclick="{! c.hideModel }"
+                                                      alternativeText="close"
+                                                      variant="bare-inverse"
+                                                      class="slds-modal__close"/>
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                                    Contracts</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <p>
+                                    <div class="slds-grid" style="margin-bottom:6px;">
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                <ui:inputText aura:id="cntInput" class="slds-lookup__search-input slds-input inputSize"
+                                                              placeholder="Search contracts..."/>
+                                                <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                    <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                </span>
+                                            </div> 
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <div class="slds-grid">
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <lightning:input class="slds-p-left_large slds-p-top_x-small" type="checkbox" label="Show All" name="input1" aura:id="tgleCntrct" onchange="{!c.searchContracts}"/>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <div  class="slds-m-top_medium slds-m-left_small" style="margin-top:1px;"><lightning:button label="Search" onclick="{!c.searchContracts}"  variant="brand"/></div> 
+                                                </div>
+                                            </div>
+                                        </div>                                       
+                                    </div>  
+                                    <aura:if isTrue="{!not(empty(v.contratcsList))}">                            
+                                        <lightning:datatable aura:id="linesTable"
+                                                             data="{! v.contratcsList }" 
+                                                             columns="{! v.mycolumns }"
+                                                             keyField="id"                                                
+                                                             />
+                                        <aura:set attribute="else">
+                                            <center>
+                                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                                    <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                                    </span>
+                                                    <h2> No Records Found</h2>
+                                                </div>
+                                            </center>
+                                        </aura:set>
+                                    </aura:if>
+                                </p>
+                            </div>
+                            <!--Modal/Popup Box Footer Starts here-->
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral"
+                                                  label="Cancel"
+                                                  title="Cancel"
+                                                  onclick="{! c.hideModel }"/>
+                                <lightning:button variant="brand"
+                                                  label="OK"
+                                                  title="OK"
+                                                  disabled= "{!empty(v.contratcsList)}"
+                                                  onclick="{!c.saveDetails}"/>
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+                <!--Positions Logic Start-->
+                <aura:if isTrue="{!v.showPositionsModal}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                             aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close" onclick="{! c.hideModel }"
+                                                      alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                                    Positions</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <p>
+                                    <!-- <div class="slds-grid" style="margin-bottom:6px;">
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                <ui:inputText aura:id="posInput" class="slds-lookup__search-input slds-input inputSize"
+                                                              placeholder="Search contracts..."/>
+                                                <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                    <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                </span>
+                                            </div> 
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <div class="slds-grid">
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <lightning:input class="slds-p-left_large slds-p-top_x-small" type="checkbox" label="Show All" name="input1" aura:id="tgleCntrct" onchange="{!c.searchContracts}"/>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <div  class="slds-m-top_medium slds-m-left_small" style="margin-top:1px;"><lightning:button label="Search" onclick="{!c.searchContracts}"  variant="brand"/></div> 
+                                                </div>
+                                            </div>
+                                        </div>                                       
+                                    </div>  -->
+                                    <aura:if isTrue="{!not(empty(v.positionsList))}">
+                                        <lightning:datatable aura:id="PoslinesTable" data="{! v.positionsList }"
+                                                             columns="{! v.positionColumns }" keyField="id" />
+                                        <aura:set attribute="else">
+                                            <center>
+                                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                                     role="alert" style="width:50%;">
+                                                    <span class="slds-icon_container slds-m-right_x-small"
+                                                          title="Please add line items to view the table">
+                                                        <lightning:icon iconName="utility:info" alternativeText="info"
+                                                                        size="x-small" variant="inverse" />
+                                                    </span>
+                                                    <h2> No Records Found</h2>
+                                                </div>
+                                            </center>
+                                        </aura:set>
+                                    </aura:if>
+                                </p>
+                            </div>
+                            <!--Modal/Popup Box Footer Starts here-->
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral" label="Cancel" title="Cancel"
+                                                  onclick="{! c.hideModel }" />
+                                <lightning:button variant="brand" label="OK" title="OK"
+                                                  disabled="{!empty(v.positionsList)}" onclick="{!c.savePosDetails}" />
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+                <!--Positions Logic End-->
+                
+                <lightning:accordion aura:id="filterId" allowMultipleSectionsOpen="true" activeSectionName="FilterInput">
+                    <lightning:accordionSection name="FilterInput" label="Product Details and Inputs" >
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of-3">
+                                <div class="slds-grid" >
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <lightning:input aura:id="RX" type="checkbox" label="Rx" onchange="{!c.searchSrxRxOttc}" checked="{!v.isRxChecked}"/>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <lightning:input aura:id="SRX" type="checkbox" label="SRx" onchange="{!c.searchSrxRxOttc}" checked="{!v.isSRxChecked}" />
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <lightning:input aura:id="OTC" type="checkbox" label="OTC" onchange="{!c.searchSrxRxOttc}" checked="{!v.isOtcChecked}" />
+                                    </div>
+                                </div>
+                            </div> 
+                            <div class="slds-col slds-size_1-of-3">
+                                <div onmouseleave="{!c.onblurProDir}" aura:id="searchResPD" class="slds-form-element slds-lookup slds-is-close">
+                                    <div class="slds-form-element__control">
+                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                            <div aura:id="lookup-pill-PD" class="slds-pill-container">
+                                                <div aura:id="lookupFieldPD" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                    <ui:inputText                                                                
+                                                                  updateOn="keyup"
+                                                                  keyup="{!c.keyPressControllerProdDir}"
+                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                  value="{!v.SearchKeyWordPD}"
+                                                                  placeholder="Search Product Directors here.."/>
+                                                    <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                        <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                    </span>
+                                                </div> 
+                                                <aura:iteration items="{!v.lstSelectedPDRecords}" var="sr">
+                                                    <lightning:pill class="slds-m-around_xx-small" label="{!sr}" name="{!sr}" onremove="{! c.clearProdDir }">
+                                                    </lightning:pill>
+                                                </aura:iteration>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <ul style="min-height:40px;margin-top:0px !important" class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds" role="listbox">
+                                        <lightning:spinner class="slds-hide" variant="brand" size="small" aura:id="mySpinner"/>
+                                        <center> {!v.MessagePD}</center>
+                                        <aura:iteration items="{!v.listOfSearchPDRecords}" var="singleRec">
+                                            <c:ProductDirectorSearchFilterCmp oRecord="{!singleRec}"/>
+                                        </aura:iteration>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3">
+                                <div class="slds-grid" >
+                                    <div class="slds-col slds-size_9-of-12" >
+                                        <div onmouseleave="{!c.onblur}" aura:id="searchRes" class="slds-form-element slds-lookup slds-is-close">
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                    <div aura:id="lookup-pill" class="slds-pill-container">
+                                                        <div aura:id="lookupField" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                            <ui:inputText 
+                                                                          updateOn="keyup"
+                                                                          keyup="{!c.keyPressController}"
+                                                                          class="slds-lookup__search-input slds-input inputSize"
+                                                                          value="{!v.SearchKeyWord}"
+                                                                          placeholder="Search Product Family here.."/>
+                                                            <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                            </span>
+                                                        </div> 
+                                                        <aura:iteration items="{!v.lstSelectedRecords}" var="sr">
+                                                            <lightning:pill class="slds-m-around_xx-small" label="{!sr}" name="{!sr}" onremove="{! c.clear }">
+                                                                <aura:set attribute="media">
+                                                                    <lightning:icon iconName="{!v.IconName}" size="x-small" alternativeText="icon"/>
+                                                                </aura:set>
+                                                            </lightning:pill>
+                                                        </aura:iteration>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <ul style="min-height:40px;margin-top:0px !important" class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds" role="listbox">
+                                                <lightning:spinner class="slds-hide" variant="brand" size="small" aura:id="mySpinner"/>
+                                                <center> {!v.Message}</center>
+                                                <aura:iteration items="{!v.listOfSearchRecords}" var="singleRec">
+                                                    <!--Child Component--> 
+                                                    <c:reUsableMultiSelectLookupResult oRecord="{!singleRec}" IconName="{!v.IconName}"/>
+                                                </aura:iteration>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12" >
+                                        <div  class="slds-m-top_medium  slds-m-right_small" style="margin-top:1.6%"><lightning:button label="Search" onclick="{!c.searchProFamilyChange}" variant="brand"/></div>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </div>
+                        <!-- <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_11-of-12">
+                            </div>
+                            <div class="slds-col slds-size_1-of-12 slds-m-top_medium slds-m-left_small" style="margin-top:1.6%">
+                               <div  class="slds-m-top_medium s slds-m-right_small" style="margin-top:1.6%"><lightning:button label="Search" onclick="{!c.searchProFamilyChange}" variant="brand"/></div>
+                            </div>
+                        </div> -->                       
+                    </lightning:accordionSection>
+                </lightning:accordion>
+                <aura:if isTrue="{!v.isSpinnerLoad}">
+                    <div class="backgroundInverse">
+                        <lightning:spinner alternativeText="Loading" variant="brand" />
+                    </div>
+                </aura:if>
+                <!-- Add Code by Rama -->
+                <!-- <div style="margin-left: 1000px"> -->              
+                <!--<aura:if isTrue="{!and(v.userInfo.Name != 'Surender Patel',v.userInfo.Name != 'Sneha Shah',v.userInfo.Name != 'Sudheer Nanduri',v.userInfo.Name != 'Leigh Avery',v.userInfo.Name != 'Matthew Bilbao',v.userInfo.Name != 'Matthew Bilbao',v.userInfo.Name != 'Abhijit Patil',v.userInfo.Name != 'Ahmed Rifayee',v.userInfo.Name != 'Shruti Shah',v.userInfo.Name != 'Saunak Savla')}">
+                    <div style="margin-left: 93%" onclick="{!c.navigate}">
+                        <img src="{!$Resource.CI}"/>-->
+                        <!--  <a href="javascript:void(0)" onclick="{!c.competitoinfoview}">Competitor Info View</a> -->
+                    <!--</div>                   
+                </aura:if>-->
+                <!-- End Code by Rama -->
+                
+                <aura:if isTrue="{!and(v.userInfo.Name != 'Surender Patel',v.userInfo.Name != 'Sneha Shah',v.userInfo.Name != 'Sudheer Nanduri',v.userInfo.Name != 'Leigh Avery',v.userInfo.Name != 'Matthew Bilbao',v.userInfo.Name != 'Matthew Bilbao',v.userInfo.Name != 'Abhijit Patil',v.userInfo.Name != 'Ahmed Rifayee',v.userInfo.Name != 'Shruti Shah',v.userInfo.Name != 'Saunak Savla')}">
+                    <div>
+                        <div style="width: 50%;display:inline-block;">
+                        </div>
+                        <div style="width: 50%;display:inline-block;text-align: right;padding-right: 10px;">
+                            <div style="display: inline-block;padding-right: 10px;">
+                                <lightning:button label="Summary" variant="neutral" onclick="{!c.showSummaryPopup}"/>
+                            </div>
+                            <div style="display: inline-block;" onclick="{!c.navigate}">
+                                <img src="{!$Resource.CI}"/>
+                                <!--  <a href="javascript:void(0)" onclick="{!c.competitoinfoview}">Competitor Info View</a> -->
+                            </div>
+                        </div>
+                    </div>
+                </aura:if>
+                <!-- End Code by Rama -->
+                <!-- Added by Naseer -->
+                <aura:if isTrue="{!v.showSummaryPopup}">
+                    <c:VisionSummarySKUCmp showSummaryPopup="{!v.showSummaryPopup}" BidLineItemListAll="{!v.BidLineItemListAll}" bidRecord="{!v.bidRecord}"/>
+                </aura:if >
+                <!-- End by Naseer -->
+                
+                
+                
+                <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+                    
+                    <div aura:id="mainDiv" style="height:60vh;overflow:auto;margin-top:10px;" class=" slds-m-right_small slds-m-left_small">
+                        <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                            <table aura:id="LineTable"  class="maintable fixedtable slds-table slds-no-row-hover  slds-table_bordered slds-table_col-bordered">
+                                <thead>
+                                    <tr> 
+                                        <th></th>
+                                        <th class="slds-truncate slds-cell-wrap">NDC</th>
+                                        <th class="slds-truncate slds-cell-wrap">SAP Number</th>
+                                        <th class="slds-truncate slds-cell-wrap zindexPrd" aura:id="zvaluePrd">Product Family</th>
+                                        <th class="slds-truncate slds-cell-wrap zindexPkg" aura:id="zvaluePkg">Pkg Size</th>
+                                        <th class="slds-truncate slds-cell-wrap zindex" aura:id="zvalue">Product Name
+                                            <a onclick="{!c.collpase}">
+                                                <lightning:icon iconName="utility:preview" alternativeText="delete" size="x-small" />
+                                            </a>                                            
+                                        </th>
+                                        <!-- logic for Re-Bid functionality- starts-->
+                                        <aura:if isTrue="{!v.isReBid}" >
+                                            <th class="slds-truncate slds-cell-wrap">Previous Bid</th>
+                                            <th class="slds-truncate slds-cell-wrap">Previous Bid Line Item</th>
+                                        </aura:if>
+                                        <!-- logic for Re-Bid functionality- ends-->
+                                        <th class="slds-truncate slds-cell-wrap">Case Pack</th>
+                                        <th class="slds-truncate slds-cell-wrap">MOQ</th>
+                                        <th class="slds-truncate slds-cell-wrap">Compare To (Brand Name)</th>
+                                        <th class="slds-truncate slds-cell-wrap">Product Director</th>
+                                        <th class="slds-truncate slds-cell-wrap">Orange Book Rating</th>
+                                        <th class="slds-truncate slds-cell-wrap">Throughput Cost</th>
+                                        <th class="slds-truncate slds-cell-wrap">WAC</th>
+                                        <!-- <th class="slds-truncate slds-cell-wrap">IMS Market Share</th>-->
+                                        <th class="slds-truncate slds-cell-wrap">REMS Program</th>
+                                        <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Current Position</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Proposed Position</th>
+                                        <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">3 Months Annualized Current Indirect Selling Units</th>
+                                            <th class="slds-truncate slds-cell-wrap">Last 12 Months Actuals Current Indirect Selling Units</th>
+                                            <th class="slds-truncate slds-cell-wrap">Override Current Indirect Selling Units</th>
+                                        </aura:if>
+                                        <!-- <th class="slds-truncate slds-cell-wrap">Doses</th> -->
+                                        <aura:if isTrue="{!and(v.BidTypeVal !='Price Change',and(v.BidTypeVal !='Customer Rebate Change',v.BidTypeVal !='Sales Out Rebate'))}">
+ 											<aura:if isTrue="{!or(or(v.BidTypeVal =='RFP Bids',v.BidTypeVal =='Volume Review Only'),v.BidTypeVal =='Product Addition')}">
+                                               <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Indirect Selling Unit(Current + Increment)</th>
+                                              <aura:set attribute="else">
+                                               <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Indirect Selling Unit</th>
+
+                                              </aura:set>
+                                            </aura:if> 
+                                            <!--<th class="slds-truncate slds-cell-wrap">Final Annual Extended Units</th>-->
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(and(v.BidTypeVal !='Customer Rebate Change',v.BidTypeVal !='New Product Launch'),and(v.BidTypeVal!='Price Change',v.BidTypeVal!='Sales Out Rebate'))}">
+                                            <th class="slds-truncate slds-cell-wrap">Total SCM Approved Qty
+                                                <lightning:helptext content="This will be updated after SCM approval."/>
+                                            </th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Current Indirect Contract Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Current Net Indirect Price</th> 
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='Sales Out Rebate')}">
+                                            <th class="slds-truncate slds-cell-wrap">Guidance Price</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='Sales Out Rebate')}">
+                                            <th class="slds-truncate slds-cell-wrap">Proposed Contract Bid Price (Sales)</th>
+                                            
+                                            <!-- <th class="slds-truncate slds-cell-wrap">Proposed Contract Bid Price (Marketing)</th>-->
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='New Product Launch',v.BidTypeVal !='Sales Out Rebate')}">
+                                            
+                                            <th class="slds-truncate slds-cell-wrap">% Reduction</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.BidTypeVal =='New Product Launch'}">
+                                            <!--	<th class="slds-truncate slds-cell-wrap">Current Supplier</th>-->
+                                            <th class="slds-truncate slds-cell-wrap">Brand WAC</th>
+                                            <th class="slds-truncate slds-cell-wrap">Brand WAC %</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='Sales Out Rebate')}">
+                                            <th class="slds-truncate slds-cell-wrap">Proposed Direct Contract Price (For Internal Purpose Only) (Marketing)</th>
+                                            <th class="slds-truncate slds-cell-wrap">Proposed Indirect Contract Price (Marketing)</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.BidTypeVal!='Volume Review Only'}">
+                                            <th class="slds-truncate slds-cell-wrap">Net Indirect Price</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">PUR</th>
+                                        <aura:if isTrue="{!v.BidTypeVal!='Volume Review Only'}">
+                                            <th class="slds-truncate slds-cell-wrap">Direct CD</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Indirect CD</th>
+                                        
+                                        <th class="slds-truncate slds-cell-wrap">CM Fee %</th>
+                                        <th class="slds-truncate slds-cell-wrap">CM Fee</th>
+                                        
+                                        
+                                        <th class="slds-truncate slds-cell-wrap">Internal Dead Net</th>
+                                        
+                                        <th class="slds-truncate slds-cell-wrap">TPT $</th>
+                                        
+                                        <th class="slds-truncate slds-cell-wrap">TPT %</th>
+                                        <th class="slds-truncate slds-cell-wrap">Medicaid &amp; Returns  Per Unit</th>
+                                        <th class="slds-truncate slds-cell-wrap">Net Sales</th>
+                                        <th class="slds-truncate slds-cell-wrap">Total TPT $</th>
+                                        <th class="slds-truncate slds-cell-wrap">Total TPT %</th>
+                                        <aura:if isTrue="{!v.BidTypeVal =='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Opening Order</th>
+                                            <th class="slds-truncate slds-cell-wrap">Opening Order Net Sales</th>
+                                            <th class="slds-truncate slds-cell-wrap">Opening Order TPT $</th>
+                                            <th class="slds-truncate slds-cell-wrap">Opening Order TPT %</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Budgeted ASP</th>
+                                        <th class="slds-truncate slds-cell-wrap">Proposed as % of Budget</th>
+                                        <th class="slds-truncate slds-cell-wrap">Latest Estimate ASP</th>
+                                        <th class="slds-truncate slds-cell-wrap">Proposed as % of Latest Estimate</th>
+                                        <th class="slds-truncate slds-cell-wrap">Lowest Price /SKU</th>
+                                        <th class="slds-truncate slds-cell-wrap">Approved Lowest Price /SKU</th>
+                                        <aura:if isTrue="{!and(and(v.BidTypeVal !='Customer Rebate Change',v.BidTypeVal !='New Product Launch'),and(v.BidTypeVal!='Price Change',v.BidTypeVal!='Sales Out Rebate'))}">
+                                            
+                                            <th class="slds-truncate slds-cell-wrap">Initial Stocking Order Volume</th>
+                                            <th class="slds-truncate slds-cell-wrap">Initial Stocking Order Comments</th>
+                                            <!--
+                                            <th class="slds-truncate slds-cell-wrap">Total SCM Approved Qty</th>-->
+                                            <th class="slds-truncate slds-cell-wrap">Estimated Lead Time</th>
+                                            <!--<th class="slds-truncate slds-cell-wrap">SCM Rejection Reason</th>-->
+                                            <th class="slds-truncate slds-cell-wrap">SCM Approval (Y/N)</th>
+                                            <th class="slds-truncate slds-cell-wrap">SCM Comments</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.BidTypeVal =='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Estimated Lead Time</th>
+                                            <th class="slds-truncate slds-cell-wrap">Opening Order Comments</th> 
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Sales Notes</th>
+                                        <aura:if isTrue="{!v.BidTypeVal !='Volume Review Only'}">
+                                            <th class="slds-truncate slds-cell-wrap">Marketing Approval</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Marketing Notes</th>
+                                        <aura:if isTrue="{!v.BidTypeVal !='Volume Review Only'}">
+                                            <th class="slds-truncate slds-cell-wrap">Finance Approval</th>
+                                            <th class="slds-truncate slds-cell-wrap">Finance Comments</th>                                       
+                                            
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Contract Status</th>
+                                        <th class="slds-truncate slds-cell-wrap">Contract Comments</th>
+                                        <th class="slds-truncate slds-cell-wrap">WAC Check</th>
+                                        <!-- <aura:if isTrue="{!or(v.BidTypeVal =='RFP Bids',v.BidTypeVal =='Price Change')}">
+                                            <th class="slds-truncate slds-cell-wrap">SSA Hit</th>
+                                        </aura:if>-->
+                                        <!--  <aura:if isTrue="{!or(v.BidTypeVal=='New Product Launch',(or(v.BidTypeVal=='RFP Bids',v.BidTypeVal=='Product Addition')))}">
+                                            <th class="slds-truncate slds-cell-wrap">IOD Qty (Rounded To MOQ)</th>
+                                        </aura:if>-->
+                                        <!--Analytics Components related Icons START-->
+                                        <th></th>
+                                        <!--Analytics Components related Icons END-->
+                                    </tr>
+                                    
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.BidLineItemListAll}" var="biltem" indexVar="sNo">
+                                        <!-- Child Lightning Component -->
+                                        <c:SamsClubTemplateChild customerId="{!v.customerId}" bidRecordParent='{!v.bidRecord}' tableRef="{!v.tableRef}" netSalesIntTotal="{!v.netSalesIntTotal}" LCostTotal="{!v.LCostTotal}" ThptMrgnDTotal="{!v.ThptMrgnDTotal}" TPTDollorTotal="{!v.TPTDollorTotal}" TPMarginPercent="{!v.TPMarginPercent}" intDeadNetTotal="{!v.intDeadNetTotal}" indTp="{!v.indTp}"
+                                                                 OpeningOrderTotal="{!v.OpeningOrderTotal}" OpeningOrderNetSalesTotal="{!v.OpeningOrderNetSalesTotal}" OpeningOrderTPTTotal="{!v.OpeningOrderTPTTotal}" OpeningOrderTPTPercTotal="{!v.OpeningOrderTPTPercTotal}"
+                                                                 totalSCMQty="{!v.totalSCMQty}" overrideunits="{!v.overrideunits}" actualsales="{!v.actualsales}" IndirectTP="{!v.IndirectTP}" IndirectTPPercent="{!v.IndirectTPPercent}" ItemsLength="{!v.ItemsLength}" PISUTotal="{!v.PISUTotal}" PDSUTotal="{!v.PDSUTotal}" CISUTotal="{!v.CISUTotal}" CDSUTotal="{!v.CDSUTotal}" isContractsApprovePerson="{!v.isContractsApprovePerson}" isMarketingApprovePerson="{!v.isMarketingApprovePerson}" loggedInUserName="{!v.loggedInUserName}" BidAprrovalStatus="{!v.BidAprrovalStatus}" bidType="{!v.BidTypeVal}" templateType="{!v.templateType}" isSpecificCust="{!v.isSpecificCustomer}" singleRec="{!biltem}" showSaveCancelBtn="{!v.showSaveCancelBtn}" sNo="{!sNo + 1}" lineItemId="{!biltem.Id}" isReBid ="{!v.isReBid}" recordId="{!v.recordId}"
+                                                                 productId= "{!(biltem.Phoenix_Product__r.Id)}"
+                                                                 deligatedUserName = "{!v.deligatedUserName}"
+                                                                 ismarketingDeligator = "{!v.ismarketingDeligator}"
+
+                                                                 />
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </div> 
+                    </div>
+                    <br/>
+                    <aura:set attribute="else">
+                        <lightning:card >
+                            <center>
+                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                    <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                    </span>
+                                    <h2>There are no line items for this bid</h2>
+                                </div>
+                            </center>
+                        </lightning:card>
+                    </aura:set>
+                </aura:if>
+                
+            </lightning:card> 
+        </lightning:tab>
+        <!-- <lightning:tab label="SCM &amp; Marketing Detail View" id="details" onactive="{!c.initDetailView}">
+                <c:Phoenix_Edit_Bid_Line_Item_Cmp aura:id="detailTab"  recordId='{!v.recordId}'/>
+            </lightning:tab>-->
+        <aura:if isTrue="{!and(and(v.BidTypeVal!='Price Change',v.BidTypeVal!='New Product Launch'),and(v.BidTypeVal!='Sales Out Rebate',v.BidTypeVal!='Customer Rebate Change'))}">
+            <lightning:tab label="SCM View" id="SCM" onactive="{!c.initSCMCmp}">
+                <c:SCMView aura:id="SCMChildCmp" title="{!(v.bidNumber+'-'+v.bidName)}" recordId='{!v.recordId}'/>
+            </lightning:tab>
+        </aura:if>
+        <lightning:tab label="Finance View" id="FIV" onactive="{!c.initFinnaceCmp}"> 
+            <c:Phoenix_FinanceView aura:id="financeChildCmp" title="{!(v.bidNumber+'-'+v.bidName)}" recordId='{!v.recordId}'/>
+        </lightning:tab>
+        <lightning:tab label="NDC Finance View" onactive="{!c.initNDCFinanceCmp}"> 
+            <c:NDCFinanceView aura:id="NDCFinance" title="{!(v.bidNumber+'-'+v.bidName)}" recordId='{!v.recordId}'/>
+        </lightning:tab>
+        <aura:if isTrue="{!v.BidTypeVal!='Volume Review Only'}">
+            <lightning:tab label="Management Approval" onactive="{!c.initManagementCmp}"> 
+                <c:Phoenix_FinanceApprovalGrid aura:id="ApprovalGrid" title="{!(v.bidNumber+'-'+v.bidName)}" recordId='{!v.recordId}'/>
+            </lightning:tab>
+        </aura:if>
+        <lightning:tab label="Contracts View" id="Contracts" onactive="{!c.initContractsView}">
+            <c:SamsClubTemplateContractsView aura:id="ContractsTab"  recordId='{!v.recordId}'/>
+        </lightning:tab>
+        <lightning:tab label="Rejected View" id="RejectedStatus" onactive="{!c.initRejectedStatus}">
+            <c:SamsClubRejectedLineItemsTab aura:id="RejectedStatusChildCmp" recordId='{!v.recordId}'/>
+        </lightning:tab>
+        <lightning:tab label="Bid Summary View" id="CustomerResponseNew" onactive="{!c.initNewCustomerView}">
+            <c:CustomerResponseLinesView aura:id="CustomersTabNew"  title="{!(v.bidNumber+'-'+v.bidName)}" recordId='{!v.recordId}'/>
+        </lightning:tab>
+    </lightning:tabset>
+</aura:component>

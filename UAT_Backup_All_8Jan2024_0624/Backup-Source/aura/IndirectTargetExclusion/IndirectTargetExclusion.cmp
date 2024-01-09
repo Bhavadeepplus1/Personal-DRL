@@ -1,0 +1,243 @@
+<aura:component controller="IndirectTargetExclusionCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,lightning:isUrlAddressable" access="global" >
+    
+    
+    <aura:attribute name="pageReference" type="Object"/>
+    <lightning:navigation aura:id="navService"/>
+    <aura:attribute name="count" type="integer"  /> 
+    <aura:attribute name="optionsforCustomers" type="List" />
+    <aura:attribute name="optionsforProducts" type="List" />
+    <aura:attribute name="optionsforContracts" type="List" />
+     <aura:attribute name="optionsforSalesReps" type="List" />
+    <aura:attribute name="SalesManagerProducts" type="List" />
+    <aura:attribute name="selectedContracts" type="List" />
+    <aura:attribute name="selectedPicklist" type="List" default=""  />
+    <aura:attribute name="selectedProducts" type="List" default=""  />
+    <aura:attribute name="SalesManagerselectedPdts" type="List" default=""/>
+    <aura:attribute name="salesRepName" type="List" />
+    <aura:attribute name="customer_Name" type="List" />
+    <aura:attribute name="product_List" type="List" />
+    <aura:attribute name="IndirectExclusionList" type="List" />
+    <aura:attribute name="allIndirectExclusionList" type="List" />
+    <aura:attribute name="MonthKeys" type="List" />
+    <aura:attribute name= "showItem" type ="boolean" default = "true"/>
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="true" />
+    <aura:attribute name="uniqueCustLength" type="Integer" />
+    <aura:attribute name="summaryList" type="List" />
+    <aura:attribute name="allAccountsLoaded" type="boolean" default="false" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.init}"/>
+    
+    
+    
+    <div class="slds-box" style="background-color:#F6F7FB;">
+        
+        <p style="font-size:24px;font-weight:600;padding-left:10px;padding-bottom:20px;">Target Exclusions</p>
+        
+        
+        <div class="slds-grid" style="padding-left:2px;">
+             <div class="slds-size_2-of-12" style="padding-left:10px;padding-right:10px;">
+                
+                <c:MultiSelectComboForLeaderBoard options="{!v.optionsforContracts}" values="{!v.selectedContracts}" multiSelect="true" label="Contracts"/>
+                
+            </div>
+            <div class="slds-size_2-of-12" style="padding-left:10px;padding-right:10px;">
+                
+                <c:MultiSelectComboForLeaderBoard options="{!v.optionsforSalesReps}" values="{!v.SalesManagerselectedPdts}" multiSelect="true" label="Territory Sales Manager"/>
+                
+            </div>
+           
+            <div class="slds-size_2-of-12" style="padding-left:10px;padding-right:10px;">
+                
+                <c:MultiSelectComboForLeaderBoard options="{!v.optionsforCustomers}" values="{!v.selectedPicklist}" multiSelect="true" label="Customer"/>
+                
+            </div>
+            
+            <div class="slds-size_2-of-12" style="padding-left:10px;padding-right:10px;">
+                
+                <c:MultiSelectComboForLeaderBoard options="{!v.optionsforProducts}" values="{!v.selectedProducts}" multiSelect="true" label="Product"/>
+                
+            </div>
+            
+            <div class="slds-size_2-of-12" style="padding-top:23px;padding-left:20px;">
+                
+                <lightning:button label="Search" variant="brand-outline" onclick="{!c.searchHandler}"/>
+                
+            </div>
+           
+            
+            <div class="slds-size_2-of-12" style="text-align:right;padding-top:23px;padding-right:20px;">
+                <lightning:button label="Achievement Summary" variant="brand" onclick="{!c.redirectToAchievementSummary}"/>
+            </div>
+            
+        </div>
+        
+        <div class="outer-wrapper table-container" style="margin-left: 15px;margin-right:20px;margin-top:20px;height:600px;" onscroll="{!c.handleScroll}">
+            
+            <table style = "width:100%; border: 1px ridge #D9D9D9;border-radius:6px;overflow-x: auto;overflow-y: auto;overflow: scroll;box-shadow: 0 0 2px rgba(0, 0, 0, 0.3)" aura:id="LineTable" class="slds-table scrollable-table maintable slds-no-row-hover slds-table_bordered slds-table_col-bordered">
+                <thead >
+                    
+                    <aura:iteration items="{!v.MonthKeys}" var="row"> 
+                        <tr style="height:40px;"> 
+                            <th rowspan="2" style = "width:10%;background-color: #F3F3F3; color: #676767;padding: 4px 8px;font-size:14px;font-weight: 700;position: sticky;left: 0;z-index:2;top:0; " class="" >Contracts ({!v.uniqueCustLength})</th>
+                            
+                            <th rowspan="2" style = "width:10%;background-color:  #F3F3F3; color: #676767;text-align: center;font-size:14px;font-weight: 700;position: sticky;z-index:1;top:0;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "2">Territory Sales Manager</th>
+                            <th rowspan="2" style = "width:10%;background-color:  #F3F3F3; color: #676767;text-align: center;font-size:14px;font-weight: 700;position: sticky;z-index:1;top:0;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "2">{!row.month_1}</th>
+                            <th rowspan="2" style = "width:10%;background-color:  #F3F3F3; color: #676767;text-align: center;font-size:14px;font-weight: 700;position: sticky;z-index:1;top:0;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "2">{!row.month_2}</th>
+                            <th rowspan="2" style = "width:10%;background-color:  #F3F3F3; color: #676767;text-align: center;font-size:14px;font-weight: 700;position: sticky;z-index:1;top:0;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "2">{!row.month_3}</th>
+                            <th rowspan="2" style = "width:10%;background-color:  #F3F3F3; color: #676767;text-align: center;font-size:14px;font-weight: 700;position: sticky;z-index:1;top:0;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "2">{!row.month_4}</th>
+                            <th rowspan="2" style = "width:12%;background-color:  #F3F3F3; color: #676767;text-align: center;font-size:14px;font-weight: 700;position: sticky;z-index:1;top:0;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "2">{!row.month_5}</th>
+                            <th rowspan="2" style = "width:10%;background-color:  #F3F3F3; color: #676767;text-align: center;font-size:14px;font-weight: 700;position: sticky;z-index:1;top:0;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "2">{!row.month_6}</th>
+                            <th rowspan="2" style = "width:10%;background-color:  #F3F3F3; color: #676767;text-align: center;font-size:14px;font-weight: 700;position: sticky;z-index:1;top:0;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "2">{!row.month_7}</th>
+                            <th rowspan="2" style = "width:10%;background-color:  #F3F3F3; color: #676767;text-align: center;font-size:14px;font-weight: 700;position: sticky;z-index:1;top:0;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "2">{!row.month_8}</th>
+                            <th rowspan="2" style = "width:10%;background-color:  #F3F3F3; color: #676767;text-align: center;font-size:14px;font-weight: 700;position: sticky;z-index:1;top:0;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "2">{!row.month_9}</th>
+                            <th rowspan="2" style = "width:12%;background-color:  #F3F3F3; color: #676767;text-align: center;font-size:14px;font-weight: 700;position: sticky;z-index:1;top:0;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "2">{!row.month_10}</th>
+                            <th rowspan="2" style = "width:10%;background-color:  #F3F3F3; color: #676767;text-align: center;font-size:14px;font-weight: 700;position: sticky;z-index:1;top:0;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "2">{!row.month_11}</th>
+                            <th rowspan="2" style = "width:10%;background-color:  #F3F3F3; color: #676767;text-align: center;font-size:14px;font-weight: 700;position: sticky;z-index:1;top:0;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "2">{!row.month_12}</th>
+                        </tr>
+                    </aura:iteration>
+                </thead>
+                
+                <tr>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;left: 0;z-index:2;top:50px;"></td>
+                    <td colspan="2" style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight:700;position: sticky;left: 0;z-index:1;top:50px;;"></td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Sales</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Units</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Sales</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Units</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Sales</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Units</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Sales</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Units</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Sales</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Units</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Sales</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Units</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Sales</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Units</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Sales</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Units</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Sales</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Units</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Sales</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Units</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Sales</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Units</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Sales</td>
+                    <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:50px;">Units</td>
+                    
+                </tr>
+                
+                <aura:iteration items="{!v.summaryList}" var="row">
+                    <tr>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;left: 0;z-index:2;top:80px;">Summary</td>
+                        <td colspan="2" style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight:700;position: sticky;left: 0;z-index:1;top:80px;;"></td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">${!row.month1_sales_summary}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">{!row.month1_units}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">${!row.month2_sales_summary}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">{!row.month2_units}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">${!row.month3_sales_summary}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">{!row.month3_units}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">${!row.month4_sales_summary}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">{!row.month4_units}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">${!row.month5_sales_summary}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">{!row.month5_units}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">${!row.month6_sales_summary}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">{!row.month6_units}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">${!row.month7_sales_summary}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">{!row.month7_units}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">${!row.month8_sales_summary}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">{!row.month8_units}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">${!row.month9_sales_summary}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">{!row.month9_units}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">${!row.month10_sales_summary}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">{!row.month10_units}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">${!row.month11_sales_summary}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">{!row.month11_units}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">${!row.month12_sales_summary}</td>
+                        <td style="font-size:12px;background-color: #B5C4DF; color: #676767;text-align:center;font-weight: 700;position: sticky;z-index:1;top:80px;">{!row.month12_units}</td>
+                        
+                    </tr>
+                </aura:iteration>
+                
+               <!-- <aura:iteration items="{!v.IndirectExclusionList}" var="row">
+                    <tr>
+                        <td style="font-size:12px;background-color: white; color: #676767;text-align:left;font-weight: 700;;position: sticky;left: 0;z-index:1;">
+                            <aura:if isTrue = "{!v.showItem}">
+                                (<lightning:buttonIcon iconName="utility:add" value="{!v.record.customerName}" variant="bare" class="iconCSS1 redIcon" onclick="{! c.handleClick1 }" alternativeText="Show Product Family" title="Show Product Family" />)
+                                <aura:set attribute = "else">
+                                    (<lightning:buttonIcon iconName="utility:minimize_window" variant="bare" class="iconCSS" size="small" onclick="{!c.handleClick2}" alternativeText="Hide Child2" title="Hide Product Family" />)
+                                    
+                                </aura:set>
+                            </aura:if>
+                            
+                            {!row.customerName}</td>
+                        <td colspan="2" style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700;"></td>
+                        <td style="font-size:12px;background-color: white; color: #676767;text-align:center;font-weight: 700">{!row.month1_Direct_Sales}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700;">{!row.month1_Units}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month2_Direct_Sales}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month2_Units}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month3_Direct_Sales}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month3_Units}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month4_Direct_Sales}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month4_Units}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month5_Direct_Sales}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month5_Units}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month6_Direct_Sales}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month6_Units}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month7_Direct_Sales}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month7_Units}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month8_Direct_Sales}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month8_Units}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month9_Direct_Sales}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month9_Units}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month10_Direct_Sales}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month10_Units}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month11_Direct_Sales}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month11_Units}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month12_Direct_Sales}</td>
+                        <td style="font-size:12px;background-color: #FFFFFF; color: #676767;text-align:center;font-weight: 700">{!row.month12_Units}</td>
+                        
+                    </tr>
+                    
+                    
+                </aura:iteration>-->
+                  <aura:iteration items="{!v.IndirectExclusionList}" var="data">
+                                <c:IndirectTargetExclusionChildCmp   record="{!data}" salesRepName = "{!v.salesRepName}" Quarter = "{!v.Quarter}"  selectedContracts = "{!v.selectedContracts}"  selectedPicklist = "{!v.selectedPicklist}" selectedProducts = "{!v.selectedProducts}" SalesManagerselectedPdts = "{!v.SalesManagerselectedPdts}"
+                                                                   contractsNameFromFilter = "{!v.selectedContracts}" salesRepNameFromFilter = "{!v.SalesManagerselectedPdts}" customerNameFromFilter = "{!v.selectedPicklist}" productsFromFilter = "{!v.selectedProducts}"/>
+                 </aura:iteration>
+                
+                
+            </table>
+            
+            
+        </div>
+        
+        
+    </div>
+    
+    <aura:if isTrue="{!v.isSpinnerLoad}">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium" style="background-Color: white; border: 0;">  
+                        <div>
+                            <img src="{!$Resource.LoadingProgress}" />  <!-- modalShadowRemove backgroudChange-->
+                        </div><br/>
+                        <aura:if isTrue="{!v.indoInit}">
+                            <div style="font-size:18px;color:black;">
+                                Loading Hospitals...
+                            </div>
+                        </aura:if>
+                        
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open backgroudChange" aura:id="customModal-Back"></div>
+        </center>
+        
+    </aura:if>
+    
+    
+    
+</aura:component>

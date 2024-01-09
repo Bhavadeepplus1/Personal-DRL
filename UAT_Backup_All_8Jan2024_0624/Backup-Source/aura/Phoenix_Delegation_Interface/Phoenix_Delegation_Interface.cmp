@@ -1,0 +1,240 @@
+<aura:component controller="Phoenix_Delegation_Interface" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    
+    <!--Attributes Start-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    
+    <aura:attribute name="loadSpinner" type="boolean" default="false" />
+    <aura:attribute name="userLkp" type="string" />
+    <aura:attribute name="delegatorLkp" type="string" />
+    <aura:attribute name="deleUserLkp" type="string" />
+    <aura:attribute name="startTime" type="datetime"/>
+    <aura:attribute name="startTimeString" type="String"/>
+    <aura:attribute name="EndTime" type="datetime"/>
+    <aura:attribute name="excistingDeleList" type="list"/>
+    <aura:registerEvent name="lightningEvent" type="c:RefreshDeleLinesEvt"/> 
+    <aura:attribute name="confirmDelete" type="boolean" default="false" />
+    <aura:attribute name="userId" type="String"  />
+    <aura:attribute name="showInfoPopup" type="boolean" />
+    <aura:attribute name="isValidationFailed" type="boolean" default="true" />
+    <aura:attribute name="url" type="String"/>
+    <aura:attribute name="pageReference" type="Object"/>
+    <aura:attribute name="loggedInUser" type="String" />
+    <aura:attribute name="loggedInUserProfile" type="String" />
+    <aura:attribute name="isLoggedInUsedHead" type="boolean" />
+    <aura:handler name="change" value="{!v.delegatorLkp}" action="{!c.handleChange}"/>
+    
+    <lightning:navigation aura:id="navService"/>
+    <!--Attributes End-->  
+    <!--Spinner Code Start-->
+    <aura:if isTrue="{! v.loadSpinner }">
+        <lightning:spinner variant="brand" class="spinColor" size="large" />
+    </aura:if>
+    <!--Spinner Code End-->
+    <!--Section 1 Start-->
+    <div class="slds-box slds-theme_default slds-m-top_small" id="top" style="border: 1px solid #8f8c8c;">
+        <div style = "font-size:20px;margin-left: 14px;margin-top:4px;margin-bottom:10px;color:black;">
+            <b>Self Delegation of Authority <lightning:buttonIcon iconName="utility:info_alt" variant="bare" onclick="{! c.handleClick }" alternativeText="Info" title="Info" size="large" /></b>
+        </div>
+        <aura:if isTrue="{!v.showInfoPopup}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_medium">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close" onclick="{! c.closeModal }"
+                            alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                            What is Self Delegation of Authority? </h2>
+                    </header>
+                    
+                    <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;">
+                        <div style="padding:5px;">
+                            Delegate your authority to another user, called the Delegation of Authority To user, for a specified period of time. Once you hit 'Create Delegation', both you and the Delegated User will receive an email notification with the delegation details. This way, you can ensure that your tasks are handled by someone you trust while you are away or busy.
+                        </div> 
+                    </div>
+                </div>
+                
+            </section>
+            <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+        </aura:if>
+        <div class="slds-m-right_small slds-m-left_small slds-grid" style="margin-bottom: 10px;">
+            <div class="boldLabel slds-col slds-grid slds-size_1-of-1">
+                <div class="slds-col slds-size_1-of-8">
+                </div>
+                <div class="slds-col slds-size_2-of-8">
+                    <aura:if isTrue="{!v.isLoggedInUsedHead}">
+                        <l_lookup:Lookup label="Delegator" aura:id="cmpId"
+                                         objectType="User" 
+                                         placeHolder="Search Delegator"
+                                         selectedRecordId="{!v.delegatorLkp}"
+                                         setTo="{!v.changeTo}"
+                                         queryCondition="{! 'Profile.Name=\'' + v.loggedInUserProfile + '\'' }"
+                                         />
+                        <aura:set attribute="else">
+                            <b>Delegator</b><br/>
+                            {!v.loggedInUser}
+                        </aura:set>
+                    </aura:if>
+                    <!--<l_lookup:Lookup label="Delegator" aura:id="userLookup"
+                                     objectType="User" 
+                                     placeHolder="Search Delegator"
+                                     selectedRecordId="{!v.userLkp}"
+                                     setTo="{!v.changeTo}"
+                                     />-->
+                </div>
+                
+                <div  class="slds-col slds-size_2-of-8"> 
+                </div>
+                
+                <div  class="slds-col slds-size_2-of-8"> 
+                    <aura:if isTrue="{!v.loggedInUserProfile == 'Management User'}">
+                        <l_lookup:Lookup label="Delegation of Authority To" aura:id="delegatedUserLookup"
+                                         objectType="User" 
+                                         placeHolder="Search Delegated User"
+                                         selectedRecordId="{!v.deleUserLkp}"
+                                         setTo="{!v.changeTo}"
+                                         />
+                        <aura:set attribute="else">
+                            <l_lookup:Lookup label="Delegation of Authority To" aura:id="delegatedUserLookup"
+                                             objectType="User" 
+                                             placeHolder="Search Delegated User"
+                                             selectedRecordId="{!v.deleUserLkp}"
+                                             setTo="{!v.changeTo}"
+                                             queryCondition="{! 'Profile.Name=\'' + v.loggedInUserProfile + '\'' }"
+                                             />
+                        </aura:set>
+                    </aura:if>
+                </div>
+                
+                <div  class="slds-col slds-size_1-of-8"> 
+                </div>
+            </div>
+        </div>
+        <div class="slds-m-right_small slds-m-left_small slds-grid" style="margin-bottom: 10px;">
+            <div class="boldLabel slds-col slds-grid slds-size_1-of-1">
+                <div  class="slds-col slds-size_1-of-8"> </div>
+                <div class="slds-col slds-size_2-of-8">
+                    <lightning:input type="datetime" name="dateTime1" label="Delegation Start Time" value="{!v.startTime}" onchange="{!c.validateStartTime}" timezone="America/New_York" />
+                </div>
+                <div  class="slds-col slds-size_2-of-8"></div>
+                <div  class="slds-col slds-size_2-of-8"> 
+                    <lightning:input type="datetime" name="dateTime2" label="Delegation End Time" value="{!v.EndTime}" onchange="{!c.validateEndTime}" timezone="America/New_York"  />
+                </div>
+                <div  class="slds-col slds-size_1-of-8"> </div>                
+            </div>
+        </div>
+        <div class="slds-col  slds-grid slds-size_1-of-1 slds-m-left_small slds-m-right_small">
+            <div class="slds-col slds-size_3-of-8"> 
+            </div>
+            <div class="slds-col slds-size_2-of-8"> 
+                <div class="slds-align_absolute-center">
+                    <aura:if isTrue="{!v.isValidationFailed}">
+                        <lightning:button variant="destructive" label="Create Delegation" title="Create Delegation" disabled="true"/>
+                        <aura:set attribute="else">
+                            <lightning:button variant="brand" label="Create Delegation" class="buttonCSS" title="Create Delegation" onclick="{! c.validateSave }"/>
+                        </aura:set>
+                    </aura:if>
+                </div>
+            </div>
+            <div class="slds-col slds-size_3-of-8"> 
+            </div>
+        </div>
+    </div>
+    <!--Section 1 End-->
+    <!--Section 2 Start-->
+    <div class="slds-box slds-theme_default slds-m-top_xxx-small" id="top" style="border: 1px solid #8f8c8c;">
+        <div style = "font-size:20px;margin-left: 14px;margin-top:4px;margin-bottom:10px;color:black;">
+            <b>Existing Delegations</b>
+        </div>
+        <div aura:id="mainDiv" style="height:400px;overflow:auto;"
+             class=" slds-m-right_small slds-m-left_small slds-m-top_small">
+            <!--no records found code-->
+            <aura:if isTrue="{!v.excistingDeleList.length == 0}">
+                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info" role="alert" width="50px">
+                    <span class="slds-icon_container slds-m-right_x-small">
+                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                    </span>
+                    <h2>No existing delegations found.</h2>
+                </div>
+            </aura:if>
+            
+            <!--no records found code end -->
+            <aura:if isTrue="{!v.excistingDeleList.length != 0}">
+                <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;" >
+                    <thead>
+                        <tr>
+                            <th scope="col" style="padding-left: 8px;" >Delegator</th>
+                            <th scope="col" >Delegated User</th>
+                            <th scope="col" >Start Time</th>
+                            <th scope="col" >End Time</th>
+                            <th scope="col" >Status</th>
+                            <th scope="col" ></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.excistingDeleList}" var="deleUser">   
+                            <tr>
+                                <td style="padding-left: 8px;">{!deleUser.Name}<!--<lightning:formattedUrl value="{!'/lightning/setup/ManageUsers/page?address=%2F' + deleUser.Id +'%3Fnoredirect%3D1%26isUserEntityOverride%3D1'}"  label="{!deleUser.Name}" target="_blank" />--></td>
+                                <!-- <td>{!deleUser.Name}</td>-->
+                                <td style="padding-left: 8px;">{!deleUser.Phoenix_Delegated_Approver__r.Name}</td>        
+                                <td style="padding-left: 8px;"> <lightning:formattedDateTime aura:id="dt"
+                                                                                                value="{!deleUser.Phoenix_Delegation_Start_Time__c}"
+                                                                                                month="short"
+                                                                                                day="numeric"
+                                                                                                year="numeric"
+                                                                                                hour="2-digit"
+                                                                                                minute="2-digit"
+                                                                                                hour12="true"
+                                                                                                timeZone="{!$Locale.timezone}"/>
+                                </td>
+                                
+                                <td style="padding-left: 8px;"> <lightning:formattedDateTime aura:id="dt"  value="{!deleUser.Phoenix_Delegation_End_Time__c}"
+                                                                                                month="short"
+                                                                                                day="numeric"
+                                                                                                year="numeric"
+                                                                                                hour="2-digit"
+                                                                                                minute="2-digit"
+                                                                                                hour12="true"
+                                                                                                timeZone="{!$Locale.timezone}"/>
+                                </td>
+                                <td>
+                                    {!deleUser.Delegator_Status__c}
+                                </td>
+                                <td style="text-align: center;padding-left: 8px;"> <a name="{!deleUser.Id}" onclick="{!c.confirmDelete}"> <lightning:icon iconName="utility:delete" alternativeText="delete" size="x-small" />  </a>
+                                </td>
+                            </tr> 
+                        </aura:iteration>
+                    </tbody>
+                </table>
+            </aura:if>
+            <div style="margin-left: 8px;margin-top: 8px;"><b><lightning:formattedUrl value="{!'/' + 'lightning/n/Delegation_History'}" label="View Delegation History" target="_blank" /><lightning:buttonIcon iconName="utility:internal_share" class="iconCSS" size="small" variant="bare"/></b></div>
+        </div>
+        
+    </div>
+    <!--Section 2 End-->
+    
+    <!--confirm delete popup-->
+    <aura:if isTrue="{! v.confirmDelete }">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" 
+                 aria-modal="true" aria-describedby="modal-content-id-1" 
+                 class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                        Delegation</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p><div style="text-align:center;padding-bottom:3px;">Are you sure you want to delete?</div>
+                    </p>
+                </div>
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer"> 
+                    <lightning:button name='No' label='No' onclick = "{!c.closeQuickActionPanel}" />
+                    <lightning:button variant="brand" name='Yes' label='Yes' onclick = "{!c.deletedeleItem}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    <!---end-->
+</aura:component>

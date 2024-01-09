@@ -1,0 +1,196 @@
+<aura:component controller="Phoenix_EditRCALinesCls" implements="flexipage:availableForAllPageTypes,force:hasRecordId,force:appHostable,lightning:isUrlAddressable" access="global" >
+    <aura:attribute name="recordId" type="Id" />
+    
+    <lightning:navigation aura:id="navService"/> 
+    <aura:handler name="init" value="{!this}" action="{!c.initRecords}"/>
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.initRecords}"/>
+    <aura:attribute name="BidLineItemListAll" type="Phoenix_RCA_IPA_LINE__c[]"/>
+     <aura:attribute name="showProceedBtn" type="boolean" default="false" />
+     <aura:attribute name="BidAprrovalStatus" type="string"  />
+     <aura:attribute name="isSRxApprovePerson" type="string"  />
+    <aura:attribute name="isVistexSRxApprovePerson" type="boolean" default="false" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="bidNumber" type="string"  />
+    <aura:attribute name="bidName" type="string"  />
+      <aura:attribute name="bidwrap" type="sobject"/>
+    <aura:attribute name="BidTypeVal" type="string"  />
+      <aura:attribute name="showDEAMsg" type="boolean" default="false"/>
+      <aura:attribute name="showGPOMsg" type="boolean" default="false"/>
+      <aura:attribute name="showWholesalerMsg" type="boolean" default="false"/>
+    <aura:attribute name="showPriceMsg" type="boolean" default="false" />
+      <aura:attribute name="showSaveCancel" type="boolean" default="false" />
+    <aura:attribute name="showSaveCancelBtn" type="boolean" default="false" description="flag for rendered save and cancel buttons in aura:if "/>    
+    <aura:handler name="lightningEvent" event="c:Phoenix_EditRCALinesEvt" action="{!c.handleEvent}"/>
+    <lightning:tabset aura:id="Tabset" selectedTabId="EBLI">
+        <lightning:tab label="Edit RCA Lines" id="EBLI" onactive="{!c.initRecords}">
+    <lightning:card iconName="custom:custom90" title="{!(v.bidNumber+'-'+v.bidName)}">
+        <aura:set attribute="actions">
+               <lightning:button variant="neutral" label="Back" title="Back" onclick="{! c.backToBid }"/>
+             <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+                            <lightning:button label="Export" onclick="{!c.downloadCsv}"/>
+                        </aura:if>
+             <aura:if isTrue="{!and(v.BidAprrovalStatus=='Contracts',and(v.isSRxApprovePerson==true,v.showProceedBtn==true))}">
+                        <lightning:button variant="brand" label="Submit" title="Submit" onclick="{!c.saveToProceedContr}"/>
+                    </aura:if>
+           <aura:if isTrue="{!and(v.BidAprrovalStatus=='Vistex Update',and(v.isVistexSRxApprovePerson==true,v.showProceedBtn==true))}">
+                        <lightning:button variant="brand" label="Submit" title="Submit" onclick="{!c.saveToProceedVistex}"/>
+                    </aura:if>
+         
+            
+            
+        </aura:set>
+          <aura:if isTrue="{!v.BidAprrovalStatus=='Closed'}">
+                    <center>
+                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                            <span class="slds-icon_container slds-m-right_x-small" title="Please add VIP Rebates to view the table">
+                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                            </span>
+                            <h2>Approvals are completed for this Bid</h2>
+                        </div>
+                    </center>    
+                </aura:if>
+         <aura:if isTrue="{!v.BidAprrovalStatus=='Contracts'}">
+                            <lightning:recordEditForm objectApiName="Phoenix_Bid__c" recordId="{!v.recordId}">
+                                <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="Approvals">
+                                    <lightning:accordionSection name="Approvals" label="Approvals">
+                                      
+                                        <aura:if isTrue="{!and(v.BidAprrovalStatus=='Contracts',v.isSRxApprovePerson==true)}">
+                                            <div class="slds-grid" >
+                                                <div class="slds-col slds-size_1-of-3">
+                                                    <lightning:inputField fieldName="Phoenix_Contracts_Approval__c" onchange="{!c.showSaveCancel}"  aura:Id="contrAppStatus"/>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                    <lightning:inputField fieldName="Phoenix_Contracts_Approval_Comments__c" onchange="{!c.showSaveCancel}"  aura:Id="contrComments"/>
+                                                    
+                                                </div>
+                                            </div>
+                                        </aura:if>
+                                        
+                                    </lightning:accordionSection>
+                                </lightning:accordion>
+                            </lightning:recordEditForm>
+                            
+                            <aura:if isTrue="{!v.showSaveCancel}">
+                                <center>
+                                    <lightning:button label="Save" type="submit" variant="brand" onclick="{!c.saveApproval}"/>&nbsp; 
+                                    <lightning:button label="Cancel" variant="neutral" onclick="{!c.closeApproval}"/>&nbsp; 
+                                </center>
+                                
+                            </aura:if>
+                        </aura:if>
+        
+          <aura:if isTrue="{!v.BidAprrovalStatus=='Vistex Update'}">
+                            <lightning:recordEditForm objectApiName="Phoenix_Bid__c" recordId="{!v.recordId}">
+                                <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="Approvals">
+                                    <lightning:accordionSection name="Approvals" label="Approvals">
+                                      
+                                        <aura:if isTrue="{!and(v.BidAprrovalStatus=='Vistex Update',v.isVistexSRxApprovePerson==true)}">
+                                            <div class="slds-grid" >
+                                                <div class="slds-col slds-size_1-of-3">
+                                                    <lightning:inputField fieldName="Phoenix_Vistex_Update__c" onchange="{!c.showSaveCancel}"  aura:Id="vistAppStatus"/>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                    <lightning:inputField fieldName="Phoenix_Vistex_Update_Comments__c"  onchange="{!c.showSaveCancel}" aura:Id="vistComments"/>
+                                                    
+                                                </div>
+                                            </div>
+                                        </aura:if>
+                                        
+                                    </lightning:accordionSection>
+                                </lightning:accordion>
+                            </lightning:recordEditForm>
+                            
+                            <aura:if isTrue="{!v.showSaveCancel}">
+                                <center>
+                                    <lightning:button label="Save" type="submit" variant="brand" onclick="{!c.vistsaveApproval}"/>&nbsp; 
+                                    <lightning:button label="Cancel" variant="neutral" onclick="{!c.closeApproval}"/>&nbsp; 
+                                </center>
+                                
+                            </aura:if>
+                        </aura:if>
+        
+        
+        
+         <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="Edit RCA Lines" >
+                        <lightning:accordionSection name="Edit RCA Lines" label="Edit RCA Lines"  >
+                            <p>
+        <center>
+            
+            <aura:if isTrue="{!v.showSaveCancelBtn}">
+                <!--button for save and cancel Record after Inline Edit-->
+                <lightning:button label="Cancel" onclick="{!c.cancel}"/>&nbsp;
+                
+                <lightning:button variant="brand" label="Save"  onclick="{!c.SaveAndNavigate}"/>
+            </aura:if> 
+        </center>
+        
+        
+        <aura:if isTrue="{!v.isSpinnerLoad}">
+            <div class="backgroundInverse">
+                <lightning:spinner alternativeText="Loading" variant="brand" />
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+            <div aura:id="mainDiv" style="height:450px;overflow:auto;margin-top:10px;" class=" slds-m-right_small slds-m-left_small">
+                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                    <table aura:id="LineTable"  class="maintable slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                        <thead>
+                            <tr> 
+                                <th></th>
+                                <th class="slds-truncate slds-cell-wrap">Date</th>
+                                 <th class="slds-truncate slds-cell-wrap">RCA Agreement</th>
+                                <th class="slds-truncate slds-cell-wrap">Customer</th>
+                                <th class="slds-truncate slds-cell-wrap">Street#/Name</th>
+                                <th class="slds-truncate slds-cell-wrap">City</th>
+                                <th class="slds-truncate slds-cell-wrap">State</th>
+                                <th class="slds-truncate slds-cell-wrap">ZIP</th>
+                                <th class="slds-truncate slds-cell-wrap">DEA</th>
+                                <th class="slds-truncate slds-cell-wrap">HIN</th>
+                                <th class="slds-truncate slds-cell-wrap">GLN</th>
+                                <th class="slds-truncate slds-cell-wrap">GPO</th>
+                                <th class="slds-truncate slds-cell-wrap">Wholesaler Name </th>
+                                <th class="slds-truncate slds-cell-wrap">Wholesaler Location</th>
+                                <th class="slds-truncate slds-cell-wrap">Contact</th>
+                                <th class="slds-truncate slds-cell-wrap">Contact Email</th>
+                                <th class="slds-truncate slds-cell-wrap">Contact Phone</th>
+                                <th class="slds-truncate slds-cell-wrap">Contact Phone Ext</th>
+                               
+                                
+                                
+                                
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.BidLineItemListAll}" var="biltem" indexVar="sNo">
+                                <!-- Child Lightning Component -->
+                                <c:Phoenix_EditRCALinesChildCmp BidAprrovalStatus="{!v.BidAprrovalStatus}" BidTypeVal="{!v.BidTypeVal}" singleRec="{!biltem}" showSaveCancelBtn="{!v.showSaveCancelBtn}" sNo="{!sNo + 1}" lineItemId="{!biltem.Id}" />
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </div> 
+            </div>
+            <br/>
+            <aura:set attribute="else">
+                <lightning:card >
+                    <center>
+                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                            <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                            </span>
+                            <h2>There are no rca lines for this bid</h2>
+                        </div>
+                    </center>
+                </lightning:card>
+            </aura:set>
+        </aura:if> 
+                            </p>
+             </lightning:accordionSection>
+        </lightning:accordion>
+    </lightning:card> 
+        </lightning:tab>
+      
+        <!--  <lightning:tab label="Contracts View" id="Contracts" onactive="{!c.initContractsView}">
+            <c:RCAContractsViewCmp aura:id="ContractsTab"  recordId='{!v.recordId}'/>
+        </lightning:tab>-->
+    </lightning:tabset>
+</aura:component>

@@ -1,0 +1,1062 @@
+<aura:component  controller = "Vision_Bid_Analysis_Sales_Head" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="NoData" type="boolean" default="false" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="selectedId" type="String" />
+     <aura:attribute name="selectedRange" type="String" />
+     <aura:attribute name="selectedDate" type="String" />
+    <aura:attribute name="startDate" type="Date" default="" />
+    <aura:attribute name="endDate" type="Date" default="" />
+    <aura:handler name="change" value="{!v.startDate}" action="{!c.handleStartDateChange}"/>
+    <aura:handler name="change" value="{!v.endDate}" action="{!c.handleEndDateChange}"/> 
+    <aura:attribute name="tooltip" type="boolean" default="false" />
+    <aura:attribute name="isSelected" type="boolean" default="false" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="tile" type="boolean" default="false" />
+    <aura:attribute name="chart" type="boolean" default="true" />   
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'This Fiscal Year', 'value': 'THIS_FISCAL_YEAR'},
+                                                        {'label': 'This Calendar Year', 'value': 'THIS_YEAR'},
+                                                        {'label': 'This Quarter', 'value': 'THIS_QUARTER'},
+                                                        {'label': 'This Month', 'value': 'THIS_MONTH'},
+                                                        {'label': 'This Week', 'value': 'THIS_WEEK'},
+                                                        {'label': 'Last Fiscal Year', 'value': 'LAST_FISCAL_YEAR'},
+                                                        {'label': 'Last Calendar Year', 'value': 'LAST_YEAR'},
+                                                        {'label': 'Last Quarter', 'value': 'LAST_QUARTER'},
+                                                        {'label': 'Last Month', 'value': 'LAST_MONTH'},
+                                                        {'label': 'Last Week', 'value': 'LAST_WEEK'},
+                                                        {'label': 'Custom', 'value': 'Custom'},
+                                                        ]"/>
+    <aura:attribute name="dateOptions" type="List" default="[
+                                                            {'label': 'Submitted Date', 'value': 'Submitted Date'},
+                                                            {'label': 'Sent to Customer Date', 'value': 'Sent to Customer Date'},
+                                                            
+                                                            ]"/>
+    <aura:attribute name="mainWrapper" type="Object"/> 
+    <aura:attribute name="pickList" type="List"/>
+    <div class="slds-card " >
+      
+                   <aura:if isTrue="{!v.isSpinnerLoad}">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+       
+    </aura:if>
+                <div class="slds-card " >
+                    <!--<div class="slds-grid" class="slds-text-align_center" >-->
+                    <div style="margin-left:20px; font-size:20px;"><b>Team Members</b></div>
+                    <div style="margin-left:30px;">
+                        <lightning:layout  multipleRows="true">
+                            <aura:iteration items="{!v.pickList}" var="picklist">
+                                <lightning:layoutItem size="3" >
+                                     <div class="paddingRadio">
+                                    <span class="{!picklist.isSelected ? 'slds-badge slds-theme_success badgeFontClass' : 'slds-badge slds-badge_lightest'}"
+                                         
+                                          data-id="{!picklist.userId}" 
+                                          onclick="{!c.onSelectUser}"
+                                          style="cursor:pointer;padding-top: 5px;padding-bottom: 5px;">
+                                       
+                                         <lightning:icon class="{!picklist.isSelected ? 'showGreen' : ''}" iconName="utility:routing_offline" size="x-small"/>&nbsp;&nbsp;{!picklist.userName}
+                                        
+                                       
+                                    </span>
+                                         </div>
+                                </lightning:layoutItem>
+                            </aura:iteration>
+                        </lightning:layout>
+                    </div>
+                 
+                </div>
+         <div class="slds-align_absolute-center " style="font-size:20px; color: black;">
+                <b>Bid Analysis</b>
+            </div>
+
+                        
+                     
+       <div class="slds-grid slds-gutters slds-wrap slds-m-top_small" >
+             <div class="slds-col slds-size_2-of-12" style="padding: 5px;">
+            <lightning:select aura:id="dateId" name="Select Date" label="Select Date" onchange="{! c.handleChange }">
+                <aura:iteration items="{!v.dateOptions}" var="option">
+                    <option  text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                </aura:iteration>
+            </lightning:select> &nbsp;&nbsp;
+            </div>
+             <div class="slds-col slds-size_2-of-12" style="padding: 5px;">
+                 <lightning:select aura:id="rangeId" name="Analysis Based on" label="Analysis Based on" onchange="{! c.handleChange }">
+                <aura:iteration items="{!v.options}" var="option">
+                    <option  text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                </aura:iteration>
+            </lightning:select>&nbsp;&nbsp;
+            </div>
+             <div class="slds-col slds-size_6-of-12" style="padding: 5px;">
+                 <aura:if isTrue="{!v.selectedRange == 'Custom' }">
+        <div class="slds-align_absolute-center">
+                <lightning:input type="date" name="date1" label="Start Date" value="{!v.startDate}" fieldLevelHelp="Bid Submitted Date From" required="true"/> &nbsp;&nbsp;
+          
+          
+                <lightning:input type="date" name="date2" label="End Date" value="{!v.endDate}" fieldLevelHelp="Bid Submitted Date To" required="true"/> &nbsp;&nbsp;
+        
+            <div class="slds-m-top_medium" >
+             <lightning:button variant="brand" label="Run Report" title="Run" onclick="{! c.filterData }" class="slds-m-around_xx-small" />
+                           <lightning:button variant="brand" label="Reset" title="Reset" onclick="{! c.resetData }" class="slds-m-around_xx-small" />
+
+             </div>
+                
+           </div>  
+        </aura:if>
+            </div>
+             <div class="slds-col slds-size_2-of-12">
+            <div class="slds-box slds-m-right_small " style="background-color:#f0f0f0;width: 94px;">   
+                <a style="text-decoration: none;" onclick="{!c.callchart}">
+                    <lightning:icon  iconName="utility:freeze_column"  size="small" />&nbsp;&nbsp;
+                    
+                </a>
+                <a  style="text-decoration: none;" onclick="{!c.callTiles}">
+                    <lightning:icon  iconName="utility:apps"  size="small" />                  
+                </a>
+            </div>
+            </div>
+          
+        </div>
+        
+        <aura:if isTrue="{!v.chart == true }">
+            <aura:if isTrue="{!v.mainWrapper.Summary.TotalBidIds == 0}">
+                <lightning:card >
+                    <center>
+                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                            <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                            </span>
+                            <h2>No data found.</h2>
+                        </div>
+                    </center>
+                </lightning:card>
+                <aura:set attribute="else"> 
+                    <div class="slds-m-top_small slds-m-bottom_small slds-m-right_small slds-m-left_small">
+                        <table class="slds-m-top_small" border="1" style="border: 2px solid grey;">                               
+                            
+                            <tr class="rows  styleids customTable">
+                                <td class="rows  " style="background-color: #b6a6ed;font-size:18px;width:16%;"><b>Parameter</b></td>
+                                <td scope="col" colspan="2" class="rows " style="background-color: #b6a6ed;font-size:18px;"><b>Summary</b></td>
+                                
+                                <td scope="col" colspan="2" class="rows " style="background-color: #b6a6ed;font-size:18px;"><c:CustomHelpTextCmp text="Product Addition \n Volume Review Only \n New Customer \n New Product Launch \n One Time Buy - Good Dated Shelf Life \n One Time Buy - Short Dated Shelf Life \n Mass Product Removals \n Product Discontinuation Process \n SRx IPA Floor Pricing Update \n SRx IPA Member Addition \n SRx RCA Member Addition \n SRx Direct Pricing \n SRx IPA Price Change \n SRx IPA Product Addition \n SRx NEW Individual Pricing Agreement (IPA) \n SRx RCA/IPA Member GPO or Wholesaler Change" headerText="Bid Types" /><b>Proactive</b></td>
+                                
+                                <td scope="col" colspan="2" class="rows " style="background-color: #b6a6ed;font-size:18px;" ><c:CustomHelpTextCmp text="Price Change \n RFP Bids \n Product Addition \n Volume Review Only \n One Time Buy - Good Dated Shelf Life \n One Time Buy - Short Dated Shelf Life \n SRx Direct Pricing \n SRx IPA Price Change \n SRx IPA Product Addition \n SRx NEW Individual Pricing Agreement (IPA) \n SRx RCA/IPA Member GPO or Wholesaler Change" headerText="Bid Types" /><b>Reactive</b></td>
+                                
+                                <td scope="col" colspan="2" class="rows " style="background-color: #b6a6ed;font-size:18px;" ><c:CustomHelpTextCmp text="Product Addition \n RFP Bids \n Volume Review Only \n New Customer \n New Product Launch \n One Time Buy - Good Dated Shelf Life \n One Time Buy - Short Dated Shelf Life \n SRx IPA Member Addition \n SRx IPA Product Addition \n SRx NEW Individual Pricing Agreement (IPA) \n SRx RCA Member Addition \n SRx Direct Pricing \n SRx IPA Floor Pricing Update \n SRx IPA Price Change \n SRx RCA/IPA Member GPO or Wholesaler Change" headerText="Bid Types" /><b>Acquisition</b></td>
+                                
+                                <td scope="col" colspan="2" class="rows " style="background-color: #b6a6ed;font-size:18px;width:20%;"><c:CustomHelpTextCmp text="RFP Bids \n Price Change \n SRx Direct Pricing \n SRx IPA Floor Pricing Update \n SRx IPA Price Change \n SRx RCA/IPA Member GPO or Wholesaler Change" headerText="Bid Types" /><b>Retention</b></td>
+                                
+                                
+                            </tr>
+                            
+                            
+                            <tr>
+                                <th class="rows slds-truncate slds-cell-wrap" ><b><p>Total Bids</p></b></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.TotalBidIds}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.TotalBidIds}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.TotalBidIds}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.TotalBidIds}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.TotalBidIds}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                            </tr>
+                            <tr>
+                                <th class="rows slds-truncate slds-cell-wrap" ><b><p>Total Bid Line Items</p></b></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!(v.mainWrapper.Summary.bidLinesWon+v.mainWrapper.Summary.bidLinesLost+v.mainWrapper.Summary.bidLinesPendingInternal+v.mainWrapper.Summary.bidLinesPending+v.mainWrapper.Summary.pendingProposals)}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" > <lightning:formattedNumber value="{!v.mainWrapper.Summary.totalBidLinesSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!(v.mainWrapper.proactive.bidLinesWon+v.mainWrapper.proactive.bidLinesLost+v.mainWrapper.proactive.bidLinesPendingInternal+v.mainWrapper.proactive.bidLinesPending+v.mainWrapper.proactive.pendingProposals)}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.totalBidLinesSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!(v.mainWrapper.reactive.bidLinesWon+v.mainWrapper.reactive.bidLinesLost+v.mainWrapper.reactive.bidLinesPendingInternal+v.mainWrapper.reactive.bidLinesPending+v.mainWrapper.reactive.pendingProposals)}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.totalBidLinesSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!(v.mainWrapper.acquisition.bidLinesWon+v.mainWrapper.acquisition.bidLinesLost+v.mainWrapper.acquisition.bidLinesPendingInternal+v.mainWrapper.acquisition.bidLinesPending+v.mainWrapper.acquisition.pendingProposals)}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.totalBidLinesSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!(v.mainWrapper.retention.bidLinesWon+v.mainWrapper.retention.bidLinesLost+v.mainWrapper.retention.bidLinesPendingInternal+v.mainWrapper.retention.bidLinesPending+v.mainWrapper.retention.pendingProposals)}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.totalBidLinesSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                            </tr>
+                            <tr >
+                                <th class="rows slds-truncate slds-cell-wrap" ><b><p>Bid Line Items Won</p></b></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesWon}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesWonSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesWon}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesWonSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesWon}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesWonSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesWon}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesWonSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesWon}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesWonSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                            </tr>
+                            <tr >
+                                <th class="rows slds-truncate slds-cell-wrap" ><b><p>Bid Line Items Lost</p></b></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesLost}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesLostSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesLost}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesLostSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesLost}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesLostSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesLost}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesLostSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesLost}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesLostSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                            </tr>
+                            <tr >
+                                <th class="rows slds-truncate slds-cell-wrap" ><b><p>Pending Line Items (Internal)</p></b></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesPendingInternal}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesPendingInternalSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesPendingInternal}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesPendingInternalSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesPendingInternal}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesPendingInternalSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesPendingInternal}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesPendingInternalSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesPendingInternal}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesPendingInternalSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   </th>
+                            </tr>
+                            <tr >
+                                <th class="rows slds-truncate slds-cell-wrap" ><b><p>Pending Line Items (Customer Response)</p></b></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesPending}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesPendingSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesPending}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesPendingSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesPending}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesPendingSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesPending}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesPendingSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesPending}"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesPendingSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                            </tr>
+                            <tr >
+                                <th class="rows slds-truncate slds-cell-wrap" ><b><p>Pending Proposals</p></b></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.pendingProposals}" maximumFractionDigits="2"/>         </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.pendingProposalsSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.pendingProposals}" maximumFractionDigits="2"/>         </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.pendingProposalsSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.pendingProposals}" maximumFractionDigits="2"/>         </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.pendingProposalsSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.pendingProposals}" maximumFractionDigits="2"/>         </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.pendingProposalsSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.pendingProposals}" maximumFractionDigits="2"/>         </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.pendingProposalsSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     </th>
+                            </tr>
+                            <tr >
+                                <th class="rows slds-truncate slds-cell-wrap" ><b><p>Average Internal Response Time (Days)</p></b></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.avgInternalTime}" maximumFractionDigits="2"/>         </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.avgInternalTime}" maximumFractionDigits="2"/>         </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.avgInternalTime}" maximumFractionDigits="2"/>         </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.avgInternalTime}" maximumFractionDigits="2"/>         </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.avgInternalTime}" maximumFractionDigits="2"/>         </th>
+                            </tr>
+                            <tr >
+                                <th class="rows slds-truncate slds-cell-wrap" ><b><p>Average Customer Response Time (Days)</p></b></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.avgCRTime}"  maximumFractionDigits="2"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.avgCRTime}"  maximumFractionDigits="2"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.avgCRTime}"  maximumFractionDigits="2"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.avgCRTime}"  maximumFractionDigits="2"/></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.avgCRTime}"  maximumFractionDigits="2"/></th>
+                            </tr>
+                            <tr >
+                                <th class="rows slds-truncate slds-cell-wrap" ><b><p>Win Rate</p></b></th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.winRateLineItem}" style="percent" maximumFractionDigits="2"/> </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.Summary.winRate}" style="percent" maximumFractionDigits="2"/> </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.winRateLineItem}" style="percent" maximumFractionDigits="2"/> </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.proactive.winRate}" style="percent" maximumFractionDigits="2"/> </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.winRateLineItem}" style="percent" maximumFractionDigits="2"/> </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.reactive.winRate}" style="percent" maximumFractionDigits="2"/> </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.winRateLineItem}" style="percent" maximumFractionDigits="2"/> </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.acquisition.winRate}" style="percent" maximumFractionDigits="2"/> </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.winRateLineItem}" style="percent" maximumFractionDigits="2"/> </th>
+                                <th class="rows slds-text-align_right slds-truncate slds-cell-wrap" ><lightning:formattedNumber value="{!v.mainWrapper.retention.winRate}" style="percent" maximumFractionDigits="2"/> </th>
+                            </tr>
+                        </table>   
+                    </div>
+                </aura:set>
+            </aura:if>
+        </aura:if>
+    <aura:if isTrue="{!v.tile == true }">
+                <!--Summary start --> 
+                <aura:if isTrue="{!v.mainWrapper.Summary.TotalBidIds == 0}">
+                    
+                    <lightning:card >
+                        <center>
+                            <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                    <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                </span>
+                                <h2>No data found.</h2>
+                            </div>
+                        </center>
+                    </lightning:card>
+                    <aura:set attribute="else">
+                        <div class="slds-card" >
+                        
+                            <!--Summary start --> 
+                            
+                            <div class="slds-box slds-m-top_small slds-m-bottom_small slds-p-top-none slds-m-left_small slds-m-right_small" style="background-color:#f0f0f0;padding-top:3px;padding-bottom:5px;">
+                                
+                                <span class="alignTextMiddle"><b>Summary - {!v.mainWrapper.Summary.userName}</b></span>&nbsp;<!--<c:CustomHelpTextCmp text="Product Addition \n RFP Bids \n Volume Review Only \n New Customer \n New Product Launch \n One Time Buy - Good Dated Shelf Life \n One Time Buy - Short Dated Shelf Life \n SRx IPA Member Addition \n SRx IPA Product Addition \n SRx NEW Individual Pricing Agreement (IPA) \n SRx RCA Member Addition \n SRx Direct Pricing \n SRx IPA Floor Pricing Update \n SRx IPA Price Change \n SRx RCA/IPA Member GPO or Wholesaler Change" headerText="Bid Types" />-->
+                                
+                            </div>
+                            <div class="slds-box slds-box_small slds-m-left_small slds-m-right_small">
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Total Bids</b>  <p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"> <lightning:formattedNumber value="{!v.mainWrapper.Summary.TotalBidIds}"/> </b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Total Bid Line Items</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!(v.mainWrapper.Summary.bidLinesWon+v.mainWrapper.Summary.bidLinesLost+v.mainWrapper.Summary.bidLinesPendingInternal+v.mainWrapper.Summary.bidLinesPending+v.mainWrapper.Summary.pendingProposals)}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.Summary.totalBidLinesSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>   
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Bid Line Items Won</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesWon}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesWonSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 10px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Bid Line Items Lost</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow;  font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesLost}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesLostSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>  
+                                </div>
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff; padding-right: 10px;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Line Items (Internal)</b> &nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesPendingInternal}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesPendingInternalSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Line Items (Customer Response)</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesPending}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.Summary.bidLinesPendingSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Proposals</b>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 26px; color: yellow;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.Summary.pendingProposals}" maximumFractionDigits="2"/>         
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.Summary.pendingProposalsSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 10px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Avg Internal Process Time (Days)</b>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 26px; color: yellow;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.Summary.avgInternalTime}" maximumFractionDigits="2"/>         
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                                
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-medium slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Avg Customer Response Time (Days)</b><p class="slds-text-align_center slds-p-top_small" style="font-size: 26px; color: Yellow;"> 
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.Summary.avgCRTime}"  maximumFractionDigits="2"/>  </p>
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small slds-m-bottom_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                <div class="slds-grid">
+                                    <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                        <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                            <b>Win Rate</b>&nbsp;<p class="slds-text-align_center slds-p-top_small" style="font-size: 26px;color: Yellow;">  
+                                            <lightning:formattedNumber value="{!v.mainWrapper.Summary.winRateLineItem}" style="percent" maximumFractionDigits="2"/>  </p>
+                                        </div>
+                                        <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 36px; color: white;font-weight:bold;">
+                                             <lightning:formattedNumber value="{!v.mainWrapper.Summary.winRate}" style="percent" maximumFractionDigits="2"/> 
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>            
+                                    
+                                    
+                                </div>
+                            </div>
+                            <!--Summary end -->
+                            <!--Acquisition start -->
+                            <div class="slds-box slds-m-top_small slds-m-bottom_small slds-m-left_small slds-m-right_small" style="background-color:#f0f0f0;padding-top:3px;padding-bottom:5px;">
+                                <div>
+                                  <c:CustomHelpTextCmp text="Product Addition \n RFP Bids \n Volume Review Only \n New Customer \n New Product Launch \n One Time Buy - Good Dated Shelf Life \n One Time Buy - Short Dated Shelf Life \n SRx IPA Member Addition \n SRx IPA Product Addition \n SRx NEW Individual Pricing Agreement (IPA) \n SRx RCA Member Addition \n SRx Direct Pricing \n SRx IPA Floor Pricing Update \n SRx IPA Price Change \n SRx RCA/IPA Member GPO or Wholesaler Change" headerText="Bid Types" />
+                                 <span class="alignTextMiddle"><b>Acquisition - {!v.mainWrapper.Summary.userName}</b></span>
+                                </div>
+                            </div>
+                            
+                            <div class="slds-box slds-box_small slds-m-left_small slds-m-right_small">
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Total Bids</b>  <p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"> <lightning:formattedNumber value="{!v.mainWrapper.acquisition.TotalBidIds}"/> </b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Total Bid Line Items</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!(v.mainWrapper.acquisition.bidLinesWon+v.mainWrapper.acquisition.bidLinesLost+v.mainWrapper.acquisition.bidLinesPendingInternal+v.mainWrapper.acquisition.bidLinesPending+v.mainWrapper.acquisition.pendingProposals)}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.acquisition.totalBidLinesSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>   
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Bid Line Items Won</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesWon}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesWonSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 10px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Bid Line Items Lost</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow;  font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesLost}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesLostSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>  
+                                </div>
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff; padding-right: 10px;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Line Items (Internal)</b> &nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesPendingInternal}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesPendingInternalSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Line Items (Customer Response)</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesPending}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.acquisition.bidLinesPendingSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Proposals</b>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 26px; color: yellow;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.acquisition.pendingProposals}" maximumFractionDigits="2"/>         
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.acquisition.pendingProposalsSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 10px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Avg Internal Process Time (Days)</b>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 26px; color: yellow;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.acquisition.avgInternalTime}" maximumFractionDigits="2"/>         
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                                
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-medium slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Avg Customer Response Time (Days)</b><p class="slds-text-align_center slds-p-top_small" style="font-size: 26px; color: Yellow;"> 
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.acquisition.avgCRTime}"  maximumFractionDigits="2"/>  </p>
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>    
+                                     <div class="slds-col slds-size_3-of-12 slds-m-top_small slds-m-bottom_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                <div class="slds-grid">
+                                    <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                        <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                            <b>Win Rate</b>&nbsp;<p class="slds-text-align_center slds-p-top_small" style="font-size: 26px;color: Yellow;">  
+                                            <lightning:formattedNumber value="{!v.mainWrapper.acquisition.winRateLineItem}" style="percent" maximumFractionDigits="2"/></p>
+                                        </div>
+                                        <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 36px; color: white;font-weight:bold;">
+                                              <lightning:formattedNumber value="{!v.mainWrapper.acquisition.winRate}" style="percent" maximumFractionDigits="2"/> 
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>            
+                                    
+                                    
+                                </div>
+                            </div>
+                            <!--Acquisition end -->
+                            <!--Retention start -->
+                            <div class="slds-box slds-m-top_small slds-m-bottom_small slds-m-left_small slds-m-right_small" style="background-color:#f0f0f0;padding-top:3px;padding-bottom:5px;">
+                                <div>
+                                  <c:CustomHelpTextCmp text="RFP Bids \n Price Change \n SRx Direct Pricing \n SRx IPA Floor Pricing Update \n SRx IPA Price Change \n SRx RCA/IPA Member GPO or Wholesaler Change" headerText="Bid Types" />
+                                 <span class="alignTextMiddle"><b>Retention - {!v.mainWrapper.Summary.userName}</b></span>
+                                </div>
+                            </div>
+                            
+                            <div class="slds-box slds-box_small slds-m-left_small slds-m-right_small">
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Total Bids</b>  <p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"> <lightning:formattedNumber value="{!v.mainWrapper.retention.TotalBidIds}"/> </b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Total Bid Line Items</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!(v.mainWrapper.retention.bidLinesWon+v.mainWrapper.retention.bidLinesLost+v.mainWrapper.retention.bidLinesPendingInternal+v.mainWrapper.retention.bidLinesPending+v.mainWrapper.retention.pendingProposals)}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.retention.totalBidLinesSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>   
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Bid Line Items Won</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesWon}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesWonSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 10px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Bid Line Items Lost</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow;  font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesLost}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesLostSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>  
+                                </div>
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff; padding-right: 10px;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Line Items (Internal)</b> &nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesPendingInternal}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesPendingInternalSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Line Items (Customer Response)</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesPending}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.retention.bidLinesPendingSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Proposals</b>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 26px; color: yellow;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.retention.pendingProposals}" maximumFractionDigits="2"/>         
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.retention.pendingProposalsSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 10px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Avg Internal Process Time (Days)</b>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 26px; color: yellow;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.retention.avgInternalTime}" maximumFractionDigits="2"/>         
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                                
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-medium slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Avg Customer Response Time (Days)</b><p class="slds-text-align_center slds-p-top_small" style="font-size: 26px; color: Yellow;">  
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.retention.avgCRTime}"  maximumFractionDigits="2"/>  </p>
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                     <div class="slds-col slds-size_3-of-12 slds-m-top_small slds-m-bottom_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                            <div class="slds-grid">
+                                <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                    <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                        <b>Win Rate</b>&nbsp;<p class="slds-text-align_center slds-p-top_small" style="font-size: 26px;color: Yellow;">  
+                                        <lightning:formattedNumber value="{!v.mainWrapper.retention.winRateLineItem}" style="percent" maximumFractionDigits="2"/>  </p>
+                                    </div>
+                                    <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 36px; color: white;font-weight:bold;">
+                                          <lightning:formattedNumber value="{!v.mainWrapper.retention.winRate}" style="percent" maximumFractionDigits="2"/> 
+                                    </div>
+                                </div>
+                            </div>
+                        </div>            
+                                    
+                                    
+                                </div>
+                            </div>
+                            <!--Retention end -->
+                            <!--Proactive start -->
+                            <div class="slds-box slds-m-top_small slds-m-bottom_small slds-m-left_small slds-m-right_small" style="background-color:#f0f0f0;padding-top:3px;padding-bottom:5px;">
+                                <div>
+                                   <c:CustomHelpTextCmp text="Product Addition \n Volume Review Only \n New Customer \n New Product Launch \n One Time Buy - Good Dated Shelf Life \n One Time Buy - Short Dated Shelf Life \n Mass Product Removals \n Product Discontinuation Process \n SRx IPA Floor Pricing Update \n SRx IPA Member Addition \n SRx RCA Member Addition \n SRx Direct Pricing \n SRx IPA Price Change \n SRx IPA Product Addition \n SRx NEW Individual Pricing Agreement (IPA) \n SRx RCA/IPA Member GPO or Wholesaler Change" headerText="Bid Types" />
+                               <span class="alignTextMiddle"><b>Proactive - {!v.mainWrapper.Summary.userName}</b></span>
+                                </div>
+                            </div>
+                            
+                            <div class="slds-box slds-box_small slds-m-left_small slds-m-right_small">
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Total Bids</b>  <p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"> <lightning:formattedNumber value="{!v.mainWrapper.proactive.TotalBidIds}"/> </b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Total Bid Line Items</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!(v.mainWrapper.proactive.bidLinesWon+v.mainWrapper.proactive.bidLinesLost+v.mainWrapper.proactive.bidLinesPendingInternal+v.mainWrapper.proactive.bidLinesPending+v.mainWrapper.proactive.pendingProposals)}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.proactive.totalBidLinesSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>   
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Bid Line Items Won</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesWon}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesWonSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 10px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Bid Line Items Lost</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow;  font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesLost}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesLostSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>  
+                                </div>
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff; padding-right: 10px;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Line Items (Internal)</b> &nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesPendingInternal}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesPendingInternalSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Line Items (Customer Response)</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesPending}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.proactive.bidLinesPendingSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Proposals</b>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 26px; color: yellow;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.proactive.pendingProposals}" maximumFractionDigits="2"/>         
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.proactive.pendingProposalsSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 10px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Avg Internal Process Time (Days)</b>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 26px; color: yellow;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.proactive.avgInternalTime}" maximumFractionDigits="2"/>         
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                                
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-medium slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Avg Customer Response Time (Days)</b><p class="slds-text-align_center slds-p-top_small" style="font-size: 26px; color: Yellow;">   
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.proactive.avgCRTime}"  maximumFractionDigits="2"/>  </p>
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small slds-m-bottom_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                <div class="slds-grid">
+                                    <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                        <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                            <b>Win Rate</b>&nbsp;<p class="slds-text-align_center slds-p-top_small" style="font-size: 26px;color: Yellow;">  
+                                            <lightning:formattedNumber value="{!v.mainWrapper.proactive.winRateLineItem}" style="percent" maximumFractionDigits="2"/>  </p>
+                                        </div>
+                                        <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 36px; color: white;font-weight:bold;">
+                                              <lightning:formattedNumber value="{!v.mainWrapper.proactive.winRate}" style="percent" maximumFractionDigits="2"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>            
+                                    
+                                    
+                                </div>
+                            </div>
+                            <!--Proactive end -->
+                            <!--Reactive start -->
+                            <div class="slds-box slds-m-top_small slds-m-bottom_small slds-m-left_small slds-m-right_small" style="background-color:#f0f0f0;padding-top:3px;padding-bottom:5px;">
+                                <div>
+                                    <c:CustomHelpTextCmp text="Price Change \n RFP Bids \n Product Addition \n Volume Review Only \n One Time Buy - Good Dated Shelf Life \n One Time Buy - Short Dated Shelf Life \n SRx Direct Pricing \n SRx IPA Price Change \n SRx IPA Product Addition \n SRx NEW Individual Pricing Agreement (IPA) \n SRx RCA/IPA Member GPO or Wholesaler Change" headerText="Bid Types" />
+                                <span class="alignTextMiddle"><b>Reactive - {!v.mainWrapper.Summary.userName}</b></span>
+                                </div>
+                            </div>
+                            
+                            <div class="slds-box slds-box_small slds-m-left_small slds-m-right_small slds-m-bottom_small">
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Total Bids</b>  <p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"> <lightning:formattedNumber value="{!v.mainWrapper.reactive.TotalBidIds}"/> </b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Total Bid Line Items</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!(v.mainWrapper.reactive.bidLinesWon+v.mainWrapper.reactive.bidLinesLost+v.mainWrapper.reactive.bidLinesPendingInternal+v.mainWrapper.reactive.bidLinesPending+v.mainWrapper.reactive.pendingProposals)}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.reactive.totalBidLinesSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>   
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Bid Line Items Won</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesWon}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesWonSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_x-small" style="background-color:white; padding-right: 10px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b>Bid Line Items Lost</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow;  font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesLost}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesLostSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>  
+                                </div>
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff; padding-right: 10px;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Line Items (Internal)</b> &nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesPendingInternal}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesPendingInternalSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>   
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Line Items (Customer Response)</b>&nbsp;<p class="slds-text-align_center slds-p-top_small"><b style="color:Yellow; font-size: 26px;"><lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesPending}"/></b></p>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.reactive.bidLinesPendingSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Pending Proposals</b>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 26px; color: yellow;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.reactive.pendingProposals}" maximumFractionDigits="2"/>         
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 39px; color: white;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.reactive.pendingProposalsSum}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>     
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 10px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Avg Internal Process Time (Days)</b>
+                                                </div>
+                                                <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 26px; color: yellow;font-weight:bold;">
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.reactive.avgInternalTime}" maximumFractionDigits="2"/>         
+                                                </div>
+                                                
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                                
+                                <div class="slds-grid slds-gutters slds-wrap" >
+                                    <div class="slds-col slds-size_3-of-12 slds-m-top_small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                                <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-medium slds-text-align_center slds-truncate" style="font-size: 16px; color: white;font-weight:bold;">
+                                                    <b >Avg Customer Response Time (Days)</b><p class="slds-text-align_center slds-p-top_small" style="font-size: 26px; color: Yellow;"> 
+                                                    <lightning:formattedNumber value="{!v.mainWrapper.reactive.avgCRTime}"  maximumFractionDigits="2"/>  </p>
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                   <div class="slds-col slds-size_3-of-12 slds-m-top_small slds-m-bottom_x-small" style="background-color:white; padding-right: 0px; padding-bottom: 0px;">
+                                <div class="slds-grid">
+                                    <div class="slds-size_12-of-12 slds-box" style="background-color:#8c00ff;height:160px;border-radius: 7px;">
+                                        <div class="slds-text-title slds-text-heading_medium slds-p-left_xx-small slds-text-align_center" style="font-size: 16px; color: white;font-weight:bold;">
+                                            <b>Win Rate</b>&nbsp;<p class="slds-text-align_center slds-p-top_small" style="font-size: 26px;color: Yellow;">  
+                                            <lightning:formattedNumber value="{!v.mainWrapper.reactive.winRateLineItem}" style="percent" maximumFractionDigits="2"/>  </p>
+                                        </div>
+                                        <div class="slds-align_absolute-center slds-text-heading_large slds-p-top_small" style="font-size: 36px; color: white;font-weight:bold;">
+                                             <lightning:formattedNumber value="{!v.mainWrapper.reactive.winRate}" style="percent" maximumFractionDigits="2"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>            
+                                    
+                                    
+                                </div>
+                            </div>
+                            <!--Reactive end -->
+                        </div>       
+                        
+                   </aura:set>
+                </aura:if> 
+        </aura:if>  
+    </div>
+</aura:component>

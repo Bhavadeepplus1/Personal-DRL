@@ -1,0 +1,161 @@
+<aura:component controller="Phoenix_BidHistory" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="record" type="object" />
+    <aura:attribute name="expandFamily" type="boolean" default="false" />
+    <aura:attribute name="relatedList" type="list" />
+    <aura:attribute name="marketShareList" type="list" />
+    <aura:attribute name="updatedList" type="list" />
+    <aura:attribute name="bidRecord" type="sObject"  />
+    
+    <aura:handler name = "init" value ="{!this}" action = "{!c.doInit}"/>
+    <tr style="font-weight: bold;background-color: #F3F3F3;">
+        <td>
+            <b>
+                <aura:if isTrue="{!v.expandFamily}">
+                    (<lightning:buttonIcon iconName="utility:minimize_window" variant="bare" class="iconCSS" size="small" onclick="{!c.expandFamily}" alternativeText="Collapse Family" title="Collapse Family" />)
+                    <aura:set attribute="else">
+                        (<lightning:buttonIcon iconName="utility:add" class="iconCSS1" size="small" variant="bare" onclick="{! c.expandFamily }" alternativeText="Expand Family" title="Expand Family" />)
+                    </aura:set>
+                </aura:if>
+                <lightning:formattedUrl value="{!'/' + v.record.familyId}" label="{!v.record.family}" target="_blank" />
+            </b>
+        </td>
+        <td style="text-align: right;border-left: 1px solid black;">
+            <lightning:formattedNumber value="{!v.record.currentUnitsEA}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+            (<lightning:formattedNumber value="{!v.record.currentUnitsEU}" minimumFractionDigits="0" maximumFractionDigits="0"/>)
+        </td>
+        <td style="text-align: right;">
+            <lightning:formattedNumber value="{!v.record.currentSales}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+        </td>
+        <td style="text-align: right;">
+            <lightning:formattedNumber value="{!v.record.currentTPMargin}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+        </td>
+        <td style="text-align: right;">
+            <aura:if isTrue="{!v.record.currentSales != 0}">
+                <lightning:formattedNumber value="{!(v.record.currentTPMargin/v.record.currentSales)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+            </aura:if>
+        </td>
+        <td></td>
+        <td style="text-align: right;border-left: 1px solid black;">
+            <lightning:formattedNumber value="{!v.record.proposedUnitsEA}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+            (<lightning:formattedNumber value="{!v.record.proposedUnitsEU}" minimumFractionDigits="0" maximumFractionDigits="0"/>)
+        </td>
+        <td style="text-align: right;">
+            <lightning:formattedNumber value="{!v.record.proposedSales}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+        </td>
+        <td style="text-align: right;">
+            <lightning:formattedNumber value="{!v.record.proposedTPMargin}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+        </td>
+        <td style="text-align: right;">
+            <aura:if isTrue="{!v.record.proposedSales != 0}">
+                <lightning:formattedNumber value="{!(v.record.proposedTPMargin/v.record.proposedSales)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+            </aura:if>
+        </td>
+        <td style="text-align: right;">
+        </td>
+        <aura:if isTrue="{!or(v.bidRecord.Phoenix_Bid_Type__c == 'Price Change', v.bidRecord.Phoenix_Bid_Type__c == 'Customer Rebate Change', v.bidRecord.Phoenix_Bid_Type__c == 'OTC Price Change', v.bidRecord.Phoenix_Bid_Type__c == 'OTC Rebate Change', v.bidRecord.Phoenix_Bid_Type__c == 'Sales Out Rebate', v.bidRecord.Phoenix_Bid_Type__c ==  'New Product Launch', v.bidRecord.Phoenix_Bid_Type__c == 'OTC OTB Good Dated', v.bidRecord.Phoenix_Bid_Type__c ==  'OTC OTB Short Dated', v.bidRecord.Phoenix_Bid_Type__c == 'One Time Buy Good Dated Shelf Life for New Product Launch')}">
+            <td style="border-left: 1px solid black;">N/A(N/A)</td>
+            <td>N/A</td>
+            <td>N/A</td>
+            <td>N/A</td>
+            <td>N/A</td>
+            <td>N/A</td>
+            <aura:set attribute="else">
+                <td style="text-align: right;border-left: 1px solid black;">
+                    <lightning:formattedNumber value="{!v.record.scmUnitsEA}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    (<lightning:formattedNumber value="{!v.record.scmUnitsEU}" minimumFractionDigits="0" maximumFractionDigits="0"/>)
+                </td>
+                <td style="text-align: right;">
+                    <lightning:formattedNumber value="{!v.record.scmSales}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                </td>
+                <td style="text-align: right;">
+                    <lightning:formattedNumber value="{!v.record.scmTPMargin}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                </td>
+                <td style="text-align: right;">
+                    <aura:if isTrue="{!v.record.scmSales != 0}">
+                        <lightning:formattedNumber value="{!(v.record.scmTPMargin/v.record.scmSales)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </aura:if>
+                </td>
+                <td></td>
+                <td></td>
+            </aura:set>            
+        </aura:if>
+
+    </tr>
+    <aura:if isTrue="{!v.expandFamily}">
+        <aura:iteration items="{!v.relatedList}" var="lineItem">
+            <tr style="{!lineItem.Phoenix_Marketing_Approval__c == 'Approved'?'background-color:#c0dfb7':lineItem.Phoenix_Marketing_Approval__c == 'Not Approved'?'background-color:#dbb4b4':lineItem.Phoenix_Marketing_Approval__c == ''? 'background-color: #f0d9aa': ''}">
+                <td style="padding-left: 70px;">
+                    <aura:if isTrue="{!lineItem.Phoenix_Product_Code__c != null}">
+                        <lightning:formattedUrl value="{!'/' + lineItem.Phoenix_Product__r.Id}" label="{!(lineItem.Phoenix_Product__r.Name + ' ('+lineItem.Phoenix_Product_Code__c+')')}" target="_blank" />
+                        <aura:set attribute="else">
+                            <lightning:formattedUrl value="{!'/' + lineItem.Phoenix_Product__r.Id}" label="{!lineItem.Phoenix_Product__r.Name}" target="_blank" />
+                        </aura:set>
+                    </aura:if>
+                </td>
+                <td style="text-align: right;border-left: 1px solid black;">
+                    <lightning:formattedNumber value="{!lineItem.Phoenix_Total_Selling_Unit__c}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    (<lightning:formattedNumber value="{!(lineItem.Phoenix_Total_Selling_Unit__c * lineItem.Phoenix_Pkg_Size1__c)}" minimumFractionDigits="0" maximumFractionDigits="0"/>)
+                </td>
+                <td style="text-align: right;">
+                    <lightning:formattedNumber value="{!lineItem.Finance_Current_Sales__c}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                </td>
+                <td style="text-align: right;">
+                    <lightning:formattedNumber value="{!lineItem.Phoenix_Current_TP_Margin__c}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                </td>
+                <td style="text-align: right;">
+                    <lightning:formattedNumber value="{!lineItem.Phoenix_Current_TP_MarginPercent__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                </td>
+                <td></td>
+                <td style="text-align: right;border-left: 1px solid black;">
+                    <lightning:formattedNumber value="{!lineItem.units}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    (<lightning:formattedNumber value="{!(lineItem.units * lineItem.Phoenix_Pkg_Size1__c)}" minimumFractionDigits="0" maximumFractionDigits="0"/>)
+                </td>
+                <td style="text-align: right;">
+                    <lightning:formattedNumber value="{!lineItem.proposedSales}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                </td>
+                <td style="text-align: right;">
+                    <lightning:formattedNumber value="{!lineItem.proposedTpMargin}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                </td>
+                <td style="text-align: right;">
+                    <lightning:formattedNumber value="{!lineItem.proposedTpMarginPer}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                </td>
+                <td></td>
+                <aura:if isTrue="{!or(v.bidRecord.Phoenix_Bid_Type__c == 'Price Change', v.bidRecord.Phoenix_Bid_Type__c == 'Customer Rebate Change', v.bidRecord.Phoenix_Bid_Type__c == 'OTC Price Change', v.bidRecord.Phoenix_Bid_Type__c == 'OTC Rebate Change', v.bidRecord.Phoenix_Bid_Type__c == 'Sales Out Rebate')}">
+                    <td style="border-left: 1px solid black;">N/A(N/A)</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!and(and(lineItem.Phoenix_SCM_Approval_Y_N__c!='N- Not Approved',lineItem.Phoenix_SCM_Final_Approval__c==true),not(empty(lineItem.Phoenix_SCM_Approval_Y_N__c)))}">
+                            <td style="text-align: right;border-left: 1px solid black;">
+                                <lightning:formattedNumber value="{!lineItem.scmUnitsEA}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                (<lightning:formattedNumber value="{!lineItem.scmUnitsEU}" minimumFractionDigits="0" maximumFractionDigits="0"/>)
+                            </td>					                    
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!lineItem.scmSales}" style="currency" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!lineItem.scmTPMargin}" style="currency" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(lineItem.scmTPMargin/lineItem.scmSales)}" style="percent" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                            </td>
+                            <td></td>
+                            <td>{!lineItem.Phoenix_SCM_Approval_Y_N__c}</td>
+                            <aura:set attribute="else">
+                                <td style="border-left: 1px solid black;"></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </tr>
+        </aura:iteration>
+    </aura:if>
+</aura:component>

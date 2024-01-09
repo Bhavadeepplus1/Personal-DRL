@@ -1,0 +1,304 @@
+<aura:component controller="Vision_Rx_Back_OrderCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="accGroupList" type="Object"/>
+    <aura:attribute name="productName" type="List"/>
+    <aura:attribute name="isAsc" type="boolean" />
+    <aura:attribute name="ProdFamList" type="Object"/>
+    <aura:attribute name="selectedId" type="String"/> 
+    <aura:attribute name="week1" type="String"/>
+    <aura:attribute name="week2" type="String"/>
+    <aura:attribute name="week3" type="String"/>
+    <aura:attribute name="week4" type="String"/>
+    <aura:attribute name="MoHBool" type="boolean"/>
+    <aura:attribute name="currentMonth" type="String"/>
+    <aura:attribute name="lastMonth" type="String"/>
+    <aura:attribute name="indexValue" type="Integer" />
+    <aura:attribute name="loaded" type="boolean" />
+    <aura:registerEvent name="RxBackOrderComponentEvent" type="c:Rx_Back_Order_Event"/>
+    <aura:attribute name="showAll" type="boolean"/>
+    <aura:attribute name="showRecords" type="boolean" default="false" />
+    <aura:attribute name="productFamilyDetails" type="List"/>
+    <aura:attribute name="searchText" type="String"/>
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:if isTrue="{! v.loaded }">
+        
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+    <!--    <tr id="styleids" style="font-weight: bold; background-color: #F3F3F3;text-align:center;"> 
+                                        <th class="headerOfTable" colspan="24" style="padding: 4px 8px;background-color:#257CFF;color:white;">
+                                    
+                                            <b>{!v.accGroupList.accName}</b>
+                                        </th>
+                                    </tr> -->
+    
+    <!--<tr id="styleids" style="font-weight: bold; background-color: #FEB343 ;text-align:center;color:white;">
+        <td class="" colspan="40" style="{!((mod(v.indexValue,2)==0)  ? 'padding: 4px 8px;background-color:#F9F2E0;color:black' : 'padding: 4px 8px;background-color:#E0F9E2;color:black;')}">
+            <div class="slds-grid">
+                   <div class="slds-col slds-size_2-of-6"> 
+           {!v.accGroupList.pfName}
+                       &nbsp;&nbsp;
+                              <aura:if isTrue="{!v.show}">
+                        (<lightning:buttonIcon iconName="utility:minimize_window" class="buttonCSS iconCSS" variant="bare" onclick="{! c.handleClick1 }" name="{!v.accGroupList.pfName}" alternativeText="Hide Products" title="Hide Products" />)
+                        
+                        <aura:set attribute="else">
+                            (<lightning:buttonIcon class ="buttonCSS" iconName="utility:add" variant="bare" onclick="{! c.handleClick2 }" name="{!v.accGroupList.pfName}" alternativeText="Show Products" title="Show Products" />)
+                            
+                        </aura:set>
+                    </aura:if>
+                </div>
+            </div>
+        </td>
+    </tr>-->
+    <tr>
+        <td rowspan="2" class="ndcLeftSyicky ndcSticky skuTopSticky fixedProductColumn"   style="font-size:12px;text-align:center;background-color:#FEB343;color:white;max-width:350px;overflow:hidden;">
+            <div class="slds-truncate ">
+                <aura:if isTrue="{!v.isAsc}">
+                    <div class="slds-icon_container" width="93.07px;">  
+                        <b style="color:white">Sku code</b>&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                    size="xx-small" 
+                                                                                    alternativeText="sort arrow up"
+                                                                                    onclick="{!c.sortByskucode}"
+                                                                                    style="cursor: pointer"                    
+                                                                                    />  
+                    </div>
+                    
+                    <aura:set attribute="else">                               
+                        <div class="slds-icon_container" width="93.07px;">  
+                            <b style="color:white;">Sku Code</b>&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                         size="xx-small" 
+                                                                                         alternativeText="sort arrow up"
+                                                                                         onclick="{!c.sortByskucode}"
+                                                                                         style="cursor: pointer"                    
+                                                                                         />  
+                        </div>
+                    </aura:set>
+                </aura:if>
+                
+                
+                
+            </div>  
+            
+            
+        </td>
+        <td rowspan="2" class="prodNameLeftSyicky skuSticky skuTopSticky fixedProductColumn"   style="font-size:12px;text-align:center;background-color:#FEB343;color:white;max-width:350px;overflow:hidden;">
+            <div class="slds-truncate ">
+                <aura:if isTrue="{!v.isAsc}">
+                    <div class="slds-icon_container" style="">  
+                        <b style="color:white">SKU Details</b>&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                    size="xx-small" 
+                                                                                    alternativeText="sort arrow up"
+                                                                                    onclick="{!c.sortByItem}"
+                                                                                    style="cursor: pointer"                    
+                                                                                    />  
+                    </div>
+                    
+                    <aura:set attribute="else">                               
+                        <div class="slds-icon_container" style="">  
+                            <b style="color:white;">SKU Details</b>&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                         size="xx-small" 
+                                                                                         alternativeText="sort arrow up"
+                                                                                         onclick="{!c.sortByItem}"
+                                                                                         style="cursor: pointer"                    
+                                                                                         />  
+                        </div>
+                    </aura:set>
+                </aura:if>
+                
+                
+                
+            </div>  
+            
+            
+        </td>
+        <td class="pkgSticky pkgTopSticky" rowspan="2" style="font-size:12px;text-align:left;background-color:#FEB343;color:white"><b>Pack Size</b></td>
+        <th class="columnTopSticky styleids fixed"  rowspan="2" style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;"><b>Customer Service Comments</b></th>
+        <td  rowspan="2" class="columnTopSticky "  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;">
+            <div class="">
+                <aura:if isTrue="{!v.isAsc}">
+                    <div class="slds-icon_container" style="padding: 8px;">  
+                        <b style="color:#5224B2;line-height: 1.5;">Current <br/>Order Qty</b>&nbsp;<lightning:icon class="purpleIcon" iconName="utility:arrowup" 
+                                                                                                                   size="xx-small" 
+                                                                                                                   alternativeText="sort arrow up"
+                                                                                                                   onclick="{!c.sortByCurrentOrderQty}"
+                                                                                                                   style="cursor: pointer"                                                  
+                                                                                                                   />  
+                    </div>
+                    
+                    <aura:set attribute="else">                               
+                        <div class="slds-icon_container" style="padding: 8px;">  
+                            <b style="color:#5224B2;line-height: 1.5;">Current<br/> Order Qty</b>&nbsp;<lightning:icon class="purpleIcon" iconName="utility:arrowdown" 
+                                                                                                                       size="xx-small" 
+                                                                                                                       alternativeText="sort arrow up"
+                                                                                                                       onclick="{!c.sortByCurrentOrderQty}"
+                                                                                                                       style="cursor: pointer"                                                  
+                                                                                                                       />  
+                        </div>
+                    </aura:set>
+                </aura:if>
+                
+                
+                
+            </div>
+        </td>
+        <td  rowspan="2" class="columnTopSticky" style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;">
+            <div class="slds-truncate ">
+                <aura:if isTrue="{!v.isAsc}">
+                    <div class="slds-icon_container" style="padding: 8px;">  
+                        <b style="color:#5224B2">Order Value</b>&nbsp;<lightning:icon class="purpleIcon" iconName="utility:arrowup" 
+                                                                                      size="xx-small" 
+                                                                                      alternativeText="sort arrow up"
+                                                                                      onclick="{!c.sortByOrderValue}"
+                                                                                      style="cursor: pointer"                     
+                                                                                      />  
+                    </div>
+                    
+                    <aura:set attribute="else">                               
+                        <div class="slds-icon_container" style="padding: 8px;">  
+                            <b style="color:#5224B2;">Order Value</b>&nbsp;<lightning:icon class="purpleIcon" iconName="utility:arrowdown" 
+                                                                                           size="xx-small" 
+                                                                                           alternativeText="sort arrow up"
+                                                                                           onclick="{!c.sortByOrderValue}"
+                                                                                           style="cursor: pointer"                       
+                                                                                           />  
+                        </div>
+                    </aura:set>
+                </aura:if>
+                
+                
+                
+            </div>
+        </td>
+        <td  colspan="2" class="columnTopSticky" style="color:white;background-color: #5224B2 ;text-align:center;"><b>Back Order</b></td>   
+        
+        <td  rowspan="2" class="columnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;">
+            <div class="slds-truncate ">
+                <aura:if isTrue="{!v.isAsc}">
+                    <div class="slds-icon_container" style="padding: 8px;">  
+                        <b style="color:#5224B2;line-height: 1.5;">Total Open<br/> Order Qty</b>&nbsp;<lightning:icon class="purpleIcon" iconName="utility:arrowup" 
+                                                                                                                      size="xx-small" 
+                                                                                                                      alternativeText="sort arrow up"
+                                                                                                                      onclick="{!c.sortByTotalOpenOrderQty}"
+                                                                                                                      style="cursor: pointer"                                                     
+                                                                                                                      />  
+                    </div>
+                    
+                    <aura:set attribute="else">                               
+                        <div class="slds-icon_container" style="padding: 8px;">  
+                            <b style="color:#5224B2;line-height: 1.5;">Total Open<br/> Order Qty</b>&nbsp;<lightning:icon class="purpleIcon" iconName="utility:arrowdown" 
+                                                                                                                          size="xx-small" 
+                                                                                                                          alternativeText="sort arrow up"
+                                                                                                                          onclick="{!c.sortByTotalOpenOrderQty}"
+                                                                                                                          style="cursor: pointer"                                                      
+                                                                                                                          />  
+                        </div>
+                    </aura:set>
+                </aura:if>
+                
+                
+                
+            </div>
+        </td>
+        <td  rowspan="2" class="columnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;line-height: 1.5;"><b>Current<br/> Forecast {!v.lastMonth}</b></td>
+        <td class="columnTopSticky" colspan="2" style="background-color:#5224B2; color:white;text-align:center;"><b>Short Term</b></td>
+        <td rowspan="2" class="columnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;"><b>Average Forecast</b></td>
+        <td rowspan="2" class="columnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;line-height: 1.5;"><b>% of current<br/> Forecast</b></td>
+        <td rowspan="2" class="columnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;line-height: 1.5;"><b>Total Monthly<br/> Orders ({!v.currentMonth})</b></td>
+        <td  class="columnTopSticky" colspan="2" style="background-color:#5224B2; color:white;text-align:center;"><b>Inventory</b></td>
+        <td rowspan="2" class="columnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;"><b>Stocks At UPS</b></td>
+        <td rowspan="2" class="columnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;"><b>{!v.week1}</b></td>
+        <td rowspan="2" class="columnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;"><b>{!v.week2}</b></td>
+        <td rowspan="2" class="columnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;"><b>{!v.week3}</b></td>
+        <td rowspan="2" class="columnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;"><b>{!v.week4}</b></td>
+        <td rowspan="2" class="columnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;"><b>MoH</b></td>
+        
+    </tr>
+    <tr>
+        <!--    <td class="skuSticky itemTopSticky fixedProductColumn"  style="font-size:12px;text-align:left;background-color:#FEB343;color:white;max-width:350px;overflow:hidden;">
+         
+         </td> -->
+        <td class="subcolumnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;">
+            <div class="slds-truncate ">
+                <aura:if isTrue="{!v.isAsc}">
+                    <div class="slds-icon_container" style="padding: 8px;">  
+                        <b style="color:#5224B2">Qty</b>&nbsp;<lightning:icon class="purpleIcon" iconName="utility:arrowup" 
+                                                                              size="xx-small" 
+                                                                              alternativeText="sort arrow up"
+                                                                              onclick="{!c.sortByBackOrderQty}"
+                                                                              style="cursor: pointer"              
+                                                                              />  
+                    </div>
+                    
+                    <aura:set attribute="else">                               
+                        <div class="slds-icon_container" style="padding: 8px;">  
+                            <b style="color:#5224B2;">Qty</b>&nbsp;<lightning:icon class="purpleIcon" iconName="utility:arrowdown" 
+                                                                                   size="xx-small" 
+                                                                                   alternativeText="sort arrow up"
+                                                                                   onclick="{!c.sortByBackOrderQty}"
+                                                                                   style="cursor: pointer"               
+                                                                                   />  
+                        </div>
+                    </aura:set>
+                </aura:if>
+                
+                
+                
+            </div>
+        </td>
+        <td  class="subcolumnTopSticky" style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;">
+            <div class="slds-truncate ">
+                <aura:if isTrue="{!v.isAsc}">
+                    <div class="slds-icon_container" style="padding: 8px;">  
+                        <b style="color:#5224B2">Value</b>&nbsp;<lightning:icon class="purpleIcon" iconName="utility:arrowup" 
+                                                                                size="xx-small" 
+                                                                                alternativeText="sort arrow up"
+                                                                                onclick="{!c.sortByBackOrderValue}"
+                                                                                style="cursor: pointer"                
+                                                                                />  
+                    </div>
+                    
+                    <aura:set attribute="else">                               
+                        <div class="slds-icon_container" style="padding: 8px;">  
+                            <b style="color:#5224B2;">Value</b>&nbsp;<lightning:icon class="purpleIcon" iconName="utility:arrowdown" 
+                                                                                     size="xx-small" 
+                                                                                     alternativeText="sort arrow up"
+                                                                                     onclick="{!c.sortByBackOrderValue}"
+                                                                                     style="cursor: pointer"                 
+                                                                                     />  
+                        </div>
+                    </aura:set>
+                </aura:if>
+                
+                
+                
+            </div>
+        </td>
+        <td class="subcolumnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;"><b>Forecast {!v.currentMonth}</b></td>
+        <td class="subcolumnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;"><b>Adjustment</b></td>
+        
+        <td class="subcolumnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;"><b>In QA</b></td>
+        <td class="subcolumnTopSticky"  style="color:#5224B2;background-color: #F7F3FF ;font-size:12px;text-align:center;"><b>In Transit</b></td>
+        
+        
+    </tr>
+    <aura:iteration items="{!v.accGroupList.backOrderRecords}" var="sdItem" indexVar="sNo">
+        
+        <c:Vision_Rx_Back_Order_Child_Records_Cmp accGroupList="{!sdItem}" indexValue="{!sNo}" showAll="{!v.showAll}"/> 
+        
+        
+        
+    </aura:iteration> 
+    
+    
+    
+    
+</aura:component>

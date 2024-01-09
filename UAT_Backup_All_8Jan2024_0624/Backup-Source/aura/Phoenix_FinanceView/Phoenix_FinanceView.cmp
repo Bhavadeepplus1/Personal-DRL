@@ -1,0 +1,216 @@
+<aura:component controller="Phoenix_FinanceViewCls" implements="force:lightningQuickActionWithoutHeader,force:appHostable,force:hasRecordId,force:hasSObjectName" access="global" >
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="rollupData" type="List" />
+    <aura:attribute name="financeCommentsMap" type="Map" />
+    <aura:attribute name="financeApprovalMap" type="Map" />
+    <aura:attribute name="isClicked" type="boolean" />
+    <aura:attribute name="title" type="String" />
+    <aura:attribute name="TotalsList" type="List" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="isFinanceApproved" type="boolean" default="false" />
+    <aura:attribute name="bidRecord" type="Object" />
+    <aura:attribute name="isFinanceApprovePerson" type="boolean" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <aura:method name="financeRefresh" action="{!c.doInit}" />
+    
+    
+    <aura:html tag="style">
+        
+        
+        .tableDiv{
+        height : auto !important;
+        overflow : scroll !important;
+        }
+    </aura:html>
+     <aura:if isTrue="{!v.isSpinnerLoad}">
+                    <div class="backgroundInverse">
+                        <lightning:spinner alternativeText="Loading" variant="brand" />
+                    </div>
+                </aura:if>
+    <lightning:card>
+        
+        <!--center><div class="slds-border_bottom slds-border_top slds-m-right_small slds-m-left_small" ><h1 style="font-size:1.5rem; font-weight:350;color:gray">Finance View</h1></div></center-->
+        <aura:set attribute="title">
+            <lightning:icon iconName="custom:custom90" size="small" />&nbsp;&nbsp;
+            {! v.title }
+        </aura:set> 
+        <aura:set attribute="actions">
+            <aura:if isTrue="{!(v.rollupData.length > 0 )}">
+      			<lightning:button label="Export" onclick="{!c.downloadCsv}"/>
+      </aura:if>
+            <lightning:button label="Back" onclick="{! c.onClose}" />
+            <aura:if isTrue="{!and(v.isFinanceApprovePerson==true,and(not(v.rollupData[0].finalApproval), and(v.rollupData[0].bidRecord.Phoenix_Approval_Status__c  == 'Finance',v.rollupData[0].bidRecord.Phoenix_Approval_Status__c  != 'Draft')))}" >
+                <aura:if isTrue="{!v.isClicked!=true}">
+                <lightning:button  variant="brand" label="Submit" onclick="{! c.onApprovalSubmit}" />
+                </aura:if>
+                <div class="slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:10%">
+                <lightning:select label="Finance Approval (Mark all as)"
+                                                          aura:id="headerFinanceApproval"
+                                                          onchange="{!c.onHeaderApprovalChange}"
+                                                          >
+                                            <option value="None">None</option>
+                                            <option value="Approved">Approved</option>
+                                            <option value="Not Approved">Not Approved</option>
+                                        </lightning:select>
+                    </div>
+            </aura:if>
+            
+        </aura:set>
+        <div aura:id="mainDiv" class=" slds-m-right_small slds-m-left_small">
+            <aura:if isTrue="{!v.rollupData.length > 0}" >
+                <aura:if isTrue="{!v.isClicked}">
+                    <div class="slds-align_absolute-center slds-m-top_small slds-m-bottom_small">        
+                        <lightning:button variant="neutral" label="Cancel" onclick="{! c.doInit}" />      
+                        <lightning:button variant="brand" label="Save" onclick="{! c.saveClick }" />
+                    </div>
+                </aura:if>
+               
+                <div class="tableDiv slds-m-top_small slds-m-bottom_small" style="height:100vh;">
+                    
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-scrollable slds-scrollable_x" style="width:150px">
+                        <thead>
+                            <tr> 
+                                <th class="slds-truncate slds-cell-wrap"> Product Family </th>
+                                <th class="slds-truncate slds-cell-wrap"> Current Bottles </th>
+                               <!-- <th class="slds-truncate slds-cell-wrap">Current Doses</th>-->
+                                <th class="slds-truncate slds-cell-wrap">Current Sales</th>
+                                <th class="slds-truncate slds-cell-wrap">Current TP Margin $$$</th>
+                                <th class="slds-truncate slds-cell-wrap">Current TP Margin %</th>
+                                <th class="slds-truncate slds-cell-wrap">Current ASP</th>
+                                <th class="slds-truncate slds-cell-wrap">Proposed Bottles</th>
+                                <!--<th class="slds-truncate slds-cell-wrap">Proposed Doses</th>-->
+                                <th class="slds-truncate slds-cell-wrap">Proposed Sales</th>
+                                <th class="slds-truncate slds-cell-wrap">Proposed TP Margin $$$</th>
+                                <th class="slds-truncate slds-cell-wrap">Proposed TP Margin %</th>
+                                <th class="slds-truncate slds-cell-wrap">Proposed ASP</th>
+                                <!--<th class="slds-truncate slds-cell-wrap">Proposed Budget ASP</th>
+                                <th class="slds-truncate slds-cell-wrap">Proposed % to Budget</th>-->
+                                <th class="slds-truncate slds-cell-wrap">Difference Bottles</th>
+                                <!--<th class="slds-truncate slds-cell-wrap">Difference Doses</th>-->
+                                <th class="slds-truncate slds-cell-wrap">Volume Variance</th>
+                                <th class="slds-truncate slds-cell-wrap">Price Variance</th>
+                                <th class="slds-truncate slds-cell-wrap">Difference Sales</th>
+                                <th class="slds-truncate slds-cell-wrap">Difference Margin</th>
+                                <aura:if isTrue="{!(v.bidRecord.Phoenix_Bid_Type__c != 'Volume Review Only')}" >
+                                    <th >Finance Approval</th>
+                                    <th >Finance Comments</th>
+                                </aura:if>
+                             
+                            </tr>
+                            
+                        </thead>
+                        <tbody>
+                            
+                            <aura:iteration items="{!v.rollupData}" var="data">
+                                <tr>
+                                    <th scope="row" style="padding-bottom: 1.7%;text-align: left;">
+                                        <!-- Added by Naseer to replace Product Family with Lookup-->
+                                        <aura:if isTrue="{!data.productFamilyName != null}">
+                                            <lightning:formattedUrl value="{!'/' + data.productFamilyId}"
+                                                                    label="{!data.productFamilyName}" target="_self" />
+                                        </aura:if>
+                                        <!-- End -->
+                                        <!--{!data.productFamilyName} -->
+                                    </th>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.currentBottles}"/> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.currentsalesFinance}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD"/> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.currentTPMargin}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD"/> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.currentTPMarginprecent}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.currentASPorDose}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.proposedBottles}" minimumFractionDigits="0" maximumFractionDigits="0" /> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.proposedSales}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.proposedTPMargin}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.proposedTPMarginpercent}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber  value="{!data.proposedASPorDose}" style="currency" currencyCode="USD"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.differenceBottles}" minimumFractionDigits="0" maximumFractionDigits="0" /> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.differenceVolume}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD"/> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.differencePrice}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.differenceSales}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD" /> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.differenceMargin}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                                    <aura:if isTrue="{!(v.bidRecord.Phoenix_Bid_Type__c != 'Volume Review Only')}" >
+                                        <aura:if isTrue="{!or(v.isFinanceApprovePerson!=true,or(data.finalApproval, and(data.bidRecord.Phoenix_Approval_Status__c  != 'Finance',data.bidRecord.Phoenix_Approval_Status__c  != 'Finance')))}" >
+                                           <!--<td></td> <td></td>-->
+                                            <aura:set attribute="else">
+                                              <aura:if isTrue="{!data.isPurpleGrid}">
+                                                  <td></td> <td></td>
+                                                  <aura:set attribute="else">
+                                                  <td style="padding-bottom: 1%;">
+                                                    <lightning:select aura:id="select" name="{!data.productFamilyName}" onchange="{! c.onApprovalChange }" onfocus="{!c.onClick}">
+                                                        <aura:if isTrue="{!and(data.financeApproval != null, data.financeApproval != '')}" >
+                                                            <option value="{!data.financeApproval}">{!data.financeApproval}</option>
+                                                        </aura:if>
+                                                        <option value="None">None</option>
+                                                        <aura:if isTrue="{!(data.financeApproval != 'Approved')}">
+                                                            <option value="Approved">Approved</option>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!(data.financeApproval != 'Not Approved')}">
+                                                            <option value="Not Approved">Not Approved</option>
+                                                        </aura:if>
+                                                    </lightning:select>
+                                                </td>
+                                                <td>
+                                                    <lightning:textarea aura:id="comment" name="{!data.productFamilyName}" value="{!data.financeComments}" onblur="{! c.onCommentChange }" />
+                                                </td>
+                                                  </aura:set>
+                                                </aura:if>  
+                                            </aura:set>
+                                            
+                                            <td style="padding-bottom: 1%;">{!data.financeApproval}</td>
+                                            <td>{!data.financeComments}</td>	
+                                            
+                                        </aura:if>
+                                    </aura:if>
+                                  </tr>
+                                
+                            </aura:iteration>  
+                            <tr>
+                                <th scope="row" >Total </th>
+                                    <td class="slds-text-align--right"></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.rollupData[0].currentsalesFinanceTotal}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD"/> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.rollupData[0].currentTPMarginTotal}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD"/> </td>
+                                	<aura:if isTrue="{!and(v.rollupData[0].currentTPMarginTotal != null, and(v.rollupData[0].currentsalesFinanceTotal != null, v.rollupData[0].currentsalesFinanceTotal != 0))}">
+                                    	<td class="slds-text-align_right"><lightning:formattedNumber  value="{!(v.rollupData[0].currentTPMarginTotal/v.rollupData[0].currentsalesFinanceTotal)}" style="percent"  minimumFractionDigits="2" maximumFractionDigits="2"/></td>
+                                    	<aura:set attribute="else" >
+                                        	<td></td>
+                                    	</aura:set>
+                                	</aura:if>
+                                    <td class="slds-text-align--right"> </td>
+                                    <td class="slds-text-align--right"></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.rollupData[0].proposedSalesTotal}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.rollupData[0].proposedTPMarginTotal}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                                    <aura:if isTrue="{!and(v.rollupData[0].currentTPMarginTotal != null, and(v.rollupData[0].proposedTPMarginTotal != null, v.rollupData[0].proposedSalesTotal != 0))}">
+                                    	<td class="slds-text-align_right"><lightning:formattedNumber  value="{!(v.rollupData[0].proposedTPMarginTotal/v.rollupData[0].proposedSalesTotal)}" style="percent"  minimumFractionDigits="2" maximumFractionDigits="2"/></td>
+                                    	<aura:set attribute="else" >
+                                        	<td></td>
+                                    	</aura:set>
+                                	</aura:if>
+                                    <td class="slds-text-align--right"></td>
+                                    <td class="slds-text-align--right"> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.rollupData[0].differenceVolumeTotal}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD"/> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.rollupData[0].differencePriceTotal}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.rollupData[0].differenceSalesTotal}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD" /> </td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.rollupData[0].differenceMarginTotal}" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                                <aura:if isTrue="{!(v.bidRecord.Phoenix_Bid_Type__c != 'Volume Review Only')}" >
+                                    <td class="slds-text-align--right"></td>
+                                    <td></td>
+                                </aura:if>
+                                    
+                                
+                                
+                            </tr>
+                            
+                        </tbody>
+                        
+                        
+                    </table>
+                </div>
+                
+                <aura:set attribute="else">
+                    <center><div style="margin-top:150px;"><h1 style="font-size:1.3rem; font-weight:350;color:gray">There are no line items for this bid</h1></div></center>
+                </aura:set>
+                
+            </aura:if>
+        </div>
+    </lightning:card>
+</aura:component>

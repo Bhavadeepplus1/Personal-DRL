@@ -1,0 +1,151 @@
+<aura:component  controller="Phoenix_BidHistory" 
+                implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithOutHeader" access="global">
+    
+    <!--Pricing History Analytics- Attributes-START -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>    
+    <aura:registerEvent name="lightningEvent1" type="c:Phoenix_BidPricingHistoryEvt"/>
+    <aura:attribute name="bidHistoryList"  type="List" description="used to store the bid history to display in table"/>
+    <aura:attribute name="bidsWithLines"  type="List" description="used to store the bid history to display in table"/>
+    <aura:attribute name="displayBidHist" type="String" default="false"/>
+    <aura:attribute name="prodName" type="String"/>
+    <aura:attribute name="prodId" type="Id"/>
+    <aura:attribute name="accName" type="String"/>
+    <aura:attribute name="accId" type="Id"/>
+    <aura:attribute name="bidName" type="String"/>
+    <aura:attribute name="ndc" type="String"/>
+    <aura:attribute name="bidId" type="Id"/>
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="tableRef" type="String"/>
+    <aura:attribute name="bidLineItemId" type="String"/>
+    <aura:attribute name="model" type="Object" description="used to store model structure"/>
+    <aura:attribute name="sortBy" type="String" default= "bidUrl"/>
+    <aura:attribute name="sortDirection" type="String" default="asc" />
+    <aura:attribute name="arrowDirection" type="string" default="arrowup" description="Use for change arrow sign direction on header based on click"/>
+    <aura:attribute name="isAsc" type="boolean" default="true" description="boolean flag for pass sorting condition to apex class"/> 
+    <aura:attribute name="selectedTabsoft" type="string" default="firstName" description="Use for show/hide arraow sign on header based on conditions"/>
+    <aura:attribute name="errors" type="Object"/>
+    <aura:attribute name="pickListOption" type="List" default='[]'/>
+    <aura:attribute name="pickListOptionStatus" type="List" default='[]'/>
+    <aura:attribute name="pickListOptionCustResp" type="List" default='[]'/>
+    <aura:attribute name="ObjectName" type="String" default="Phoenix_Bid__c" access="global"/> <!-- Object Name as String-->
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="noRec" type="boolean" default="false" />
+     <aura:attribute name="noCustResp" type="boolean" default="false" />
+    
+    <!--Pricing History Analytics- Attributes END-->
+    
+    <!--Bid Histroy Analytics Modal Popup-START-->
+    <aura:if isTrue="{!v.displayBidHist}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container" style="width:100% ! important;max-width: 110rem!important;max-height:100rem!important;">
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closeBidHist}"
+                                          alternativeText="Close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 class="slds-text-heading_medium slds-hyphenate"><b>Customer / Product Bid History</b></h2>
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                <div class="slds-modal__content slds-p-around_medium test" >
+                    <div class="slds-grid" >
+                        <div class="slds-col slds-size_1-of-2">
+                            Account: <a href="{!'/'+v.bidHistoryList[0].accId}" target="_blank">{!v.bidHistoryList[0].accName}</a>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 header-fields-align">
+                            Bid: <a href="{!'/'+v.bidHistoryList[0].bidId}" target="_blank">{!v.bidHistoryList[0].bidName}</a>
+                        </div>
+                    </div>
+                    <br></br>
+                    <div class="slds-grid" >
+                        <div class="slds-col slds-size_1-of-2">
+                            Product:   <a href="{!'/'+v.prodId}" target="_blank">{!v.prodName}</a>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 header-fields-align">
+                            NDC:     {!v.ndc}
+                        </div>
+                    </div>
+                    <br></br> 
+                    <div class="slds-grid" >
+                        <div class="slds-col slds-size_1-of-3">
+                            &nbsp;&nbsp;&nbsp;&nbsp;Bid Type:
+                            <lightning:select label="Type" onchange="{!c.filerChange}" aura:Id="bidType">
+                                <aura:iteration items="{!v.pickListOption}" var="val">
+                                    <option value="{!val}"> {!val}</option>
+                                </aura:iteration>
+                            </lightning:select>    
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            &nbsp;&nbsp;&nbsp;&nbsp;Bid Status:
+                            <lightning:select label="Type" onchange="{!c.filerChange}" aura:Id="bidStatus">
+                                <aura:iteration items="{!v.pickListOptionStatus}" var="val1">
+                                    <option value="{!val1}"> {!val1}</option>
+                                </aura:iteration>
+                            </lightning:select>    
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            &nbsp;&nbsp;&nbsp;&nbsp;Customer Response Status:
+                            <lightning:select label="Type" onchange="{!c.filerChange}" aura:Id="custResp" disabled=''>
+                                <aura:iteration items="{!v.pickListOptionCustResp}" var="val2">
+                                    <option value="{!val2}"> {!val2}</option>
+                                </aura:iteration>
+                            </lightning:select>    
+                        </div>
+                    </div>&nbsp;
+                    <br></br>
+                    <aura:if isTrue="{!!v.noRec}">
+                        
+                        <lightning:datatable aura:id="accountTable"
+                                             class="tablecss"
+                                             columns="{! v.bidsWithLines }"
+                                             data="{!v.model}"
+                                             keyField="Id"
+                                             errors="{! v.errors }"
+                                             sortedBy="{!v.sortBy}"
+                                             sortedDirection="{!v.sortDirection}"
+                                             onsort="{! c.handleSort }"
+                                             hideCheckboxColumn="true"
+                                             showRowNumberColumn="true"
+                                            
+                                             />
+                        <aura:set attribute="else">
+                            <lightning:datatable aura:id="accountTable"
+                                                 class="tablecss"
+                                                 columns="{! v.bidsWithLines }"
+                                                 
+                                                 keyField="Id"
+                                                 errors="{! v.errors }"
+                                                 sortedBy="{!v.sortBy}"
+                                                 sortedDirection="{!v.sortDirection}"
+                                                 onsort="{! c.handleSort }"
+                                                 hideCheckboxColumn="true"
+                                                 showRowNumberColumn="true"
+                                                 
+                                                 /> 
+                        </aura:set>                  
+                    </aura:if>
+                    <!--- <aura:set attribute="else">
+                            <p style="text-align:center">No Customer / Bid History records found.</p>  
+                        </aura:set>-->
+                    <!---  </aura:if>-->
+                    
+                    <aura:if isTrue="{!v.isSpinnerLoad}">
+                        <div class="backgroundInverse">
+                            <lightning:spinner alternativeText="Loading" variant="brand" />
+                        </div>
+                    </aura:if>
+                    
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Close"
+                                      title="Close"
+                                      onclick="{!c.closeBidHist}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>

@@ -1,0 +1,1173 @@
+<aura:component controller="Phoenix_GCP_OptyTracker_Controller" access="global"
+                implements="force:hasRecordId,force:appHostable,lightning:isUrlAddressable">     
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    
+    <aura:attribute name="accObj" type="Account"/>
+    <aura:attribute name="gcpLineItem" type="Phoenix_GCP_Opportunity_Tracker__c"/>
+    <aura:attribute name="indexVal" type="Integer"/>
+    <!--Product Positions Attributes-->
+    <aura:attribute name="PositionsEditMode" type="boolean" default="false" />
+    <aura:attribute name="probStatusEditMode" type="boolean" default="false"/>
+    <aura:attribute name="isPositionsModalOpen" type="boolean" default="false" />
+    <aura:attribute name="customerId" type="String" />
+    <aura:attribute name="LinepositionColumns" type="List" />
+    <aura:attribute type="List" name="LinepositionsList" />
+    <aura:attribute type="List" name="defaultList"/>
+    <aura:attribute name="LineselectedPosistions" type="list" />
+    <aura:attribute name="selectedRows" type="list" default="" />
+    <aura:attribute name="ndcList" type="list"/>
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:handler name="change" value="{!v.isModalOpen}" action="{!c.alertChanged}"/>
+    <aura:attribute name="alertObj" type="Object"/>
+    <aura:attribute name="ANComment" type="String"/>
+    <aura:attribute name="ANDueDate" type="Date"/>
+    <aura:attribute name="ANSubject" type="String"/>
+    <aura:attribute name="checkbox1selected" type="boolean" default="true"/>
+    <aura:attribute name="checkbox2selected" type="boolean" default="true"/>
+    <aura:attribute name="checkbox3selected" type="boolean" default="true"/>
+    <aura:attribute name="checkbox4selected" type="boolean" default="true"/>
+    <aura:attribute name="checkbox5selected" type="boolean" default="true"/>
+    
+    <aura:attribute name="daysbefore1" type="Integer"/>
+    <aura:attribute name="daysbefore2" type="Integer"/>
+    <aura:attribute name="daysbefore3" type="Integer"/>
+    <aura:attribute name="daysbefore4" type="Integer"/>
+    <aura:attribute name="daysbefore5" type="Integer"/>
+    
+    <aura:attribute name="selectedTime" type="String"/>
+    
+    <!--End of Product Positions Attributes-->
+    <aura:attribute name="showUserInputs" type="boolean" default="false"/>
+    <aura:attribute name="sendDataConfirm" type="boolean" default="false"/>
+    
+    <aura:attribute name="showComments" type="boolean" default="false"/>
+    <aura:attribute name="showSpinnerInCommentPop" type="boolean" default="false"/>
+    <aura:attribute name="listOfCmnts" type="List"/>
+    <aura:attribute name="brightCmnts" type="list"/>
+    <aura:attribute name="showSaveComntButton" type="boolean" default="false"/> 
+    <aura:attribute name="recordId" type="Id" />
+    
+    <aura:attribute name="optyProbEditMode" type="boolean" default="false"/>
+    <aura:attribute name="coolingPeriodEditMode" type="boolean" default="false"/>
+    <aura:attribute name="commentsEditMode" type="boolean" default="false"/>
+    <aura:attribute name="doRefresh" type="Boolean" default="false"/>
+    <aura:handler name="change" value="{!v.doRefresh}" action="{!c.userInputChanged}"/>
+    <aura:attribute name="commentIndex" type="string"/>
+    <aura:handler name="change" value="{!v.commentIndex}" action="{!c.commentSelected}"/>
+    <aura:attribute name="prodPositionIndex" type="string"/>
+    <aura:handler name="change" value="{!v.prodPositionIndex}" action="{!c.openAwardedPositions}"/>
+    <aura:registerEvent name="refreshEvent" type="c:GcpDataRefreshEvent"/>
+    <aura:attribute name="isProdFamAvailable" type="boolean"/>
+    <aura:attribute name="accMarketShareTitle" type="string"/>
+    <aura:attribute name="estAcctShareOfWalletTitle" type="string"/>
+    <aura:attribute name="estAcctVolTitle" type="string"/>
+    <aura:attribute name="estAcctPriceTitle" type="string"/>
+    <aura:attribute name="coolingPeriodTitle" type="String"/>
+    <aura:attribute name="visionComment" type="String"/>
+    <aura:attribute name="selectedStatusVal" type="String"/>
+    <aura:attribute name="createOptyColor" type="String"/>
+    
+    <aura:attribute name="avgValue" type="Integer"/>
+    
+    <aura:attribute name="selectedRecIdForAlert" type="String"/>
+    <aura:attribute name="alertedItemType" type="String"/>
+    <aura:attribute name="alertedNdcId" type="String"/>
+    <aura:attribute name="selectedLine" type="object"/>
+    <aura:attribute name="hasVisionComments" type="boolean"/>
+    <aura:attribute name="hasPanaromaComments" type="boolean"/>
+    <aura:attribute name="hasBrightComments" type="boolean"/>
+    <aura:attribute name="isSpinnerLoad" type="boolean"/>
+    <aura:attribute name="showRedForExpan" type="boolean" default="false"/>
+    <aura:attribute name="isSpinner" type="boolean"/>
+    <aura:attribute name="showGrayTr" type="boolean"/>
+    <aura:attribute name="doesCmntsExist" type="boolean"/>
+    <aura:attribute name="showProducts" type="boolean" default="false" />
+    <aura:attribute name="cptList" type="List"/>
+    <aura:attribute name="showAwardedPositions" type="boolean" default="false"/>
+    <aura:attribute name="hideMarketingItems" type="boolean" default="false"/>
+    <aura:handler name="alertEvent" event="c:AlertDataToParentEvent" action="{!c.handleAlertChanges}"/>
+    <aura:attribute name="isOtcAccount" type="boolean" default="false"/>
+    <aura:attribute name="isSelectedProd" type="boolean" default="false"/>
+    
+    <aura:attribute name="selectedNdcs" type="List"/>
+    <aura:registerEvent name="Vision_ProdSelectionEvent100P" type="c:Vision_ProdSelectionEvent100P"/>
+    
+    <aura:handler event="c:Vision_ProdSelectionEvent100P" action="{!c.updatedSelectedProds}"/>
+    
+    <aura:attribute name="northSaleString" type="string"/>
+    <aura:attribute name="majorSaleString" type="string"/>
+    <aura:attribute name="cvsSaleString" type="string"/>
+    <aura:attribute name="cardinalSaleString" type="string"/>
+    <aura:attribute name="cvsVolString" type="string"/>
+    <aura:attribute name="cardinalVolString" type="string"/>
+    <aura:attribute name="majorVolString" type="string"/>
+    <aura:attribute name="northVolString" type="string"/>
+    <aura:attribute name="showRowWhite" type="boolean" default="false"/>
+    <aura:attribute name="refreshComments" type="string"/>
+    <aura:handler name="change" value="{!v.refreshComments}" action="{!c.refreshCommentsMethod}"/>
+    <aura:handler name="change" value="{!v.getUpdatedGcpItem}" action="{!c.getUpdatedGcpItemMethod}"/>
+    <aura:attribute name="getUpdatedGcpItem" type="boolean"/>
+    <aura:attribute name="activeCmntSecName" type="List"/>
+    
+    <aura:attribute name="conValue" type="String"/>
+    <aura:attribute name="tableRef" type="String"/>
+    
+    <aura:attribute name="showSaveButton" type="boolean" default="false"/>
+    
+    <aura:if isTrue="{!v.isSpinnerLoad}">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container">  
+                    <div class="slds-modal__content slds-p-around_medium" style="background-Color: White; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+        </center>
+        <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        <!-- <div class="">modalShadowRemove
+            <lightning:spinner alternativeText="Loading" variant="brand" />
+        </div> -->
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showAwardedPositions}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <aura:if isTrue="{!v.cptList.length>0}">
+                        <div class="slds-text-align_center"> 
+                            <b style="align:center;">{!v.cptList[0].Vision_Product__r.Name}</b>
+                        </div>  
+                    </aura:if>
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeAwardedPositions }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                    <div>
+                        <div style="padding-left:10px;padding-right:10px;">
+                            <div aura:id="mainDiv" style="overflow:auto;margin-top:10px;border-radius: 0.25rem;border: 1px solid #cfcfcf;">
+                                
+                                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                                    <aura:if isTrue="{!v.cptList.length>0}">
+                                        <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered slds-table--header-fixed">                            <thead>
+                                            <tr>
+                                                <th style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;padding:5px;">Contract Name</th>
+                                                <th style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;padding:5px;">Awarded Position</th> 
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                                <aura:iteration items="{!v.cptList}" var="item" >
+                                                    <tr>
+                                                        <td>{!item.Vision_Contract__r.Name}</td>
+                                                        <td>{!item.Vision_Current_Product_Position__c}</td>
+                                                    </tr>
+                                                </aura:iteration>
+                                            </tbody>
+                                        </table>  
+                                        <aura:set attribute="else">
+                                            <div style="font-size:18px;"><b>There are no Awarded Positions found for the selected Product.</b></div>
+                                        </aura:set>
+                                    </aura:if>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align:right;padding-right:10px;padding-top:10px;">
+                        <lightning:button title="Close Formulary Positions" onclick="{! c.closeAwardedPositions }">Close</lightning:button> 
+                    </div>
+                </div>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.isModalOpen}">
+        <c:Vision_Alert_Component isModalOpen="{!v.isModalOpen}" recId="{!v.selectedRecIdForAlert}"
+                                  accObj = "{!v.accObj}" alertType = "{!v.alertedItemType}"/>
+    </aura:if>
+    
+    <tr class="editTrClass"> <!-- style="{!v.showRowWhite ? '' : 'background-color:#f2f2f2'}"> onmouseover="{!c.changeHoverColor}" onmouseout="{!c.closeHoverColor}" -->
+        
+        <th scope="row">
+            <aura:if isTrue="{!v.showUserInputs}">
+                <a name="{!v.lineItemId}" onclick="{!c.editLineItem}">
+                    <lightning:icon iconName="utility:chevronup" alternativeText="Close" size="x-small" />
+                </a>
+                <aura:set attribute="else">
+                    <a name="{!v.lineItemId}" onclick="{!c.editLineItem}">
+                        <lightning:icon iconName="utility:chevrondown" alternativeText="Show Inputs" size="x-small" />
+                    </a>
+                </aura:set>
+            </aura:if>
+        </th>
+        
+        <th scope="row" class="slds-text-align--center">
+            
+            <!-- <aura:if isTrue="{!v.gcpLineItem.Phoenix_Latest_Bid_Date__c != null}">
+                <lightning:icon class="{!v.isProdFamAvailable ? 'showGreen' : 'showRed'}" 
+                                title="{!v.coolingPeriodTitle}"
+                                iconName="utility:light_bulb" 
+                                size="x-small"/>
+                <aura:set attribute="else">
+                    <lightning:icon title="Ready For Bid" class="showGreen" 
+                                    iconName="utility:light_bulb" 
+                                    size="x-small"/>
+                </aura:set>
+            </aura:if>&nbsp; -->
+            <lightning:icon title="Create Notification"
+                            iconName="utility:notification" class="{!v.gcpLineItem.Vision_isAlerted__c?'showGreen':''}"
+                            altenativeText="Create Notification"
+                            size="x-small" onclick="{!c.openModel}"/>&nbsp;
+            
+            <!-- <lightning:icon class="{!v.gcpLineItem.Vision_isSentToPanorama__c ? 'showRed' : ''}"
+                            title="Send To Panaroma For CIP"
+                            iconName="utility:custom_apps" 
+                            altenativeText="Send To Panaroma For CIP"
+                            size="x-small"/>&nbsp; -->
+            <lightning:icon class="{!v.gcpLineItem.Vision_isShareExpansion__c ? 'showRed' : ''}"
+                            title="Share Expansion Candidate"
+                            iconName="utility:expand" 
+                            altenativeText="Share Expansion Candidate"
+                            size="x-small"/>&nbsp;
+            <!-- <lightning:icon style="{!v.gcpLineItem.Product_Status__c == 'True Opportunity' ? 'cursor: pointer;' : ''}"
+                            class="{!v.createOptyColor}"
+                            title="{!v.gcpLineItem.Product_Status__c}"
+                            iconName="utility:priority" 
+                            size="x-small"
+                            onclick="{!c.createOpty}"/> -->
+        </th>
+        <th class="skuProdNameSticky" scope="row" style="background-color:rgba(252, 252, 252, 1) !important;">
+            <aura:if isTrue="{!v.showProducts}">
+                (<lightning:buttonIcon iconName="utility:minimize_window" class="iconCSS" variant="bare" name="" alternativeText="Hide Products" title="Hide Products" onclick="{!c.hideNdcList}"/>)
+                <aura:set attribute="else">
+                    (<lightning:buttonIcon iconName="utility:add" variant="bare" class="iconCSS1" name="" alternativeText="Show Products" title="Show Products" onclick="{!c.showNdcList}"/>)
+                </aura:set>
+            </aura:if>
+            <span style="{!v.showProducts ? 'font-weight:Bold;font-size:14px;' : ''}">
+                <a href="{!'/'+v.gcpLineItem.Product_Family__c}" target="_blank" rel="">{!v.gcpLineItem.GCP_Product_Family__c}</a>
+            </span>
+            <!--  title="{!v.gcpLineItem.GCP_Product_Family__c}" -->
+            <aura:if isTrue="{!v.gcpLineItem.Vision_isRelevance__c}">
+                &nbsp;&nbsp;<lightning:icon class="showGreen" iconName="utility:check" size="x-small" title="Relevant Product"/>
+                <aura:set attribute="else">
+                    &nbsp;&nbsp;<lightning:icon iconName="utility:close" size="x-small" title="Non-Relevant Product"/>
+                </aura:set>
+            </aura:if>
+        </th>
+        <aura:if isTrue="{!!v.hideMarketingItems}">
+            <td class="slds-text-align--right" title="From Profitability">
+                <aura:if isTrue="{!v.gcpLineItem.Phoenix_Drl_Act_Volume_Eu__c != null}">
+                    <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Drl_Act_Volume_Eu__c}" 
+                                               maximumFractionDigits="0" minimumFractionDigits="0"/>
+                    <aura:set attribute="else">
+                        N/A
+                    </aura:set>
+                </aura:if>
+            </td>
+            <td class="slds-text-align--right" title="From Profitability">
+                <aura:if isTrue="{!v.gcpLineItem.Phoenix_Drl_Act_Sales__c != null}">
+                    <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Drl_Act_Sales__c}" 
+                                               style="currency" 
+                                               currencyCode="USD" 
+                                               maximumFractionDigits="0" minimumFractionDigits="0"/>
+                    <aura:set attribute="else">
+                        N/A
+                    </aura:set>
+                </aura:if>
+            </td>
+            <td class="slds-text-align--right" title="From Profitability">
+                <aura:if isTrue="{!v.gcpLineItem.Phoenix_Drl_Act_Price__c != null}">
+                    <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Drl_Act_Price__c}" 
+                                               style="currency" 
+                                               currencyCode="USD" 
+                                               maximumFractionDigits="2" />
+                    <aura:set attribute="else">
+                        N/A
+                    </aura:set>
+                </aura:if>
+            </td>
+            <td class="slds-text-align--right" title="From Profitability">
+                <aura:if isTrue="{!v.gcpLineItem.Phoenix_DRL_Actual_TPT__c != null}">
+                    <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_DRL_Actual_TPT__c}" 
+                                               style="currency" 
+                                               currencyCode="USD" 
+                                               maximumFractionDigits="0" minimumFractionDigits="0"/>
+                    <aura:set attribute="else">
+                        N/A
+                    </aura:set>
+                </aura:if>
+            </td>
+            <td class="slds-text-align--right" title="From Profitability">
+                <aura:if isTrue="{!v.gcpLineItem.Phoenix_DRL_Actual_TPT_Per__c != null}">
+                    <lightning:formattedNumber value="{!(v.gcpLineItem.Phoenix_DRL_Actual_TPT_Per__c)*100}" 
+                                               style="percent-fixed"  
+                                               maximumFractionDigits="2" />
+                    <aura:set attribute="else">
+                        N/A
+                    </aura:set>
+                </aura:if>
+            </td>
+            <td class="slds-text-align--right" title="IMS/IRI via GCP">
+                <aura:if isTrue="{!v.gcpLineItem.Phoenix_Total_Market_Vol_MAT_EU__c != null}">
+                    <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Total_Market_Vol_MAT_EU__c}" 
+                                               maximumFractionDigits="0" />
+                    <aura:set attribute="else">
+                        N/A
+                    </aura:set>
+                </aura:if>
+            </td>
+            <td class="slds-text-align--right" title="IMS/IRI via GCP">
+                <aura:if isTrue="{!v.gcpLineItem.Phoenix_Total_Market_Sales__c != null}">
+                    <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Total_Market_Sales__c}" 
+                                               style="currency" 
+                                               currencyCode="USD" 
+                                               maximumFractionDigits="0" minimumFractionDigits="0"/>
+                    <aura:set attribute="else">
+                        N/A
+                    </aura:set>
+                </aura:if>
+            </td>
+            <td class="slds-text-align--right" title="IMS/IRI via GCP">
+                <aura:if isTrue="{!v.gcpLineItem.Phoenix_Ims_Drl_Mkt_Sh_Qtr__c != null}">
+                    <lightning:formattedNumber value="{!(v.gcpLineItem.Phoenix_Ims_Drl_Mkt_Sh_Qtr__c)*100}" 
+                                               style="percent-fixed" 
+                                               maximumFractionDigits="2" minimumFractionDigits="2"/>
+                    <aura:set attribute="else">
+                        N/A
+                    </aura:set>
+                </aura:if>
+            </td>
+            <td class="slds-text-align--right" title="DRL Actual Vol / Total Market Vol (calc)">
+                <aura:if isTrue="{!v.gcpLineItem.Phoenix_Drl_Mkt_Sh_Act__c != null}">
+                    <lightning:formattedNumber value="{!(v.gcpLineItem.Phoenix_Drl_Mkt_Sh_Act__c)*100}" 
+                                               style="percent-fixed" 
+                                               maximumFractionDigits="2"  minimumFractionDigits="2"/>
+                    <aura:set attribute="else">
+                        N/A
+                    </aura:set>
+                </aura:if>
+            </td>
+        </aura:if>
+        <td class="slds-text-align--right" title="{!v.accMarketShareTitle}">
+            <aura:if isTrue="{!v.gcpLineItem.Phoenix_Estimate_Account_Marketing_Share__c != null}">
+                <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Estimate_Account_Marketing_Share__c}" 
+                                           style="percent-fixed" 
+                                           maximumFractionDigits="2" minimumFractionDigits="2"/>
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td>
+        <td class="slds-text-align--right" title="{!v.estAcctShareOfWalletTitle}">
+            <aura:if isTrue="{!v.gcpLineItem.Phoenix_Est_Acct_Share_of_Wallet__c != null}">
+                <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Est_Acct_Share_of_Wallet__c}" 
+                                           style="percent-fixed"
+                                           maximumFractionDigits="2" minimumFractionDigits="2"/>
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td>
+        <td class="slds-text-align--right" title="{!v.estAcctVolTitle}">
+            <aura:if isTrue="{!v.gcpLineItem.Phoenix_Est_Acct_Total_Vol_EU__c != null}">
+                <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Est_Acct_Total_Vol_EU__c}"
+                                           maximumFractionDigits="0" minimumFractionDigits="0"/>
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td>
+        <td class="slds-text-align--right" title="[Est Acct Vol * Est Price (calc)]"> <!--*Est Acct Share of Wallet"> -->
+            <aura:if isTrue="{!v.gcpLineItem.Phoenix_Est_Acct_Sales__c != null}">
+                <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Est_Acct_Total_Vol_EU__c*v.gcpLineItem.Phoenix_Est_Price_EU__c}" 
+                                           style="currency" currencyCode="USD" 
+                                           maximumFractionDigits="0" minimumFractionDigits="0"/>
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td>
+        <td class="slds-text-align--right" title="{!v.estAcctPriceTitle}">
+            <aura:if isTrue="{!v.gcpLineItem.Phoenix_Est_Price_EU__c != null}">
+                <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Est_Price_EU__c}" 
+                                           style="currency" currencyCode="USD" 
+                                           maximumFractionDigits="2" />
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td>
+        <td class="slds-text-align--right" title="From GCP">
+            <aura:if isTrue="{!v.gcpLineItem.Phoenix_Cust_Act_Volume_Mat_Eu__c != null}">
+                <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Cust_Act_Volume_Mat_Eu__c}" 
+                                           maximumFractionDigits="0" minimumFractionDigits="0"/>
+                <aura:if isTrue="{!v.accObj.Name == 'Red Oak Sourcing'}">
+                    &nbsp;<lightning:icon title="{! 'CVS/Caremark: '+v.cvsVolString+'&#013;Cardinal Health: '+v.cardinalVolString+'&#013;Cardinal Major: '+v.majorVolString}"
+                                          iconName="utility:info_alt" size="x-small"/>
+                </aura:if>
+                <aura:if isTrue="{!v.accObj.AccountNumber == '153363'}">
+                    &nbsp;<lightning:icon title="{! 'McKesson Drug Company: '+v.cvsVolString+'&#013;Rite Aid: '+v.cardinalVolString+'&#013;Wal-Mart Stores, Inc.: '+v.majorVolString+'&#013;NorthStar: '+v.northVolString}"
+                                          iconName="utility:info_alt" size="x-small"/>
+                </aura:if>
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td>
+        <td class="slds-text-align--right" title="From GCP">
+            <aura:if isTrue="{!v.gcpLineItem.Cust_Act_Sales_Mat__c != null}">
+                <lightning:formattedNumber value="{!v.gcpLineItem.Cust_Act_Sales_Mat__c}" 
+                                           style="currency" currencyCode="USD" 
+                                           maximumFractionDigits="0" minimumFractionDigits="0"/>
+                <aura:if isTrue="{!v.accObj.Name == 'Red Oak Sourcing'}">
+                    &nbsp;<lightning:icon title="{! 'CVS/Caremark: '+v.cvsSaleString+'&#013;Cardinal Health: '+v.cardinalSaleString+'&#013;Cardinal Major: '+v.majorSaleString}"
+                                          iconName="utility:info_alt" size="x-small"/>
+                </aura:if>
+                <aura:if isTrue="{!v.accObj.AccountNumber == '153363'}">
+                    &nbsp;<lightning:icon title="{! 'McKesson Drug Company: '+v.cvsSaleString+'&#013;Rite Aid: '+v.cardinalSaleString+'&#013;Wal-Mart Stores, Inc.: '+v.majorSaleString+'&#013;NorthStar: '+v.northSaleString}"
+                                          iconName="utility:info_alt" size="x-small"/>
+                </aura:if>
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td>
+        <td class="slds-text-align--right" title="DRL Customer Actuals Sales/DRL Customer Actuals Vol">
+            <aura:if isTrue="{!v.gcpLineItem.Phoenix_Cust_Act_Mkt_Sh__c != null}">
+                <lightning:formattedNumber value="{!v.avgValue}" 
+                                           style="currency" currencyCode="USD" 
+                                           maximumFractionDigits="2" minimumFractionDigits="2"/>
+                <aura:set attribute="else">
+                    $ 0
+                </aura:set>
+            </aura:if>
+        </td>
+        <!-- <td class="slds-text-align__right" title="Customer Actual Vol / Total Market Vol">
+            <aura:if isTrue="{!v.gcpLineItem.Phoenix_Cust_Act_Mkt_Sh__c != null}">
+                <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Cust_Act_Mkt_Sh__c}" 
+                                           style="percent-fixed"
+                                           maximumFractionDigits="2" minimumFractionDigits="2"/>
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td> -->
+        <td class="slds-text-align--right" title="Est Acct  Sales - Customer Actual Sales">
+            <aura:if isTrue="{!v.gcpLineItem.Phoenix_Customer_Opp_Sales__c != null}">
+                <aura:if isTrue="{!v.gcpLineItem.Phoenix_Customer_Opp_Sales__c != 0}">
+                    <aura:if isTrue="{!v.gcpLineItem.Vision_isZeroOptyVal__c}">
+                        <span>$0&nbsp;&nbsp;</span>
+                        <lightning:icon iconName="utility:unlinked" class="showRed" variant="bare" onclick="{!c.modifyOptySalesVal}" size="x-small"
+                                        title="{!'Opportunity value: '+v.gcpLineItem.Phoenix_Customer_Opp_Sales__c}" style="cursor:pointer;"/>
+                        <aura:set attribute="else">
+                            <span><ui:outputCurrency value="{!v.gcpLineItem.Phoenix_Customer_Opp_Sales__c}" format="$##,###,###,###"/>&nbsp;&nbsp;</span>
+                            <lightning:icon iconName="utility:unlinked" variant="bare" onclick="{!c.modifyOptySalesVal}"
+                                            title="Zero Opportunity Value" style="cursor:pointer;" size="x-small" class="showGreen"/>
+                        </aura:set>
+                    </aura:if>
+                    <aura:set attribute="else">
+                        $0
+                    </aura:set>
+                </aura:if>
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td>
+        <td class="slds-text-align--right" title="{!'Opportunity Sales - [(Estimate Total Vol (EU) - Actuals Vol (EU))*COGS]. COGS value: '+v.gcpLineItem.cogs_per_unit__c}"><!-- "[(Est Acct Total Vol (EU)*Est Acct Share of Wallet*COGS) - (Customer Actual Vol (EU)*COGS)]"> -->
+            <aura:if isTrue="{!v.gcpLineItem.Phoenix_Customer_Opp_TPT__c != null}">
+                <aura:if isTrue="{!v.gcpLineItem.Phoenix_Customer_Opp_TPT__c != 0}">
+                    <aura:if isTrue="{!v.gcpLineItem.Vision_isZeroOptyVal__c}">
+                        $0
+                        <aura:set attribute="else">
+                            <ui:outputCurrency value="{!v.gcpLineItem.Phoenix_Customer_Opp_TPT__c}" format="$##,###,###,###"/>
+                        </aura:set>
+                    </aura:if>
+                    <aura:set attribute="else">
+                        $0
+                    </aura:set>
+                </aura:if>
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td>
+        <td class="slds-text-align--right" title="Customer Opp TPT ($)/Customer Opp Sales">
+            <aura:if isTrue="{!v.gcpLineItem.Phoenix_Customer_Opp_TPT_Perc__c != null}">
+                <aura:if isTrue="{!v.gcpLineItem.Vision_isZeroOptyVal__c}">
+                    N/A
+                    <aura:set attribute="else">
+                        <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Customer_Opp_TPT_Perc__c}" 
+                                                   style="percent-fixed"
+                                                   maximumFractionDigits="2" minimumFractionDigits="2"/>
+                    </aura:set>
+                </aura:if>
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td>
+        <td class="slds-text-align--center"> <!-- ondblclick="{!c.inlineEditOptyProb}"> -->
+            <span class="slds-grid slds-grid_align-spread">
+                <aura:if isTrue="{!v.optyProbEditMode == false}">
+                    <span class="">{!v.gcpLineItem.Phoenix_Opportunity_Probability__c}</span>
+                    <button onclick="{!c.inlineEditOptyProb}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                        <lightning:icon iconName="utility:edit" size="xx-small" />
+                    </button>
+                    <aura:set attribute="else">
+                        <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width:max-content;">
+                            <div class="slds-popover__body">
+                                <div class="slds-form-element slds-grid slds-wrap">
+                                    <div class="slds-form-element__control slds-grow">
+                                        <lightning:select name="opptyProbChange"
+                                                          aura:id="opptyProbChangeId"
+                                                          onblur="{!c.closeinlineEditOptyProb}"
+                                                          onchange="{!c.onRecChange}">
+                                            <option value="{!v.gcpLineItem.Phoenix_Opportunity_Probability__c}">
+                                                {!v.gcpLineItem.Phoenix_Opportunity_Probability__c}
+                                            </option>
+                                            <aura:if isTrue="{!(v.gcpLineItem.Phoenix_Opportunity_Probability__c != 'None')}" >
+                                                <option value="None">-None-</option>
+                                            </aura:if>
+                                            <aura:if isTrue="{!(v.gcpLineItem.Phoenix_Opportunity_Probability__c != 'High')}" >
+                                                <option value="High">High</option>
+                                            </aura:if>
+                                            <aura:if isTrue="{!(v.gcpLineItem.Phoenix_Opportunity_Probability__c != 'Medium')}" >
+                                                <option value="Medium">Medium</option>
+                                            </aura:if>
+                                            <aura:if isTrue="{!(v.gcpLineItem.Phoenix_Opportunity_Probability__c != 'Low')}" >
+                                                <option value="Low">Low</option>
+                                            </aura:if>
+                                        </lightning:select>
+                                    </div>
+                                </div>
+                            </div>
+                            <span id="form-end" tabindex="0"></span>
+                        </section>
+                    </aura:set>
+                </aura:if>
+            </span>
+        </td>
+       <!-- <td class="slds-text-align__center"> ondblclick="{!c.inlineEditPositions}">
+            <span class="slds-grid slds-grid_align-spread">
+                {!v.gcpLineItem.Phoenix_Current_Position__c}
+                <aura:if isTrue="{!v.PositionsEditMode == false}">
+                    <span>
+                        <div class="slds-grid">
+                            <div class="slds-grid slds-has-flexi-truncate">
+                                <p class="slds-truncate" title="position">
+                                    {!v.gcpLineItem.Phoenix_Current_Position__c}
+                                </p>
+                            </div>
+                        </div>
+                    </span>
+                    <button onclick="{!c.inlineEditPositions}"
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                            tabindex="0">
+                        <lightning:icon iconName="utility:edit" size="xx-small" />
+                    </button>
+                    <aura:set attribute="else">
+                        <section tabindex="0" class="slds-popover slds-popover_edit"
+                                 role="dialog" 
+                                 style="position: absolute; top: 0px;width: max-content;">
+                            <div class="slds-popover__body">
+                                <div class="slds-form-element slds-grid slds-wrap">
+                                    <div class="slds-form-element__control slds-grow">
+                                        <ui:inputText class="slds-input inputWidth"
+                                                      labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                      aura:id="positionEditMode"
+                                                      blur="{!c.closeinlineEditPositions}"
+                                                      change="{!c.onRecChange}"                                                      
+                                                      value="{!v.gcpLineItem.Phoenix_Current_Position__c}" />
+                                    </div>
+                                </div>
+                            </div>
+                            <span id="form-end" tabindex="0"></span>
+                        </section>
+                    </aura:set>
+                </aura:if>
+            </span>
+        </td>
+        <td class="slds-text-align__center">ondblclick="{!c.inlineEditCoolingPeriod}">
+            <span class="slds-grid slds-grid_align-spread">
+                <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Cooling_Period__c}"
+                                           maximumFractionDigits="0"/>
+                <aura:if isTrue="{!v.coolingPeriodEditMode == false}">
+                    <span>
+                        <lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Cooling_Period__c}"
+                                                   maximumFractionDigits="0"/>
+                    </span>
+                    <button onclick="{!c.inlineEditCoolingPeriod}" 
+                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                            tabindex="0"  >
+                        <lightning:icon iconName="utility:edit" 
+                                        size="xx-small"/>
+                    </button>
+                    <aura:set attribute="else">
+                        <section tabindex="0" class="slds-popover slds-popover_edit"
+                                 role="dialog" 
+                                 style="position: absolute; top: 0px;width: max-content;">
+                            <div class="slds-popover__body">
+                                <div class="slds-form-element slds-grid slds-wrap">
+                                    <div class="slds-form-element__control slds-grow">
+                                        <ui:inputNumber class="slds-input inputWidth"
+                                                        labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                        aura:id="coolingPeriodChange"
+                                                        blur="{!c.closeEditCoolingPeriod}"
+                                                        change="{!c.onRecChange}"                                                      
+                                                        value="{!v.gcpLineItem.Phoenix_Cooling_Period__c}" />
+                                    </div>
+                                </div>
+                            </div>
+                            <span id="form-end" tabindex="0"></span>
+                        </section>
+                    </aura:set>
+                </aura:if>
+            </span>
+        </td>
+        
+        <td class="">
+            
+        </td>
+        <td class="slds-text-align_center" ondblclick="{!c.inlineEditComments}">
+            <button onclick="{!c.inlineEditComments}" 
+                    class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                    tabindex="0">
+                <lightning:icon iconName="utility:comments" 
+                                size="x-small"/>
+            </button>
+        </td>
+        
+        <td class="slds-text-align_left">ondblclick="{!c.inlineProdStatus}">
+            <span class="slds-grid slds-grid_align-spread">
+                {!v.gcpLineItem.Product_Status__c}
+                <aura:if isTrue="{!v.probStatusEditMode == false}">
+                    <span class="">{!v.gcpLineItem.Product_Status__c}</span>
+                    <button onclick="{!c.inlineProdStatus}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                        <lightning:icon iconName="utility:edit" size="xx-small"/>
+                    </button>
+                    <aura:set attribute="else">
+                        <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width:max-content;">
+                            <div class="slds-popover__body">
+                                <div class="slds-form-element slds-grid slds-wrap">
+                                    <div class="slds-form-element__control slds-grow">
+                                        <lightning:select name="prodStatusChange"
+                                                          aura:id="prodStatusChange"
+                                                          onblur="{!c.closeinlineProdStatus}"
+                                                          onchange="{!c.onProdStatusChange}">
+                                            <option value="{!v.gcpLineItem.Product_Status__c}">
+                                                {!v.gcpLineItem.Product_Status__c}
+                                            </option>
+                                            <aura:if isTrue="{!(v.gcpLineItem.Product_Status__c != 'True Opportunity')}" >
+                                                <option value="True Opportunity">True Opportunity</option>
+                                            </aura:if>
+                                            <aura:if isTrue="{!(v.gcpLineItem.Product_Status__c != 'Not An Opportunity')}" >
+                                                <option value="Not An Opportunity">Not An Opportunity</option>
+                                            </aura:if>
+                                            <aura:if isTrue="{!(v.gcpLineItem.Product_Status__c != 'Price Constraint')}" >
+                                                <option value="Price Constraint">Price Constraint</option>
+                                            </aura:if>
+                                            <aura:if isTrue="{!(v.gcpLineItem.Product_Status__c != 'Supply Constraint')}" >
+                                                <option value="Supply Constraint">Supply Constraint</option>
+                                            </aura:if>
+                                            <aura:if isTrue="{!(v.gcpLineItem.Product_Status__c != 'Awarded')}" >
+                                                <option value="Awarded">Awarded</option>
+                                            </aura:if>
+                                            <aura:if isTrue="{!(v.gcpLineItem.Product_Status__c != 'In Bid')}" >
+                                                <option value="In Bid">In Bid</option>
+                                            </aura:if>
+                                        </lightning:select>
+                                    </div>
+                                </div>
+                            </div>
+                            <span id="form-end" tabindex="0"></span>
+                        </section>
+                    </aura:set>
+                </aura:if>
+            </span>
+        </td>
+        <td>
+        </td> -->
+    </tr>
+    
+    <aura:if isTrue="{!v.showUserInputs}">
+        <tr>
+            <td colSpan="{!v.hideMarketingItems ? '15' : '24'}">
+                <c:Phoenix_GCP_MarketShare_UserInputs gcpLineItem="{!v.gcpLineItem}" 
+                                                      accObj="{!v.accObj}"
+                                                      showUserInputs = "{!v.showUserInputs}"
+                                                      doRefresh = "{!v.doRefresh}"
+                                                      avgValue = "{!v.avgValue}"/>
+            </td>
+        </tr>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showProducts}">
+        <aura:if isTrue="{!v.ndcList.length>0}">
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="padding:0px;">  
+                    <div class="slds-modal__content slds-p-around_medium" style="padding:0px;height:auto">
+                        <div class="slds-box"> <!-- style="border-color:black;padding:5px;border-width:2px;"> -->
+                            <div class="slds-box" style="margin-bottom:5px;padding-top:3px;padding-bottom:3px;">
+                                <div class="slds-grid">
+                                    <div style="font-size:18px;padding-top:5px;" class="slds-col slds-size_1-of-2">
+                                        <b>{!v.gcpLineItem.GCP_Product_Family__c}</b>
+                                    </div>
+                                    <div style="text-align:right;padding-top:4px;" class="slds-col slds-size_1-of-2">
+                                        
+                                        <div class="slds-grid slds-grid_align-spread" style="justify-content: right;display: flex;">
+                                            <aura:if isTrue="{!v.accObj.Vision_is_SRx_Account__c}">
+                                                <b>Opportunity Volume:</b>&nbsp;<lightning:formattedNumber value="{!(v.gcpLineItem.Phoenix_Est_Acct_Total_Vol_EU__c != null ? v.gcpLineItem.Phoenix_Est_Acct_Total_Vol_EU__c : 0) - (v.gcpLineItem.Phoenix_Cust_Act_Volume_Mat_Eu__c != null ? v.gcpLineItem.Phoenix_Cust_Act_Volume_Mat_Eu__c : 0)}"
+                                                                                                           maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                                &nbsp;&nbsp;&nbsp;&nbsp;<b>Sales :</b>&nbsp;<lightning:formattedNumber value="{!v.gcpLineItem.Phoenix_Customer_Opp_Sales__c}" 
+                                                                                                                       style="currency" currencyCode="USD" 
+                                                                                                                       maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                            </aura:if>
+                                            <div class="" style="width:300px;justify-content: right;display: flex;">
+                                                <button class="slds-button slds-button_icon slds-button_icon-border-filled" title="save Comment to SKUs" onclick="{!c.openTakeComments}">
+                                                    <lightning:icon iconName="utility:comments" 
+                                                                    size="x-small"/>
+                                                </button>
+                                                <div style="position:relative;display:none;" id="commentsPopup">
+                                                    <div class="slds-popover slds-popover_tooltip slds-popover_prompt slds-popover_prompt_top-right slds-popover_large" role="dialog" id="help"
+                                                         style="position: absolute !important; top: 0px;z-index:1;background-color:white;">
+                                                        <div class="slds-popover__body slds-box" style="color:black;padding:3px;">
+                                                            <div class="slds-grid">
+                                                                <div class="slds-col slds-size_2-of-3">
+                                                                    <div>
+                                                                        <lightning:textarea label="Vision Comment" variant="label-hidden"
+                                                                                            value="{!v.gcpLineItem.Vision_Comments__c}"
+                                                                                            placeholder="Enter Comment Here..."/>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="slds-col slds-size_1-of-3">
+                                                                    <div class="slds-grid slds-grid_vertical-align-center" style="margin-top:3px;">
+                                                                        <button class="slds-button slds-button_brand slds-col_bump-left" onclick="{!c.saveCommentsToSku}">Save</button>
+                                                                        <button class="slds-button slds-button_neutral slds-col_bump-left" onclick="{!c.closeComments}">Close</button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                &nbsp;&nbsp;<lightning:select label="" onchange="{!c.conUpdated}"
+                                                                              variant="label-hidden" value="{!v.conValue}" class="labelHideCss">
+                                                <option value="{!v.conValue}">
+                                                    {!v.conValue}
+                                                </option>
+                                                <aura:if isTrue="{!v.conValue != 'None'}" >
+                                                    <option value="None">None</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!v.conValue != 'True Opportunity'}" >
+                                                    <option value="True Opportunity">True Opportunity</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!v.conValue != 'Price Constraint'}" >
+                                                    <option value="Price Constraint">Price Constraint</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!v.conValue != 'Supply Constraint'}" >
+                                                    <option value="Supply Constraint">Supply Constraint</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!v.accObj.Vision_is_SRx_Account__c}">  
+                                                    <aura:if isTrue="{!v.conValue != 'Both'}" >
+                                                        <option value="Both">Both</option>
+                                                    </aura:if>
+                                                </aura:if>
+                                                <aura:if isTrue="{!v.conValue != 'Not An Opportunity'}" >
+                                                    <option value="Not An Opportunity">Not An Opportunity</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!v.conValue != 'Awarded'}" >
+                                                    <option value="Awarded">Awarded</option>
+                                                </aura:if>
+                                                </lightning:select> 
+                                                <aura:if isTrue="{!v.showSaveButton}">
+                                                    &nbsp;&nbsp;<button class="slds-button slds-button_icon slds-button_icon-border-filled" title="save Constraint to SKUs">
+                                                    <lightning:icon iconName="utility:check" size="x-small" onclick="{!c.saveConToSku}"/>
+                                                    </button>
+                                                </aura:if>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <c:GCP_MarketShareSKUs gcpLineItem="{!v.gcpLineItem}" showProducts="{!v.showProducts}" ndcList="{!v.ndcList}" accObj="{!v.accObj}"
+                                                   selectedNdcs="{!v.selectedNdcs}" isSelectedProd="{!v.isSelectedProd}" getUpdatedGcpItem="{!v.getUpdatedGcpItem}"
+                                                   commentIndex="{!v.commentIndex}" prodPositionIndex="{!v.prodPositionIndex}" showAwardedPositions="{!v.showAwardedPositions}"
+                                                   selectedRecIdForAlert="{!v.selectedRecIdForAlert}" alertedItemType="{!v.alertedItemType}" isModalOpen="{!v.isModalOpen}"
+                                                   tableRef="{!v.tableRef}"/>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop-open popupBackground" aura:id="customModal-Back"></div>
+            <aura:set attribute="else">
+                <tr>
+                    <td colSpan="30" class="slds-text-align_left">
+                        <ui:message title="There are no NDCs found for this Product Family"
+                                    severity="info"/>
+                    </td>
+                </tr>
+            </aura:set>
+        </aura:if>
+    </aura:if>
+    
+    
+    <aura:if isTrue="{!v.sendDataConfirm}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                 aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            
+            <div class="slds-modal__container">
+                
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" onclick="{!c.closePositionsPopup}"
+                                          alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                    
+                    <h2 class="slds-text-heading_medium slds-hyphenate"><b>Cost Improvment Program(CIP)</b></h2>
+                    
+                </header>
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.isSpinner}">
+                        <lightning:spinner size="medium" variant="brand" />
+                    </aura:if>
+                    <P>Do you want to send it to Panorama for Cost Improvment Program(CIP)?</P>
+                </div>
+                <!--/div-->
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    
+                    <lightning:button variant="brand" 
+                                      label="Yes" 
+                                      title="Yes" 
+                                      onclick="{! c.sendDataYes }" />
+                    <lightning:button variant="neutral" 
+                                      label="No, Send it later!" 
+                                      title="No, Send it later!" 
+                                      onclick="{! c.sendDataNo }" />
+                    <lightning:button variant="neutral" label="Cancel" title="Cancel"
+                                      onclick="{! c.closeSendData }" />
+                </footer>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>    
+    
+    <!--StartProductPosition Model-->
+    <aura:if isTrue="{!v.isPositionsModalOpen}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                 aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            
+            <div class="slds-modal__container">
+                
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" onclick="{!c.closePositionsPopup}"
+                                          alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                    
+                    <h2 class="slds-text-heading_medium slds-hyphenate"><b>Product Positions</b></h2>
+                    
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.isSpinner}">
+                        <lightning:spinner size="medium" variant="brand" />
+                    </aura:if>
+                    <P>
+                        <aura:if isTrue="{!not(empty(v.LinepositionsList))}">
+                            <div style="padding-left:20px;">
+                                <aura:iteration items="{!v.LinepositionsList}" var="prod">
+                                    <div>
+                                        <lightning:input label="{!prod.posName}" type="checkbox" 
+                                                         value="{!prod.posName}" checked="{!prod.isChecked}"/>
+                                    </div>
+                                </aura:iteration>
+                            </div>
+                            <aura:set attribute="else">
+                                <center>
+                                    <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                         role="alert" style="width:50%;">
+                                        <span class="slds-icon_container slds-m-right_x-small"
+                                              title="Please add line items to view the table">
+                                            <lightning:icon iconName="utility:info" alternativeText="info"
+                                                            size="x-small" variant="inverse" />
+                                        </span>
+                                        <h2> No Records Found</h2>
+                                    </div>
+                                </center>
+                            </aura:set>
+                        </aura:if>
+                    </P>
+                </div>
+                <!--/div-->
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" label="Cancel" title="Cancel"
+                                      onclick="{! c.closePositionsPopup }" />
+                    <aura:if isTrue="{!not(empty(v.LinepositionsList))}">
+                        <lightning:button variant="brand" 
+                                          label="Save" 
+                                          title="Save" 
+                                          onclick="{! c.savePositions }" />
+                    </aura:if>
+                    
+                </footer>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        
+    </aura:if>
+    <!--End Product positions Mode-->
+    
+    <aura:if isTrue="{!v.showComments}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                 aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_medium">
+            
+            <div class="slds-modal__container">
+                
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" onclick="{!c.closeCommentPopup}"
+                                          alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                    
+                    <h2 class="slds-text-heading_medium slds-hyphenate"><b>{!v.gcpLineItem.Phoenix_Product_Family__c} Comments/Insights</b></h2>
+                    
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.showSpinnerInCommentPop}">
+                        <lightning:spinner size="medium" variant="brand" />
+                    </aura:if>
+                    <div>
+                        <div>
+                            <lightning:textarea label="Vision Comment"
+                                                value="{!v.visionComment}"
+                                                placeholder="Enter Comment Here..."/>
+                        </div>
+                        <div style="text-align:right;">
+                            <lightning:button variant="brand" label="Save" title="Save"
+                                              onclick="{! c.onSaveCmnt }"/>
+                        </div>
+                    </div>
+                    <!-- <aura:if isTrue="{!v.doesCmntsExist}">
+                        <div style="text-align:right;margin-top:5px;">
+                            <lightning:button aura:id="allCmnts" onclick="{!c.downloadCmnts}">
+                                <span>
+                                    Export All Comments&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                </span>
+                            </lightning:button>
+                        </div>
+                    </aura:if> -->
+                    <aura:iteration items="{!v.listOfCmnts}" var="cmntLineList" indexVar="sNo">
+                        <lightning:accordion allowMultipleSectionsOpen="true" aura:id="accordion" activeSectionName="{!v.activeCmntSecName}">
+                            <aura:if isTrue="{!cmntLineList.cmntCat=='Vision Comments'}">
+                                <lightning:accordionSection name="Vision_Comments" label="Vision Comments">
+                                    <aura:if isTrue="{!not(empty(cmntLineList.cmntWrapList))}">
+                                        <!-- <div style="text-align:right;margin-bottom:5px;">
+                                            <lightning:button aura:id="visionCmnts" onclick="{!c.downloadCmnts}">
+                                                <span>
+                                                    Export&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                                </span>
+                                            </lightning:button>
+                                        </div> -->
+                                        <aura:iteration items="{!cmntLineList.cmntWrapList}" var="visionCmnts">
+                                            <div class="slds-box" style="padding:10px;margin-bottom:3px;">
+                                                <article class="slds-post slds-card">
+                                                    <header class="slds-post__header slds-media">
+                                                        <!-- <div class="slds-media__figure">
+                                                            <a href="#" class="slds-avatar slds-avatar_circle slds-avatar_large">
+                                                                <img alt="{!visionCmnts.userName}" src="{!visionCmnts.profilePicUrl}" 
+                                                                     title="{!visionCmnts.userName}"/>
+                                                            </a>
+                                                        </div> -->
+                                                        <div class="slds-media slds-media_large">
+                                                            <div class="slds-media__figure">
+                                                                <img alt="{!visionCmnts.userName}" src="{!visionCmnts.profilePicUrl}"
+                                                                     title="{!visionCmnts.userName}"/>
+                                                            </div>
+                                                        </div>
+                                                        <div class="slds-media__body">
+                                                            <div class="slds-grid slds-grid_align-spread slds-has-flexi-truncate">
+                                                                <p class="slds-text-body_small">
+                                                                    {!visionCmnts.userName} 
+                                                                </p>
+                                                            </div>
+                                                            <p class="slds-text-body_small">
+                                                                    {!visionCmnts.cmntDate}
+                                                            </p>
+                                                        </div>
+                                                    </header>
+                                                    <div class="slds-post__content">
+                                                        <aura:if isTrue="{!visionCmnts.isCommentOwner}">
+                                                            <c:VisionAnalysisCommentsCmp commentObj="{!visionCmnts.gcpCmntObj}"
+                                                                                         refreshComments="{!v.refreshComments}"/>
+                                                            <aura:set attribute="else">
+                                                                <p style="margin-left:5px;">{!visionCmnts.cmntString}</p>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </div>
+                                                </article> 
+                                            </div>
+                                        </aura:iteration>
+                                        <aura:set attribute="else">
+                                            <center>
+                                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                                     role="alert" style="width:50%;">
+                                                    <span class="slds-icon_container slds-m-right_x-small"
+                                                          title="Please add line items to view the table">
+                                                        <lightning:icon iconName="utility:info" alternativeText="info"
+                                                                        size="x-small" variant="inverse" />
+                                                    </span>
+                                                    <h2>No Vision Comments Found</h2>
+                                                </div>
+                                            </center>
+                                        </aura:set>
+                                    </aura:if>
+                                </lightning:accordionSection>
+                            </aura:if>
+                            <aura:if isTrue="{!cmntLineList.cmntCat=='Panorama Comments'}">
+                                <lightning:accordionSection name="Panorama_Comments" label="Panorama Comments">
+                                    <aura:if isTrue="{!not(empty(cmntLineList.cmntWrapList))}">
+                                        <!-- <div style="text-align:right;margin-bottom:5px;">
+                                            <lightning:button aura:id="panoramaCmnts" onclick="{!c.downloadCmnts}">
+                                                <span>
+                                                    Export&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                                </span>
+                                            </lightning:button>
+                                        </div> -->
+                                        <aura:iteration items="{!cmntLineList.cmntWrapList}" var="visionCmnts">
+                                            <div class="slds-box" style="padding:10px;margin-bottom:3px;">
+                                                <article class="slds-post slds-card">
+                                                    <header class="slds-post__header slds-media">
+                                                        <div class="slds-media slds-media_large">
+                                                            <div class="slds-media__figure">
+                                                                <img alt="{!visionCmnts.userName}" src="{!visionCmnts.profilePicUrl}"
+                                                                     title="{!visionCmnts.userName}"/>
+                                                            </div>
+                                                        </div>
+                                                        <div class="slds-media__body">
+                                                            <div class="slds-grid slds-grid_align-spread slds-has-flexi-truncate">
+                                                                <p class="slds-text-body_small">
+                                                                    {!visionCmnts.userName}
+                                                                </p>
+                                                            </div>
+                                                            <p class="slds-text-body_small">
+                                                                    {!visionCmnts.cmntDate}
+                                                            </p>
+                                                        </div>
+                                                    </header>
+                                                    <div class="slds-post__content">
+                                                        <aura:if isTrue="{!visionCmnts.gcpCmntObj.long_term_strategy__c != ''}">
+                                                            <div class="slds-label" style="font-weight:bold;">Long Term Strategy</div>
+                                                            <div><p style="margin-left:5px;">{!visionCmnts.gcpCmntObj.long_term_strategy__c}</p></div>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!visionCmnts.gcpCmntObj.short_term_strategy__c != ''}">
+                                                            <div class="slds-label" style="font-weight:bold;">Short Term Strategy</div>
+                                                            <div><p style="margin-left:5px;">{!visionCmnts.gcpCmntObj.short_term_strategy__c}</p></div>
+                                                        </aura:if>
+                                                    </div>
+                                                </article> 
+                                            </div>
+                                        </aura:iteration>
+                                        <aura:set attribute="else">
+                                            <center>
+                                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                                     role="alert" style="width:50%;">
+                                                    <span class="slds-icon_container slds-m-right_x-small"
+                                                          title="Please add line items to view the table">
+                                                        <lightning:icon iconName="utility:info" alternativeText="info"
+                                                                        size="x-small" variant="inverse" />
+                                                    </span>
+                                                    <h2>No Vision Comments Found</h2>
+                                                </div>
+                                            </center>
+                                        </aura:set>
+                                    </aura:if>
+                                </lightning:accordionSection>
+                            </aura:if>
+                            
+                        </lightning:accordion>
+                    </aura:iteration>
+                    
+                    <aura:if isTrue="{!not(empty(v.brightCmnts))}">
+                        <lightning:accordion allowMultipleSectionsOpen="true" aura:id="accordion">
+                            <lightning:accordionSection name="Bright Comments" label="Bright Comments">
+                                <!-- <div style="text-align:right;margin-bottom:5px;">
+                                        <lightning:button aura:id="brightCmnts" onclick="{!c.downloadCmnts}">
+                                            <span>
+                                                Export&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                            </span>
+                                        </lightning:button>
+                                    </div> -->
+                                <aura:iteration items="{!v.brightCmnts}" var="brightCmnts">
+                                    <div class="slds-box" style="padding:10px;margin-bottom:3px;">
+                                        <div><b>Bid # <a href="{!'/'+brightCmnts.bidId}" target="_blank">{!brightCmnts.key}</a></b></div>
+                                        <aura:if isTrue="{!brightCmnts.value[0].bidComments != undefined}">
+                                            <div>Bid Comments : <ui:outputRichText aura:id="" value="{!brightCmnts.value[0].bidComments}"/></div>
+                                        </aura:if>
+                                        <div>
+                                            <div class="slds-box" style="padding:5px;">
+                                                <aura:iteration items="{!brightCmnts.value}" var="brightCmntLines" indexVar="ind">
+                                                    <div style="{!ind != 0 ? 'border-top-color:#c9c9c9;border-top:1px solid;padding:5px;' : 'padding:5px;'}">
+                                                        <div style=""><b>{!brightCmntLines.userName}</b> ({!brightCmntLines.cmntAprvlStage}) - {!brightCmntLines.cmntDate}</div>
+                                                        <div>
+                                                            <p>{!brightCmntLines.cmntString}</p>
+                                                        </div>
+                                                    </div>
+                                                    <!-- <article class="slds-post slds-card">
+                                                    <header class="slds-post__header slds-media">
+                                                        <div class="slds-media slds-media_large">
+                                                            <div class="slds-media__figure">
+                                                                <img alt="{!brightCmntLines.userName}" src="{!brightCmntLines.profilePicUrl}"
+                                                                     title="{!brightCmntLines.userName}"/>
+                                                            </div>
+                                                        </div>
+                                                        <div class="slds-media__body">
+                                                            <div class="slds-grid slds-grid_align-spread slds-has-flexi-truncate">
+                                                                <p class="slds-text-body_small">
+                                                                    {!brightCmntLines.userName} - {!brightCmntLines.cmntAprvlStage}
+                                                                </p>
+                                                            </div>
+                                                            <p class="slds-text-body_small">
+                                                                {!brightCmntLines.cmntDate}
+                                                            </p>
+                                                        </div>
+                                                    </header>
+                                                    <div class="slds-post__content">
+                                                        <p>{!brightCmntLines.cmntString}</p>
+                                                    </div>
+                                                </article> -->
+                                                </aura:iteration>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </aura:iteration>
+                            </lightning:accordionSection>
+                        </lightning:accordion>
+                    </aura:if>
+                </div>
+                <!--/div-->
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" label="Close" title="Close"
+                                      onclick="{! c.closeCommentPopup }" />
+                    <aura:if isTrue="{!v.showSaveComntButton}">
+                        <lightning:button variant="brand" label="Save" title="Save"
+                                          onclick="{! c.onRecChange }" />
+                    </aura:if>
+                </footer>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+</aura:component>

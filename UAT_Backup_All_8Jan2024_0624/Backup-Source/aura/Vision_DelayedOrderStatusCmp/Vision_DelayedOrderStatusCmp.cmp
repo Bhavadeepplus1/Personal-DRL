@@ -1,0 +1,266 @@
+<aura:component controller = "Vision_Order_Status"  implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:handler name="init" value="{!this}" action = "{!c.doInit}"/>
+    <aura:attribute name="recordId" type = "Id"/>
+    <aura:attribute name="customerOrdersList" type="list"/>
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'All', 'value': 'all'},
+                                                        {'label': 'Open', 'value': 'openOrders'},
+                                                        {'label': 'OTIF', 'value': 'otif'},
+                                                        {'label': 'Delayed', 'value': 'delayed'},
+                                                        {'label': 'Partially Delivered', 'value': 'partiallyDelivered'}
+                                                        ]"/>
+    <aura:attribute name="dateOptions" type="List" default="[
+                                                            {'label': 'PO Date', 'value': 'Vision_PO_Date__c'},
+                                                            {'label': 'Order Date', 'value': 'Vision_Order_Date__c'},
+                                                            {'label': 'Shipped Date', 'value': 'Vision_GCP_Ship_Date__c'}
+                                                            ]"/>
+    <aura:attribute name="show" type="boolean" default="true" />
+    <aura:attribute name="noData" type="boolean" default="false" />
+    <aura:attribute name="showProducts" type="boolean" default="false" />
+    <aura:attribute name="loaded" type="boolean"/>
+    <aura:attribute name="selectedOption" type="String" />
+    <aura:attribute name="selectedRange" type="String" default="Vision_PO_Date__c" />
+    <aura:attribute name="startDate" type="string" />  <!-- YYYY-MM-DD -->
+    <aura:attribute name="endDate" type="string" />
+    <aura:attribute name="searchText" type="String" />
+    <aura:attribute name="searchCustText" type="String" />
+    <aura:attribute name="GCPUpdateDate" type="String" />
+    <aura:attribute name="SAPUpdateDate" type="String" />
+    <aura:attribute name="VisionUpdateDate" type="String" />
+    <aura:attribute name="openDelayed" type="Boolean" default="false" />
+    <aura:attribute name="totalOrders" type="Integer" />
+    <aura:attribute name="totalCount" type="Integer" />
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    
+    <aura:attribute name="offset" type="Integer" default="0"/>
+    <aura:attribute name="curpage" type="Integer" default="1"/>
+    <aura:attribute name="limitPerPage" type="Integer" default="200"/>
+    <aura:attribute name="pagesArray" type="List" default="[]"/>
+    <aura:attribute name="totalPages" type="Integer" />
+    <aura:attribute name="firstOrder" type="integer" />
+    <aura:attribute name="lastOrder" type="integer" />
+    <aura:attribute name="selectedPageOption" type="String" default="First"/>
+    <aura:attribute name="stringToDisablePageButton" type="String" />
+    <aura:attribute name="totalAmount" type="Decimal" default="0"/>
+    <aura:attribute name="query" type="String" />
+    <aura:attribute name="existingOrdersMap" type="Object" />
+    <aura:attribute name="countLoading" type="boolean" />
+    
+    <aura:handler name="change" value="{!v.startDate}" action="{!c.handleStartDateChange}"/>
+    <aura:handler name="change" value="{!v.endDate}" action="{!c.handleEndDateChange}"/>
+    <aura:attribute name="stageValue" type="integer" />
+    
+    <aura:if isTrue="{! v.loaded }">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+    <div class="slds-grid">
+        <div class="slds-col slds-size_1-of-4">
+            <div class="slds-grid">
+                <div class="slds-p-top_xx-small">
+                    <span>
+                        <b><p style ="color:#3E3E3C;font-size: 14px;" > Open and Delayed Orders</p></b>
+                    </span>
+                </div>
+                
+                <div>
+                    <span>
+                        <b><lightning:input type="toggle" class="customLabel"  onchange="{!c.searchSrxRxOttc}" name="togglevalue" checked="{!v.openDelayed}" messageToggleActive="" messageToggleInactive=""/></b>
+                    </span>
+                </div>&nbsp;&nbsp;
+                <div class="slds-p-top_xx-small">
+                    <span>
+                        <b><p style ="color:#3E3E3C;font-size: 14px;" >Delivered and Delayed Orders</p></b>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="slds-grid slds-col slds-size_3-of-4" style="text-align: center;">
+            <div class="slds-col slds-size_1-of-4" style="margin: 4px 0px 10px 0px;">
+                <span style="font-weight: normal !important; font-style: italic;"><b>Update from SAP:&nbsp;</b></span> {!v.SAPUpdateDate}
+            </div>
+            <div class="slds-col slds-size_1-of-4" style="margin: 4px 0px 10px 0px;">
+                <span style="font-weight: normal !important; font-style: italic;"><b>Updated in PRISM: </b>{!v.GCPUpdateDate}</span>
+            </div>
+            <div class="slds-col slds-size_1-of-4" style="margin: 4px 0px 10px 0px;">
+                <span style="font-weight: normal !important;font-style: italic;"><b>Updated in Vision: </b>{!v.VisionUpdateDate}</span>
+            </div>
+            <div class="slds-col slds-size_1-of-4" style="margin: 4px 0px 10px 0px;">
+                <aura:if isTrue="{!v.totalOrders != null}">
+                    <span style="font-weight: normal !important;font-style: italic;"><b>Total Count: </b>{!v.totalOrders}</span>&nbsp;(<lightning:formattedNumber value="{!v.totalAmount}" style="currency" currencyCode="USD" maximumFractionDigits="0"  minimumFractionDigits="0"/>)
+                    <aura:set attribute="else">
+                        <span style="font-weight: normal !important;font-style: italic;"><b>Total Count: </b>0</span>&nbsp;(<lightning:formattedNumber value="0" style="currency" currencyCode="USD" maximumFractionDigits="0"  minimumFractionDigits="0"/>)
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!v.countLoading}">
+                    <span class="exampleHolder" style="position: relative; margin-left: 20px;">
+                        <lightning:spinner alternativeText="Loading" size="small" class="spinner"/>
+                    </span>
+                </aura:if>
+            </div>
+        </div>
+    </div>
+    <div class="slds-grid slds-gutters" style="max-height: 70px; font-size: 13px;">
+        <div class="slds-col slds-size_1-of-6" style="margin-top: 24px;">
+            <span onkeypress="{}" >
+                <lightning:input value="{!v.searchCustText}" type="search" title="Search by Customer Name or Code"
+                                 variant="label-hidden" placeholder="Search by Customer Name or Code"
+                                 aura:id="SearchBox"
+                                 /></span>
+        </div>
+        <div class="slds-col slds-size_1-of-6" style="margin-top: 24px;">
+            <span onkeypress="{}" >
+                <lightning:input value="{!v.searchText}" type="search" title="Search by Order Number or PO Number or Product Name or NDC Code"
+                                 variant="label-hidden" placeholder="Search by Order Number or PO Number or Product Name or NDC Code"
+                                 aura:id="SearchBox"
+                                 /></span>
+        </div>
+        <div class="slds-col slds-size_1-of-6">
+            <lightning:select aura:id="rangeId" name="Date filter based on" label="Date filter based on" onchange="{! c.handleChange }">
+                <aura:iteration items="{!v.dateOptions}" var="option">
+                    <option  text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                </aura:iteration>
+            </lightning:select>
+        </div>
+        <div class="slds-col slds-size_1-of-6">
+            <lightning:input aura:id="date1" type="date" name="date1" label="Start Date" value="{!v.startDate}"/>
+        </div>
+        <div class="slds-col slds-size_1-of-6">
+            <lightning:input aura:id="date2" type="date" name="date2" label="End Date" value="{!v.endDate}"/>
+        </div>
+        <div class="slds-col slds-size_1-of-6" style="margin-top: 24px;">
+            <lightning:button class ="slds-m-bottom_xx-large" variant="brand" label="Run Report" title="Run Report" onclick="{! c.filterData }" />
+        </div>
+    </div>
+    <!--<aura:if isTrue="{! v.pagesArray.length > 0 }">
+        <div class="slds-button-group slds-grid slds-gutters" role="group" style="text-align: center;">
+            <div class="slds-col slds-size_1-of-1 slds-large-size_12-of-12">
+                <lightning:buttonIcon iconName="utility:left" variant="border" alternativeText="Left" class="iconCSSPage" disabled="{!v.curpage == 1}" onclick="{!c.previousPage}"/>
+                
+                <aura:iteration items="{!v.pagesArray}" var="page">
+                    <lightning:button label="{!page}" value="{!page}" variant="{!page == v.curpage ? 'brand' : 'neutral' }" onclick="{!c.doPaging}" />
+                </aura:iteration>
+                
+                <lightning:buttonIcon iconName="utility:right" variant="border" alternativeText="Right" class="iconCSSPage" disabled="{!v.curpage == v.totalPages}" onclick="{!c.nextPage}" />
+            </div>
+        </div>
+        <br/>
+    </aura:if>-->
+    <aura:if isTrue="{!v.customerOrdersList.length != 0}">
+        <div style="text-align: center;">
+            <lightning:button label="First" value="First" variant="{!v.selectedPageOption == 'First' ? 'brand' : 'neutral' }" onclick="{!c.onFirst}" />
+            <lightning:button label="Previous" value="Previous" disabled="{!or(v.selectedPageOption == 'First', v.stringToDisablePageButton == 'disablePrevious')}" variant="{!v.selectedPageOption == 'Previous' ? 'brand' : 'neutral' }" onclick="{!c.previousPage}" />
+            <lightning:button label="Next" value="Next" disabled="{!or(v.selectedPageOption == 'Last', v.stringToDisablePageButton == 'disableNext')}" variant="{!v.selectedPageOption == 'Next' ? 'brand' : 'neutral' }" onclick="{!c.nextPage}" />
+            <lightning:button label="Last" value="Last" variant="{!v.selectedPageOption == 'Last' ? 'brand' : 'neutral' }" onclick="{!c.onLast}" />
+            <!--<span align="right" style="color:#5224B2;float: right;">Legends&nbsp;<lightning:icon class="purpleIcon" iconName="utility:in_app_assistant" size="small" onclick="{!c.openModal}"/></span>  -->
+        </div>
+        <div style="overflow: auto; max-height: 500px;margin-top: 12px;">
+            <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px;">
+                <thead class="headerOfTable">
+                    <tr>
+                        <th class="slds-text-align_center"  style="font-size:16px; padding: 4px 8px;background-color: #3f2585; color: white;"><b><p>Order Number</p></b></th>
+                        <th class="slds-text-align_center"   style="font-size:16px; padding: 4px 8px;background-color: #3f2585; color: white;"><b><p>Order Date</p></b></th>
+                        <th class="slds-text-align_center"   style="font-size:16px; padding: 4px 8px;background-color: #3f2585; color: white;"><b><p>PO Number</p></b></th>
+                        <th class="slds-text-align_center"   style="font-size:16px; padding: 4px 8px;background-color: #3f2585; color: white;"><b><p>PO Date</p></b></th>
+                        <th class="slds-text-align_center"   style="font-size:16px; padding: 4px 8px;background-color: #3f2585; color: white;"><b><p>Sold to Customer</p></b></th>
+                        <th class="slds-text-align_center"  style="font-size:16px; padding: 4px 8px;background-color: #3f2585; color: white;"><b><p>Ship to Customer</p></b></th>
+                        <th class="slds-text-align_center"   style="font-size:16px; padding: 4px 8px;background-color: #3f2585; color: white;"><b><p>Shipping Address</p></b></th>
+                        <!--<th class="slds-text-align_center"  style="font-size:16px; padding: 4px 8px;background-color: #3f2585; color: white;"><b><p>Status</p></b></th>-->
+                        <!--<th class="slds-text-align_center"   style="font-size:16px; padding: 4px 8px;background-color: #3f2585; color: white;"><b><p>Tracking Number</p></b></th>-->
+                        <th class="slds-text-align_center"   style="font-size:16px; padding: 4px 8px;background-color: #3f2585; color: white;"><b><p>Shipping Method</p></b></th>
+                        <th colspan="2" style="font-size:16px; padding: 4px 8px;background-color: #3f2585; color: white;text-align: right;">Total Value ($)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.customerOrdersList}" var="mapObj" indexVar="sNo">
+                        <tr style="background-color: #a4dbb6;font-size:14px;">
+                            <td style="padding: 4px 4px;color: black;text-align: left; ">
+                                <aura:if isTrue="{!mapObj.showItem}">
+                                    (<lightning:buttonIcon iconName="utility:minimize_window" class="iconCSS" variant="bare" onclick="{! c.handleClick2 }" name="{!mapObj.Vision_Order_Number__c}" alternativeText="Hide Products" title="Hide Products" />)
+                                    
+                                    <aura:set attribute="else">
+                                        (<lightning:buttonIcon iconName="utility:add" variant="bare" class="iconCSS1" onclick="{! c.handleClick1 }" name="{!mapObj.Vision_Order_Number__c}" alternativeText="Show Products" title="Show Products" />)
+                                        
+                                    </aura:set>
+                                </aura:if>
+                                <span style="padding: 4px 4px; color: Black;"><b>{!mapObj.Vision_Order_Number__c}</b></span>
+                            </td>
+                            <td style="text-align: right;">{!mapObj.formattedOrderDate}</td>
+                            <td style="text-align: right;">{!mapObj.Vision_PO_Number__c}</td>
+                            <td style="text-align: right;">{!mapObj.formattedPODate}</td>
+                            <td>{!mapObj.Vision_Sold_to_Customer_Name__c}</td>
+                            <td>{!mapObj.Vision_Ship_to_Customer_Name__c}</td>
+                            <td>{!mapObj.Vision_GCP_Ship_Location_City__c},{!mapObj.Vision_GCP_Ship_Location_State__c}</td>
+                            <!--<td>{!mapObj.orderStatus}</td>-->
+                            <!--<td style="text-align: right;">{!mapObj.trackingNumber}</td>-->
+                            <td>{!mapObj.Vision_GCP_Shipping_Method__c}</td>
+                            <td colspan="2" style="text-align: right;">
+                                <lightning:formattedNumber value="{!mapObj.totalAmount}" style="currency" currencyCode="USD" maximumFractionDigits="2"  minimumFractionDigits="0"/>
+                            </td>
+                        </tr>                  
+                        <aura:if isTrue="{!mapObj.showItem}">
+                            <th style="background-color: #fff2cc;"><b>NDC</b></th>
+                            <th style="background-color: #fff2cc;"><b>Product</b></th>
+                            <th style="background-color: #fff2cc; text-align: right;"><b>Order Quantity</b></th>
+                            <th style="background-color: #fff2cc; text-align: right;"><b>Price ($)</b></th>
+                            <th style="background-color: #fff2cc; text-align: right;"><b>Amount ($)</b></th>
+                            <th style="background-color: #fff2cc; text-align: right;"><b>Requested Delivery Date</b></th>
+                            <th style="background-color: #fff2cc; text-align: right;"><b>Tracking Number</b></th>
+                            
+                            <th style="background-color: #fff2cc; text-align: right;"><b>Shipped Date</b></th>
+                            <th style="background-color: #fff2cc;"><b>SKU Delivery Status</b></th>
+                            <th style="background-color: #fff2cc; text-align: right;"><b>Shipped Quantity</b></th>
+                            <!--<th style="background-color: #fff2cc; text-align: right;"><b>Delivery Date</b></th>-->
+                            <!--<th style="background-color: #fff2cc;"></th>-->
+                        </aura:if>
+                        <aura:iteration items="{!mapObj.ordersList}" var="prodObj" indexVar="sNo">
+                            <c:Vision_Order_Status_Child_Cmp customerOrdersList="{!prodObj}" showItem="{!mapObj.showItem}"/>
+                        </aura:iteration>
+                    </aura:iteration>
+                </tbody>
+            </table><br></br>
+        </div>
+        
+        <aura:set attribute="else">
+            <lightning:card >
+                <center>
+                    <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                        <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                            <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                        </span>
+                        <h2>No data found.</h2>
+                    </div>
+                </center>
+            </lightning:card>
+        </aura:set>
+    </aura:if>
+    <aura:if isTrue="{!v.isModalOpen}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__content_headless" style="text-align: right;">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModal }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;">
+                    <div style="padding:5px;">
+                    </div> 
+                </div>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if> 
+</aura:component>

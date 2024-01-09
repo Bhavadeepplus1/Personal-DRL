@@ -1,0 +1,211 @@
+<aura:component controller="Phoenix_CompactView" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+	<aura:attribute name="recordId" type="String" />
+    <aura:attribute name="scmData" type="List" />
+    <aura:attribute name="bidNumber" type="string"/>
+    <aura:attribute name="bidName" type="string" />
+    <aura:attribute name="title" type="String" />
+    <aura:attribute name="templateType" type="string"/>
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="isClicked" type="boolean" default="false" />
+    <aura:attribute name="EstimatedDaysFieldValues" type="List" default="0,7,15,20,30,45,60,75,90,120" />
+    <aura:attribute name="SCMApprovalMap" type="Map" /> 
+    <aura:attribute name="SCMApprovalQtyMap" type="Map" /> 
+    <aura:attribute name="EstimatedDaysMap" type="Map" /> 
+    <aura:attribute name="calculatedSCMQty" type="List" />
+    <aura:attribute name="SCMReJMap" type="Map" /> 
+    <aura:attribute name="SCMCommentsMap" type="Map" /> 
+    <aura:attribute name="initailOrderVolumeMap" type="Map" /> 
+    <aura:attribute name="initailOrderCommentsMap" type="Map" /> 
+    <aura:attribute name="isSCMApproved" type="boolean" default="false" />
+    <!--added by har for approvals-->
+     <aura:attribute name="isSCMApprovePerson" type="boolean" /> 
+      <!--added by har for approvals-->
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <aura:attribute name="scmRejactionReasonValues" type="List" default="FG Quality Issue, API Quality Issue, Raw Material/KSM Quality issue, Packing Material Quality Issue, API Supply Delay, Raw Material/KSM Supply issue, Packing Material Supply Issue, Manufacturing Delay, FG capacity constrained, API capacity constrained, Low FG Inventory on Hand, Others"/>
+    <aura:method name="scmRefresh" action="{!c.doInit}" />
+    <aura:method name="onloadSCM" action="{!c.onLoadingSCM}" />
+    
+    
+    <aura:html tag="style">
+        .tableDiv{
+        height : auto !important;
+        max-height: 400px !important;
+        overflow : scroll !important;
+        }
+    </aura:html>
+   <lightning:card>
+   <aura:set attribute="title">
+            <lightning:icon iconName="custom:custom90" size="small"/>&nbsp;&nbsp;
+            {! v.title }
+  </aura:set> 
+  <aura:set attribute="actions">
+     <!-- <aura:if isTrue="{!(v.scmData.length > 0 )}">
+      <lightning:button label="Export" onclick="{!c.downloadCsv}"/>
+      </aura:if>-->
+      <lightning:button label="Back" onclick="{! c.onClose}" />
+      <aura:if isTrue="{!and(v.isSCMApprovePerson==true,and(not(v.scmData[0].finalSCMApproval), and(v.scmData[0].bidRecord.Phoenix_Approval_Status__c  == 'SCM &amp; Marketing',v.scmData[0].bidRecord.Phoenix_Approval_Status__c  != 'Draft')))}" >
+          <lightning:button  label="Proceed" onclick="{! c.onApprovalSubmit}" />
+      </aura:if>
+      
+  </aura:set>
+    <!--center><div class="slds-border_bottom slds-border_top slds-m-right_small slds-m-left_small" ><h1 style="font-size:1.5rem; font-weight:350;color:gray">SCM View</h1></div></center-->
+    <div aura:id="mainDiv" class=" slds-m-right_small slds-m-left_small">
+        <aura:if isTrue="{!v.scmData.length > 0}" >
+        <aura:if isTrue="{!v.isClicked}">
+            <div class="slds-align_absolute-center slds-m-top_small slds-m-bottom_small">        
+                <lightning:button variant="neutral" label="Cancel" onclick="{! c.refreshSCM}" />      
+                <lightning:button variant="brand" label="Save" onclick="{! c.saveClick }" />
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!v.isSpinnerLoad}">
+            <div class="backgroundInverse">
+                <lightning:spinner alternativeText="Loading" variant="brand" />
+            </div>
+        </aura:if>
+        <div class="tableDiv slds-m-top_small slds-m-bottom_small" >
+        
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-scrollable slds-scrollable_x" style="width:150px">
+                <thead>
+                    <tr> 
+                        <th>NDC</th>
+                        <th>Product Name</th>
+                        <th>Pkg Size</th>
+                        <th>Product Family</th>
+                        <th>Product Director</th>
+                        <th>Throughput Cost</th>
+                        <aura:if isTrue="{!v.templateType =='Direct'}">
+                        <th>Current Direct Selling Unit</th>
+                        </aura:if>
+                        <aura:if isTrue="{!v.templateType =='Indirect'}">
+                        <th>Current Indirect Selling Unit</th>
+                        </aura:if>
+                        <aura:if isTrue="{!v.templateType =='Direct and Indirect'}">
+                        <th>Total Selling Unit</th>
+                        </aura:if>
+                        <aura:if isTrue="{!v.templateType =='Direct'}">
+                        <th>Proposed Direct Selling Unit</th>
+                        </aura:if>
+                        <aura:if isTrue="{!v.templateType =='Indirect'}">
+                        <th>Proposed Indirect Selling Unit</th>
+                        </aura:if>
+                        <aura:if isTrue="{!v.templateType =='Direct and Indirect'}">
+                        <th>Final Total Selling Unit</th>
+                        </aura:if>
+                        <th>Guidance Price</th>
+                        <aura:if isTrue="{!or(v.templateType=='Direct',v.templateType=='Direct and Indirect')}">
+                        <th>Current Direct Price</th>
+                        </aura:if>
+                        <aura:if isTrue="{!or(v.templateType=='Indirect',v.templateType=='Direct and Indirect')}">
+                        <th>Current Indirect Price</th>
+                        </aura:if>
+                        <th>Proposed Contract Bid Price (Sales)</th>
+                        <th>Proposed Contract Bid Price (Marketing)</th>
+                        <aura:if isTrue="{!v.templateType =='Direct and Indirect'}">
+                        <th>Wholesaler Diff Price (Indirect)</th>
+                        </aura:if>
+                        <th>Internal Dead Net Price</th>
+                        <th>Net Sales (Internal)</th>
+						<th>Th. Put Margin $$$</th> 
+						<th>TP Margin %</th>
+						<th>Current Dead Net Price</th>
+						<th>Current Sales</th> 
+                        <th>Current Th. Put Margin $$$</th>
+                        <th>Current TP Margin %</th>
+                        <th>Variance Price</th>
+                        <th>Variance Volume</th>
+                        <th>Variance Sales</th>
+                        <th>Variance Margin</th>
+                        <th>Budgeted ASP</th>
+                        <th>Sales Notes</th>
+                        <th>SCM Approval (Y/N)</th>
+                        <th>Total SCM Approved Qty</th>
+                        <th>Estimated Lead Time</th>
+                        <th>Marketing Approval</th>
+                        <th>Marketing Notes</th>
+                        <th>SSA Hit</th>
+                        
+                        
+                        
+                    </tr>
+                    
+                </thead>
+                <tbody>
+                    
+                    <aura:iteration items="{!v.scmData}" var="data">
+                        <tr>
+                            <td >{!data.ndc} </td>
+                            <td >{!data.productName} </td>
+                            <td><lightning:formattedNumber value="{!data.pkgSize}" maximumFractionDigits="2"/> </td>
+                            <td>{!data.productFamily} </td>
+                            <td>{!data.productDirector} </td>
+                            <td><lightning:formattedNumber value="{!data.throughputCost}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                            <aura:if isTrue="{!v.templateType =='Direct'}">
+						    <td><lightning:formattedNumber value="{!data.currentDirectSellingUnit}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                            </aura:if>
+                            <aura:if isTrue="{!v.templateType=='Indirect'}">
+                            <td><lightning:formattedNumber value="{!data.currentInDirectSellingUnit}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+                            </aura:if>
+                            <aura:if isTrue="{!v.templateType=='Direct and Indirect'}">
+                            <td><lightning:formattedNumber value="{!data.totalSellingUnit}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                            </aura:if>
+                            <aura:if isTrue="{!v.templateType =='Direct'}">
+                            <td><lightning:formattedNumber value="{!data.proposedDirectSellingUnit}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                            </aura:if>
+                            <aura:if isTrue="{!v.templateType =='Indirect'}">
+                            <td><lightning:formattedNumber value="{!data.proposedInDirectSellingUnit}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+                            </aura:if>
+                            <aura:if isTrue="{!v.templateType =='Direct and Indirect'}">
+                            <td><lightning:formattedNumber value="{!data.finalTotalSellingUnit}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+                            </aura:if>
+                            <td><lightning:formattedNumber value="{!data.guidancePrice}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+                            <aura:if isTrue="{!or(v.templateType=='Direct',v.templateType=='Direct and Indirect')}">
+                            <td><lightning:formattedNumber value="{!data.currentDirectPrice}"  maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+                            </aura:if>
+                            <aura:if isTrue="{!or(v.templateType=='Indirect',v.templateType=='Direct and Indirect')}">
+                            <td><lightning:formattedNumber value="{!data.currentInDirectPrice}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+                            </aura:if>
+                            <td><lightning:formattedNumber value="{!data.proposedContractBidPriceSales}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                            <td><lightning:formattedNumber value="{!data.proposedContractBidPriceMarketing}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                            <aura:if isTrue="{!v.templateType =='Direct and Indirect'}">
+							<td><lightning:formattedNumber value="{!data.wholesalerDiffPriceIndirect}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                            </aura:if>
+                            <td><lightning:formattedNumber value="{!data.internalDeadNetPrice}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                            <td><lightning:formattedNumber value="{!data.netSalesInternal}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+							<td><lightning:formattedNumber value="{!data.thPutMargin}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+							<td><lightning:formattedNumber value="{!data.tPMargin}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+                            <td><lightning:formattedNumber value="{!data.currentDeadNetPrice}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+                            <td><lightning:formattedNumber value="{!data.currentSales}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+                            <td><lightning:formattedNumber value="{!data.currentThPutMargin}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+							<td><lightning:formattedNumber value="{!data.currentTPMargin}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+                            <td><lightning:formattedNumber value="{!data.variancePrice}" maximumFractionDigits="2" style="currency" currencyCode="USD"/></td>
+                            <td><lightning:formattedNumber value="{!data.varianceVolume}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+                            <td><lightning:formattedNumber value="{!data.varianceSales}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+                            <td><lightning:formattedNumber value="{!data.varianceMargin}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+                            <td><lightning:formattedNumber value="{!data.budgetedASP}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+                            <td>{!data.salesNotes}</td>
+                            <td>{!data.SCMApproval}</td>
+							<td><lightning:formattedNumber value="{!data.totalSCMApprovedQty}" style="decimal" maximumFractionDigits="2"/> </td>
+                            <td><lightning:formattedNumber value="{!data.estimatedLeadTime}" maximumFractionDigits="2"/> </td>
+							<td>{!data.marketingApproval}</td>
+							<td>{!data.marketingNotes}</td>
+                           <td><lightning:formattedNumber value="{!data.ssaHit}" maximumFractionDigits="2" style="currency" currencyCode="USD"/></td>
+							
+                        </tr>
+                    </aura:iteration>       
+                    
+                </tbody>
+                
+                
+            </table>
+            
+        
+        </div>
+            <aura:set attribute="else">
+                <center><div style="margin-top:150px;"><h1 style="font-size:1.3rem; font-weight:350;color:gray">There are no line items for this bid</h1></div></center>
+            </aura:set>
+            </aura:if>
+    </div>
+    </lightning:card>
+
+</aura:component>

@@ -1,0 +1,230 @@
+<aura:component controller="Phoenix_PHSControllerClass" implements="lightning:isUrlAddressable,force:hasRecordId,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithOutHeader" access="global">
+    <aura:attribute name="recordId" type="String"  />
+    
+    <lightning:navigation aura:id="navService"/> 
+    <aura:attribute name="mydata" type="Object" />
+    <aura:attribute name="leadValues" type="List" />
+    <aura:attribute name="bidNumber" type="string"  />
+    <aura:attribute name="recordTypeName" type="string"  />
+    
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    
+    <aura:attribute name="BidAprrovalStatus" type="string"  />
+    <aura:attribute name="loggedInUserName" type="string" default=""/>
+    <aura:attribute name="loggedInUserId" type="string" default=""/>
+    
+    <aura:attribute name="isFinanceApprovePerson" type="boolean"  />
+    <aura:attribute name="isVistexApprovePerson" type="boolean"  />
+    
+    
+    
+    <aura:attribute name="NDCLineItemList" type="Phoenix_PHS_Price_Change_Line__c[]" description="store account records list"/>
+    <aura:attribute name="showSaveCancelBtn" type="boolean" default="false" description="flag for rendered save and cancel buttons in aura:if "/>
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.doInit}" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="lightningEvent" event="c:RefreshIPALinesEvt" action="{!c.handleEvent}"/>
+    <lightning:tabset aura:id="Tabset" selectedTabId="EBLI">
+        <lightning:tab label="Input View" id="EBLI" onactive="{!c.doInit}"> 
+            <lightning:card iconName="custom:custom90" title="{!v.bidNumber}">
+                <aura:set attribute="actions">
+                    
+                    <lightning:button variant="neutral" label="Back" title="Back" onclick="{! c.backToBid }"/>
+                    <aura:if isTrue="{!(v.NDCLineItemList.length > 0 )}">
+                        <lightning:button label="Export" onclick="{!c.downloadCsv}"/>
+                    </aura:if>
+                    
+                    
+                    <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Sr Director or VP Finance',v.NDCLineItemList.length > 0),and(v.isFinanceApprovePerson==true,v.showSaveCancelBtn==false))}">
+                        <lightning:button variant="neutral" label="Submit" title="Submit" onclick="{! c.saveToProceedFinance }"/>
+                    </aura:if> 
+                    
+                    
+                    
+                    <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Vistex Update',v.NDCLineItemList.length > 0),and(v.isVistexApprovePerson==true,v.showSaveCancelBtn==false))}">
+                        <lightning:button variant="neutral" label="Submit" title="Submit" onclick="{! c.saveToProceedVistex }"/>
+                    </aura:if> 
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Sr Director or VP Finance',v.NDCLineItemList.length > 0),v.isFinanceApprovePerson==true)}">
+                        
+                        <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:5%">
+                            <lightning:select label="Finance Head Approval (Mark all as)"
+                                              aura:id="headerFinanceApproval"
+                                              onchange="{!c.onFinanceApprovalChange}"
+                                              >
+                                <option value="None">-None-</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Not Approved">Not Approved</option>
+                            </lightning:select>
+                        </div>
+                    </aura:if>
+                    
+                    <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Sr Director or VP Finance',v.NDCLineItemList.length > 0),v.isFinanceApprovePerson==true)}">
+                        <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:5%">
+                            
+                            
+                            <lightning:input type="text" label ='Finance Remarks(Mark all as)' aura:id="headerFinanceRemarks"  onchange="{!c.onFinanceRemarksChange}" />
+                            
+                            
+                        </div>
+                    </aura:if>
+                    
+                    <aura:if isTrue="{!and(v.BidAprrovalStatus=='Vistex Update',and(v.NDCLineItemList.length > 0,v.isVistexApprovePerson==true))}">
+                        <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:5%">
+                            
+                            <lightning:select label="Vistex Approval (Mark all as)"
+                                              aura:id="headerVistexApproval"
+                                              onchange="{!c.onApprovalVistexChange}"
+                                              >
+                                <option value="None">-None-</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Updated">Updated</option>
+                                
+                            </lightning:select></div>
+                    </aura:if>
+                    <aura:if isTrue="{!and(v.BidAprrovalStatus=='Vistex Update',and(v.NDCLineItemList.length > 0,v.isVistexApprovePerson==true))}">
+                        <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:5%">
+                            
+                            
+                            <lightning:input type="text" label ='Vistex Remarks(Mark all as)' aura:id="headerVistexRemarks"  onchange="{!c.onVistexRemarksChange}" />
+                            
+                            
+                        </div>
+                    </aura:if>
+                    
+                </aura:set>
+                
+                <!--<div class="slds-box slds-theme_default slds-m-top_small" id="top">-->
+                <!--<div class="slds-p-around_medium slds-align_absolute-center" role="banner">-->
+                <!-- <h1 class="slds-modal__title slds-hyphenate slds-text-heading-medium">
+                NDC Line Items
+            </h1>-->
+                <!-- <center>
+              <h1 class="slds-modal__title slds-hyphenate slds-text-headingmedium">
+                Selected List of Contracts
+            </h1>
+            </center>-->
+                <!-- </div>-->
+                
+                <center>
+                    <aura:if isTrue="{!v.showSaveCancelBtn}">
+                        <!--button for save and cancel Record after Inline Edit-->
+                        <lightning:button label="Cancel" onclick="{!c.cancel}"/>&nbsp;
+                        
+                        <lightning:button variant="brand" label="Save"  onclick="{!c.Save}" disabled="{!v.NDCLineItemList.length == 0}"/>
+                    </aura:if> 
+                </center>
+                
+                
+                <!-- Test Starts -->
+                <aura:if isTrue="{!v.isSpinnerLoad}">
+                    <div class="backgroundInverse">
+                        <lightning:spinner alternativeText="Loading" variant="brand" />
+                    </div>
+                </aura:if>
+                
+                
+                <aura:if isTrue="{!(v.NDCLineItemList.length > 0 )}">
+                    <!--Data Table-->
+                    <div aura:id="mainDiv" style="height:450px;overflow:auto;margin-top:10px;" class=" slds-m-right_small slds-m-left_small">
+                        <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                            <table aura:id="LineTable"  class="customtable slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        
+                                        
+                                        <th class="slds-truncate slds-cell-wrap">Product Name</th>
+                                        <th class="slds-truncate slds-cell-wrap">Material Code</th>
+                                        
+                                        <th class="slds-truncate slds-cell-wrap">NDC-11</th>
+                                        <aura:if isTrue="{!v.recordTypeName=='Provisional PHS Price Change'}">
+                                            <th class="slds-truncate slds-cell-wrap">Provisional PHS Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Price Start Date</th>
+                                            
+                                            <th class="slds-truncate slds-cell-wrap">Price End Date</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.recordTypeName=='Quarterly PHS Price Change'}">
+                                            <th class="slds-truncate slds-cell-wrap">Old PHS Price $</th>
+                                            <th class="slds-truncate slds-cell-wrap">New PHS Price $</th>
+                                            <th class="slds-truncate slds-cell-wrap">%Change in Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Last 90 days PHS Units</th>
+                                            <th class="slds-truncate slds-cell-wrap">Sales Difference $</th>
+                                            <th class="slds-truncate slds-cell-wrap">Price in Apexus Sub-Ceiling Contract</th>
+                                            <th class="slds-truncate slds-cell-wrap">Diff in Apexus Sub-Ceiling Price</th>
+                                            
+                                            <th class="slds-truncate slds-cell-wrap">Apexus Sub-Ceiling Price Change Required</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Submitter Remarks</th>
+                                        
+                                        <th class="slds-truncate slds-cell-wrap">Finance Head Approval</th>
+                                        <th class="slds-truncate slds-cell-wrap">Finance Head Remarks</th>
+                                        
+                                        
+                                        <th class="slds-truncate slds-cell-wrap">Vistex Approval</th>
+                                        <th class="slds-truncate slds-cell-wrap">Vistex Remarks</th>
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                    </tr>
+                                </thead>
+                                
+                                <tbody>
+                                    <!--### display all records of AccountList attribute one by one by aura:iteration ###-->
+                                    <aura:iteration items="{!v.NDCLineItemList}" var="item" indexVar="sNo">
+                                        <!-- Child Lightning Component --> 
+                                        <c:PHSPriceLineItemChildCmp isVistexApprovePerson="{!v.isVistexApprovePerson}" 
+                                                                    isFinanceApprovePerson="{!v.isFinanceApprovePerson}" 
+                                                                    recordTypeName="{!v.recordTypeName}"
+                                                                    loggedInUserName="{!v.loggedInUserName}"  
+                                                                    
+                                                                    BidAprrovalStatus="{!v.BidAprrovalStatus}"
+                                                                    singleRec="{!item}"
+                                                                    showSaveCancelBtn="{!v.showSaveCancelBtn}"
+                                                                    sNo="{!sNo + 1}" />
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <aura:set attribute="else">
+                        <lightning:card >
+                            <center>
+                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                    <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                    </span>
+                                    <h2>There are no line items for this PHS Price Change</h2>
+                                </div>
+                            </center>
+                        </lightning:card>
+                        
+                        
+                    </aura:set>
+                </aura:if>
+                
+                <!-- <div class="modal-footer slds-modal__footer slds-align_absolute-center" role="banner">-->
+                <!--<lightning:button class="slds-m-top_medium" variant="neutral" label="Back" onclick="{!c.backToNDCChange}" disabled="{!v.disableBackButton}" /> -->
+                <!-- <lightning:button class="slds-m-top_medium" variant="brand" type="Button" label="Submit" onclick="{!c.Save}" disabled="{!v.NDCLineItemList.length == 0}" />-->
+                
+                <!-- Test Ends -->
+                <!--</div>-->
+            </lightning:card>
+        </lightning:tab>
+        <lightning:tab label="Rejected View" id="RejectedStatus" onactive="{!c.initRejectedStatus}">
+            <c:PHSRejectedLineItemsTab aura:id="RejectedStatusChildCmp"  recordId='{!v.recordId}'/>
+        </lightning:tab>
+    </lightning:tabset>
+</aura:component>

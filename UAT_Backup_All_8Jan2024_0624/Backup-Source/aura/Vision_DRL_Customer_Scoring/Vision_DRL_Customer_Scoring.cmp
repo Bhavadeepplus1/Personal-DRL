@@ -1,0 +1,193 @@
+<aura:component controller="Vision_DRL_Customer_Scoring" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="contactNameList" type="List"  />  
+    <aura:attribute name="contactsList" type="List"  />
+    <aura:attribute name="searchValue" type="String"  />
+    <aura:attribute name="searchText" type="String"  /> 
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false"/>
+    <!--<aura:attribute name="isINTChecked" type="boolean"/>-->
+    <aura:attribute name="isINTChecked" type="boolean" default="true" />
+    <aura:attribute name="isData" type="boolean" default="false" />
+    <aura:attribute name="isEmpty" type="boolean" default="false" />
+    
+    <aura:handler name = "init" value ="{!this}" action = "{!c.initRecords}"/>
+    <aura:if isTrue="{!v.isSpinnerLoad}">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open modalShadowRemove">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.isEmpty}">
+        <div class="slds-grid">
+            <div class="slds-col slds-size_2-of-12 ">
+                <span  class=""><b style="font-size:20px;">CONTACT SCORING </b></span>
+            </div>
+            
+            <!--<div class="slds-col slds-size_1-of-4">
+                <div class="slds-grid">
+               <div>
+                   <span>
+                <b><lightning:input aura:id="INT/EXT" type="toggle" label="External" onchange="{!c.searchIntExt}" checked="{!v.showTPT}" messageToggleActive="" messageToggleInactive=""/></b>
+                   >
+                  
+  <b><lightning:input aura:id="RX" type="toggle" label="External" onchange="{!c.searchIntExt}" checked="{!v.isINTChecked}" messageToggleActive="" messageToggleInactive=""/></b>
+                </span>    
+                </div>&nbsp;
+                <div class="slds-p-top_xxx-small">
+                    <span>
+                       <b><p style ="color:#3E3E3C;font-size: 12px;">Internal</p></b> 
+                    </span>
+                </div>
+                </div>
+                   </div>-->
+            <div class="slds-col slds-size_2-of-12 slds-m-bottom_medium" style="padding: 5px;text-align:left;">
+                <span onkeypress="{}" >
+                    <lightning:input value="{!v.searchText}" type="search"
+                                     variant="label-hidden" placeholder="Search by Contact and Title"
+                                     aura:id="SearchBox" label="Contact Name" onchange="{!c.onsearch}"
+                                     /></span>                                    </div>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.isEmpty}">
+        
+        <center>
+            <b> No Contacts Found For This Account</b>
+        </center>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.isData}">
+        <div class="slds-grid">
+            <div class="slds-col slds-size_2-of-12 slds-p-left_small slds-p-top_xx-small">
+                <span  class=""><b style="font-size:20px;">CONTACT SCORING </b></span>
+            </div>
+            
+            <!--<div class="slds-col slds-size_1-of-4">
+                <div class="slds-grid">
+               <div>
+                   <span>
+                <b><lightning:input aura:id="INT/EXT" type="toggle" label="External" onchange="{!c.searchIntExt}" checked="{!v.showTPT}" messageToggleActive="" messageToggleInactive=""/></b>
+                   >
+                  
+  <b><lightning:input aura:id="RX" type="toggle" label="External" onchange="{!c.searchIntExt}" checked="{!v.isINTChecked}" messageToggleActive="" messageToggleInactive=""/></b>
+                </span>    
+                </div>&nbsp;
+                <div class="slds-p-top_xxx-small">
+                    <span>
+                       <b><p style ="color:#3E3E3C;font-size: 12px;">Internal</p></b> 
+                    </span>
+                </div>
+                </div>
+                   </div>-->
+            <div class="slds-col slds-size_2-of-12 slds-m-bottom_medium" style="padding: 5px;text-align:left;">
+                <span onkeypress="{}" >
+                    <lightning:input value="{!v.searchText}" type="search"
+                                     variant="label-hidden" placeholder="Search by Contact and Title"
+                                     aura:id="SearchBox" label="Contact Name" onchange="{!c.onsearch}"
+                                     /></span>                                    </div>
+        </div>
+        
+        
+        
+        
+        
+        <!--<aura:if isTrue="{!v.isData}">-->
+        
+       
+  <div style="padding-left:10px;padding-right:10px;">
+                <div aura:id="mainDiv" style="height:430px;overflow:auto;margin-top:10px;border-radius: 1rem;border: 1px solid #cfcfcf;">
+                    
+                    <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                        <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered slds-table--header-fixed">
+                                     
+                    <!--<tr style="border-bottom-color: black;background-color:#6900EF">
+                                               <th style="background-color: #6900EF;border-bottom: none !important;"></th>
+                                               <th  style="background-color: #6900EF;border-bottom: none !important;"></th>
+                                               <aura:if isTrue="{!v.isINTChecked}">
+                                                     <th style="background-color: #6900EF;border-bottom: none !important;"></th>
+                                                     <th style="background-color: #6900EF;border-bottom: none !important;"></th>
+                                                     <th style="background-color: #6900EF;border-bottom: none !important;"></th>
+                                               </aura:if>
+                                               <th colspan="2" style="background-color: #6900EF;font-size:16px;text-align:center;" ><b style="color:White;">Bids Won</b></th>               
+                                               <th colspan="2" style="background-color: #6900EF;font-size:16px;text-align:center;" ><b style="color:White;">Bids Lost</b></th>               
+                           
+                                               <th  style="background-color: #6900EF;border-bottom: none !important;"></th>
+                                               
+                                           </tr>
+                                           
+                                           <tr style="border-bottom-color: black;background-color:#6900EF">
+                                                
+
+                                               
+             
+            <th style="background-color: #6900EF;font-size:16px;text-align:left;border-top: none !important;padding-bottom:32px;;" ><b style="color:White;">Contact</b></th>  
+                                               
+            <th style="background-color: #6900EF;font-size:16px;text-align:left;border-top: none !important;padding-bottom:32px;"><b style="color:White;">Role</b></th>
+                                                <aura:if isTrue="{!v.isINTChecked}">
+                                                    <th style="background-color: #6900EF;font-size:16px;text-align:center;border-top: none !important;padding-bottom:32px;" ><b style="color:White;">Influence Score</b></th>               
+            <th style="background-color: #6900EF;font-size:15px;text-align:center;border-top: none !important;padding-bottom:32px;"><b style="color:White;">Affinity Score</b></th>
+                                                     <th style="background-color: #6900EF;font-size:16px;text-align:center;border-top: none !important;padding-bottom:32px;"><b style="color:White;">Authority Score</b></th>
+                                        </aura:if>
+                                               <th style="background-color: #6900EF;font-size:16px;text-align:center;" ><b style="color:White;">New</b></th>
+                                                   <th style="background-color: #6900EF;font-size:16px;text-align:center;"><b style="color:White;" >Retained</b></th>
+                                                                                              <th style="background-color: #6900EF;font-size:16px;text-align:center;" ><b style="color:White;">New</b></th>
+                                                   <th style="background-color: #6900EF;font-size:16px;text-align:center;"><b style="color:White;">Existing</b></th>
+             <th style="background-color: #6900EF;font-size:16px;text-align:center;border-top: none !important;padding-bottom:32px;"><b style="color:White;">Win Rate</b></th>
+                                   
+        </tr>-->
+                    
+                    <tr style="border-bottom-color: black;background-color:#6900EF">
+                        
+                        
+                        
+                        
+                        <th class="slds-cell-wrap TopSticky contactSticky"  style="background-color: #6900EF;font-size:16px;text-align:center;border-top: none !important;" ><div style="width:250px;"><b style="color:White;">Contact</b></div></th>  
+                        
+                        <th class="slds-cell-wrap TopSticky TitleSticky" style="background-color: #6900EF;font-size:16px;text-align:center;border-top: none !important;"><div style="width:300px;"><b style="color:White;">Title</b></div></th>
+                        <!--<aura:if isTrue="{!v.isINTChecked}">-->
+                        <th class="TopSticky" style="background-color: #6900EF;font-size:16px;text-align:center;border-top: none !important;" ><b style="color:White;">Influence Score</b></th>               
+                        <th class="TopSticky" style="background-color: #6900EF;font-size:15px;text-align:center;border-top: none !important;;"><b style="color:White;">Affinity Score</b></th>
+                        <th class="TopSticky" style="background-color: #6900EF;font-size:16px;text-align:center;border-top: none !important;"><b style="color:White;">Authority Score</b></th>
+                        <!--</aura:if>-->
+                        <!--<th style="background-color: #6900EF;font-size:16px;text-align:center;" ><b style="color:White;">New</b></th>
+                                                   <th style="background-color: #6900EF;font-size:16px;text-align:center;"><b style="color:White;" >Retained</b></th>
+                                                                                              <th style="background-color: #6900EF;font-size:16px;text-align:center;" ><b style="color:White;">New</b></th>
+                                                   <th style="background-color: #6900EF;font-size:16px;text-align:center;"><b style="color:White;">Existing</b></th>
+             <th style="background-color: #6900EF;font-size:16px;text-align:center;border-top: none !important;padding-bottom:32px;"><b style="color:White;">Win Rate</b></th>
+                                   
+       -->
+                    </tr>
+                    
+                    
+                    
+                    <tbody>                         
+                        
+                        <aura:iteration items="{!v.contactsList}" var="contactObj">
+                            <c:Vision_CustomerScoring_Child contactWrapper="{!contactObj}" isChecked="{!v.isINTChecked}" isValue="{!v.isData}" />
+                        </aura:iteration>
+                    </tbody>
+                    
+                    
+                </table>
+          
+                    </div></div></div>       
+        
+        <!--</aura:if>-->
+        
+        
+    </aura:if>
+    
+    
+    
+    
+    
+    
+    
+    
+</aura:component>

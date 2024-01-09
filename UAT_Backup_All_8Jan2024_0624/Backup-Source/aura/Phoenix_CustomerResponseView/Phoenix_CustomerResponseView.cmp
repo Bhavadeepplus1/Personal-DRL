@@ -1,0 +1,1002 @@
+<aura:component controller="Phoenix_CustomerResponseViewController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithOutHeader,lightning:isUrlAddressable,lightning:actionOverride" access="global" >
+    <aura:attribute name="recordId" type="Id" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.doInit}"/>
+    <lightning:navigation aura:id="navService"/> 
+    <aura:attribute name="bidRecordId" type="Id" description="Stores the bid record Id" />
+    <aura:attribute name="crRecordId" type="Id" description="Stores the Customer Response record Id" />
+    <aura:attribute name="crName" type="String" default="nothing" description="Stores the Customer Response Name" />
+    <aura:attribute name="isFromBid" type="boolean" default="false" />
+    <aura:attribute name="isNotSelected" type="boolean" default="true" />
+    <aura:attribute name="noBidLineItems" type="boolean" default="false" />
+    <aura:attribute name="isCRAddedToBidLineItem" type="boolean" default="false" />
+    <aura:attribute name="isAllValidationSuccess" type="boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" default="false" />
+    <aura:attribute name="showRewardedQuantityIcon" type="Boolean" default="false" />
+    <aura:attribute name="contractListFromBid" type="String" default=''/>
+    <aura:attribute name="contractVistexUpdate" type="String" default=''/>
+    <aura:attribute name="isOTCBid" type="boolean" default="false" />
+    
+    
+    <!--Contract Model section-->
+    <aura:attribute name="showModal" type="boolean" default="false"/>
+    <aura:attribute type="List" name="contratcsList"/>
+    <aura:attribute name="mycolumns" type="List"/>
+    <aura:attribute name="selectedCntrcts"  type="list"/>    
+    
+    
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="isCRScreen" type="boolean" default="true" />
+    <aura:attribute name="isBidLineItemScreen" type="boolean" default="false" />
+    <aura:attribute name="isCRLineItemScreen" type="boolean" default="false" />
+    <aura:attribute name="selectAll" type="boolean" default="false" />
+    <aura:attribute name="showSaveCancelBtn" type="boolean" default="false" description="flag for rendered save and cancel buttons in aura:if "/>
+    
+    <aura:attribute name="BidLineItemListAll" type="Phoenix_Bid_Line_Item__c[]"/>
+    <aura:attribute name="CRLineItemListAll" type="Phoenix_Customer_Response_Line__c[]"/>
+    <aura:attribute name="selectedBidLineItems" type="Phoenix_Bid_Line_Item__c[]"/>
+    <aura:attribute name="selectedBidLIIdList" type="List"/>
+    <aura:attribute name="selectedCount" type="integer" default="0" description="selected Records Count"/>
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="isPendingCRLItems" type="boolean" default="false" />
+    
+    <aura:attribute name="isSpinner" type="boolean"/>
+    
+    <aura:attribute name="objInfoForPicklistValues" type="Phoenix_Customer_Response_Line__c" default="{sobjectType : 'Phoenix_Customer_Response_Line__c'}" description="object information to fetch picklist values"/>
+    <aura:attribute name="bidStatusPicklistOpts" type="string[]" description="store Bid Status picklist options values"/>
+    <aura:attribute name="customerDecPicklistOpts" type="string[]" description="store Customer Decline Reasons picklist options values"/> 
+    <aura:attribute name="disableCustomerDecPicklistOpts" type="boolean" default="false" />
+    <aura:attribute name="bidStatusValue" type="String" default="" />
+    <aura:attribute name="customerId" type="String" default="" />
+    <aura:attribute name="showErrorClassBS" type="boolean" default="false"/>
+    <aura:attribute name="showErrorClassCDR" type="boolean" default="false"/>
+    <aura:attribute name="showErrorClassAP" type="boolean" default="false"/>
+    <aura:attribute name="showErrorClassAQ" type="boolean" default="false"/>
+    <aura:attribute name="showErrorClassSED" type="boolean" default="false"/>
+    <aura:attribute name="showErrorClassPED" type="boolean" default="false" />
+    
+    <aura:attribute name="enableProceedButton" type="boolean" default="false" />
+    <aura:attribute name="isPendingLineExist" type="boolean" default="true" />
+     <aura:attribute name="changedAwardedQty" type="Integer" /><!-- added by srimayee -->
+    <aura:attribute name="isLoginUserAbleToPerform" type="boolean" default="false" />
+    <aura:attribute name="isCustomerResponseSubmitted" type="boolean" default="false" />
+    
+    <aura:attribute name="filetype" type="List" default="['.odt','.wps','.rtf','.msg','.pps','.png','.war','.pjp','.apng','.gif','.pjp','.pjpeg','.jfif','.webp','.avif','.jpg','.jpeg','.pdf','.xlsm','.xlsx','.xlsb','.CSV','.xltx','.html', '.htt', '.mht',' .svg', '.swf', '.thtml','.xhtml','.txt','.odp','.pptx','.ppt','.docx','.doc','.docm','.dotx','.dot','.zip','.zipx','.tar','.xls']"/>
+    <aura:attribute name="fileList" type="List"  />
+    
+    <aura:handler name="lightningEvent" event="c:Phoenix_EditRCALinesEvt" action="{!c.handleEvent}"/>
+    
+    
+    <aura:attribute name="customerName" type="string"  />
+    <aura:attribute name="bidName" type="string"  />
+    <aura:attribute name="bidType" type="string"  />
+    <aura:attribute name="templateType" type="string"  />
+    <aura:attribute name="sentToCustomerDate" type="Date"  />   
+    
+    
+    <aura:attribute name="record" type="Object"/>
+    <aura:attribute name="simpleRecord" type="Object"/>
+    <aura:attribute name="recordError" type="String"/>
+    
+    <aura:attribute name="simpleCRRecord" type="Object"/>
+     <aura:attribute name="otbDirIndirect" type="String" default=''/>
+     <!--Positions Attributes-->
+    <aura:attribute name="tableRef" type="string" default=""/>
+    <aura:attribute name="bidCustomerId" type="string" />
+    <aura:attribute name="positionColumns" type="List" />
+    <aura:attribute type="List" name="positionsList" />
+    <aura:attribute name="showPositionsModal" type="boolean" default="false" />
+    <aura:attribute name="selectedPosistions" type="list" />
+    <aura:attribute name="MCKpositionColumns" type="List" />
+    <aura:attribute type="List" name="MCKpositionsList" />
+    <aura:attribute name="showMCKPositionsModal" type="boolean" default="false" />
+    <aura:attribute name="selectedMCKPosistions" type="list" />
+    <!-- added by srimayee -->
+    <aura:attribute name="isBackCalled" type="Boolean" default="false" />
+    <!--End of Product Positions Attributes-->
+    <aura:handler name="toHideProceedButton" event="c:HidingProcessInCREvt" action="{!c.handleComponentEvent}"/>
+   <!--added by srimayee -->
+        <aura:attribute name="delayType" type="String" /> 
+    <force:recordData aura:id="forceRecord"
+                      recordId="{!v.recordId}"
+                      targetFields="{!v.simpleRecord}"
+                      targetError="{!v.recordError}"
+                      recordUpdated="{!c.handleRecordUpdated}"
+                      fields="Name,Phoenix_Customer__c,Phoenix_Customer__r.Name,Phoenix_Bid_Name__c,Phoenix_Sent_to_Customer_Date__c,Phoenix_Reference_Contracts__c"
+                      />
+    <force:recordData aura:id="forceCRRecord"
+                      recordId="{!v.crRecordId}"
+                      targetFields="{!v.simpleCRRecord}"
+                      recordUpdated="{!c.handleCRRecordUpdated}"
+                      fields="Name,Phoenix_Bid_No__c"
+                      />
+    <aura:attribute name="priceEffDate" type="date" />  
+	<aura:attribute name="supplyEffDate" type="date" /> 
+    
+    <aura:if isTrue="{!v.showModal}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" 
+                 aria-modal="true" aria-describedby="modal-content-id-1" 
+                 class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.hideModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                        Contracts</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.isSpinner}">
+                        <lightning:spinner size="medium" variant="brand" />
+                    </aura:if>
+                    <p>
+                        <div class="slds-grid" style="margin-bottom:6px;">
+                            <div class="slds-col slds-size_1-of-3">
+                                <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                    <ui:inputText aura:id="cntInput" class="slds-lookup__search-input slds-input inputSize"
+                                                  placeholder="Search contracts..."/>
+                                    <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                        <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                    </span>
+                                </div> 
+                            </div>
+                            <div class="slds-col slds-size_1-of-3">
+                                <div class="slds-grid">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:input class="slds-p-left_large slds-p-top_x-small" type="checkbox" label="Show All" name="input1" aura:id="tgleCntrct" onchange="{!c.searchContracts}"/>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <div  class="slds-m-top_medium slds-m-left_small" style="margin-top:1px;"><lightning:button label="Search" onclick="{!c.searchContracts}"  variant="brand"/></div> 
+                                    </div>
+                                </div>
+                            </div>                                       
+                        </div>  
+                        <aura:if isTrue="{!not(empty(v.contratcsList))}">                            
+                            <lightning:datatable aura:id="linesTable"
+                                                 data="{! v.contratcsList }" 
+                                                 columns="{! v.mycolumns }"
+                                                 keyField="id"                                                
+                                                 />
+                            <aura:set attribute="else">
+                                <center>
+                                    <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                        <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                            <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                        </span>
+                                        <h2> No Records Found</h2>
+                                    </div>
+                                </center>
+                            </aura:set>
+                        </aura:if>
+                    </p>
+                </div>
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.hideContractModel }"/>
+                    <lightning:button variant="brand"
+                                      label="Save"
+                                      title="Save"
+                                      disabled= "{!empty(v.contratcsList)}"
+                                      onclick="{!c.saveDetails}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+     
+    <lightning:card class="slds-p-around_small slds-p-top_none">
+        <lightning:card>
+            <aura:set attribute="actions">
+                <lightning:buttonGroup>
+                    <aura:if isTrue="{!(v.CRLineItemListAll.length > 0 )}">
+                        <div class="slds-clearfix">
+                            <lightning:button class="slds-float_left" label="Export" onclick="{!c.downloadCsv}"/>
+                        </div>
+                    </aura:if>
+                    
+                </lightning:buttonGroup>
+            </aura:set>
+        </lightning:card>
+        <div class="slds-page-header" role="banner" style="background-color: #f3f2f2;;">
+            <div class="slds-media slds-media_center">
+                <div class="slds-media__figure">
+                    <span class="slds-icon_container slds-icon-custom-custom45">
+                        <lightning:icon iconName="custom:custom45" alternativeText="Customer Response" title="Customer Response" />
+                    </span>
+                </div>
+                <div class="slds-media__body">
+                    <aura:if isTrue="{!v.simpleCRRecord.Name == NULL}">
+                        <p class="slds-page-header__title slds-truncate" title="Customer Response">Customer Response</p>
+                        <aura:set attribute="else">
+                            <p class="slds-page-header__title slds-truncate" title="{!v.simpleCRRecord.Name}">{!v.simpleCRRecord.Name}</p>
+                            <p class="slds-text-body_small">Customer Response</p>
+                        </aura:set>
+                    </aura:if>
+                </div>
+            </div>
+        </div>
+        <aura:if isTrue="{!v.isSpinnerLoad}">
+            <div class="backgroundInverse">
+                <lightning:spinner alternativeText="Loading" variant="brand" />
+            </div>
+        </aura:if>
+       
+        <aura:if isTrue="{!and(v.isCRScreen,and(not(v.isBidLineItemScreen),not(v.isCRLineItemScreen)))}">
+            <aura:if isTrue="{!v.isLoginUserAbleToPerform}">
+                <aura:if isTrue="{!or(v.noBidLineItems,v.isPendingCRLItems)}">
+                    <lightning:card >
+                        <center>
+                            <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                    <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                </span>
+                                <aura:if isTrue="{!v.noBidLineItems}">
+                                    <h2>All Bid Line Items have been submitted for Customer Response.</h2>
+                                    <aura:set attribute="else">
+                                         <h2>Customer Response already added for all Bid Lines. Please go to Related list to proceed further.
+                                            <!--Customer Response has not been added for all Bid Lines.--> </h2>
+                                    </aura:set>
+                                </aura:if>
+                            </div>
+                            <div class="slds-m-top_medium">
+                                <lightning:button label="Cancel" onclick="{!c.redirectToBidPage}" variant="neutral"/>&nbsp; &nbsp;   
+                            </div>
+                        </center>
+                    </lightning:card>
+                    <aura:set attribute="else">
+                        <p class="slds-m-top_medium">        
+                            <lightning:recordEditForm objectApiName="Phoenix_Customer_Response__c" aura:id="CRForm" density="compact" onsubmit="{!c.onRecordSubmit}" onsuccess="{!c.onRecordSuccess}" recordId="{!v.crRecordId}">
+                                <lightning:messages />
+                                <div>
+                                    
+                                    <h3 class="slds-section-title--divider">Customer Response Information</h3>
+                                    <div class="slds-p-around_small">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                                                <lightning:inputField aura:id="bidId" required="true" fieldName="Phoenix_Bid_No__c" onchange="{!c.getBidInformation}" disabled="true"/>
+                                            </div>
+                                            <div class="slds-col slds-p-around_xx-small slds-size_1-of-2 slds-form_horizontal slds-form">
+                                                <lightning:input type="text" name="input1" label="Bid Name" disabled="true" value="{!v.simpleRecord.Phoenix_Bid_Name__c}" />
+                                            </div>      
+                                        </div>
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-p-around_xx-small slds-size_1-of-2 slds-form_horizontal slds-form">
+                                                <lightning:input type="text" name="input2" label="Customer" disabled="true" value="{!v.simpleRecord.Phoenix_Customer__r.Name}" />
+                                            </div>   
+                                            <div class="slds-col slds-p-around_xx-small slds-size_1-of-2 slds-form_horizontal slds-form">
+                                                <lightning:input type="date" name="input3" label="Sent to Customer Date" disabled="true" value="{!v.simpleRecord.Phoenix_Sent_to_Customer_Date__c}" />
+                                            </div>   
+                                        </div>
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Phoenix_Customer_Response_Date__c" required="true" />
+                                            </div>
+                                            <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Phoenix_Items_Pending__c" required="true" />
+                                            </div>                                     
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="slds-section-title--divider">Change Type Update</h3>
+                                    <div class="slds-p-around_small">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                                                <div class="slds-grid">
+                                                    <label class="slds-col slds-form-element__label slds-p-around_xx-small slds-size_1-of-3" for="pricingid">Pricing</label>
+                                                    <lightning:inputField  class="slds-col slds-p-around_xx-small slds-p-left_none slds-size_2-of-3" aura:id="pricingid" variant="label-hidden" fieldName="Phoenix_Change_Type_Pricing__c"/>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                                                <div class="slds-grid">
+                                                    <label class="slds-col slds-form-element__label slds-p-around_xx-small slds-size_1-of-3" for="rebateid">Rebate</label>
+                                                    <lightning:inputField  class="slds-col slds-p-around_xx-small slds-p-left_none slds-size_2-of-3" aura:id="rebateid" variant="label-hidden" fieldName="Phoenix_Change_Type_Rebate__c"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                                                <div class="slds-form-element slds-lookup slds-is-close frequired">
+                                                    <label class="slds-form-element__label ">Contract #'s for Position/Volume</label>
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                            <div aura:id="" class="slds-pill-container">
+                                                                <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                                    <ui:inputText click="{!c.showModel}" 
+                                                                                  updateOn="keyup"
+                                                                                  disabled="{!v.bidType == 'Initial Order Discount for WAC Customers (No-Contract Price Offering)'}"
+                                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                                  placeholder="Click to select contracts here.."/>
+                                                                    <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                        <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                                    </span>
+                                                                </div> 
+                                                                <aura:iteration items="{!v.selectedCntrcts}" var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small" label="{!sr}" name="{!sr}" onremove="{! c.clearCntract }">
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                                                <lightning:textarea label="Contract #'s for Vistex Update" 
+                                                                    disabled="{!v.bidType == 'Initial Order Discount for WAC Customers (No-Contract Price Offering)'}"
+                                                                    value="{!v.contractVistexUpdate}"/> 
+                                                <!--<lightning:inputField  fieldName="Phoenix_Affected_Contract_s__c"/>-->
+                                            </div>
+                                        </div>
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Phoenix_Special_Instructions_to_AGR__c" />
+                                            </div>
+                                            <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Delay_Type__c"  required="true" value="{!v.delayType}"/>
+                                        </div>
+                                    </div>
+                                        <aura:if isTrue="{!or(v.delayType =='Controllable',v.delayType =='Uncontrollable')}">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Ratification_Comments__c" />
+                                            </div>
+                                        </div>
+                                            </aura:if>
+                                    </div>
+                                </div>
+                                
+                                
+                                <!--Upload Document Section START -->     
+                                <div>
+                                    <h3 class="slds-section-title--divider">Upload Document</h3>
+                                    <div class="slds-p-around_small">
+                                        <center style="padding: 0% 5%;"><div style="width:50%" >   
+                                            <lightning:fileUpload label=""
+                                                                  name="fileUploader"
+                                                                  variant="label-hidden"
+                                                                  accept="{!v.filetype}"
+                                                                  multiple="true"
+                                                                  onuploadfinished="{!c.handleUploadFinished}" class="hideSpan" />
+                                            </div>
+                                        </center>
+                                        <div>
+                                            <b><p >List of Attachments ({!v.fileList.length})</p></b><br></br>
+                                            <aura:iteration items="{!v.fileList}" var="file" indexVar="itemIndex">
+                                                <p class="slds-m-bottom_small" data-name="{!file.documentId}" style="cursor:pointer;">
+                                                    <lightning:buttonIcon iconName="utility:delete" size="small" name="{!file.documentId}" onclick="{!c.deleteAttachment }" variant="border-filled" alternativeText="Delete Document" title="Delete Document" />
+                                                    <a class="slds-m-left_small" href="{!'/'+file.documentId}" target="_blank">{!itemIndex+1}.&nbsp;{!file.name} </a>   
+                                                </p>
+                                            </aura:iteration>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!--Upload Document Section END --> 
+                                <center>
+                                    <lightning:button label="Cancel" onclick="{!c.redirectToBidPage}" variant="neutral"/>&nbsp; &nbsp;   
+                                    <lightning:button label="Save &amp; Next" type="submit" variant="brand"/>&nbsp;   
+                                </center>
+                            </lightning:recordEditForm>
+                        </p>
+                    </aura:set>
+                </aura:if>
+                <aura:set attribute="else">
+                    <lightning:card >
+                        <center>
+                            <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:60%;">
+                                <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                    <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                </span>
+                                <aura:if isTrue="{!v.isCustomerResponseSubmitted}">
+                                    <h2>Customer Response have been added for this bid</h2>
+                                    <aura:set attribute="else">
+                                        <h2>Only Approver or Approver team member can add the Customer Response only at Customer Stage</h2>
+                                    </aura:set>
+                                </aura:if>
+                            </div>
+                            <div class="slds-m-top_medium">
+                                <lightning:button label="Cancel" onclick="{!c.redirectToBidPage}" variant="neutral"/>  
+                            </div>
+                        </center>
+                    </lightning:card>
+                </aura:set>
+            </aura:if>
+        </aura:if>
+        <aura:if isTrue="{!and(not(v.isCRScreen),and(v.isBidLineItemScreen,not(v.isCRLineItemScreen)))}">
+            <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+                <div class="slds-m-top_medium">
+                    <h3 class="slds-section-title--divider">Add Customer Response Lines</h3>
+                    <div aura:id="mainDiv" style="overflow:auto;margin-top:10px;">
+                        <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders" style="outline: none;">
+                            <table aura:id="LineTableBLI"  class="maintable slds-table slds-no-row-hover slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                                <thead>
+                                    <tr> 
+                                        <th class="slds-truncate slds-cell-wrap">
+                                            <lightning:input type="checkbox"
+                                                             class="slds-checkbox"
+                                                             checked="{!v.selectAll}"
+                                                             aura:id="checkbox"
+                                                             onchange="{!c.selectAllCheckbox}" />
+                                        </th>
+                                        <!-- <th class="slds-truncate slds-cell-wrap">Bid Line Item</th>-->
+                                        <th class="slds-truncate slds-cell-wrap">NDC</th>
+                                        <th class="slds-truncate slds-cell-wrap">Product Name</th>
+                                        <th class="slds-truncate slds-cell-wrap">SAP Number</th>
+                                        <th class="slds-truncate slds-cell-wrap">Pkg Size</th>
+                                        <th class="slds-truncate slds-cell-wrap">Case Pack</th>
+                                        <th class="slds-truncate slds-cell-wrap">Product Family</th>
+                                        <th class="slds-truncate slds-cell-wrap">Final Total Selling Unit</th>
+                                        <aura:if isTrue="{!v.templateType=='RXSS'}">
+                                            <th class="slds-truncate slds-cell-wrap">Retail Direct Marketing Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Retail Indirect Marketing Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Retail Indirect Net (Marketing)</th> <!-- Rama Added this Code -->
+                                            <th class="slds-truncate slds-cell-wrap">Wholesaler Price</th><!-- Rama Added this Code -->
+
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.templateType=='ClarusOne'}">
+                                                <th class="slds-truncate slds-cell-wrap">Final Approved Pricing McK OS And RAD</th>
+                                                <th class="slds-truncate slds-cell-wrap">Final Approved Pricing - WMT Direct</th>
+                                                <th class="slds-truncate slds-cell-wrap">Final Approved Pricing - WMT Indirect</th>
+                                            </aura:if> 
+                                        <aura:if isTrue="{!v.templateType=='BASE/DSH'}">
+                                            <th class="slds-truncate slds-cell-wrap">Proposed BASE Contract Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Proposed DSH Contract Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Proposed AutoSub Contract Price</th>
+                                        </aura:if>
+                                          <aura:if isTrue="{!v.templateType=='Econdisc'}">
+                                                <th class="slds-truncate slds-cell-wrap">Wholesaler Diff Price (Indirect)</th>
+                                                <th class="slds-truncate slds-cell-wrap">Proposed Contract Bid Price (Marketing)</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.templateType=='Net Indirect Pricing'}">
+                                            <th class="slds-truncate slds-cell-wrap">Direct Marketing Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Indirect Marketing Price</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.templateType=='ROS'}">
+                                            <th class="slds-truncate slds-cell-wrap">Final CVS Direct Contract Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Final CVS Indirect Contract Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Final Cardinal Contract Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Final Major Contract Price</th>
+                                        </aura:if>
+                                            <aura:if isTrue="{!v.templateType=='OneTimeBuy'}">
+                                            <aura:if isTrue="{!v.otbDirIndirect=='Direct'}">
+                                                <th class="slds-truncate slds-cell-wrap">Proposed Direct Contract Price (Marketing)</th>
+                                            </aura:if>
+                                            
+                                            <aura:if isTrue="{!v.otbDirIndirect=='Indirect'}">
+                                                <th class="slds-truncate slds-cell-wrap">Proposed Indirect Contract Price (Marketing)</th>
+                                            </aura:if>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.templateType=='Sams Club'}">
+                                            <aura:if isTrue="{!v.bidType != 'Volume Review Only'}">
+                                                <th class="slds-truncate slds-cell-wrap">Final Direct Price</th>
+                                                <th class="slds-truncate slds-cell-wrap">Final Indirect Price</th>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.bidType == 'Volume Review Only'}">
+                                                <th class="slds-truncate slds-cell-wrap">Current Indirect Contract Price</th>
+                                                <th class="slds-truncate slds-cell-wrap">Current Net Indirect Price</th>  
+                                            </aura:if>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(v.templateType!='RXSS',and(v.templateType!='Net Indirect Pricing',and(v.templateType!='OneTimeBuy',v.templateType!='Sams Club')))}">
+                                            <aura:if isTrue="{!and(v.templateType!='ClarusOne',and(v.templateType!='Econdisc',and(v.templateType!='ROS',and(v.templateType!='BASE/DSH',v.bidType != 'Initial Order Discount for WAC Customers (No-Contract Price Offering)'))))}">
+                                                <th class="slds-truncate slds-cell-wrap">Final Approved Pricing (Contracts)</th> 
+                                            </aura:if>
+                                        </aura:if>
+                                        
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.BidLineItemListAll}" var="singleRec" indexVar="sNo">
+                                        <tr>
+                                            <th scope="row" class="slds-text-align_right" style="width:3.25rem;">
+                                                <lightning:input type="checkbox" onchange="{!c.onClickCheckbox}" checked="{!singleRec.isChecked}" />
+                                            </th>
+                                            <!-- <th scope="row">
+                                                <lightning:formattedUrl value="{!'/' + singleRec.Id}"  label="{!singleRec.Name}" target="_self" />  
+                                            </th>-->
+                                            <th scope="row">{!singleRec.Phoenix_NDC_National_Drug_Code__c}</th>
+                                            <th scope="row" >
+                                                <lightning:formattedUrl value="{!'/' + singleRec.Phoenix_Product__r.Id}"  label="{!singleRec.Phoenix_Product__r.Name}" target="_self" />  
+                                            </th>
+                                            <td >{!singleRec.Phoenix_Product_Code__c}</td>
+                                            <td class="slds-text-align_right">{!singleRec.Phoenix_Pkg_Size__c}</td>
+                                            <td class="slds-text-align_right">{!singleRec.Phoenix_Case_Pack__c}</td>
+                                            <td>
+                                                <lightning:formattedUrl value="{!'/' + singleRec.Product_Family__c}"  label="{!singleRec.Product_Family_Name__c}" target="_blank" />  
+                                            </td>
+                                            <td class="slds-text-align_right"><lightning:formattedNumber value="{!singleRec.Phoenix_Final_Total_Selling_Unit__c}" maximumFractionDigits="2"/></td>
+                                            <aura:if isTrue="{!v.templateType=='RXSS'}">
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!if(singleRec.Phoenix_Retail_Direct_Price__c>0,singleRec.Phoenix_Retail_Direct_Price__c,if(singleRec.Phoenix_Retail_Direct_Sales_Price__c>0,singleRec.Phoenix_Retail_Direct_Sales_Price__c,if(singleRec.Phoenix_Current_Retail_Direct_Price__c>0,singleRec.Phoenix_Current_Retail_Direct_Price__c,0 )  ))}" style="currency" currencyCode="USD"  maximumFractionDigits="2"/></td>
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!if(singleRec.Phoenix_Retail_Indirect_Price__c>0,singleRec.Phoenix_Retail_Indirect_Price__c,if(singleRec.Phoenix_Wholesaler_Sales_Price__c>0,singleRec.Phoenix_Wholesaler_Sales_Price__c,if(singleRec.Phoenix_Current_Retail_Indirect_Price__c>0,singleRec.Phoenix_Current_Retail_Indirect_Price__c,0 )  ))}"  style="currency" currencyCode="USD"  maximumFractionDigits="2"/></td>                                                                           
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!if(singleRec.Phoenix_Retail_Indirect_Net__c>0,singleRec.Phoenix_Retail_Indirect_Net__c)}"  style="currency" currencyCode="USD"  maximumFractionDigits="2"/></td> <!-- Rama Added this Code -->
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!if(singleRec.Phoenix_Wholesaler_Price_RxSS__c>0,singleRec.Phoenix_Wholesaler_Price_RxSS__c)}"  style="currency" currencyCode="USD"  maximumFractionDigits="2"/></td> <!-- Rama Added this Code -->
+
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.templateType=='ClarusOne'}">
+                                                <aura:if isTrue="{!and(singleRec.Phoenix_Proposed_McK_OS_And_RAD_NCP__c != null ,singleRec.Phoenix_Proposed_McK_OS_And_RAD_NCP__c != 0) }">
+                                                    <td class="slds-text-align--right">
+                                                        <lightning:formattedNumber value="{!singleRec.Phoenix_Proposed_McK_OS_And_RAD_NCP__c}"
+                                                                                   style="currency" currencyCode="USD" maximumFractionDigits="2" />
+                                                    </td>
+                                                    <aura:set attribute="else">
+                                                        <td class="slds-text-align--right">
+                                                            <lightning:formattedNumber
+                                                                                       value="{!singleRec.Phoenix_Sales_Proposed_NCP_McK_And_RAD__c}" style="currency"
+                                                                                       currencyCode="USD" maximumFractionDigits="2" />
+                                                        </td>
+                                                    </aura:set>
+                                                </aura:if>
+                                                <aura:if isTrue="{!and(singleRec.Phoenix_Proposed_WMT_Direct_NCP__c != null ,singleRec.Phoenix_Proposed_WMT_Direct_NCP__c != 0) }">
+                                                    <td class="slds-text-align--right">
+                                                        <lightning:formattedNumber value="{!singleRec.Phoenix_Proposed_WMT_Direct_NCP__c}"
+                                                                                   style="currency" currencyCode="USD" maximumFractionDigits="2" />
+                                                    </td>
+                                                    <aura:set attribute="else">
+                                                        <td class="slds-text-align--right">
+                                                            <lightning:formattedNumber
+                                                                                       value="{!singleRec.Phoenix_ProposedContract_Bid_Price_Sales__c}" style="currency"
+                                                                                       currencyCode="USD" maximumFractionDigits="2" />
+                                                        </td>
+                                                    </aura:set>
+                                                </aura:if>
+                                                <aura:if isTrue="{!and(singleRec.Phoenix_Proposed_WMT_Indirect_NCP__c != null ,singleRec.Phoenix_Proposed_WMT_Indirect_NCP__c != 0) }">
+                                                    <td class="slds-text-align--right">
+                                                        <lightning:formattedNumber value="{!singleRec.Phoenix_Proposed_WMT_Indirect_NCP__c}"
+                                                                                   style="currency" currencyCode="USD" maximumFractionDigits="2" />
+                                                    </td>
+                                                    <aura:set attribute="else">
+                                                        <td class="slds-text-align--right">
+                                                            <lightning:formattedNumber
+                                                                                       value="{!singleRec.Phoenix_Bid_Line_Item__r.Phoenix_ProposedContract_Bid_Price_Sales__c}" style="currency"
+                                                                                       currencyCode="USD" maximumFractionDigits="2" />
+                                                        </td>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.templateType=='BASE/DSH'}">
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!if(singleRec.Phoenix_Retail_Direct_Price__c>0,singleRec.Phoenix_Retail_Direct_Price__c,if(singleRec.Phoenix_Retail_Direct_Sales_Price__c>0,singleRec.Phoenix_Retail_Direct_Sales_Price__c,if(singleRec.Phoenix_Current_Retail_Direct_Price__c>0,singleRec.Phoenix_Current_Retail_Direct_Price__c,0 )  ))}" style="currency" currencyCode="USD"  maximumFractionDigits="2"/></td>
+                                               <td class="slds-text-align_right"><lightning:formattedNumber   value="{!if(singleRec.Phoenix_Retail_Indirect_Net__c>0,singleRec.Phoenix_Retail_Indirect_Net__c,if(singleRec.Phoenix_WMT_Indirect_Current_Sales__c>0,singleRec.Phoenix_WMT_Indirect_Current_Sales__c,if(singleRec.Phoenix_Current_Retail_Indirect_Net__c>0,singleRec.Phoenix_Current_Retail_Indirect_Net__c,0 )  ))}"  style="currency" currencyCode="USD"  maximumFractionDigits="2"/></td>
+                                                <td class="slds-text-align_right"><lightning:formattedNumber   value="{!if(singleRec.Phoenix_Retail_Indirect_Price__c>0,singleRec.Phoenix_Retail_Indirect_Price__c,if(singleRec.Phoenix_Wholesaler_Sales_Price__c>0,singleRec.Phoenix_Wholesaler_Sales_Price__c,if(singleRec.Phoenix_Current_Retail_Indirect_Price__c>0,singleRec.Phoenix_Current_Retail_Indirect_Price__c,0 )  ))}"  style="currency" currencyCode="USD"  maximumFractionDigits="2"/></td>
+                                            </aura:if>
+                                              <aura:if isTrue="{!v.templateType=='Econdisc'}">
+                                               <td class="slds-text-align_right">
+                                                <lightning:formattedNumber value="{!if(singleRec.Phoenix_Wholesaler_Diff_Price_Indirect__c>0,singleRec.Phoenix_Wholesaler_Diff_Price_Indirect__c,if(singleRec.Phoenix_Current_Indirect_Price__c>0,singleRec.Phoenix_Current_Indirect_Price__c,0 ))}" style="currency" currencyCode="USD" maximumFractionDigits="2"/>
+
+                                                  </td>
+
+                                            <td class="slds-text-align_right">
+                                             <lightning:formattedNumber value="{!if(singleRec.Phoenix_Final_Approvd_Pricing_Contracts__c>0,singleRec.Phoenix_Final_Approvd_Pricing_Contracts__c,if(singleRec.Phoenix_Current_Direct_Price__c>0,singleRec.Phoenix_Current_Direct_Price__c,0 ))}" style="currency" currencyCode="USD" maximumFractionDigits="2"/>
+
+                                                  </td>
+
+                                               
+                                        </aura:if>
+                                            
+                                            <aura:if isTrue="{!v.templateType=='Net Indirect Pricing'}">
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!if(singleRec.Phoenix_ProposedContractBidPriceMktng__c>0,singleRec.Phoenix_ProposedContractBidPriceMktng__c,if(singleRec.Phoenix_Current_Direct_Price__c>0,singleRec.Phoenix_Current_Direct_Price__c,0))}" style="currency" currencyCode="USD"  maximumFractionDigits="2"/></td>
+                                                <td class="slds-text-align_right"><lightning:formattedNumber   value="{!if(singleRec.Phoenix_Wholesaler_Diff_Price_Indirect__c>0,singleRec.Phoenix_Wholesaler_Diff_Price_Indirect__c,if(singleRec.Phoenix_Current_Indirect_Price__c>0,singleRec.Phoenix_Current_Indirect_Price__c,0))}"  style="currency" currencyCode="USD"  maximumFractionDigits="2"/></td>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.templateType=='ROS'}">
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Proposed_CvsDirectContractPrice__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!singleRec.Phoenix_Wholesaler_Diff_Price_Indirect__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Proposed_Major_Contract_Price__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                            </aura:if>
+                                                 <aura:if isTrue="{!v.templateType=='OneTimeBuy'}">
+                                                <aura:if isTrue="{!v.otbDirIndirect=='Direct'}">
+                                                    <td class="slds-text-align_right"><lightning:formattedNumber value="{!singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD"  maximumFractionDigits="2"/></td>
+                                                </aura:if>
+                                                <aura:if isTrue="{!v.otbDirIndirect=='Indirect'}">
+                                                    <td class="slds-text-align_right">
+                                                     <lightning:formattedNumber value="{!singleRec.Phoenix_Wholesaler_Diff_Price_Indirect__c}"  style="currency" currencyCode="USD"  maximumFractionDigits="2"/>
+                                                    </td>
+                                                </aura:if>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.templateType=='Sams Club'}">
+                                                
+                                                <aura:if isTrue="{!v.bidType != 'Volume Review Only'}">
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD"  maximumFractionDigits="2"/></td>
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!singleRec.Phoenix_Wholesaler_Diff_Price_Indirect__c}" style="currency" currencyCode="USD"  maximumFractionDigits="2"/></td>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.bidType == 'Volume Review Only'}">
+                                                
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!singleRec.Phoenix_Current_Indirect_Price__c}" style="currency" currencyCode="USD"  maximumFractionDigits="2"/></td>
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!singleRec.Phoenix_Current_Net_Indirect_Price__c}" style="currency" currencyCode="USD"  maximumFractionDigits="2"/></td>
+                                            </aura:if>
+                                               </aura:if>
+                                            <aura:if isTrue="{!and(v.templateType!='RXSS',and(v.templateType!='BASE/DSH',and(v.templateType!='Net Indirect Pricing',and(v.templateType!='OneTimeBuy',v.templateType!='Sams Club'))))}">
+                                                <aura:if isTrue="{!and(v.templateType!='ClarusOne',and(v.templateType!='Econdisc',and(v.templateType!='ROS',v.bidType != 'Initial Order Discount for WAC Customers (No-Contract Price Offering)')))}">
+                                                    <td class="slds-text-align_right"><lightning:formattedNumber value="{!singleRec.Phoenix_Current_Price_Calc__c}" style="currency" currencyCode="USD"/></td>
+                                                </aura:if>
+                                            </aura:if>
+                                        </tr>   
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </div> 
+                    </div>
+                    <br/>
+                </div>
+                <center>
+                    <lightning:button label="Back" onclick="{!c.backToCustResponse}" variant="neutral"/>&nbsp; &nbsp;   
+                    <lightning:button label="Cancel" onclick="{!c.redirectToCRPage}" variant="neutral"/>&nbsp; &nbsp;   
+                    <lightning:button label="Next" onclick="{!c.getSelectedRecords}" disabled="{!v.isNotSelected}" variant="brand"/>&nbsp;   
+                </center>
+                <aura:set attribute="else">
+                    <lightning:card >
+                        <center>
+                            <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                    <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                </span>
+                                <h2>There are no line items for this bid</h2>
+                            </div>
+                            <div class="slds-m-top_medium">
+                                <lightning:button label="Cancel" onclick="{!c.redirectToCRPage}" variant="neutral"/>&nbsp; &nbsp;   
+                            </div>
+                        </center>
+                    </lightning:card>
+                </aura:set>
+            </aura:if> 
+        </aura:if>
+        <aura:if isTrue="{!and(not(v.isCRScreen),and(not(v.isBidLineItemScreen),v.isCRLineItemScreen))}">
+              <!--Positions Logic Start-->
+                <aura:if isTrue="{!v.showPositionsModal}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                        aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close" onclick="{! c.hideModel }"
+                                    alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                                    Positions</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <p>
+                                    <!-- <div class="slds-grid" style="margin-bottom:6px;">
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                <ui:inputText aura:id="posInput" class="slds-lookup__search-input slds-input inputSize"
+                                                              placeholder="Search contracts..."/>
+                                                <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                    <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                </span>
+                                            </div> 
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <div class="slds-grid">
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <lightning:input class="slds-p-left_large slds-p-top_x-small" type="checkbox" label="Show All" name="input1" aura:id="tgleCntrct" onchange="{!c.searchContracts}"/>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <div  class="slds-m-top_medium slds-m-left_small" style="margin-top:1px;"><lightning:button label="Search" onclick="{!c.searchContracts}"  variant="brand"/></div> 
+                                                </div>
+                                            </div>
+                                        </div>                                       
+                                    </div>  -->
+                                    <aura:if isTrue="{!not(empty(v.positionsList))}">
+                                        <lightning:datatable aura:id="PoslinesTable" data="{! v.positionsList }"
+                                            columns="{! v.positionColumns }" keyField="id" />
+                                        <aura:set attribute="else">
+                                            <center>
+                                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                                    role="alert" style="width:50%;">
+                                                    <span class="slds-icon_container slds-m-right_x-small"
+                                                        title="Please add line items to view the table">
+                                                        <lightning:icon iconName="utility:info" alternativeText="info"
+                                                            size="x-small" variant="inverse" />
+                                                    </span>
+                                                    <h2> No Records Found</h2>
+                                                </div>
+                                            </center>
+                                        </aura:set>
+                                    </aura:if>
+                                </p>
+                            </div>
+                            <!--Modal/Popup Box Footer Starts here-->
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral" label="Cancel" title="Cancel"
+                                    onclick="{! c.hideModel }" />
+                                <lightning:button variant="brand" label="OK" title="OK"
+                                    disabled="{!empty(v.positionsList)}" onclick="{!c.savePosDetails}" />
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+                <!-- Mck Position -->
+                <aura:if isTrue="{!v.showMCKPositionsModal}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                        aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close" onclick="{! c.hideModel }"
+                                    alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                                    Positions</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <p>
+                                    
+                                    <aura:if isTrue="{!not(empty(v.MCKpositionsList))}">
+                                        <lightning:datatable aura:id="PoslinesMCKTable" data="{! v.MCKpositionsList }"
+                                            columns="{! v.MCKpositionColumns }" keyField="id" />
+                                        <aura:set attribute="else">
+                                            <center>
+                                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                                    role="alert" style="width:50%;">
+                                                    <span class="slds-icon_container slds-m-right_x-small"
+                                                        title="Please add line items to view the table">
+                                                        <lightning:icon iconName="utility:info" alternativeText="info"
+                                                            size="x-small" variant="inverse" />
+                                                    </span>
+                                                    <h2> No Records Found</h2>
+                                                </div>
+                                            </center>
+                                        </aura:set>
+                                    </aura:if>
+                                </p>
+                            </div>
+                            <!--Modal/Popup Box Footer Starts here-->
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral" label="Cancel" title="Cancel"
+                                    onclick="{! c.hideModel }" />
+                                <lightning:button variant="brand" label="OK" title="OK"
+                                        disabled="{!empty(v.MCKpositionsList)}" onclick="{!c.saveMCKPosDetails}" />
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+            
+                <!--Positions Logic End-->
+               
+            <aura:if isTrue="{!(v.CRLineItemListAll.length > 0 )}">
+                <div class="slds-m-top_medium">
+                    <h3 class="slds-section-title--divider">Customer Response Lines</h3>
+                    <aura:if isTrue="{!v.isCRAddedToBidLineItem == false}">
+                        <div class="slds-p-top_medium slds-grid slds-wrap">
+                            <div class="slds-col slds-size_1-of-6"></div>
+                            <aura:if isTrue="{!not(v.isOTCBid)}">
+                                <aura:if isTrue="{!(v.bidType != 'Initial Order Discount for WAC Customers (No-Contract Price Offering)')}">
+                                    <div class="slds-p-right_small slds-col slds-size_1-of-6">
+                                        <!--Product Position Select Logic Start-->
+                                        <div class="slds-form-element slds-lookup slds-is-close frequired">
+                                            <aura:if isTrue="{!v.templateType!='ClarusOne'}">
+                                                <label class="slds-form-element__label">Award Position</label>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.templateType=='ClarusOne'}">
+                                                <label class="slds-form-element__label">WMT/MCK Award Position</label>
+                                            </aura:if>
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                    <div aura:id="" class="slds-pill-container">
+                                                        <div aura:id=""
+                                                             class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                             style="width: 100%;">
+                                                            <ui:inputText click="{!c.showProductPositionModel}"
+                                                                          disabled="{!or(!v.disableCustomerDecPicklistOpts, v.isCRAddedToBidLineItem, v.isLoginUserAbleToPerform == false)}"
+                                                                          updateOn="keyup"
+                                                                          class="slds-lookup__search-input slds-input inputSize"
+                                                                          placeholder="Select Proposed Position.." />
+                                                            <span
+                                                                  class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                <lightning:icon iconName="utility:search"
+                                                                                size="x-small" alternativeText="icon" />
+                                                            </span>
+                                                        </div>
+                                                        <aura:iteration items="{!v.selectedPosistions}"
+                                                                        var="sr">
+                                                            <lightning:pill class="slds-m-around_xx-small"
+                                                                            label="{!sr}" name="{!sr}"
+                                                                            onremove="{! c.clearPosition }">
+                                                            </lightning:pill>
+                                                        </aura:iteration>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!--Product Position Select Logic End-->                                         
+                                    </div>
+                                </aura:if>
+                            </aura:if>
+                            <div class="slds-p-right_small slds-col slds-size_1-of-6">
+                                <lightning:select aura:id="bsId" name="bidStatus" onchange="{!c.onBSChange}" label="Bid Status" disabled="{!or(v.isCRAddedToBidLineItem, v.isLoginUserAbleToPerform == false)}">
+                                    <aura:iteration items="{!v.bidStatusPicklistOpts}" var="ind" indexVar="key">
+                                        <option text="{!ind.value}" value="{!ind.key}" />
+                                    </aura:iteration>
+                                </lightning:select>
+                            </div>
+                            <div class="slds-p-right_small slds-col slds-size_1-of-6">
+                                <lightning:select aura:id="cdrId" name="CDR" onchange="{!c.onCDRChange}" label="Customer Decline Reasons" disabled="{!or(v.disableCustomerDecPicklistOpts, v.isCRAddedToBidLineItem, v.isLoginUserAbleToPerform == false)}" >
+                                    <aura:iteration items="{!v.customerDecPicklistOpts}" var="ind" indexVar="key">
+                                        <option text="{!ind.value}" value="{!ind.key}" />
+                                    </aura:iteration>
+                                </lightning:select>
+                            </div>
+                              <div class="slds-p-right_small slds-col slds-size_1-of-6">
+                                                                <lightning:input type="date" name="input1" label="Supply Effective Date" value="{!v.supplyEffDate}" onchange="{!c.onSupplyEffDateChange}"/>
+
+                            </div>
+                            <div class="slds-p-right_small slds-col slds-size_1-of-6">
+                                                                <lightning:input type="date" name="input1" label="Price Effective Date" value="{!v.priceEffDate}" onchange="{!c.onPriceEffDateChange}"/>
+
+                            </div>
+                        </div>
+                    </aura:if>
+                    <div aura:id="mainDiv" style="overflow:auto;margin-top:10px;">
+                        <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders" style="outline: none;">
+                            <table aura:id="LineTable"  class="maintable  slds-table slds-no-row-hover  slds-table_bordered slds-table_col-bordered">
+                                <thead>
+                                    <tr> 
+                                        <th></th>
+                                        <!-- <th class="slds-truncate slds-cell-wrap">Bid Line Item</th>-->
+                                        <th class="slds-truncate slds-cell-wrap">NDC</th>
+                                        <th class="slds-truncate slds-cell-wrap">Product Name</th>
+                                        <th class="slds-truncate slds-cell-wrap">SAP Number</th>
+                                        <th class="slds-truncate slds-cell-wrap">Pkg Size</th>
+                                        <th class="slds-truncate slds-cell-wrap">Case Pack</th>
+                                        <th class="slds-truncate slds-cell-wrap">Product Family</th>
+                                        <aura:if isTrue="{!(v.isOTCBid)}">
+                                        	<th class="slds-truncate slds-cell-wrap">Approved Total DRL Units</th>
+                                            <aura:set attribute="else">
+                                                <th class="slds-truncate slds-cell-wrap">Final Total Selling Unit</th>
+                                            </aura:set>
+                                        </aura:if>
+                                        
+                                        <aura:if isTrue="{!v.templateType=='RXSS'}">
+                                            <th class="slds-truncate slds-cell-wrap">Retail Direct Marketing Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Retail Indirect Marketing Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Retail Indirect Net (Marketing)</th> <!-- Rama Added this Code -->
+                                            <th class="slds-truncate slds-cell-wrap">Wholesaler Price</th><!-- Rama Added this Code -->
+                                        </aura:if>
+                                        
+                                         <aura:if isTrue="{!v.templateType=='BASE/DSH'}">
+                                            <th class="slds-truncate slds-cell-wrap">Proposed BASE Contract Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Proposed DSH Contract Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Proposed AutoSub Contract Price</th>
+                                        </aura:if>
+                                          <aura:if isTrue="{!v.templateType=='Econdisc'}">
+                                                <th class="slds-truncate slds-cell-wrap">Wholesaler Diff Price (Indirect)</th>
+                                                <th class="slds-truncate slds-cell-wrap">Proposed Contract Bid Price (Marketing)</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.templateType=='ClarusOne'}">
+                                            <th class="slds-truncate slds-cell-wrap">Final Approved Pricing McK OS And RAD</th>
+                                            <th class="slds-truncate slds-cell-wrap">Final Approved Pricing - WMT Direct</th>
+                                            <th class="slds-truncate slds-cell-wrap">Final Approved Pricing - WMT Indirect</th>
+                                        </aura:if> 
+                                        <aura:if isTrue="{!v.templateType=='Net Indirect Pricing'}">
+                                            <th class="slds-truncate slds-cell-wrap">Direct Marketing Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Indirect Marketing Price</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.templateType=='ROS'}">
+                                            <th class="slds-truncate slds-cell-wrap">Final CVS Direct Contract Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Final CVS Indirect Contract Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Final Cardinal Contract Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Final Major Contract Price</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(v.templateType!='RXSS',and(v.templateType!='BASE/DSH',and(v.templateType!='Net Indirect Pricing',and(v.templateType!='OneTimeBuy',v.templateType!='Sams Club'))))}">
+                                            <aura:if isTrue="{!and(v.templateType!='ClarusOne',and(v.templateType!='ROS',and(v.templateType!='Econdisc',v.bidType != 'Initial Order Discount for WAC Customers (No-Contract Price Offering)')))}">
+                                                <aura:if isTrue="{!not(v.isOTCBid)}">
+                                                    <th class="slds-truncate slds-cell-wrap">Final Approved Pricing (Contracts)</th>
+                                                    <aura:set attribute="else">
+                                                        <th class="slds-truncate slds-cell-wrap">Approved Sell Price</th>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:if>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.templateType=='OneTimeBuy'}">
+                                            <aura:if isTrue="{!v.otbDirIndirect=='Direct'}">
+                                                <th class="slds-truncate slds-cell-wrap">Proposed Direct Contract Price (Marketing)</th>
+                                            </aura:if>
+                                            
+                                            <aura:if isTrue="{!v.otbDirIndirect=='Indirect'}">
+                                                <th class="slds-truncate slds-cell-wrap">Proposed Indirect Contract Price (Marketing)</th>
+                                            </aura:if>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.templateType=='Sams Club'}">
+                                          <aura:if isTrue="{!v.bidType != 'Volume Review Only'}">
+                                                <th class="slds-truncate slds-cell-wrap">Final Direct Price</th>
+                                                <th class="slds-truncate slds-cell-wrap">Final Indirect Price</th>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.bidType == 'Volume Review Only'}">
+                                                <th class="slds-truncate slds-cell-wrap">Current Indirect Contract Price</th>
+                                                <th class="slds-truncate slds-cell-wrap">Current Net Indirect Price</th>  
+                                            </aura:if>
+                                        </aura:if>
+                                        <aura:if isTrue="{!not(v.isOTCBid)}">
+                                        <aura:if isTrue="{!and(v.templateType!='RXSS',and(v.templateType!='Sams Club',and(v.templateType!='ROS',v.bidType != 'Initial Order Discount for WAC Customers (No-Contract Price Offering)')))}">
+                                            <th class="slds-truncate slds-cell-wrap">Rebate %</th>
+                                            </aura:if>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.templateType=='ROS'}">
+                                            <th class="slds-truncate slds-cell-wrap">Cardinal Rebate %</th>
+                                            <th class="slds-truncate slds-cell-wrap">Major Rebate %</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(v.bidType != 'Platform PO OTB',v.bidType != 'Platform OTB')}">
+                                        <aura:if isTrue="{!and(and(v.bidType!='Price Change',and(v.bidType!='Sales Out Rebate',v.bidType!='Customer Rebate Change'),and(v.bidType != 'Platform OTB',and(v.bidType != 'Platform PO OTB',v.bidType != 'Initial Order Discount for WAC Customers (No-Contract Price Offering)'))))}">                                        
+                                            <th class="slds-truncate slds-cell-wrap">Lead Time</th>
+                                        </aura:if>
+                                        </aura:if>
+                                        <aura:if isTrue="{!(v.isOTCBid)}">
+                                        	<th class="slds-truncate slds-cell-wrap">Bid Status</th>
+                                            <aura:set attribute="else">
+                                                <th class="slds-truncate slds-cell-wrap">Bid Status</th>
+                                            </aura:set>
+                                        </aura:if>
+                                        <aura:if isTrue="{!(v.isOTCBid)}">
+                                            <th class="slds-truncate slds-cell-wrap">Customer Comments</th>
+                                            <aura:set attribute="else">
+                                        <th class="slds-truncate slds-cell-wrap">Customer Decline Reasons</th>
+                                            </aura:set>
+                                        </aura:if>
+                                        <aura:if isTrue="{!not(v.isOTCBid)}">
+                                            <aura:if isTrue="{!v.templateType!='ClarusOne'}">
+                                                <aura:if isTrue="{!(v.bidType != 'Initial Order Discount for WAC Customers (No-Contract Price Offering)')}">
+                                                    <th class="slds-truncate slds-cell-wrap">Award Position</th>
+                                                </aura:if>
+                                            </aura:if>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.templateType=='ClarusOne'}">
+                                            <aura:if isTrue="{!(v.bidType != 'Initial Order Discount for WAC Customers (No-Contract Price Offering)')}">
+                                                <th class="slds-truncate slds-cell-wrap">WMT/MCK Award Position</th>
+                                            </aura:if>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Awarded Quantity</th>
+                                        <th class="slds-truncate slds-cell-wrap">Supply Effective Date</th>
+                                        <th class="slds-truncate slds-cell-wrap">Price Effective Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.CRLineItemListAll}" var="biltem" indexVar="sNo">
+                                        <!-- Child Lightning Component -->
+                                        <c:Phoenix_CustomerResponseViewChild tableRef="{!v.tableRef}" aura:id="childCmp" crRecordId="{!v.crRecordId}" templateType="{!v.templateType}" 
+                                                                             BidTypeVal="{!v.bidType}" singleRec="{!biltem}" showSaveCancelBtn="{!v.showSaveCancelBtn}" 
+                                                                             isCRAddedToBidLineItem="{!v.isCRAddedToBidLineItem}" isLoginUserAbleToPerform="{!v.isLoginUserAbleToPerform}" 
+                                                                             sNo="{!sNo + 1}" lineItemId="{!biltem.Id}" CRLineItemListAll="{!v.CRLineItemListAll}" BidLineItemListAll="{!v.BidLineItemListAll}" 
+                                                                             otbDirIndirect="{!v.otbDirIndirect}" isOTCBid="{!v.isOTCBid}"
+                                                                             showRewardedQuantityIcon = "{!v.showRewardedQuantityIcon}"/>
+                                    </aura:iteration>                                    
+                                </tbody>
+                            </table>
+                        </div> 
+                    </div>
+                    <br/>
+                </div>
+                <center>
+                    <aura:if isTrue="{!or(v.isCRAddedToBidLineItem,not(v.isLoginUserAbleToPerform))}">
+                        <lightning:button label="Cancel" onclick="{!c.redirectToCRPage}" variant="neutral"/>&nbsp; &nbsp;   
+                        <aura:set attribute="else">
+                            <aura:if isTrue="{!v.isFromBid}">
+                                <lightning:button label="Previous" onclick="{!c.goToBidLineItemScreen}" variant="neutral"/>&nbsp; &nbsp;  
+                            </aura:if>
+                            <lightning:button label="Cancel" onclick="{!c.redirectToCRPage}" variant="neutral"/>&nbsp; &nbsp;   
+                            <lightning:button label="Save" onclick="{!c.Save}" variant="brand" />&nbsp; &nbsp;
+                            <lightning:button label="Proceed" onclick="{!c.navigateToCRPage}" disabled="{!not(and(v.isAllValidationSuccess, v.enableProceedButton))}" variant="brand"/>
+                        </aura:set>
+                    </aura:if>
+                </center>
+                <aura:set attribute="else">
+                    <lightning:card >
+                        <center>
+                         {!v.CRLineItemListAll.length}
+                            <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                    <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                </span>
+                                <h2>There are no line items for this Customer Response</h2>
+                            </div>
+                            <div class="slds-m-top_medium">
+                                <lightning:button label="Cancel" onclick="{!c.redirectToCRPage}" variant="neutral"/>&nbsp; &nbsp;   
+                            </div>
+                        </center>
+                    </lightning:card>
+                </aura:set>
+            </aura:if>
+        </aura:if>
+    </lightning:card>
+</aura:component>

@@ -1,0 +1,139 @@
+<aura:component controller = "VisionFormularyPositionsCls" implements="force:lightningQuickAction,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:availableForFlowScreens" access="global" >
+    <aura:attribute name="recordId" type = "Id"/>
+    <aura:attribute name="positionsData" type="list"/>
+    <aura:attribute name="ndcList" type="list"/>
+    <aura:attribute name="show" type="boolean" default="true" />
+    <aura:attribute name="onLoad" type="boolean" default="true" />
+    <aura:attribute name="loaded" type="boolean"/>
+    <aura:attribute name="searchText" type="String" />
+    <aura:attribute name="selectedProduct" type="String" />
+    <aura:attribute name="searchRelatedData" type="list" />
+    <aura:attribute name="noSearchData" type="boolean" />
+    
+    <lightning:navigation aura:id="navService"/>
+    <aura:attribute name="pageReference" type="Object"/>
+    
+    <aura:if isTrue="{! v.loaded }">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+    <aura:if isTrue="{!v.searchText == null}">
+        <div style="margin: 8px 4px 4px 4px;">
+            <span onkeypress="{}" >
+                <lightning:input value="{!v.searchText}" type="search" title="Search by NDC Code or SKU Code or Product Name"
+                                 variant="label-hidden" placeholder="Search by NDC Code or SKU Code or Product Name"
+                                 aura:id="SearchBox"
+                                 oncommit="{!c.onSearchTextChange}"
+                                 /></span>
+        </div>
+        <br/><br/>
+        <aura:set attribute="else">
+            <div style="margin: 8px 4px 4px 4px; width: 70% !important; float: left;">
+                <span onkeypress="{}" >
+                    <lightning:input value="{!v.searchText}" type="search" title="Search by NDC Code or SKU Code or Product Name"
+                                     variant="label-hidden" placeholder="Search by NDC Code or SKU Code or Product Name"
+                                     aura:id="SearchBox"
+                                     oncommit="{!c.onSearchTextChange}"
+                                     /></span>
+            </div>
+            <div style="margin: 8px 4px 12px 4px;float: right;">
+                <lightning:button class="btnCSS" variant="brand" label="Search" title="Search" onclick="{! c.getSearchData }" disabled="{!v.searchText == null}" />
+            </div>
+            <br/><br/>
+        </aura:set>
+    </aura:if>
+    <aura:if isTrue="{!v.searchRelatedData.length != 0}">
+        <div style="max-height: 300px !important; overflow: auto; width: 100%;">
+            <table class="customtable slds-table_header-hidden slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered" style="table-layout: fixed; width: 98%;padding: 0px;margin: auto;height: 100%;">
+                <tbody>
+                    <aura:iteration items="{!v.searchRelatedData}" var="rec" indexVar="sNo">
+                        <tr style="font-size:12px;cursor: pointer;" data-myid="{!rec.Vision_Product__c}" onclick="{!c.filterData}">
+                            <td style="padding: 4px !important;overflow: hidden; text-overflow: ellipsis;" title="{!rec.Vision_Product__r.Name}">{!rec.Vision_Product__r.Name}</td>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.noSearchData}">
+        <lightning:card >
+            <center>
+                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:70%; margin-top: 8px;">
+                    <span class="slds-icon_container slds-m-right_x-small" title="No records matched.">
+                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                    </span>
+                    <h2>No search results found.</h2>
+                </div>
+            </center>
+        </lightning:card>
+    </aura:if>    
+    
+    <aura:if isTrue="{!v.onLoad}">
+        <aura:set attribute="else">
+            <div style="margin-left: 4px;width: 100%;white-space: nowrap;overflow:hidden;text-overflow:ellipsis;" title="{!v.searchText}">
+                <b>{!v.searchText}</b>
+            </div>
+            <aura:if isTrue="{!v.positionsData.length != 0}">
+                <div style="margin: 8px 4px 4px 4px;width: 100%; max-height: 400px; overflow: auto;">
+                    <table class="customtable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="table-layout: fixed; width: 100%;padding: 0px;">
+                        <thead class="headerOfTable">
+                            <tr>
+                                <th style="background-color: #FEB343; color: white; font-size: 12px;padding: 4px !important;width: 22%;" title="Contract"><b>Contract</b></th>
+                                <th style="background-color: #FEB343; color: white; font-size: 12px;padding: 4px !important;width: 30%;" title="Position"><b>Formulary Position</b></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.positionsData}" var="pos" indexVar="sNo">
+                                <tr style="background-color: #e2efda;font-size:12px;">
+                                    <td style="padding: 4px !important;overflow: hidden; text-overflow: ellipsis;" title="{!pos.Contract}">{!pos.Contract}</td>
+                                    <td style="padding: 4px !important;overflow: hidden; text-overflow: ellipsis;" title="{!pos.Position}">{!pos.Position}</td>
+                                </tr>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </div>
+                <aura:set attribute="else">
+                    <lightning:card >
+                        <center>
+                            <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:70%; margin-top: 8px;">
+                                <span class="slds-icon_container slds-m-right_x-small" title="No records matched.">
+                                    <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                </span>
+                                <h2>No records matched.</h2>
+                            </div>
+                        </center>
+                    </lightning:card>
+                </aura:set>
+            </aura:if>
+        </aura:set>
+    </aura:if>  
+    <aura:if isTrue="{!v.isModalOpen}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__content_headless" style="text-align: right;">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModal }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;">
+                    <div style="padding:5px;">
+                    </div> 
+                </div>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if> 
+</aura:component>

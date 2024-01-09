@@ -1,0 +1,181 @@
+<aura:component controller="Phoenix_RCAWholesalerChange" access="global">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+ 
+    <aura:handler name="onchange" event="l_lookup:OnChange" action="{!c.handleChange}"/> 
+    <aura:attribute name="parentList" type="list" default="[]" description=""/>
+    <aura:attribute name="childList" type="list" default="[]"/>
+    <aura:attribute name="pickListMap" type="map"/>
+    <aura:attribute name="disabledChildField" type="boolean" default="true"/>
+    <aura:attribute name="showSpinner" type="boolean"/>
+    <aura:attribute name="sNo" type="string" />
+    <aura:attribute name="bidId" type="String" />
+    <aura:attribute name="bidAgreement" type="String" />
+    <aura:attribute name="rcaContract" type="boolean"/>
+    <aura:attribute name="singleRec" type="sobject"/>
+     <aura:attribute name="accountRecord" type="sobject"/>
+      <aura:attribute name="accountRecord1" type="sobject"/>
+     <aura:attribute name="contactRecord" type="sobject"/>
+     <aura:attribute name="GPOvalues" type="list" />
+     <aura:attribute name="StateValues" type="list" />
+    <aura:attribute name="parentFieldLabel" type="string" />
+    <aura:attribute name="childFieldLabel" type="string"/>
+  
+    
+    <aura:registerEvent name="lightningEvent" type="c:RCAIPAWholesalerChangeEvt"/> 
+    <aura:html tag="style">
+    .slds-form-element__label{
+        display:none;
+        }
+        </aura:html>
+    
+    <tr>
+        
+        <td class="slds-cell-wrap" scope="row">
+            <a name="{!v.sNo}" onclick="{!c.deleteItem}">
+                <lightning:icon iconName="utility:delete" alternativeText="delete" size="x-small" />
+            </a>
+        </td>
+        <td  class="slds-cell-wrap" scope="row">
+              <td><lightning:formattedDateTime value="{!v.singleRec.rcItem.Phoenix_RCA_Change_Date__c}"/></td>
+            
+        </td>
+        <td  class="slds-cell-wrap" scope="row">
+            <a href="{!'/'+v.singleRec.bidRecord.Phoenix_RCA_Agreement__c}" target="_blank">{!v.singleRec.bidRecord.Phoenix_RCA_Agreement__r.Name}</a>
+            
+        </td>
+        <aura:if isTrue="{! !v.singleRec.flag}">
+          <td  class="slds-cell-wrap" scope="row">
+              <a href="{!'/'+v.singleRec.accRecord.Id}" target="_blank"> {!v.singleRec.accRecord.Name}</a>
+           
+        </td>
+            <aura:set attribute="else">
+                <td class="slds-cell-wrap" scope="row">
+                    <aura:if isTrue="{!v.rcaContract}">
+            <l_lookup:Lookup aura:id="accountLookup" objectType="Account" 
+                             selectedRecordId="{!v.singleRec.rcItem.Phoenix_Customer__c}" 
+                             placeHolder="Search Customers"
+                             /> 
+                        <!--queryCondition="{! 'Phoenix_RCA_Agreement__c=\'' + v.bidAgreement + '\'' }"-->
+                        <aura:set attribute="else">
+                        <l_lookup:Lookup aura:id="accountLookup" objectType="Account" 
+                             selectedRecordId="{!v.singleRec.rcItem.Phoenix_Customer__c}" 
+                             placeHolder="Search Customers"
+                             />  
+                            <!--queryCondition="{! 'Phoenix_IPA_Contract__c=\'' + v.bidAgreement + '\'' }"-->
+                        </aura:set>
+                    </aura:if>
+                                            
+        </td>
+            </aura:set>
+        </aura:if>
+        
+         <td  class="slds-cell-wrap" scope="row">
+            <l_lookup:Lookup objectType="Account"  aura:id="customerLookup" 
+                             selectedRecordId="{!v.singleRec.rcItem.Phoenix_Parent_IPA_Customer__c}" 
+                             placeHolder="Search Customers"
+                            /> 
+        </td>
+     
+         <td class="slds-cell-wrap" scope="row">
+          <lightning:input type="text"  value="{!v.singleRec.rcItem.Phoenix_Street_Name__c}" />
+        </td>
+         <td class="slds-cell-wrap" scope="row">
+          <lightning:input type="text"  value="{!v.singleRec.rcItem.Phoenix_City__c}" />
+        </td>
+        
+         <td class="slds-cell-wrap" scope="row">
+            <lightning:select aura:id="StateValue" value="{!v.singleRec.rcItem.Phoenix_State__c}">
+           		  <option value=" ">-None-</option>
+                <aura:iteration items="{!v.StateValues}" var="val">
+                <option value="{!val}">{!val}</option>
+            </aura:iteration>
+        </lightning:select>
+          
+        </td>
+        
+         <td class="slds-cell-wrap" scope="row">
+          <lightning:input type="text"  value="{!v.singleRec.rcItem.Phoenix_Zip__c}" />
+        </td>
+         <td class="slds-cell-wrap" scope="row">
+          <lightning:input type="text"  value="{!v.singleRec.rcItem.Phoenix_DEA__c}" />
+        </td>
+        
+        
+       
+            <td class="slds-cell-wrap" scope="row">
+            <l_lookup:Lookup aura:id="contractLookup" objectType="Phoenix_Contract__c" 
+                             selectedRecordId="{!v.singleRec.rcItem.Phoenix_New_RCA_Agreement__c}"
+                             additionalField="Phoenix_Customer__c"
+                             primarySearchField="Name"
+                             queryCondition="(Phoenix_Is_RCA_Contract__c =true or Phoenix_Is_IPA_Contract__c=true) and Phoenix_Contract_Status__c='Active' "
+                             />  
+        </td>
+        
+        <aura:if isTrue="{! !v.singleRec.flag}">
+        <td  class="slds-cell-wrap" scope="row">
+            {!v.singleRec.accRecord.GPO1__c}
+        </td>
+            <aura:set attribute="else"> 
+         <td  class="slds-cell-wrap" scope="row">
+            {!v.accountRecord.GPO1__c}
+        </td>
+            </aura:set>
+        </aura:if>
+        <td class="slds-cell-wrap" scope="row">
+            <lightning:select aura:id="GPOValue" value="{!v.singleRec.rcItem.Phoenix_New_GPO__c}">
+           		  <option value=" ">-None-</option>
+                <aura:iteration items="{!v.GPOvalues}" var="gpo">
+                <option value="{!gpo}">{!gpo}</option>
+            </aura:iteration>
+        </lightning:select>
+          
+        </td>
+         <aura:if isTrue="{! !v.singleRec.flag}">
+        <td  class="slds-cell-wrap" scope="row">
+           {!v.singleRec.accRecord.Wholesaler1__c}
+        </td>
+            <aura:set attribute="else"> 
+         <td  class="slds-cell-wrap" scope="row">
+              {!v.accountRecord.Wholesaler1__c}
+            
+        </td>
+            </aura:set>
+        </aura:if>
+       
+       
+        
+        
+       
+      
+        <td class="slds-cell-wrap" scope="row">
+             <lightning:select aura:id="parentField" value="{!v.singleRec.rcItem.Phoenix_Wholesaler__c}" onchange="{!c.parentFieldChange}">
+           		 <aura:iteration items="{!v.parentList}" var="value">
+                    <option value="{!value}">{!value}</option>
+                </aura:iteration>
+        </lightning:select>
+              
+        </td>
+        <td class="slds-cell-wrap" scope="row">
+             <lightning:select aura:id="wholesalerLocation" value="{!v.singleRec.rcItem.Phoenix_Wholesaler_Location__c}" disabled="{!v.disabledChildField}">
+           		    <aura:iteration items="{!v.childList}" var="value">
+                    <option value="{!value}">{!value}</option>
+                </aura:iteration>
+        </lightning:select>
+             
+        </td>
+         
+        <aura:if isTrue="{! !v.singleRec.flag}">
+        <td  class="slds-cell-wrap" scope="row">
+         <a href="{!'/'+v.singleRec.accRecord.OwnerId}" target="_blank"> {!v.singleRec.accRecord.Owner.Name}</a>
+        </td>
+            <aura:set attribute="else"> 
+         <td  class="slds-cell-wrap" scope="row">
+             <a href="{!'/'+v.accountRecord.OwnerId}" target="_blank"> {!v.accountRecord.Owner.Name}</a>
+            
+        </td>
+            </aura:set>
+        </aura:if>
+        
+        
+    </tr>	
+</aura:component>

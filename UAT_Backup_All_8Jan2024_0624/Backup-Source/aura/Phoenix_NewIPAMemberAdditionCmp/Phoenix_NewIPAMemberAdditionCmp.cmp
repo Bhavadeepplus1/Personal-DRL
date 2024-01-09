@@ -1,0 +1,125 @@
+<aura:component controller="IPAMemberAdditionCls" implements="lightning:isUrlAddressable,force:hasRecordId,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithOutHeader" access="global" >
+
+    
+    <aura:attribute name="recordId" type="String"  />
+    <aura:attribute name="bidRecord" type="sobject" description="To hold all objects" />
+    <aura:handler name="init" value="{!this}" action="{!c.initRecords}"/>
+      <aura:handler name="change" value="{!v.pageReference}" action="{!c.initRecords}"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"  />
+    <aura:attribute name="rcaMemberList" type="list" />
+     <aura:attribute name="rcItemList" type="list"/>
+     <aura:attribute name="accountList" type="list"/>
+       <aura:attribute name="ipaAccountId" type="string"/>
+      <aura:attribute name="duplicateMsg" type="boolean" default="false"/>
+     <aura:attribute name="showDraftView" type="boolean" default='true'/>
+     <aura:attribute name="showDEAMsg" type="boolean" default="false"/>
+      <aura:attribute name="showGPOMsg" type="boolean" default="false"/>
+      <aura:attribute name="showWholesalerMsg" type="boolean" default="false"/>
+    <aura:handler name="lightningEvent" event="c:IPAMemberAdditionEvt" action="{!c.handleEvent}"/>
+     <lightning:navigation aura:id="navService"/>
+       <aura:if isTrue="{!v.showDraftView}">
+    <lightning:card>
+        <!--aura:set attribute="actions">
+           
+           
+        </aura:set-->  
+     
+          <center>  <h2 class="slds-text-heading_medium"><b>IPA Member Addition</b></h2></center>
+        <aura:if isTrue="{!v.showSpinner}">
+            <div class="backgroundInverse">
+                <lightning:spinner alternativeText="Loading" variant="brand" />
+            </div>
+        </aura:if>        
+        
+        
+        
+        
+        <aura:if isTrue="{!not(empty(v.rcaMemberList))}">
+            <div aura:id="mainDiv" style="height:450px;overflow:auto;margin-top:10px;" class=" slds-m-right_small slds-m-left_small">
+                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                    
+                    <table aura:id="LineTable"  class="maintable slds-table slds-table_cell_buffered slds-max-medium-table_stacked-horizontal slds-table_bordered">                                            
+                        <thead>
+                        <tr>
+                             <th></th>
+                            <!--<th  class="slds-truncate slds-cell-wrap">Date</th>-->
+                               <th  class="slds-truncate slds-cell-wrap">Parent IPA Customer</th>
+                              <th  class="slds-truncate slds-cell-wrap">Contract</th>
+                             <th  class="slds-truncate slds-cell-wrap">Customer</th>   
+                            <th  class="slds-truncate slds-cell-wrap">Street#/Name</th>
+                             <th  class="slds-truncate slds-cell-wrap">City</th>      
+                              <th  class="slds-truncate slds-cell-wrap">State</th>
+                             <th  class="slds-truncate slds-cell-wrap">ZIP</th>
+                            <th  class="slds-truncate slds-cell-wrap">DEA</th>
+                             <th  class="slds-truncate slds-cell-wrap">HIN</th>
+                            <th  class="slds-truncate slds-cell-wrap">GLN</th>
+                             <th  class="slds-truncate slds-cell-wrap">GPO</th>
+                             <th  class="slds-truncate slds-cell-wrap">Wholesaler Name</th>
+                             <th  class="slds-truncate slds-cell-wrap">Wholesaler Location</th>
+                             
+                             <th  class="slds-truncate slds-cell-wrap">Contact</th>
+                             <th  class="slds-truncate slds-cell-wrap">Contact Email</th>
+                            <th  class="slds-truncate slds-cell-wrap">Contact Phone </th>
+                             <th  class="slds-truncate slds-cell-wrap">Contact Phone Ext</th>
+                           
+                             
+                           </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.rcaMemberList}" var="rca" indexVar="itemIndex">
+                                <c:Phoenix_NewIPAChildMemberAdditionCmp  ipaAccountId="{!v.ipaAccountId}" bidRecord="{!v.bidRecord}" singleRec="{!rca}"   sNo="{!itemIndex + 1}" bidId="{!v.recordId}"/>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <br/>
+            
+            
+            <aura:set attribute="else">
+                <lightning:card >
+                    <center>
+                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                            <span class="slds-icon_container slds-m-right_x-small" title="No Items to display">
+                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                            </span>
+                            <h2>No Items to display</h2>
+                        </div>
+                    </center>
+                </lightning:card>
+            </aura:set>
+        </aura:if>
+        
+        
+        
+        <center>
+             <lightning:button variant="neutral" label="Back" title="Back" onclick="{!c.backToBid }"/>
+            <lightning:button variant="brand" label="Save" onclick="{!c.insertRCALines}" disabled="{!v.rcaMemberList.length==0}"/>
+            <lightning:button variant="brand" label="New" onclick="{!c.processNewRCALine}" />
+           
+        </center>
+        
+        
+        
+        
+    </lightning:card>
+            <aura:set attribute="else">
+             <lightning:card >
+                    <center>
+                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                            <span class="slds-icon_container slds-m-right_x-small" title="No Items to display">
+                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                            </span>
+                            <h2>Bid is already submitted for approval. You cannot add IPA lines.</h2>
+                            
+                        </div>
+                         <div style="float:right;padding-top:18px;padding-bottom:7px;">
+                  <lightning:button variant="brand" label="Back" title="Back" onclick="{!c.backToBid }"/>
+            </div>
+                    </center>
+                 
+                </lightning:card>
+          </aura:set>  
+    </aura:if>
+    
+</aura:component>

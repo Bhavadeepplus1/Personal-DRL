@@ -1,0 +1,1553 @@
+<aura:component controller="VisionQRMBidAnalysisCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="Q1NewProductLaunchList" type="list" />
+    <aura:attribute name="Q2NewProductLaunchList" type="list" />
+    <aura:attribute name="Q1ProActiveList" type="list" />
+    <aura:attribute name="Q2ProActiveList" type="list" />
+    <aura:attribute name="Q1ReActiveList" type="list" />
+    <aura:attribute name="Q2ReActiveList" type="list" />
+    <aura:attribute name="Q1ROFRsList" type="list" />
+    <aura:attribute name="Q2ROFRsList" type="list" />
+    <aura:attribute name="salesObj" type="Object" />
+    <aura:attribute name="awardedObj" type="Object" />
+    <aura:attribute name="familyKeys" type="list" />
+    <aura:attribute name="NewCustomerBidsList" type="list" />
+    <aura:attribute name="ProductAdditionBidsList" type="list" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="selectedYear" type="integer" />
+    <aura:attribute name="dataLoaded" type="boolean" />
+    <aura:attribute name="selectedQ1" type="string" />
+    <aura:attribute name="selectedQ2" type="string" />
+    <aura:attribute name="Q1Label" type="string" />
+    <aura:attribute name="Q2Label" type="string" />
+    <aura:attribute name="loadingMessage" type="string" />
+    <aura:attribute name="selectedOption" type="string" />
+    <aura:attribute name="basedOn" type="String" default="Closed Date"/>
+    <aura:attribute name="Quarter1" type="Object" />
+    <aura:attribute name="Quarter2" type="Object" />
+    <aura:attribute name="Quarter3" type="Object" />
+    <aura:attribute name="Quarter4" type="Object" />
+    <aura:attribute name="Quarter5" type="Object" />
+    <aura:attribute name="BidsCountObj" type="Object" />
+    <aura:attribute name="E1Object" type="Object" />
+    <aura:attribute name="showE1View" type="boolean" default="false" />
+    <aura:attribute name="isChecked" type="boolean" default="false" />
+    <aura:attribute name="viewName" type="string" default="E-1" />
+    <aura:attribute name="popupData" type="list" />
+    <aura:attribute name="isModalOpen" type="boolean" />
+    <aura:attribute name="selectedQuarter" type="String" />
+    <aura:attribute name="selectedCategory" type="String" />
+    <aura:attribute name="declinedFamilyKeys" type="list" />
+    <aura:attribute name="showAwarded" type="boolean" />
+    <aura:attribute name="showDeclined" type="boolean" />
+    <aura:attribute name="finalAwardedSummaryObj" type="Object" />
+    <aura:attribute name="finalDeclinedSummaryObj" type="Object" />
+    <aura:attribute name="proActiveWinRate" type="Decimal" />
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Closed Date', 'value': 'Closed Date'},
+                                                        {'label': 'Submitted Date', 'value': 'Submitted Date'},
+                                                        {'label': 'Customer Response Date', 'value': 'Customer Response Date'}
+                                                        ]"/>
+    <!--<aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Submitted Date', 'value': 'Submitted Date'},
+                                                        {'label': 'Customer Response Date', 'value': 'Customer Response Date'},
+                                                        {'label': 'Closed Date', 'value': 'Closed Date'},
+                                                        {'label': 'Submitted Date/Customer Response Date', 'value': 'Submitted Date/Customer Response Date'},
+                                                        {'label': 'Submitted Date/Closed Date', 'value': 'Submitted Date/Closed Date'},
+                                                        {'label': 'Customer Response Date/Closed Date', 'value': 'Customer Response Date/Closed Date'},
+                                                        {'label': 'Submitted Date/Customer Response Date/Closed Date', 'value': 'Submitted Date/Customer Response Date/Closed Date'},
+                                                        ]"/>-->
+    <aura:attribute name="quarters" type="List" />
+    <!--<aura:attribute name="years" type="List" default="[
+                                                        {'label': '2023', 'value': '2023'},
+                                                        {'label': '2022', 'value': '2022'},
+                                                        {'label': '2021', 'value': '2021'},
+                                                        {'label': '2020', 'value': '2020'},
+                                                        ]"/>-->
+    
+    <aura:handler name = "init" value ="{!this}" action = "{!c.doInit}"/>
+    <lightning:tabset selectedTabId="one">
+        <lightning:tab label="Executive Summary View" id="one">
+            <aura:if isTrue="{!v.isSpinnerLoad}">
+                <center>
+                    <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                             aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                        <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                            <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                                <img src="{!$Resource.LoadingProgress}" />  
+                            </div>  
+                        </div>  
+                    </section>   
+                    <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+                </center>
+            </aura:if>
+            <div class="slds-box" style="padding: 4px; font-size: 13px;background-color: #d0e7f7;">
+                <div class="slds-grid">
+                    <div class="slds-col slds-size_1-of-8" style="margin: 4px;">
+                        <lightning:combobox name="Based On" label="Based On" value="{!v.basedOn}" placeholder="Enter Time Period" options="{! v.options }" />
+                    </div>
+                    <!--<div class="slds-col slds-size_1-of-8" style="margin: 4px;">
+                        <lightning:combobox name="Select Year" label="Select Year" value="{!v.selectedYear}" placeholder="Select Year" options="{! v.years }" onchange="{! c.handleYearChange }"/>
+                    </div>-->
+                    <div class="slds-col slds-size_1-of-8" style="margin: 4px;">
+                        <lightning:combobox name="Select Quarter" label="Select Quarter" value="{!v.selectedQ1}" placeholder="Select Quarter" options="{! v.quarters }" onchange="{! c.handleQ1Change }"/>
+                    </div>
+                    <div class="slds-col slds-size_1-of-8" style="margin: 4px;">
+                        <lightning:combobox name="Select Quarter to Compare" label="Select Quarter to Compare" value="{!v.selectedQ2}" placeholder="Select Quarter to Compare" options="{! v.quarters }" onchange="{! c.handleQ2Change }"/>
+                    </div>
+                    <div style="margin-top: 28px;">
+                        <lightning:button variant="brand" label="Compare" title="Compare" onclick="{! c.handleClick }" disabled="{!or(v.selectedQ1 == null, v.selectedQ2 == null)}"/>
+                    </div>
+                </div>
+            </div>
+            <aura:if isTrue="{!v.isModalOpen}">
+                <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__content_headless" style="text-align: right;">
+                            <lightning:buttonIcon iconName="utility:close"
+                                                  onclick="{! c.closeModal }"
+                                                  alternativeText="close"
+                                                  variant="bare-inverse"
+                                                  class="slds-modal__close buttonCSS"/>
+                        </header>
+                        
+                        <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;">
+                            <div style="padding:5px;">
+                                <lightning:icon iconName="utility:arrowup" size="xx-small" class="greenIcon"/>&nbsp;-&nbsp;% Win Rate increases by >=10% relative to the quarter being compared.<br/>
+                                <lightning:icon iconName="utility:arrowdown" size="xx-small" class="redIcon"/>&nbsp;-&nbsp;% Win Rate decreases by >=10% relative to the quarter being compared.<br/>
+                                <span style="font-weight: bold;color: gray;font-size: 16px;">~</span>&nbsp;-&nbsp;% Win Rate is between (+)/(-)10% relative to the quarter being compared.<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;% Win Rate is the ratio of “bids won to the total no. of bids in any quarter” expressed in % terms.<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;Proactive bids include 1) all share expansion 'Product Addition' bids other than RFPs and, 2) bids sent to new customers.<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;Reactive bids include 1) RFP share expansions, 2) OTBs &amp; volume review bids.<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;ROFRs include price reduction bids (RFPs and others).<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;Awarded sales in case of GPOs could be overstated, as compliance (% on usage) tend to be lower for these.<br/>
+                            </div> 
+                        </div>
+                    </div>
+                    
+                </section>
+                <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+            </aura:if>
+            <aura:if isTrue="{!v.dataLoaded}">
+                <div class="slds-box" style="padding: 4px 4px 0px 4px;margin-top:8px;">
+                    <div style="margin-bottom: 4px;text-align: center;font-size: 16px;padding: 4px;background-color: #025196;color: white;font-weight: bold;border-radius: 4px;">
+                        Bid statistic comparison between {!v.Q2Label} and {!v.Q1Label}
+                    </div>
+                    <div style="display: inline-block;margin-right: 4px;font-size: 13px;width: 49%;">
+                        <!--<div style="font-weight: bold;padding: 4px; font-size: 16px;text-align: center;">{!v.Q2Label}</div>-->
+                        <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="margin-bottom: 4px;padding: 0px;">
+                            <thead class="headerOfTable">
+                                <tr style="background-color:#27708b;">
+                                    <th style="background-color:#27708b;color: white;text-align: center; padding-left: 0px;" width="25%">{!v.Q2Label}</th>
+                                    <th style="background-color:#27708b;color: white;text-align: center;" width="25%">No. of Bids</th>
+                                    <th style="background-color:#27708b;color: white;text-align: center;" width="25%">Sales $ Mn</th>
+                                    <th style="background-color:#27708b;color: white;text-align: center;" width="25%">% Win Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding-left: 6px;font-weight: bold;background-color: #e3f2ed;"><i><span style="cursor: pointer;" onclick="{!c.NPLQ2Click}">New Product Launches (NPLs)</span></i></td>
+                                    <td style="text-align: center;">{!v.BidsCountObj.Q2NPLBidsCount}</td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.salesObj.Q2SalesNPL/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.awardedObj.Q2NPLWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 6px;font-weight: bold;background-color: #e3f2ed;"><i><span style="cursor: pointer;" onclick="{!c.ProActiveQ2Click}">Proactive Bids</span></i></td>
+                                    <td style="text-align: center;">{!v.BidsCountObj.Q2ProActiveBidsCount}</td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.salesObj.Q2SalesProActive/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.awardedObj.Q2ProActiveWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 6px;font-weight: bold;background-color: #e3f2ed;"><i><span style="cursor: pointer;" onclick="{!c.ReActiveQ2Click}">Reactive Bids</span></i></td>
+                                    <td style="text-align: center;">{!v.BidsCountObj.Q2ReActiveBidsCount}</td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.salesObj.Q2SalesReActive/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.awardedObj.Q2ReActiveWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 6px;font-weight: bold;background-color: #e3f2ed;"><i><span style="cursor: pointer;" onclick="{!c.ROFRQ2Click}">Right of First Refusals (ROFRs)</span></i></td>
+                                    <td style="text-align: center;">{!v.BidsCountObj.Q2ROFRBidsCount}</td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.salesObj.Q2SalesROFRs/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.awardedObj.Q2ROFRsWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                </tr>
+                                <tr style="background: #b5ccd2; font-weight: bold;">
+                                    <td style="padding-left: 6px;text-align: center;">Total</td>
+                                    <td style="text-align: center;">{!(v.BidsCountObj.Q2NPLBidsCount+v.BidsCountObj.Q2ProActiveBidsCount+v.BidsCountObj.Q2ReActiveBidsCount+v.BidsCountObj.Q2ROFRBidsCount)}</td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.salesObj.Q2Sales/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.salesObj.Q2WinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="display: inline-block;margin-left: 4px;font-size: 13px;width: 49%;float: right; ">
+                        <!--<div style="font-weight: bold;padding: 4px; font-size: 16px;text-align: center;">{!v.Q1Label}</div>-->
+                        <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="margin-bottom: 4px;padding: 0px;">
+                            <thead class="headerOfTable">
+                                <tr style="background-color:#27708b;">
+                                    <th style="background-color:#27708b;color: white;text-align: center; padding-left: 0px;" width="25%">{!v.Q1Label}</th>
+                                    <th style="background-color:#27708b;color: white;text-align: center;" width="25%">No. of Bids</th>
+                                    <th style="background-color:#27708b;color: white;text-align: center;" width="25%">Sales $ Mn</th>
+                                    <th style="background-color:#27708b;color: white;text-align: center;" width="25%">% Win Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding-left: 6px;font-weight: bold;background-color: #e3f2ed;"><i><span style="cursor: pointer;" onclick="{!c.NPLQ1Click}">New Product Launches (NPLs)</span></i></td>
+                                    <td style="text-align: center;">{!v.BidsCountObj.Q1NPLBidsCount}</td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.salesObj.Q1SalesNPL/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                    </td>
+                                    <aura:if isTrue="{!v.awardedObj.greaterNPL}">
+                                        <td style="text-align: center;">
+                                            <lightning:formattedNumber value="{!v.awardedObj.Q1NPLWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            <lightning:icon iconName="utility:arrowup" size="xx-small" class="greenIcon" title="{!v.awardedObj.hoverNPLMessage}" />
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.awardedObj.lesserNPL}">
+                                                <td style="text-align: center;">
+                                                    <lightning:formattedNumber value="{!v.awardedObj.Q1NPLWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    <lightning:icon iconName="utility:arrowdown" size="xx-small" title="{!v.awardedObj.hoverNPLMessage}" class="redIcon" />
+                                                </td>
+                                                <aura:set attribute="else">
+                                                    <td style="text-align: center;padding-top: 0px;padding-bottom: 2px;">
+                                                        <lightning:formattedNumber value="{!v.awardedObj.Q1NPLWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        <aura:if isTrue="{!v.awardedObj.isNaNNPL}">
+                                                            <aura:set attribute="else">
+                                                                <span style="font-weight: bold;color: gray;font-size: 16px;" title="{!v.awardedObj.hoverNPLMessage}">~</span>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </td>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>                
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 6px;font-weight: bold;background-color: #e3f2ed;"><i><span style="cursor: pointer;" onclick="{!c.ProActiveQ1Click}">Proactive Bids</span></i></td>
+                                    <td style="text-align: center;">{!v.BidsCountObj.Q1ProActiveBidsCount}</td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.salesObj.Q1SalesProActive/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                    </td>
+                                    <aura:if isTrue="{!v.awardedObj.greaterProActive}">
+                                        <td style="text-align: center;">
+                                            <lightning:formattedNumber value="{!v.awardedObj.Q1ProActiveWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            <lightning:icon iconName="utility:arrowup" size="xx-small" class="greenIcon" title="{!v.awardedObj.hoverProActiveMessage}" />
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.awardedObj.lesserProActive}">
+                                                <td style="text-align: center;">
+                                                    <lightning:formattedNumber value="{!v.awardedObj.Q1ProActiveWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    <lightning:icon iconName="utility:arrowdown" size="xx-small" title="{!v.awardedObj.hoverProActiveMessage}" class="redIcon" />
+                                                </td>
+                                                <aura:set attribute="else">
+                                                    <td style="text-align: center;padding-top: 0px;padding-bottom: 2px;">
+                                                        <lightning:formattedNumber value="{!v.awardedObj.Q1ProActiveWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        <aura:if isTrue="{!v.awardedObj.isNaNProActive}">
+                                                            <aura:set attribute="else">
+                                                                <span style="font-weight: bold;color: gray;font-size: 16px;" title="{!v.awardedObj.hoverProActiveMessage}">~</span>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </td>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>  
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 6px;font-weight: bold;background-color: #e3f2ed;"><i><span style="cursor: pointer;" onclick="{!c.ReActiveQ1Click}">Reactive Bids</span></i></td>
+                                    <td style="text-align: center;">{!v.BidsCountObj.Q1ReActiveBidsCount}</td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.salesObj.Q1SalesReActive/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                    </td>
+                                    
+                                    <aura:if isTrue="{!v.awardedObj.greaterReActive}">
+                                        <td style="text-align: center;">
+                                            <lightning:formattedNumber value="{!v.awardedObj.Q1ReActiveWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            <lightning:icon iconName="utility:arrowup" size="xx-small" class="greenIcon" title="{!v.awardedObj.hoverReActiveMessage}" />
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.awardedObj.lesserReActive}">
+                                                <td style="text-align: center;">
+                                                    <lightning:formattedNumber value="{!v.awardedObj.Q1ReActiveWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    <lightning:icon iconName="utility:arrowdown" size="xx-small" title="{!v.awardedObj.hoverReActiveMessage}" class="redIcon" />
+                                                </td>
+                                                <aura:set attribute="else">
+                                                    <td style="text-align: center;padding-top: 0px;padding-bottom: 2px;">
+                                                        <lightning:formattedNumber value="{!v.awardedObj.Q1ReActiveWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        <aura:if isTrue="{!v.awardedObj.isNaNReActive}">
+                                                            <aura:set attribute="else">
+                                                                <span style="font-weight: bold;color: gray;font-size: 16px;" title="{!v.awardedObj.hoverReActiveMessage}">~</span>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </td>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 6px;font-weight: bold;background-color: #e3f2ed;"><i><span style="cursor: pointer;" onclick="{!c.ROFRQ1Click}">Right of First Refusals (ROFRs)</span></i></td>
+                                    <td style="text-align: center;">{!v.BidsCountObj.Q1ROFRBidsCount}</td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.salesObj.Q1SalesROFRs/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                    </td>
+                                    <aura:if isTrue="{!v.awardedObj.greaterROFRs}">
+                                        <td style="text-align: center;">
+                                            <lightning:formattedNumber value="{!v.awardedObj.Q1ROFRsWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            <lightning:icon iconName="utility:arrowup" size="xx-small" class="greenIcon" title="{!v.awardedObj.hoverROFRsMessage}" />
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.awardedObj.lesserROFRs}">
+                                                <td style="text-align: center;">
+                                                    <lightning:formattedNumber value="{!v.awardedObj.Q1ROFRsWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    <lightning:icon iconName="utility:arrowdown" size="xx-small" title="{!v.awardedObj.hoverROFRsMessage}" class="redIcon" />
+                                                </td>
+                                                <aura:set attribute="else">
+                                                    <td style="text-align: center;padding-top: 0px;padding-bottom: 2px;">
+                                                        <lightning:formattedNumber value="{!v.awardedObj.Q1ROFRsWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        <aura:if isTrue="{!v.awardedObj.isNaNROFRs}">
+                                                            <aura:set attribute="else">
+                                                                <span style="font-weight: bold;color: gray;font-size: 16px;" title="{!v.awardedObj.hoverROFRsMessage}">~</span>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </td>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </tr>
+                                <tr style="background: #b5ccd2; font-weight: bold;">
+                                    <td style="padding-left: 6px;text-align: center;">Total</td>
+                                    <td style="text-align: center;">{!(v.BidsCountObj.Q1NPLBidsCount+v.BidsCountObj.Q1ProActiveBidsCount+v.BidsCountObj.Q1ReActiveBidsCount+v.BidsCountObj.Q1ROFRBidsCount)}</td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.salesObj.Q1Sales/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                    </td>
+                                    
+                                    <aura:if isTrue="{!v.salesObj.greaterRate}">
+                                        <td style="text-align: center;">
+                                            <lightning:formattedNumber value="{!v.salesObj.Q1WinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            <lightning:icon iconName="utility:arrowup" size="xx-small" class="greenIcon" title="{!v.salesObj.hoverTotalMessage}" />
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.salesObj.lesserRate}">
+                                                <td style="text-align: center;">
+                                                    <lightning:formattedNumber value="{!v.salesObj.Q1WinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    <lightning:icon iconName="utility:arrowdown" size="xx-small" title="{!v.salesObj.hoverTotalMessage}" class="redIcon" />
+                                                </td>
+                                                <aura:set attribute="else">
+                                                    <td style="text-align: center;padding-top: 0px;padding-bottom: 2px;">
+                                                        <lightning:formattedNumber value="{!v.salesObj.Q1WinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        <aura:if isTrue="{!v.salesObj.isNaNTotal}">
+                                                            <aura:set attribute="else">
+                                                                <span style="font-weight: bold;font-size: 16px;" title="{!v.salesObj.hoverTotalMessage}">~</span>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </td>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div style="text-align: right !important;width: 100%;padding: 8px;">
+                    <span align="right" style="color:#5224B2;">Legends&nbsp;<lightning:icon class="purpleIcon" iconName="utility:in_app_assistant" size="small" onclick="{!c.openModal}"/></span>  
+                </div>
+            </aura:if>
+        </lightning:tab>
+        <lightning:tab label="Executive Time Series View" id="two" onactive="{!c.timeSeriesData}">
+            <aura:if isTrue="{!v.isModalOpen}">
+                <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__content_headless" style="text-align: right;">
+                            <lightning:buttonIcon iconName="utility:close"
+                                                  onclick="{! c.closeModal }"
+                                                  alternativeText="close"
+                                                  variant="bare-inverse"
+                                                  class="slds-modal__close buttonCSS"/>
+                        </header>
+                        
+                        <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;">
+                            <div style="padding:5px;">
+                                <lightning:icon iconName="utility:arrowup" size="xx-small" class="greenIcon"/>&nbsp;-&nbsp;% Win Rate increases by >=10% relative to the quarter being compared.<br/>
+                                <lightning:icon iconName="utility:arrowdown" size="xx-small" class="redIcon"/>&nbsp;-&nbsp;% Win Rate decreases by >=10% relative to the quarter being compared.<br/>
+                                <span style="font-weight: bold;color: gray;font-size: 16px;">~</span>&nbsp;-&nbsp;% Win Rate is between (+)/(-)10% relative to the quarter being compared.<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;% Win Rate is the ratio of “bids won to the total no. of bids in any quarter” expressed in % terms.<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;Proactive bids include 1) all share expansion 'Product Addition' bids other than RFPs and, 2) bids sent to new customers.<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;Reactive bids include 1) RFP share expansions, 2) OTBs &amp; volume review bids.<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;ROFRs include price reduction bids (RFPs and others).<br/>
+                                &nbsp;&nbsp;&nbsp;&nbsp;Awarded sales in case of GPOs could be overstated, as compliance (% on usage) tend to be lower for these.<br/>
+                            </div> 
+                        </div>
+                    </div>
+                    
+                </section>
+                <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+            </aura:if>
+            <aura:if isTrue="{!v.isSpinnerLoad}">
+                <center>
+                    <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                             aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                        <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                            <div class="slds-modal__content slds-p-around_medium" style="background-Color: white; border: 0;">  
+                                <div>
+                                    <img src="{!$Resource.LoadingProgress}" />  <!-- modalShadowRemove -->
+                                </div><br/>
+                                <aura:if isTrue="{!v.loadingMessage}">
+                                    <div style="font-size:18px;color:black;">
+                                        {!v.loadingMessage}
+                                    </div>
+                                </aura:if>
+                            </div>  
+                        </div>  
+                    </section>   
+                    <div class="slds-backdrop slds-backdrop-open backgroudChange" aura:id="customModal-Back"></div>
+                </center>
+            </aura:if>
+            <aura:if isTrue="{!and(v.Quarter1 != null, v.Quarter2 != null, v.Quarter3 != null, v.Quarter4 != null, v.Quarter5 != null)}">
+                <div class="slds-box" style="padding: 4px 4px 0px 4px;margin-top:8px;">
+                    <div style="margin-bottom: 4px;text-align: center;font-size: 16px;padding: 4px;background-color: #025196;color: white;font-weight: bold;border-radius: 4px;">
+                        Bid Statistic Comparison Across Quarters
+                    </div>
+                    <div style="font-size: 13px;">
+                        <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="margin-bottom: 4px;padding: 0px;">
+                            <thead class="headerOfTable">
+                                <tr>                                
+                                    <th rowspan="2" style="background-color:#27708b;color: white;text-align: center; padding-left: 0px;border-top: 1px solid black;border-left: 1px solid black;">Bid Categories</th>
+                                    <th colspan="{!v.quarters.length}" style="background-color:#80c1db;color: black;text-align: center;border-top: 1px solid black;border-left: 1px solid black;">No. of Bids</th>
+                                    <th colspan="{!v.quarters.length}" style="background-color:#cedde1;color: black;text-align: center;border-top: 1px solid black;border-left: 1px solid black;">Sales $ Mn</th>
+                                    <th colspan="{!v.quarters.length}" style="background-color:rgb(171, 216, 202);color: black;text-align: center;border-top: 1px solid black;border-left: 1px solid black;border-right: 1px solid black;">% Win Rate</th>
+                                </tr>
+                                <tr>
+                                    <aura:iteration items="{!v.quarters}" var="quarter" indexVar="index">
+                                        <aura:if isTrue="{!index == 0}">
+                                            <th style="background-color:#d0e7f7;color: black;text-align: center;border-left: 1px solid black;" width="6%">{!quarter.label}</th>
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!((v.quarters.length-1) == index)}"> 
+                                                    <th style="background-color:#d0e7f7;color: black;text-align: center;" width="6%">{!quarter.label}</th>
+                                                    <aura:set attribute="else">
+                                                        <th style="background-color:#d0e7f7;color: black;text-align: center;" width="6%">{!quarter.label}</th>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <aura:iteration items="{!v.quarters}" var="quarter" indexVar="index">
+                                        <aura:if isTrue="{!index == 0}">
+                                            <th style="background-color:#e6eef0;color: black;text-align: center;border-left: 1px solid black;" width="6%">{!quarter.label}</th>
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!((v.quarters.length-1) == index)}">
+                                                    <th style="background-color:#e6eef0;color: black;text-align: center;" width="6%">{!quarter.label}</th>
+                                                    <aura:set attribute="else">
+                                                        <th style="background-color:#e6eef0;color: black;text-align: center;" width="6%">{!quarter.label}</th>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <aura:iteration items="{!v.quarters}" var="quarter" indexVar="index">
+                                        <aura:if isTrue="{!index == 0}">
+                                            <th style="background-color:rgb(226, 241, 237);color: black;text-align: center;border-left: 1px solid black;" width="6%">{!quarter.label}</th>
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!((v.quarters.length-1) == index)}">
+                                                    <th style="background-color:rgb(226, 241, 237);color: black;text-align: center;border-right: 1px solid black;" width="6%">{!quarter.label}</th>
+                                                    <aura:set attribute="else">
+                                                        <th style="background-color:rgb(226, 241, 237);color: black;text-align: center;" width="6%">{!quarter.label}</th>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:iteration>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding-left: 6px;font-weight: bold;border-left: 1px solid black;"><i>New Product Launches (NPLs)</i></td>
+                                    <td style="text-align: center;border-left: 1px solid black;">{!v.Quarter1.NPLBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter2.NPLBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter3.NPLBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter4.NPLBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter5.NPLBidsCount}</td>
+                                    <td style="text-align: center;border-left: 1px solid black;">
+                                        <lightning:formattedNumber value="{!v.Quarter1.NPLSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter2.NPLSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter3.NPLSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter4.NPLSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter5.NPLSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;border-left: 1px solid black;">
+                                        <lightning:formattedNumber value="{!(v.Quarter1.NPLAwardedCount/v.Quarter1.NPLBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!(v.Quarter2.NPLAwardedCount/v.Quarter2.NPLBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!(v.Quarter3.NPLAwardedCount/v.Quarter3.NPLBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!(v.Quarter4.NPLAwardedCount/v.Quarter4.NPLBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <aura:if isTrue="{!v.Quarter5.greaterNPL}">
+                                        <td style="text-align: center;border-right: 1px solid black;">
+                                            <lightning:formattedNumber value="{!v.Quarter5.NPLWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            <lightning:icon iconName="utility:arrowup" size="xx-small" class="greenIcon" title="{!v.Quarter5.hoverTotalMessage}" />
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.Quarter5.lesserNPL}">
+                                                <td style="text-align: center;border-right: 1px solid black;">
+                                                    <lightning:formattedNumber value="{!v.Quarter5.NPLWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    <lightning:icon iconName="utility:arrowdown" size="xx-small" title="{!v.Quarter5.hoverTotalMessage}" class="redIcon" />
+                                                </td>
+                                                <aura:set attribute="else">
+                                                    <td style="text-align: center;padding-top: 0px;padding-bottom: 2px;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!v.Quarter5.NPLWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        <aura:if isTrue="{!v.Quarter5.isNaNNPL}">
+                                                            <aura:set attribute="else">
+                                                                <span style="font-weight: bold;font-size: 16px;" title="{!v.Quarter5.hoverTotalMessage}">~</span>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </td>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 6px;font-weight: bold;border-left: 1px solid black;"><i>Proactive Bids</i></td>
+                                    <td style="text-align: center;border-left: 1px solid black;">{!v.Quarter1.ProActiveBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter2.ProActiveBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter3.ProActiveBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter4.ProActiveBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter5.ProActiveBidsCount}</td>
+                                    <td style="text-align: center;border-left: 1px solid black;">
+                                        <lightning:formattedNumber value="{!v.Quarter1.ProActiveSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter2.ProActiveSales/1000000}" minimumFractionDigits="0" maximumFractionDigits=""/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter3.ProActiveSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter4.ProActiveSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter5.ProActiveSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;border-left: 1px solid black;">
+                                        <lightning:formattedNumber value="{!(v.Quarter1.ProActiveAwardedCount/v.Quarter1.ProActiveBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!(v.Quarter2.ProActiveAwardedCount/v.Quarter2.ProActiveBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!(v.Quarter3.ProActiveAwardedCount/v.Quarter3.ProActiveBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!(v.Quarter4.ProActiveAwardedCount/v.Quarter4.ProActiveBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <aura:if isTrue="{!v.Quarter5.greaterProActive}">
+                                        <td style="text-align: center;border-right: 1px solid black;">
+                                            <lightning:formattedNumber value="{!v.Quarter5.ProActiveWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            <lightning:icon iconName="utility:arrowup" size="xx-small" class="greenIcon" title="{!v.Quarter5.hoverTotalMessage}" />
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.Quarter5.lesserProActive}">
+                                                <td style="text-align: center;border-right: 1px solid black;">
+                                                    <lightning:formattedNumber value="{!v.Quarter5.ProActiveWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    <lightning:icon iconName="utility:arrowdown" size="xx-small" title="{!v.Quarter5.hoverTotalMessage}" class="redIcon" />
+                                                </td>
+                                                <aura:set attribute="else">
+                                                    <td style="text-align: center;padding-top: 0px;padding-bottom: 2px;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!v.Quarter5.ProActiveWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        <aura:if isTrue="{!v.Quarter5.isNaNProActive}">
+                                                            <aura:set attribute="else">
+                                                                <span style="font-weight: bold;font-size: 16px;" title="{!v.Quarter5.hoverTotalMessage}">~</span>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </td>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 6px;font-weight: bold;border-left: 1px solid black;"><i>Reactive Bids</i></td>
+                                    <td style="text-align: center;border-left: 1px solid black;">{!v.Quarter1.ReActiveBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter2.ReActiveBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter3.ReActiveBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter4.ReActiveBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter5.ReActiveBidsCount}</td>
+                                    <td style="text-align: center;border-left: 1px solid black;">
+                                        <lightning:formattedNumber value="{!v.Quarter1.ReActiveSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter2.ReActiveSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter3.ReActiveSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter4.ReActiveSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter5.ReActiveSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;border-left: 1px solid black;">
+                                        <lightning:formattedNumber value="{!(v.Quarter1.ReActiveAwardedCount/v.Quarter1.ReActiveBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!(v.Quarter2.ReActiveAwardedCount/v.Quarter2.ReActiveBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!(v.Quarter3.ReActiveAwardedCount/v.Quarter3.ReActiveBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!(v.Quarter4.ReActiveAwardedCount/v.Quarter4.ReActiveBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <aura:if isTrue="{!v.Quarter5.greaterReActive}">
+                                        <td style="text-align: center;border-right: 1px solid black;">
+                                            <lightning:formattedNumber value="{!v.Quarter5.ReActiveWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            <lightning:icon iconName="utility:arrowup" size="xx-small" class="greenIcon" title="{!v.Quarter5.hoverTotalMessage}" />
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.Quarter5.lesserReActive}">
+                                                <td style="text-align: center;border-right: 1px solid black;">
+                                                    <lightning:formattedNumber value="{!v.Quarter5.ReActiveWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    <lightning:icon iconName="utility:arrowdown" size="xx-small" title="{!v.Quarter5.hoverTotalMessage}" class="redIcon" />
+                                                </td>
+                                                <aura:set attribute="else">
+                                                    <td style="text-align: center;padding-top: 0px;padding-bottom: 2px;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!v.Quarter5.ReActiveWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        <aura:if isTrue="{!v.Quarter5.isNaNReActive}">
+                                                            <aura:set attribute="else">
+                                                                <span style="font-weight: bold;font-size: 16px;" title="{!v.Quarter5.hoverTotalMessage}">~</span>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </td>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 6px;font-weight: bold;border-left: 1px solid black;"><i>Right of First Refusals (ROFRs)</i></td>
+                                    <td style="text-align: center;border-left: 1px solid black;">{!v.Quarter1.ROFRBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter2.ROFRBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter3.ROFRBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter4.ROFRBidsCount}</td>
+                                    <td style="text-align: center;">{!v.Quarter5.ROFRBidsCount}</td>
+                                    <td style="text-align: center;border-left: 1px solid black;">
+                                        <lightning:formattedNumber value="{!v.Quarter1.ROFRSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter2.ROFRSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter3.ROFRSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter4.ROFRSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.Quarter5.ROFRSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;border-left: 1px solid black;">
+                                        <lightning:formattedNumber value="{!(v.Quarter1.ROFRAwardedCount/v.Quarter1.ROFRBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!(v.Quarter2.ROFRAwardedCount/v.Quarter2.ROFRBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!(v.Quarter3.ROFRAwardedCount/v.Quarter3.ROFRBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!(v.Quarter4.ROFRAwardedCount/v.Quarter4.ROFRBidsCount)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <aura:if isTrue="{!v.Quarter5.greaterROFRs}">
+                                        <td style="text-align: center;border-right: 1px solid black;">
+                                            <lightning:formattedNumber value="{!v.Quarter5.ROFRsWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            <lightning:icon iconName="utility:arrowup" size="xx-small" class="greenIcon" title="{!v.Quarter5.hoverTotalMessage}" />
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.Quarter5.lesserROFRs}">
+                                                <td style="text-align: center;border-right: 1px solid black;">
+                                                    <lightning:formattedNumber value="{!v.Quarter5.ROFRsWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    <lightning:icon iconName="utility:arrowdown" size="xx-small" title="{!v.Quarter5.hoverTotalMessage}" class="redIcon" />
+                                                </td>
+                                                <aura:set attribute="else">
+                                                    <td style="text-align: center;padding-top: 0px;padding-bottom: 2px;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!v.Quarter5.ROFRsWinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        <aura:if isTrue="{!v.Quarter5.isNaNROFRs}">
+                                                            <aura:set attribute="else">
+                                                                <span style="font-weight: bold;font-size: 16px;" title="{!v.Quarter5.hoverTotalMessage}">~</span>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </td>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </tr>
+                                <tr style="background: #b5ccd2; font-weight: bold;">
+                                    <td style="padding-left: 6px;text-align: center;border-bottom: 1px solid black;border-left: 1px solid black;">Total</td>
+                                    <td style="text-align: center;border-left: 1px solid black;border-bottom: 1px solid black;">{!(v.Quarter1.NPLBidsCount+v.Quarter1.ProActiveBidsCount+v.Quarter1.ReActiveBidsCount+v.Quarter1.ROFRBidsCount)}</td>
+                                    <td style="text-align: center;border-bottom: 1px solid black;">{!(v.Quarter2.NPLBidsCount+v.Quarter2.ProActiveBidsCount+v.Quarter2.ReActiveBidsCount+v.Quarter2.ROFRBidsCount)}</td>
+                                    <td style="text-align: center;border-bottom: 1px solid black;">{!(v.Quarter3.NPLBidsCount+v.Quarter3.ProActiveBidsCount+v.Quarter3.ReActiveBidsCount+v.Quarter3.ROFRBidsCount)}</td>
+                                    <td style="text-align: center;border-bottom: 1px solid black;">{!(v.Quarter4.NPLBidsCount+v.Quarter4.ProActiveBidsCount+v.Quarter4.ReActiveBidsCount+v.Quarter4.ROFRBidsCount)}</td>
+                                    <td style="text-align: center;border-bottom: 1px solid black;">{!(v.Quarter5.NPLBidsCount+v.Quarter5.ProActiveBidsCount+v.Quarter5.ReActiveBidsCount+v.Quarter5.ROFRBidsCount)}</td>
+                                    <td style="text-align: center;border-left: 1px solid black;border-bottom: 1px solid black;">
+                                        <lightning:formattedNumber value="{!(v.Quarter1.NPLSales+v.Quarter1.ProActiveSales+v.Quarter1.ReActiveSales+v.Quarter1.ROFRSales)/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                        <lightning:formattedNumber value="{!(v.Quarter2.NPLSales+v.Quarter2.ProActiveSales+v.Quarter2.ReActiveSales+v.Quarter2.ROFRSales)/1000000}" minimumFractionDigits="0" maximumFractionDigits=""/>
+                                    </td>
+                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                        <lightning:formattedNumber value="{!(v.Quarter3.NPLSales+v.Quarter3.ProActiveSales+v.Quarter3.ReActiveSales+v.Quarter3.ROFRSales)/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                        <lightning:formattedNumber value="{!(v.Quarter4.NPLSales+v.Quarter4.ProActiveSales+v.Quarter4.ReActiveSales+v.Quarter4.ROFRSales)/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                        <lightning:formattedNumber value="{!(v.Quarter5.NPLSales+v.Quarter5.ProActiveSales+v.Quarter5.ReActiveSales+v.Quarter5.ROFRSales)/1000000}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td> 
+                                    <td style="text-align: center;border-left: 1px solid black;border-bottom: 1px solid black;">
+                                        <lightning:formattedNumber value="{!((v.Quarter1.NPLAwardedCount+v.Quarter1.ProActiveAwardedCount+v.Quarter1.ReActiveAwardedCount+v.Quarter1.ROFRAwardedCount)/(v.Quarter1.NPLBidsCount+v.Quarter1.ProActiveBidsCount+v.Quarter1.ReActiveBidsCount+v.Quarter1.ROFRBidsCount))}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                        <lightning:formattedNumber value="{!((v.Quarter2.NPLAwardedCount+v.Quarter2.ProActiveAwardedCount+v.Quarter2.ReActiveAwardedCount+v.Quarter2.ROFRAwardedCount)/(v.Quarter2.NPLBidsCount+v.Quarter2.ProActiveBidsCount+v.Quarter2.ReActiveBidsCount+v.Quarter2.ROFRBidsCount))}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                        <lightning:formattedNumber value="{!((v.Quarter3.NPLAwardedCount+v.Quarter3.ProActiveAwardedCount+v.Quarter3.ReActiveAwardedCount+v.Quarter3.ROFRAwardedCount)/(v.Quarter3.NPLBidsCount+v.Quarter3.ProActiveBidsCount+v.Quarter3.ReActiveBidsCount+v.Quarter3.ROFRBidsCount))}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                        <lightning:formattedNumber value="{!((v.Quarter4.NPLAwardedCount+v.Quarter4.ProActiveAwardedCount+v.Quarter4.ReActiveAwardedCount+v.Quarter4.ROFRAwardedCount)/(v.Quarter4.NPLBidsCount+v.Quarter4.ProActiveBidsCount+v.Quarter4.ReActiveBidsCount+v.Quarter4.ROFRBidsCount))}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <aura:if isTrue="{!v.Quarter5.greater}">
+                                        <td style="text-align: center;border-right: 1px solid black;border-bottom: 1px solid black;">
+                                            <lightning:formattedNumber value="{!v.Quarter5.q2WinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            <lightning:icon iconName="utility:arrowup" size="xx-small" class="greenIcon" title="{!v.Quarter5.hoverTotalMessage}" />
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.Quarter5.lesser}">
+                                                <td style="text-align: center;border-right: 1px solid black;border-bottom: 1px solid black;">
+                                                    <lightning:formattedNumber value="{!v.Quarter5.q2WinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    <lightning:icon iconName="utility:arrowdown" size="xx-small" title="{!v.Quarter5.hoverTotalMessage}" class="redIcon" />
+                                                </td>
+                                                <aura:set attribute="else">
+                                                    <td style="text-align: center;padding-top: 0px;padding-bottom: 2px;border-right: 1px solid black;border-bottom: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!v.Quarter5.q2WinRate}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        <aura:if isTrue="{!v.Quarter5.isNaN}">
+                                                            <aura:set attribute="else">
+                                                                <span style="font-weight: bold;font-size: 16px;" title="{!v.Quarter5.hoverTotalMessage}">~</span>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </td>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="text-align: right !important;width: 100%;padding: 8px;">
+                        <span align="right" style="color:#5224B2;">Legends&nbsp;<lightning:icon class="purpleIcon" iconName="utility:in_app_assistant" size="small" onclick="{!c.openModal}"/></span>  
+                    </div>
+                </div>
+            </aura:if>
+        </lightning:tab>
+        <aura:if isTrue="{!v.showE1View}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open modalWidth">
+                
+                <div class="slds-modal__container">
+                    
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{!c.closePopup}"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 class="slds-text-heading_medium slds-hyphenate">
+                            <b>{!v.viewName} Snapshot (drilldown into the '{!v.selectedCategory}' bids closed in {!v.selectedQuarter})</b>
+                        </h2>
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                    <div class="slds-modal__content slds-p-around_medium" >
+                        <div class="slds-grid">
+                            <div class="slds-col slds-size_1-of-2" style="" >
+                            </div>
+                            <div class="slds-col slds-size_1-of-2" style="text-align: right; padding: 0px 8px 8px 8px;" >
+                                <div style="display: inline-block;">
+                                    <lightning:input type="toggle" label="E-1 View" checked="{!v.isChecked}" name="toggle" messageToggleActive="" messageToggleInactive="" onchange="{!c.toggleChange}" />
+                                </div>
+                                <div style="display: inline-block;color: #444444;font-weight: bold;font-size: 12px;padding-left: 8px;">E-2 View</div>
+                            </div>
+                        </div>
+                        <div class="slds-box" style="padding: 6px;">
+                            <aura:if isTrue="{!v.isChecked}">
+                                <!--<c:VisionE2View data="{!v.popupData}"/>-->
+                                <div class="slds-box">
+                                    <div style="max-height: 360px;overflow: auto;margin-top: 4px;">
+                                        <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="width: 100%; margin-bottom: 4px;font-size: 13px;padding: 0px;border: 1px solid black;">
+                                            <thead class="headerOfTable">
+                                                <tr>
+                                                    <th class="headerSticky" style="background-color:#27708b;color: white;text-align: center;padding-left: 8px;" width="10%"></th>
+                                                    <th class="headerSticky" style="background-color:#27708b;color: white;text-align: center;" width="10%">Product Family</th>
+                                                    <th class="headerSticky" style="background-color:#27708b;color: white;text-align: center;" width="10%">Product</th>
+                                                    <th class="headerSticky" style="background-color:#27708b;color: white;text-align: center;" width="10%">Customer</th>
+                                                    <th class="headerSticky" style="background-color:#27708b;color: white;text-align: center;" width="10%">Current Sales ($)</th>
+                                                    <th class="headerSticky" style="background-color:#27708b;color: white;text-align: center;" width="10%">Proposed Sales ($)</th>
+                                                    <th class="headerSticky" style="background-color:#27708b;color: white;text-align: center;" width="10%">Awarded Sales ($)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr style="background: #b5ccd2; font-weight: bold;">
+                                                    <td style="text-align: center;">Total</td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td style="text-align: right;">
+                                                        <lightning:formattedNumber value="{!(v.finalAwardedSummaryObj.awardedCurrentSales+v.finalDeclinedSummaryObj.declinedCurrentSales)}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>
+                                                    <td style="text-align: right;">
+                                                        <lightning:formattedNumber value="{!(v.finalAwardedSummaryObj.awardedProposedSales+v.finalDeclinedSummaryObj.declinedProposedSales)}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>
+                                                    <td style="text-align: right;">
+                                                        <lightning:formattedNumber value="{!(v.finalAwardedSummaryObj.awardedAwardedSales+v.finalDeclinedSummaryObj.declinedAwardedSales)}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>                                                   
+                                                </tr>
+                                                <tr style="font-weight: bold;background-color: #F3F3F3;">
+                                                    <td>
+                                                        Awarded
+                                                        <aura:if isTrue="{!v.showAwarded}">
+                                                            (<lightning:buttonIcon iconName="utility:minimize_window" variant="bare" class="iconCSS" size="small" onclick="{!c.showAwarded}" alternativeText="Hide Awarded" title="Hide Awarded" />)
+                                                            <aura:set attribute="else">
+                                                                (<lightning:buttonIcon iconName="utility:add" class="iconCSS1" size="small" variant="bare" onclick="{! c.showAwarded }" alternativeText="Show Awarded" title="Show Awarded" />)
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td style="text-align: right;">
+                                                        <lightning:formattedNumber value="{!v.finalAwardedSummaryObj.awardedCurrentSales}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>
+                                                    <td style="text-align: right;">
+                                                        <lightning:formattedNumber value="{!v.finalAwardedSummaryObj.awardedProposedSales}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>
+                                                    <td style="text-align: right;">
+                                                        <lightning:formattedNumber value="{!v.finalAwardedSummaryObj.awardedAwardedSales}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>
+                                                </tr>
+                                                <aura:if isTrue="{!v.showAwarded}">
+                                                    <aura:iteration items="{!v.familyKeys}" var="family">
+                                                        <c:VisionE2View data="{!v.popupData}" family="{!family}" status="Awarded"/>
+                                                    </aura:iteration>
+                                                </aura:if>
+                                                <tr style="font-weight: bold;background-color: #F3F3F3;">
+                                                    <td>
+                                                        Declined by Customer
+                                                        <aura:if isTrue="{!v.showDeclined}">
+                                                            (<lightning:buttonIcon iconName="utility:minimize_window" variant="bare" class="iconCSS" size="small" onclick="{!c.showDeclined}" alternativeText="Hide Declined" title="Hide Declined" />)
+                                                            <aura:set attribute="else">
+                                                                (<lightning:buttonIcon iconName="utility:add" class="iconCSS1" size="small" variant="bare" onclick="{! c.showDeclined }" alternativeText="Show Declined" title="Show Declined" />)
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td style="text-align: right;">
+                                                        <lightning:formattedNumber value="{!v.finalDeclinedSummaryObj.declinedCurrentSales}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>
+                                                    <td style="text-align: right;">
+                                                        <lightning:formattedNumber value="{!v.finalDeclinedSummaryObj.declinedProposedSales}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>
+                                                    <td style="text-align: right;">
+                                                        <lightning:formattedNumber value="{!v.finalDeclinedSummaryObj.declinedAwardedSales}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>
+                                                </tr>
+                                                <aura:if isTrue="{!v.showDeclined}">
+                                                    <aura:iteration items="{!v.declinedFamilyKeys}" var="family">
+                                                        <c:VisionE2View data="{!v.popupData}" family="{!family}" status="Declined by Customer"/>
+                                                    </aura:iteration>
+                                                </aura:if>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>    
+                                
+                                
+                                <aura:set attribute="else">
+                                    <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="width: 100%; margin-bottom: 4px;font-size: 13px;padding: 0px;">
+                                        <thead class="headerOfTable">
+                                            <tr style="background-color:#cd9ff1;">
+                                                <th rowspan="2" style="text-align: center;background-color:#27708b;color: white; padding-left: 0px;border-left: 1px solid black;border-top: 1px solid black;border-left: 1px solid black;border-right: 1px solid black;" width="10%">Bid Categories</th>
+                                                <th colspan="4" style="background-color:#80c1db;color: black;text-align: center;border-top: 1px solid black;border-right: 1px solid black;" width="30%">No. of Bids</th>
+                                                <th colspan="3" style="background-color:rgb(171, 216, 202);color: black;text-align: center;border-top: 1px solid black;border-right: 1px solid black;" width="30%">Sales $ Mn</th>
+                                            </tr>
+                                            <tr>
+                                                <th style="background-color:#d0e7f7;color: black;text-align: center;" width="10%">Awarded</th>
+                                                <th style="background-color:#d0e7f7;color: black;text-align: center;" width="10%">Declined</th>
+                                                <th style="background-color:#d0e7f7;color: black;text-align: center;" width="10%">Total</th>
+                                                <th style="background-color:#d0e7f7;color: black;text-align: center;border-right: 1px solid black;" width="10%">% Win Rate</th>
+                                                <th style="background-color:rgb(226, 241, 237);color: black;text-align: center;" width="10%">Awarded</th>
+                                                <th style="background-color:rgb(226, 241, 237);color: black;text-align: center;" width="10%">Declined</th>
+                                                <th style="background-color:rgb(226, 241, 237);color: black;text-align: center;border-right: 1px solid black;" width="10%">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <aura:if isTrue="{!v.E1Object.instance == 'NPL'}">
+                                                <tr>
+                                                    <td style="border-left: 1px solid black;border-right: 1px solid black;"><b><i>New Product Launch</i></b></td>
+                                                    <td style="text-align: center;">{!v.E1Object.totalNPL}</td>
+                                                    <td style="text-align: center;">{!(v.E1Object.NewProductList.length-v.E1Object.totalNPL)}</td>
+                                                    <td style="text-align: center;">{!v.E1Object.NewProductList.length}</td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <aura:if isTrue="{!v.E1Object.NewProductList.length != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalNPL/v.E1Object.NewProductList.length)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.awardedSalesNPL/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.declinedSalesNPL/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.awardedSalesNPL+v.E1Object.declinedSalesNPL)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>
+                                                <!--<tr>
+                                                    <td>OTC New Product</td>
+                                                    <td style="text-align: center;">{!v.E1Object.totalOTCNPL}</td>
+                                                    <td style="text-align: center;">{!(v.E1Object.OTCNewProductList.length-v.E1Object.totalOTCNPL)}</td>
+                                                    <td style="text-align: center;">{!v.E1Object.OTCNewProductList.length}</td>
+                                                    <td style="text-align: center;">
+                                                        <aura:if isTrue="{!v.E1Object.OTCNewProductList.length != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalOTCNPL/v.E1Object.OTCNewProductList.length)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.awardedSalesOTCNPL/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.declinedSalesOTCNPL/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.awardedSalesOTCNPL+v.E1Object.declinedSalesOTCNPL)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>-->
+                                                <tr style="background: #b5ccd2; font-weight: bold;">
+                                                    <td style="border-left: 1px solid black;border-right: 1px solid black;border-bottom: 1px solid black;">Total</td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">{!v.E1Object.totalAwarded}</td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">{!v.E1Object.totalDeclined}</td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">{!v.E1Object.totalBids}</td>
+                                                    <td style="text-align: center;border-right: 1px solid black;border-bottom: 1px solid black;">
+                                                        <aura:if isTrue="{!v.E1Object.totalBids != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalAwarded/v.E1Object.totalBids)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.totalAwardedSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.totalDeclinedSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.totalAwardedSales+v.E1Object.totalDeclinedSales)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.E1Object.instance == 'ProActive'}">
+                                                <tr>
+                                                    <td style="border-left: 1px solid black;border-right: 1px solid black;"><b><i>New Customer</i></b></td>
+                                                    <td style="text-align: center;">{!v.E1Object.totalNewCustomer}</td>
+                                                    <td style="text-align: center;">{!(v.E1Object.NewCustomerList.length-v.E1Object.totalNewCustomer)}</td>
+                                                    <td style="text-align: center;">{!v.E1Object.NewCustomerList.length}</td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <aura:if isTrue="{!v.E1Object.NewCustomerList.length != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalNewCustomer/v.E1Object.NewCustomerList.length)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.awardedSalesNewCustomer/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.declinedSalesNewCustomer/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.awardedSalesNewCustomer+v.E1Object.declinedSalesNewCustomer)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border-left: 1px solid black;border-right: 1px solid black;"><b><i>Product Addition</i></b></td>
+                                                    <td style="text-align: center;">{!v.E1Object.totalProductAddition}</td>
+                                                    <td style="text-align: center;">{!(v.E1Object.ProductAdditionList.length-v.E1Object.totalProductAddition)}</td>
+                                                    <td style="text-align: center;">{!v.E1Object.ProductAdditionList.length}</td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <aura:if isTrue="{!v.E1Object.ProductAdditionList.length != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalProductAddition/v.E1Object.ProductAdditionList.length)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.awardedSalesProductAddition/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.declinedSalesProductAddition/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.awardedSalesProductAddition+v.E1Object.declinedSalesProductAddition)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>
+                                                <!--<tr>
+                                                    <td>OTC Product Addition</td>
+                                                    <td style="text-align: center;">{!v.E1Object.totalOTCProductAddition}</td>
+                                                    <td style="text-align: center;">{!(v.E1Object.OTCProductAdditionList.length-v.E1Object.totalOTCProductAddition)}</td>
+                                                    <td style="text-align: center;">{!v.E1Object.OTCProductAdditionList.length}</td>
+                                                    <td style="text-align: center;">
+                                                        <aura:if isTrue="{!v.E1Object.OTCProductAdditionList.length != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalOTCProductAddition/v.E1Object.OTCProductAdditionList.length)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.awardedSalesOTCProductAddition/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.declinedSalesOTCProductAddition/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.awardedSalesOTCProductAddition+v.E1Object.declinedSalesOTCProductAddition)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>-->
+                                                <tr style="background: #b5ccd2; font-weight: bold;border-left: 1px solid black;">
+                                                    <td style="border-left: 1px solid black;border-right: 1px solid black;border-right: 1px solid black;border-bottom: 1px solid black;">Total</td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">{!v.E1Object.totalAwarded}</td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">{!v.E1Object.totalDeclined}</td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">{!v.E1Object.totalBids}</td>
+                                                    <td style="text-align: center;border-right: 1px solid black;border-bottom: 1px solid black;">
+                                                        <aura:if isTrue="{!v.E1Object.totalBids != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalAwarded/v.E1Object.totalBids)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.totalAwardedSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.totalDeclinedSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.totalAwardedSales+v.E1Object.totalDeclinedSales)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.E1Object.instance == 'ReActive'}">
+                                                <tr>
+                                                    <td style="border-left: 1px solid black;border-right: 1px solid black;"><b><i>RFP Bids</i></b></td>
+                                                    <td style="text-align: center;">{!v.E1Object.totalRFP}</td>
+                                                    <td style="text-align: center;">{!(v.E1Object.RFPList.length-v.E1Object.totalRFP)}</td>
+                                                    <td style="text-align: center;">{!v.E1Object.RFPList.length}</td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <aura:if isTrue="{!v.E1Object.RFPList.length != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalRFP/v.E1Object.RFPList.length)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.awardedSalesRFP/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.declinedSalesRFP/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.awardedSalesRFP+v.E1Object.declinedSalesRFP)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>
+                                                <!--<tr>
+                                                    <td>OTC RFP</td>
+                                                    <td style="text-align: center;">{!v.E1Object.totalOTCRFP}</td>
+                                                    <td style="text-align: center;">{!(v.E1Object.OTCRFPList.length-v.E1Object.totalOTCRFP)}</td>
+                                                    <td style="text-align: center;">{!v.E1Object.OTCRFPList.length}</td>
+                                                    <td style="text-align: center;">
+                                                        <aura:if isTrue="{!v.E1Object.OTCRFPList.length != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalOTCRFP/v.E1Object.OTCRFPList.length)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.awardedSalesOTCRFP/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.declinedSalesOTCRFP/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.awardedSalesOTCRFP+v.E1Object.declinedSalesOTCRFP)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>-->
+                                                <tr>
+                                                    <td style="border-left: 1px solid black;border-right: 1px solid black;"><b><i>One Time Buys (OTBs)</i></b></td>
+                                                    <td style="text-align: center;">{!v.E1Object.totalOTBs}</td>
+                                                    <td style="text-align: center;">{!(v.E1Object.OTBList.length-v.E1Object.totalOTBs)}</td>
+                                                    <td style="text-align: center;">{!v.E1Object.OTBList.length}</td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <aura:if isTrue="{!v.E1Object.OTBList.length != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalOTBs/v.E1Object.OTBList.length)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.awardedSalesOTB/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.declinedSalesOTB/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.awardedSalesOTB+v.E1Object.declinedSalesOTB)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="border-left: 1px solid black;border-right: 1px solid black;"><b><i>Volume Review Only</i></b></td>
+                                                    <td style="text-align: center;">{!v.E1Object.totalVolumeReview}</td>
+                                                    <td style="text-align: center;">{!(v.E1Object.VolumeReviewList.length-v.E1Object.totalVolumeReview)}</td>
+                                                    <td style="text-align: center;">{!v.E1Object.VolumeReviewList.length}</td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <aura:if isTrue="{!v.E1Object.VolumeReviewList.length != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalVolumeReview/v.E1Object.VolumeReviewList.length)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.awardedSalesVolumeReview/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.declinedSalesVolumeReview/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.awardedSalesVolumeReview+v.E1Object.declinedSalesVolumeReview)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>
+                                                <!--<tr>
+                                                    <td>OTC Volume Review</td>
+                                                    <td style="text-align: center;">{!v.E1Object.totalOTCVolumeReview}</td>
+                                                    <td style="text-align: center;">{!(v.E1Object.OTCVolumeReviewList.length-v.E1Object.totalOTCVolumeReview)}</td>
+                                                    <td style="text-align: center;">{!v.E1Object.OTCVolumeReviewList.length}</td>
+                                                    <td style="text-align: center;">
+                                                        <aura:if isTrue="{!v.E1Object.OTCVolumeReviewList.length != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalOTCVolumeReview/v.E1Object.OTCVolumeReviewList.length)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.awardedSalesOTCVolumeReview/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.declinedSalesOTCVolumeReview/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.awardedSalesOTCVolumeReview+v.E1Object.declinedSalesOTCVolumeReview)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>-->
+                                                <tr style="background: #b5ccd2; font-weight: bold;border-left: 1px solid black;">
+                                                    <td style="border-left: 1px solid black;border-right: 1px solid black;border-right: 1px solid black;border-bottom: 1px solid black;">Total</td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">{!v.E1Object.totalAwarded}</td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">{!v.E1Object.totalDeclined}</td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">{!v.E1Object.totalBids}</td>
+                                                    <td style="text-align: center;border-right: 1px solid black;border-bottom: 1px solid black;">
+                                                        <aura:if isTrue="{!v.E1Object.totalBids != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalAwarded/v.E1Object.totalBids)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.totalAwardedSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.totalDeclinedSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.totalAwardedSales+v.E1Object.totalDeclinedSales)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.E1Object.instance == 'ROFR'}">
+                                                <tr>
+                                                    <td style="border-left: 1px solid black;border-right: 1px solid black;"><b><i>RFP Bids</i></b></td>
+                                                    <td style="text-align: center;">{!v.E1Object.totalRFP}</td>
+                                                    <td style="text-align: center;">{!(v.E1Object.RFPList.length-v.E1Object.totalRFP)}</td>
+                                                    <td style="text-align: center;">{!v.E1Object.RFPList.length}</td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <aura:if isTrue="{!v.E1Object.RFPList.length != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalRFP/v.E1Object.RFPList.length)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.awardedSalesRFP/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.declinedSalesRFP/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.awardedSalesRFP+v.E1Object.declinedSalesRFP)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>
+                                                <!--<tr>
+                                                    <td>OTC RFP</td>
+                                                    <td style="text-align: center;">{!v.E1Object.totalOTCRFP}</td>
+                                                    <td style="text-align: center;">{!(v.E1Object.OTCRFPList.length-v.E1Object.totalOTCRFP)}</td>
+                                                    <td style="text-align: center;">{!v.E1Object.OTCRFPList.length}</td>
+                                                    <td style="text-align: center;">
+                                                        <aura:if isTrue="{!v.E1Object.OTCRFPList.length != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalOTCRFP/v.E1Object.OTCRFPList.length)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.awardedSalesOTCRFP/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.declinedSalesOTCRFP/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.awardedSalesOTCRFP+v.E1Object.declinedSalesOTCRFP)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>-->
+                                                <tr>
+                                                    <td style="border-left: 1px solid black;border-right: 1px solid black;"><b><i>Price Reductions</i></b></td>
+                                                    <td style="text-align: center;">{!v.E1Object.totalPriceChange}</td>
+                                                    <td style="text-align: center;">{!(v.E1Object.PriceChangeList.length-v.E1Object.totalPriceChange)}</td>
+                                                    <td style="text-align: center;">{!v.E1Object.PriceChangeList.length}</td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <aura:if isTrue="{!v.E1Object.PriceChangeList.length != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalPriceChange/v.E1Object.PriceChangeList.length)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.awardedSalesPriceChange/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.declinedSalesPriceChange/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.awardedSalesPriceChange+v.E1Object.declinedSalesPriceChange)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>
+                                                <!--<tr>
+                                                    <td>OTC Price Change</td>
+                                                    <td style="text-align: center;">{!v.E1Object.totalOTCPriceChange}</td>
+                                                    <td style="text-align: center;">{!(v.E1Object.OTCPriceChangeList.length-v.E1Object.totalOTCPriceChange)}</td>
+                                                    <td style="text-align: center;">{!v.E1Object.OTCPriceChangeList.length}</td>
+                                                    <td style="text-align: center;">
+                                                        <aura:if isTrue="{!v.E1Object.OTCPriceChangeList.length != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalOTCPriceChange/v.E1Object.OTCPriceChangeList.length)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.awardedSalesOTCPriceChange/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.declinedSalesOTCPriceChange/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.awardedSalesOTCPriceChange+v.E1Object.declinedSalesOTCPriceChange)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>-->
+                                                <tr style="background: #b5ccd2; font-weight: bold;border-left: 1px solid black;">
+                                                    <td style="border-left: 1px solid black;border-right: 1px solid black;border-right: 1px solid black;border-bottom: 1px solid black;">Total</td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">{!v.E1Object.totalAwarded}</td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">{!v.E1Object.totalDeclined}</td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">{!v.E1Object.totalBids}</td>
+                                                    <td style="text-align: center;border-right: 1px solid black;border-bottom: 1px solid black;">
+                                                        <aura:if isTrue="{!v.E1Object.totalBids != 0}">
+                                                            <lightning:formattedNumber value="{!(v.E1Object.totalAwarded/v.E1Object.totalBids)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.totalAwardedSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!v.E1Object.totalDeclinedSales/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                    <td style="text-align: center;border-bottom: 1px solid black;border-right: 1px solid black;">
+                                                        <lightning:formattedNumber value="{!(v.E1Object.totalAwardedSales+v.E1Object.totalDeclinedSales)/1000000}" minimumFractionDigits="0" maximumFractionDigits="1"/>
+                                                    </td>
+                                                </tr>
+                                            </aura:if>
+                                        </tbody>
+                                    </table>
+                                </aura:set>
+                            </aura:if>
+                        </div>
+                    </div>
+                    <!--/div-->
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.closePopup }"/>
+                        
+                    </footer>
+                </div>
+                
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if > 
+    </lightning:tabset>
+    <!--<lightning:accordion allowMultipleSectionsOpen="true" >
+        <lightning:accordionSection name="Summary View" label="Summary View">
+            <div class="slds-box" style="padding: 6px;">
+                <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="width: 100%; margin-bottom: 4px;font-size: 16px;padding: 0px;">
+                    <thead class="headerOfTable">
+                        <tr style="background-color:#cd9ff1;">
+                            <th colspan="3" style="background-color:#cd9ff1;color: black;text-align: center;">New Product Launches</th>
+                            <th colspan="3" style="background-color:#cd9ff1;color: black;text-align: center;">PROACTIVE BIDS</th>
+                        </tr>
+                        <tr style="background-color:#6f30a0;">
+                            <th style="background-color:#6f30a0;color: white;text-align: center;"># Bids</th>
+                            <th style="background-color:#6f30a0;color: white;text-align: center;">Sales ($)</th>
+                            <th style="background-color:#6f30a0;color: white;text-align: center;">Win Rate (%)</th>
+                            <th style="background-color:#6f30a0;color: white;text-align: center;"># Bids</th>
+                            <th style="background-color:#6f30a0;color: white;text-align: center;">Sales ($)</th>
+                            <th style="background-color:#6f30a0;color: white;text-align: center;">Win Rate (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="width: 100%;font-size: 16px;padding: 0px;">
+                    <thead class="headerOfTable">
+                        <tr style="background-color:#cd9ff1;">
+                            <th colspan="3" style="background-color:#cd9ff1;color: black;text-align: center;">Request for Proposals (RFPs)</th>
+                            <th colspan="3" style="background-color:#cd9ff1;color: black;text-align: center;">Right of First Refusals (ROFRs)</th>
+                        </tr>
+                        <tr style="background-color:#6f30a0;">
+                            <th style="background-color:#6f30a0;color: white;text-align: center;"># Bids</th>
+                            <th style="background-color:#6f30a0;color: white;text-align: center;">Sales ($)</th>
+                            <th style="background-color:#6f30a0;color: white;text-align: center;">Win Rate (%)</th>
+                            <th style="background-color:#6f30a0;color: white;text-align: center;"># Bids</th>
+                            <th style="background-color:#6f30a0;color: white;text-align: center;">Sales ($)</th>
+                            <th style="background-color:#6f30a0;color: white;text-align: center;">Win Rate (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </lightning:accordionSection>
+        <lightning:accordionSection name="Detailed View" label="Detailed View">
+            <div class="slds-box" style="padding: 8px;">
+                <div class="slds-box" style="margin:4px 0px 4px 0px;padding: 8px;">
+                    <div style="font-size: 18px;font-weight: bold;width: 100% !important;background-color: #f3f3f3; padding: 8px;margin-bottom: 4px;">New Product Launch</div>
+                    <div style="max-height: 400px;overflow: auto;margin-top: 4px;">
+                        <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="width: 100%;font-size: 16px;padding: 0px;">
+                            <thead class="headerOfTable">
+                                <tr style="background-color:#6f30a0;">
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Bid No.</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Product Family</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Product Name</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Customer</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Current Sales ($)</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Proposed Sales ($)</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Awarded Sales ($)</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Sum of Difference ($)</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Sum of Awarded Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <aura:iteration items="{!v.NPLBidsList}" var="bid">
+                                    <tr style="font-weight: bold;background-color: #F3F3F3;">
+                                        <td>
+                                            <aura:if isTrue="{!v.record[1][0].showDropdown}">
+                                                (<lightning:buttonIcon iconName="utility:minimize_window" variant="bare" class="iconCSS" size="small" onclick="{!c.showDropDown}" alternativeText="Hide Families" title="Hide Families" />)
+                                                <aura:set attribute="else">
+                                                    (<lightning:buttonIcon iconName="utility:add" class="iconCSS1" size="small" variant="bare" onclick="{! c.showDropDown }" alternativeText="Show Families" title="Show Families" />)
+                                                </aura:set>
+                                            </aura:if>
+                                            <lightning:formattedUrl value="{!'/'+bid.Id}" target="_blank" label="{!bid.Name}"/>
+          &nbsp;
+                                        </td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="slds-box" style="margin:0px 0px 4px 0px;padding: 8px;">
+                    <div style="font-size: 18px;font-weight: bold;width: 100% !important;background-color: #f3f3f3; padding: 8px;margin-bottom: 4px;">PROACTIVE BIDS</div>
+                    <span style="font-size: 16px; font-weight: bold;padding-left: 8px;">New Customer</span>
+                    <div style="max-height: 400px;overflow: auto;margin-top: 4px;margin-bottom: 4px;">
+                        <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="width: 100%;font-size: 16px;padding: 0px;">
+                            <thead class="headerOfTable">
+                                <tr style="background-color:#6f30a0;">
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Bid No.</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Product Family</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Product Name</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Customer</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Current Sales ($)</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Proposed Sales ($)</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Awarded Sales ($)</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Sum of Difference ($)</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Sum of Awarded Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>&nbsp;</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <span style="font-size: 16px; font-weight: bold;padding-left: 8px;">Product Addition</span>
+                    <div style="max-height: 400px;overflow: auto;margin-top: 4px;">
+                        <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="width: 100%;font-size: 16px;padding: 0px;">
+                            <thead class="headerOfTable">
+                                <tr style="background-color:#6f30a0;">
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Bid No.</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Product Family</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Product Name</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Customer</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Current Sales ($)</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Proposed Sales ($)</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Awarded Sales ($)</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Sum of Difference ($)</th>
+                                    <th style="background-color:#6f30a0;color: white;text-align: center;">Sum of Awarded Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>&nbsp;</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="slds-box" style="margin:0px 0px 4px 0px;padding: 8px;">
+                    <div style="font-size: 18px;font-weight: bold;width: 100% !important;background-color: #f3f3f3; padding: 8px;margin-bottom: 4px;">Request for Proposals (RFPs)</div>
+                    <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="width: 100%;font-size: 16px;padding: 0px;">
+                        <thead class="headerOfTable">
+                            <tr style="background-color:#6f30a0;">
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Bid No.</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Product Family</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Product Name</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Customer</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Current Sales ($)</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Proposed Sales ($)</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Awarded Sales ($)</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Sum of Difference ($)</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Sum of Awarded Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>&nbsp;</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="slds-box" style="margin:0px 0px 4px 0px;padding: 8px;">
+                    <div style="font-size: 18px;font-weight: bold;width: 100% !important;background-color: #f3f3f3; padding: 8px;margin-bottom: 4px;">Right of First Refusals (ROFRs)</div>
+                    <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="width: 100%;font-size: 16px;padding: 0px;">
+                        <thead class="headerOfTable">
+                            <tr style="background-color:#6f30a0;">
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Bid No.</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Product Family</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Product Name</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Customer</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Current Sales ($)</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Proposed Sales ($)</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Awarded Sales ($)</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Sum of Difference ($)</th>
+                                <th style="background-color:#6f30a0;color: white;text-align: center;">Sum of Awarded Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>&nbsp;</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </lightning:accordionSection>
+    </lightning:accordion>-->
+</aura:component>

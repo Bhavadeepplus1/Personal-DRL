@@ -1,0 +1,575 @@
+<aura:component controller="Phoenix_RejectedStatusCls" implements="flexipage:availableForAllPageTypes,force:hasRecordId,force:appHostable,lightning:isUrlAddressable" access="global">   
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="columns" type="List"/>
+    <lightning:navigation aura:id="navService"/> 
+    <aura:handler name="init" value="{!this}" action="{!c.initRecords}"/>
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.initRecords}"/>
+    <aura:attribute name="BidLineItemListAll" type="Phoenix_Bid_Line_Item__c[]"/>
+    <aura:attribute name="isRelatedLineItemsEmpty" type="boolean" default="true" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="lstSelectedRecords" type="sObject[]" default="[]" description="Use,for store SELECTED sObject Records"/>
+    <aura:attribute name="listOfSearchRecords" type="List" description="Use,for store the list of search records which returns from apex class" />
+    <aura:attribute name="defaultlistOfProductFamily" type="List" />
+    <aura:attribute name="lstSelectedPDRecords" type="sObject[]" default="[]" description="Use,for store SELECTED sObject Records"/>
+    <aura:attribute name="listOfSearchPDRecords" type="List" description="Use,for store the list of search records which returns from apex class" />
+    <aura:attribute name="defaultlistOfProductDirectors" type="List" />
+    <aura:attribute name="SearchKeyWord" type="string"/>
+    <aura:attribute name="SearchKeyWordPD" type="string"/>
+    
+    <aura:attribute name="objectAPIName" type="string" default=""/>
+    <aura:attribute name="IconName" type="string" default=""/>
+    <aura:attribute name="label" type="string" default=""/>
+    <aura:attribute name="options" type="List"  />
+    <aura:attribute name="selectedValues" type="List" default="" description="Selected value in Multi Select" />
+    <lightning:navigation aura:id="navigationService" />
+    <aura:handler name="lightningEvent" event="c:RefreshBidLineItemCmpEvt" action="{!c.handleEvent}"/>
+    <aura:attribute name="showSaveCancelBtn" type="boolean" default="false" description="flag for rendered save and cancel buttons in aura:if "/>    
+    <aura:attribute name="isRxChecked" type="boolean" default="false" />
+    <aura:attribute name="isSRxChecked" type="boolean" default="false" />
+    <aura:attribute name="isOtcChecked" type="boolean" default="false" />
+    <aura:attribute name="RxSrxList" type="List"  />
+    
+    <aura:attribute name="bidNumber" type="string"  />
+    <aura:attribute name="bidName" type="string"  />
+    <aura:attribute name="BidTypeVal" type="string"  />
+    
+    <!--specific customer attributes-->
+    <aura:attribute name="isSpecificCustomer" type="boolean" />
+    <aura:attribute name="isDirectType" type="boolean" default="false"/>
+    <aura:attribute name="templateType" type="string" default=""/>
+    <aura:method name="rejectedStatusRefresh" action="{!c.initRecords}" />
+    <!--specific customer attributes-->
+    
+    <!--Contract Model section-->
+    <aura:attribute name="showModal" type="boolean" default="false"/>
+    <aura:attribute type="List" name="contratcsList"/>
+    <aura:attribute name="mycolumns" type="List"/>
+    <aura:attribute name="selectedCntrcts"  type="list"/>    
+    
+    <!--Rebate and Fee type attributes-->
+    <aura:attribute name="isRebateChanged" type="boolean" default="false" />
+    <aura:attribute name="isFeeChanged" type="boolean" default="false" />
+    <aura:attribute name="isReBid" type="boolean" default="false" />
+    <aura:attribute name="tableRef" type="String" default=""/>
+    
+    <!--declare events hendlers-->  
+    <aura:handler name="oSelectedRecordEvent" event="c:selectedsObjectRecordsEvent" action="{!c.handleComponentEvent}"/>
+    <aura:attribute name="Message" type="String" default=""/>
+    
+    <aura:handler name="PDSelectedRecordEvent" event="c:ProductDirectorSearchEvent" action="{!c.handleComponentEventProdDir}"/>
+    <aura:attribute name="MessagePD" type="String" default=""/>
+    
+    <lightning:card iconName="custom:custom90" title="{!(v.bidNumber+'-'+v.bidName)}">
+        <aura:set attribute="actions">
+            <lightning:buttonGroup>
+                <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+                    <div style="margin-right:8px;">  <lightning:button label="Export" onclick="{!c.downloadCsv}"/></div>
+                </aura:if>
+                <div><lightning:button variant="neutral" label="Back" title="Back" onclick="{! c.backToBid }"/>
+                </div>
+            </lightning:buttonGroup>
+        </aura:set>
+        
+        <aura:if isTrue="{!v.showModal}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" 
+                     aria-modal="true" aria-describedby="modal-content-id-1" 
+                     class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.hideModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                            Contracts</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p>
+                            <div class="slds-grid" style="margin-bottom:6px;">
+                                <div class="slds-col slds-size_1-of-3">
+                                    <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                        <ui:inputText aura:id="cntInput" class="slds-lookup__search-input slds-input inputSize"
+                                                      placeholder="Search contratcs..."/>
+                                        <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                            <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                        </span>
+                                    </div> 
+                                </div>
+                                <div class="slds-col slds-size_1-of-3">
+                                    <div  class="slds-m-top_medium slds-m-left_small" style="margin-top:1px;"><lightning:button label="Search" onclick="{!c.searchContracts}"  variant="brand"/></div> 
+                                </div>
+                                <div class="slds-col slds-size_1-of-3">
+                                    <lightning:input type="checkbox" label="Show All Contracts" name="input1" aura:id="tgleCntrct" />
+                                </div>
+                            </div>  
+                            <aura:if isTrue="{!not(empty(v.contratcsList))}">                            
+                                <lightning:datatable aura:id="linesTable"
+                                                     data="{! v.contratcsList }" 
+                                                     columns="{! v.mycolumns }"
+                                                     keyField="id"                                                
+                                                     />
+                                <aura:set attribute="else">
+                                    <center>
+                                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                            <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                            </span>
+                                            <h2> No Records Found</h2>
+                                        </div>
+                                    </center>
+                                </aura:set>
+                            </aura:if>
+                        </p>
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.hideModel }"/>
+                        <lightning:button variant="brand"
+                                          label="OK"
+                                          title="OK"
+                                          disabled= "{!empty(v.contratcsList)}"
+                                          onclick="{!c.saveDetails}"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+        <aura:if isTrue="{!v.isSpinnerLoad}">
+            <div class="backgroundInverse">
+                <lightning:spinner alternativeText="Loading" variant="brand" />
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+            
+            <div aura:id="mainDiv" style="height:60vh;overflow:auto;margin-top:10px;" class=" slds-m-right_small slds-m-left_small">
+                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                    <table aura:id="LineTable"  class="maintable slds-table slds-no-row-hover slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                        <thead>
+                            <aura:if isTrue="{!v.templateType =='Econdisc'}">
+                                <tr> 
+                                    <th></th>
+                                    <th class="slds-truncate slds-cell-wrap">NDC</th>
+                                    <th class="slds-truncate slds-cell-wrap">SAP Number</th>
+                                    <th class="slds-truncate slds-cell-wrap">Product Family</th>
+                                    <th class="slds-truncate slds-cell-wrap">Pkg Size</th>
+                                    <th class="slds-truncate slds-cell-wrap">Product Name</th>
+                                    <aura:if isTrue="{!v.isReBid}" >
+                                        <th class="slds-truncate slds-cell-wrap">Previous Bid</th>
+                                        <th class="slds-truncate slds-cell-wrap">Previous Bid Line Item</th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">Case Pack</th>
+                                    <th class="slds-truncate slds-cell-wrap">MOQ</th>
+                                    <th class="slds-truncate slds-cell-wrap">Compare To (Brand Name)</th>
+                                    <th class="slds-truncate slds-cell-wrap">Product Director</th>
+                                    <th class="slds-truncate slds-cell-wrap">Orange Book Rating</th>
+                                    <th class="slds-truncate slds-cell-wrap">Throughput Cost</th>
+                                    <th class="slds-truncate slds-cell-wrap">WAC</th>
+                                    <th class="slds-truncate slds-cell-wrap">IMS Market Share</th>
+                                    <th class="slds-truncate slds-cell-wrap">REMS Programme</th>
+                                    <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                        <th class="slds-truncate slds-cell-wrap">Current Position</th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">Proposed Position</th>
+                                    <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                        <th class="slds-truncate slds-cell-wrap">3 Months Annualized Direct Selling Unit</th>
+                                        <th class="slds-truncate slds-cell-wrap">3 Months Annualized Indirect Selling Unit</th>
+                                        <th class="slds-truncate slds-cell-wrap">3 Months Annualized Total Units</th>
+                                        <th class="slds-truncate slds-cell-wrap">Override Current Direct Units</th>
+                                        <th class="slds-truncate slds-cell-wrap">Override Current Indirect Units</th>
+                                        <th class="slds-truncate slds-cell-wrap">Override Total Units</th>
+                                        <th class="slds-truncate slds-cell-wrap">12 Months Actual Sales Unit (Direct)</th>
+                                        <th class="slds-truncate slds-cell-wrap">12 Months Actual Sales Unit (Indirect)</th>
+                                        <th class="slds-truncate slds-cell-wrap">12 Months Actual Sales Total Units</th>
+                                        <th class="slds-truncate slds-cell-wrap">Doses</th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!or(v.BidTypeVal =='RFP Bids',or(v.BidTypeVal =='New Product Launch',or(v.BidTypeVal =='Product Addition',v.BidTypeVal =='Volume Review Only')))}">
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Direct ESI Units</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Indirect ESI Units</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Direct Kroger Units</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Indirect Kroger Units</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Direct Rx Outreach  Units</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Indirect Rx Outreach Units </th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Direct Supervalu Units </th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Indirect Supervalu Units </th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Direct Cigna Units</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Indirect Cigna Units</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Cordant Units</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Cordant Units</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Accerodo Units</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Accerodo Units</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Direct Units</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Indirect Units</th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(v.BidTypeVal !='Price Change',and(v.BidTypeVal !='Customer Rebate Change',v.BidTypeVal !='Sales Out Rebate'))}">
+                                        <th class="slds-truncate slds-cell-wrap">Final Direct Selling Units</th>
+                                        <th class="slds-truncate slds-cell-wrap">Final Indirect Selling Units</th>
+                                        <th class="slds-truncate slds-cell-wrap">Final Total Selling Unit</th>
+                                        <th class="slds-truncate slds-cell-wrap">Final Annual Extended Units</th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                        <th class="slds-truncate slds-cell-wrap">Current Direct Price</th>
+                                        <th class="slds-truncate slds-cell-wrap">Current Indirect Price</th>
+                                        <th class="slds-truncate slds-cell-wrap">Current ZITD</th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                        <th class="slds-truncate slds-cell-wrap">Total Selling Unit</th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">Final Total Selling Unit</th>
+                                    <th class="slds-truncate slds-cell-wrap">Guidance Price</th>
+                                    <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='Sales Out Rebate')}">
+                                        <th class="slds-truncate slds-cell-wrap">Proposed Contract Bid Price (Sales)</th>
+                                        <th class="slds-truncate slds-cell-wrap">Proposed Contract Bid Price (Marketing)</th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(v.BidTypeVal !='New Product Launch',and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal  !='Sales Out Rebate'))}">
+                                        <th class="slds-truncate slds-cell-wrap">% Reduction</th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal =='New Product Launch'}">
+                                        <th class="slds-truncate slds-cell-wrap">Brand WAC</th>
+                                        <th class="slds-truncate slds-cell-wrap">Brand WAC %</th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal  !='Sales Out Rebate')}">
+                                        <th class="slds-truncate slds-cell-wrap">Wholesaler Diff Price (Indirect)</th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">VIP% Per Unit $</th>
+                                    <th class="slds-truncate slds-cell-wrap">Customer Dead Net</th>
+                                    <th class="slds-truncate slds-cell-wrap">Admin Fee %</th>
+                                    <th class="slds-truncate slds-cell-wrap">Admin Fee in $</th>
+                                    <th class="slds-truncate slds-cell-wrap">Current Rebate %</th>
+                                    <aura:if isTrue="{!v.BidTypeVal !='Volume Review Only'}">
+                                        <th class="slds-truncate slds-cell-wrap">Proposed Rebate %</th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">Rebate % In $</th>
+                                    <aura:if isTrue="{!or(or(v.BidTypeVal=='RFP Bids',v.BidTypeVal=='Product Addition'),or(v.BidTypeVal=='New Product Launch'))}">
+                                        <th class="slds-truncate slds-cell-wrap">IOD Per Unit $</th>
+                                        <th class="slds-truncate slds-cell-wrap">IOD Total Amount $</th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal=='Sales Out Rebate'}">
+                                        <th class="slds-truncate slds-cell-wrap">Sales Out Promotion Per Unit $</th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">CD Per Unit $</th>
+                                    <th class="slds-truncate slds-cell-wrap">Estimated Medicaid and Returns Per Unit</th>
+                                    <th class="slds-truncate slds-cell-wrap">DRL Dead net after IOD w/o Medicaid &amp; Returns</th>
+                                    <th class="slds-truncate slds-cell-wrap">DRL Dead net W/o IOD, Medicaid &amp; Returns</th>
+                                    <th class="slds-truncate slds-cell-wrap">Direct TP $</th>
+                                    <th class="slds-truncate slds-cell-wrap">Direct TP%</th>
+                                    <aura:if isTrue="{!v.BidTypeVal !='Volume Review Only'}">
+                                        <th class="slds-truncate slds-cell-wrap">Proposed ZITD</th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">Indirect CD %</th>
+                                    <th class="slds-truncate slds-cell-wrap">Indirect CD Per Unit $</th>
+                                    <th class="slds-truncate slds-cell-wrap">Indirect VIP% Per Unit $</th>
+                                    <th class="slds-truncate slds-cell-wrap">RDC/NLC %</th>
+                                    <th class="slds-truncate slds-cell-wrap">RDC/NLC Per Unit</th>
+                                    <th class="slds-truncate slds-cell-wrap">Contract Management Fee (Wholesaler)%</th>
+                                    <th class="slds-truncate slds-cell-wrap">CM Fee Per Unit</th>
+                                    <th class="slds-truncate slds-cell-wrap">Indirect Dead Net w/o Medicaid &amp; Returns</th>
+                                    <th class="slds-truncate slds-cell-wrap">Indirect TP $</th>
+                                    <th class="slds-truncate slds-cell-wrap">Indirect TP%</th>
+                                    <th class="slds-truncate slds-cell-wrap">Proposed Net Sales Direct</th>
+                                    <th class="slds-truncate slds-cell-wrap">Proposed Net Sales Indirect</th>
+                                    <th class="slds-truncate slds-cell-wrap">Net Sales (Internal)</th>
+                                    <th class="slds-truncate slds-cell-wrap">Proposed TPT $ Direct</th>
+                                    <th class="slds-truncate slds-cell-wrap">Proposed TPT $ Indirect</th>
+                                    <th class="slds-truncate slds-cell-wrap">Th. Put Margin $$$</th>
+                                    <th class="slds-truncate slds-cell-wrap">Proposed TPT % Direct</th>
+                                    <th class="slds-truncate slds-cell-wrap">Proposed TPT % Indirect</th>
+                                    <th class="slds-truncate slds-cell-wrap">Wholesaler Controlled Substance Fee$</th>
+                                    <th class="slds-truncate slds-cell-wrap">Blended Internal Dead Net Price</th>
+                                    <th class="slds-truncate slds-cell-wrap">Blended TP Margin %</th>
+                                    <aura:if isTrue="{!v.BidTypeVal =='New Product Launch'}">
+                                        <th class="slds-truncate slds-cell-wrap">Opening Order</th>
+                                        <th class="slds-truncate slds-cell-wrap">Opening Order Net Sales</th>
+                                        <th class="slds-truncate slds-cell-wrap">Opening Order TPT $</th>
+                                        <th class="slds-truncate slds-cell-wrap">Opening Order TPT %</th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                        <th class="slds-truncate slds-cell-wrap">Current Dead Net Price</th>
+                                        <th class="slds-truncate slds-cell-wrap">Current Sales</th>
+                                        <th class="slds-truncate slds-cell-wrap">Current Th. Put Margin $$$</th>
+                                        <th class="slds-truncate slds-cell-wrap">Current TP Margin %</th>
+                                        <th class="slds-truncate slds-cell-wrap">Price Variance</th>
+                                        <th class="slds-truncate slds-cell-wrap">Volume Variance</th>
+                                        <th class="slds-truncate slds-cell-wrap">Difference Sales</th>
+                                        <th class="slds-truncate slds-cell-wrap">Difference Margin</th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">Budgeted ASP</th>
+                                    <th class="slds-truncate slds-cell-wrap">Proposed as % of Budget</th>
+                                    <th class="slds-truncate slds-cell-wrap">Latest Estimate ASP</th>
+                                    <th class="slds-truncate slds-cell-wrap">Proposed as % of Latest Estimate</th>                                        
+                                    <th class="slds-truncate slds-cell-wrap">Lowest Price /SKU</th>
+                                    <th class="slds-truncate slds-cell-wrap">Approved Lowest Price /SKU</th>
+                                    <aura:if isTrue="{!and(v.BidTypeVal !='Price Change',and(v.BidTypeVal !='Customer Rebate Change',v.BidTypeVal !='Sales Out Rebate'))}">
+                                        <aura:if isTrue="{!v.BidTypeVal!='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Initial Stocking Order Volume</th>
+                                            <th class="slds-truncate slds-cell-wrap">Initial Stocking Order Comments</th>
+                                            <th class="slds-truncate slds-cell-wrap">Total SCM Approved Qty</th>
+                                            <th class="slds-truncate slds-cell-wrap">Estimated Lead Time</th>
+                                            <th class="slds-truncate slds-cell-wrap">SCM Rejection Reason</th>
+                                            <th class="slds-truncate slds-cell-wrap">Revisit Date</th>
+                                            <th class="slds-truncate slds-cell-wrap">SCM Approval (Y/N)</th>
+                                            <th class="slds-truncate slds-cell-wrap">SCM Comments</th>
+                                            <aura:set attribute="else">
+                                                <th class="slds-truncate slds-cell-wrap">Opening Order Comments</th>  
+                                                <th class="slds-truncate slds-cell-wrap">Estimated Lead Time</th>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">Sales Notes</th>
+                                    <aura:if isTrue="{!v.BidTypeVal!='Volume Review Only'}">
+                                        <th class="slds-truncate slds-cell-wrap">Marketing Approval</th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">Marketing Notes</th>
+                                    <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='Sales Out Rebate')}">
+                                        <th class="slds-truncate slds-cell-wrap">Marketing Lead Rx</th>
+                                        <th class="slds-truncate slds-cell-wrap">Marketing Lead SRx</th>
+                                        <th class="slds-truncate slds-cell-wrap">Marketing Lead OTC</th>
+                                        <th class="slds-truncate slds-cell-wrap">Marketing Lead Comments</th>
+                                        <th class="slds-truncate slds-cell-wrap">Marketing Head Approval</th>
+                                        <th class="slds-truncate slds-cell-wrap">Marketing Head Comments</th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal !='Volume Review Only'}">
+                                        <th class="slds-truncate slds-cell-wrap">Finance Approval</th>
+                                        <th class="slds-truncate slds-cell-wrap">Finance Comments</th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='Sales Out Rebate')}">
+                                        <th class="slds-truncate slds-cell-wrap">Sr Director / VP Finance Approval</th>
+                                        <th class="slds-truncate slds-cell-wrap">Sr Director / VP Finance Comments</th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal!='Volume Review Only'}">
+                                        <th class="slds-truncate slds-cell-wrap">Contract Status</th>
+                                        <th class="slds-truncate slds-cell-wrap">Contract Comments</th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">WAC Check</th>
+                                    <aura:if isTrue="{!or(or(v.BidTypeVal =='New Product Launch',or(v.BidTypeVal =='RFP Bids',v.BidTypeVal =='Product Addition')))}">
+                                        <th class="slds-truncate slds-cell-wrap">IOD Qty (Rounded To MOQ)</th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">Bid Status</th>
+                                    <th class="slds-truncate slds-cell-wrap">Customer Decline Reasons</th>
+                                </tr>
+                                <aura:set attribute="else">
+                                    <tr> 
+                                        <th></th>
+                                        <th class="slds-truncate slds-cell-wrap">NDC</th>
+                                        <th class="slds-truncate slds-cell-wrap">SAP Number</th>
+                                        <th class="slds-truncate slds-cell-wrap zindexPrd " aura:id=" zvaluePrd">Product
+                                            Family</th>
+                                        <th class="slds-truncate slds-cell-wrap zindexPkg" aura:id="zvaluePkg">Pkg Size
+                                        </th>
+                                        
+                                        <th class="slds-truncate slds-cell-wrap zindex" aura:id="zvalue">
+                                            <span>Product Name</span>
+                                        </th>
+                                        <!-- logic for Re-Bid functionality- starts-->
+                                        <aura:if isTrue="{!v.isReBid}" >
+                                            <th class="slds-truncate slds-cell-wrap">Previous Bid</th>
+                                            <th class="slds-truncate slds-cell-wrap">Previous Bid Line Item</th>
+                                        </aura:if>
+                                        <!-- logic for Re-Bid functionality- ends-->
+                                        <th class="slds-truncate slds-cell-wrap">Case Pack</th>
+                                        <th class="slds-truncate slds-cell-wrap">MOQ</th>
+                                        <th class="slds-truncate slds-cell-wrap">Compare To (Brand Name)</th>
+                                        <th class="slds-truncate slds-cell-wrap">Product Director</th>
+                                        <th class="slds-truncate slds-cell-wrap">Orange Book Rating</th>
+                                        <th class="slds-truncate slds-cell-wrap">Throughput Cost</th>
+                                        <th class="slds-truncate slds-cell-wrap">WAC</th>
+                                        <th class="slds-truncate slds-cell-wrap">IMS Market Share</th>
+                                        <th class="slds-truncate slds-cell-wrap">REMS Program</th>
+                                        <aura:if isTrue="{!v.BidTypeVal != 'New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Current Position</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Proposed Position</th>
+                                        <aura:if isTrue="{!v.BidTypeVal != 'New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Current Indirect Selling Unit</th>
+                                            <th class="slds-truncate slds-cell-wrap">Override Current Units</th>
+                                            <th class="slds-truncate slds-cell-wrap">12 Months Actual Sales Unit</th>
+                                            <th class="slds-truncate slds-cell-wrap">Doses</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(v.BidTypeVal !='Price Change',and(v.BidTypeVal !='Customer Rebate Change',v.BidTypeVal !='Sales Out Rebate'))}">
+                                            <aura:if isTrue="{!or(or(v.BidTypeVal =='RFP Bids',v.BidTypeVal =='Volume Review Only'),v.BidTypeVal =='Product Addition')}">
+                                                <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Indirect Selling Units(Current + Increment)</th>
+                                                <aura:set attribute="else">
+                                                    <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed Indirect Selling Units</th>
+                                                    
+                                                </aura:set>
+                                            </aura:if> 
+                                            <th class="slds-truncate slds-cell-wrap">Final Annual Extended Units</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(and(v.BidTypeVal !='Customer Rebate Change',v.BidTypeVal !='New Product Launch'),and(v.BidTypeVal!='Price Change',v.BidTypeVal!='Sales Out Rebate'))}">
+                                            <th class="slds-truncate slds-cell-wrap">Total SCM Approved Qty</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.BidTypeVal != 'New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Current Indirect Price</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Total Selling Unit</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Final Total Selling Unit</th>
+                                        <th class="slds-truncate slds-cell-wrap">Guidance Price</th>
+                                        <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Current Direct Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Current Indirect Price</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Proposed Contract Bid Price (Sales)</th>
+                                        <th class="slds-truncate slds-cell-wrap">Proposed Contract Bid Price (Marketing)</th>
+                                        <aura:if isTrue="{!v.BidTypeVal =='New Product Launch'}">
+                                            <!--  <th class="slds-truncate slds-cell-wrap">Current Supplier</th>-->
+                                            <th class="slds-truncate slds-cell-wrap">Brand WAC</th>
+                                            <th class="slds-truncate slds-cell-wrap">Brand WAC %</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',and(v.BidTypeVal  !='Sales Out Rebate',v.BidTypeVal  !='New Product Launch'))}">
+                                            <th class="slds-truncate slds-cell-wrap">% Reduction</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.templateType =='Walgreens'}" >
+                                            <th class="slds-truncate slds-cell-wrap">VIP% Per Unit $</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.templateType =='ABC Progen'}" >
+                                            <th class="slds-truncate slds-cell-wrap">Local VIP%</th>
+                                            <th class="slds-truncate slds-cell-wrap">Local VIP% Per Unit $</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.templateType =='Walgreens'}" >
+                                            <th class="slds-truncate slds-cell-wrap">CM Fee %</th>
+                                            <th class="slds-truncate slds-cell-wrap">CM Fee Per Unit $</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.templateType =='ABC Progen'}" >
+                                            <th class="slds-truncate slds-cell-wrap">Fee Per Unit $</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Cash Discount Per Unit $</th>
+                                        <th class="slds-truncate slds-cell-wrap">Customer Dead Net</th>
+                                        <aura:if isTrue="{!v.BidTypeVal=='Sales Out Rebate'}">
+                                            <th class="slds-truncate slds-cell-wrap">Sales Out Promotion Per Unit $</th>
+                                            <!--   <th class="slds-truncate slds-cell-wrap">Sales Out Promotion</th>-->
+                                        </aura:if>
+                                        <aura:if isTrue="{!or(or(v.BidTypeVal=='New Customer',v.BidTypeVal=='RFP Bids'),or(v.BidTypeVal=='Product Addition',v.BidTypeVal=='New Product Launch'))}">
+                                            <th class="slds-truncate slds-cell-wrap">IOD Per Unit $</th>
+                                            <th class="slds-truncate slds-cell-wrap">IOD Total Amount $</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Current Rebate %</th>
+                                        <aura:if isTrue="{!v.BidTypeVal !='Volume Review Only'}">
+                                            <th class="slds-truncate slds-cell-wrap">Proposed Rebate %</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Rebate % Per Unit $</th> 
+                                        
+                                        <aura:if isTrue="{!v.templateType =='Walgreens'}" >
+                                            <th class="slds-truncate slds-cell-wrap">Order Analytics Fee %</th>
+                                            <th class="slds-truncate slds-cell-wrap">Order Analytics Fee Per Unit $</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Group VIP Per Unit $</th>
+                                        <aura:if isTrue="{!v.templateType =='ABC Progen'}" >
+                                            <th class="slds-truncate slds-cell-wrap">Customer VIP Per Unit $</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Estimated Medicaid and Returns Per Unit</th>
+                                        <th class="slds-truncate slds-cell-wrap">TP $</th> 
+                                        <th class="slds-truncate slds-cell-wrap">TP %</th>                            
+                                        <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Wholesaler Diff Price (Indirect)</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Blended Internal Dead Net Price</th>
+                                        
+                                        
+                                        <th class="slds-truncate slds-cell-wrap">Net Sales (Internal)</th>
+                                        <th class="slds-truncate slds-cell-wrap">Th. Put Margin $$$</th>
+                                        <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Blended TP Margin %</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.BidTypeVal =='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">TP Margin %</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.BidTypeVal =='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Opening Order</th>
+                                            <th class="slds-truncate slds-cell-wrap">Opening Order Net Sales</th>
+                                            <th class="slds-truncate slds-cell-wrap">Opening Order TPT $</th>
+                                            <th class="slds-truncate slds-cell-wrap">Opening Order TPT %</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Current Dead Net Price</th>
+                                            <th class="slds-truncate slds-cell-wrap">Current Sales</th>
+                                            <th class="slds-truncate slds-cell-wrap">Current Th. Put Margin $$$</th>
+                                            <th class="slds-truncate slds-cell-wrap">Current TP Margin %</th>
+                                            <th class="slds-truncate slds-cell-wrap">Price Variance</th>
+                                            <th class="slds-truncate slds-cell-wrap">Volume Variance</th>
+                                            <th class="slds-truncate slds-cell-wrap">Difference Sales</th>
+                                            <th class="slds-truncate slds-cell-wrap">Difference Margin</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Budgeted ASP</th>
+                                        <th class="slds-truncate slds-cell-wrap">Proposed as % of Budget</th>
+                                        <th class="slds-truncate slds-cell-wrap">Latest Estimate ASP</th>
+                                        <th class="slds-truncate slds-cell-wrap">Proposed as % of Latest Estimate</th>
+                                        <th class="slds-truncate slds-cell-wrap">Lowest Price /SKU</th>
+                                        <th class="slds-truncate slds-cell-wrap">Approved Lowest Price /SKU</th>
+                                        
+                                        <aura:if isTrue="{!and(and(v.BidTypeVal!='Price Change',v.BidTypeVal!='New Product Launch'),and(v.BidTypeVal!='Sales Out Rebate',v.BidTypeVal!='Customer Rebate Change'))}">
+                                            <th class="slds-truncate slds-cell-wrap">Initial Stocking Order Volume</th>
+                                            <th class="slds-truncate slds-cell-wrap">Initial Stocking Order Comments</th>
+                                            <th class="slds-truncate slds-cell-wrap">SCM Approval (Y/N)</th>
+                                            <th class="slds-truncate slds-cell-wrap">SCM Rejection Reason</th>
+                                            <th class="slds-truncate slds-cell-wrap">Revisit Date</th>
+                                            <th class="slds-truncate slds-cell-wrap">Estimated Lead Time</th>
+                                            <th class="slds-truncate slds-cell-wrap">SCM Comments</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.BidTypeVal =='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">Estimated Lead Time</th>
+                                            <th class="slds-truncate slds-cell-wrap">Opening Order Comments</th>                                                
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Sales Notes</th>
+                                        <aura:if isTrue="{!v.BidTypeVal !='Volume Review Only'}">
+                                            <th class="slds-truncate slds-cell-wrap">Marketing Approval</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Marketing Notes</th>
+                                        <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='Sales Out Rebate')}">
+                                            <th class="slds-truncate slds-cell-wrap">Marketing Lead Rx</th>
+                                            <th class="slds-truncate slds-cell-wrap">Marketing Lead SRx</th>
+                                            <th class="slds-truncate slds-cell-wrap">Marketing Lead OTC</th>
+                                            <th class="slds-truncate slds-cell-wrap">Marketing Lead Comments</th>
+                                            <th class="slds-truncate slds-cell-wrap">Marketing Head Approval</th>
+                                            <th class="slds-truncate slds-cell-wrap">Marketing Head Comments</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.BidTypeVal !='Volume Review Only'}">
+                                            <th class="slds-truncate slds-cell-wrap">Finance Approval</th>
+                                            <th class="slds-truncate slds-cell-wrap">Finance Comments</th>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='Sales Out Rebate')}">
+                                            <th class="slds-truncate slds-cell-wrap">Sr Director / VP Finance Approval</th>
+                                            <th class="slds-truncate slds-cell-wrap">Sr Director / VP Finance Comments</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Contract Status</th>
+                                        <th class="slds-truncate slds-cell-wrap">Contract Comments</th>
+                                        <th class="slds-truncate slds-cell-wrap">WAC Check</th>
+                                        <aura:if isTrue="{!or(v.BidTypeVal=='RFP Bids',or(v.BidTypeVal=='Product Addition',v.BidTypeVal=='New Product Launch'))}">
+                                            <th class="slds-truncate slds-cell-wrap">IOD Qty (Rounded To MOQ)</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Bid Status</th>
+                                        <th class="slds-truncate slds-cell-wrap">Customer Decline Reasons</th>
+                                    </tr>
+                                </aura:set>
+                            </aura:if>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.BidLineItemListAll}" var="biltem" indexVar="sNo">
+                                <!-- Child Lightning Component -->
+                                <c:RejectedLineItemsTabChild tableRef="{!v.tableRef}"  isReBid ="{!v.isReBid}" bidType="{!v.BidTypeVal}" templateType="{!v.templateType}" isSpecificCust="{!v.isSpecificCustomer}" singleRec="{!biltem}" showSaveCancelBtn="{!v.showSaveCancelBtn}" sNo="{!sNo + 1}" lineItemId="{!biltem.Id}"/>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </div> 
+            </div>
+            <br/>
+            <aura:set attribute="else">
+                <lightning:card >
+                    <center>
+                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                            <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                            </span>
+                            <h2>There are no line items for this bid</h2>
+                        </div>
+                    </center>
+                </lightning:card>
+            </aura:set>
+        </aura:if> 
+    </lightning:card> 
+    
+</aura:component>

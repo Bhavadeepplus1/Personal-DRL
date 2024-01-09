@@ -1,0 +1,281 @@
+<aura:component controller = "Vision_Tab1_IDNChargebackCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+	<aura:handler name = "init" value ="{!this}" action = "{!c.doInit}"/>
+    <!--sales rep-->
+    <aura:attribute name="isLoggedinUser" type="boolean"/>
+    <aura:attribute name="selectedUserId" type="string"  />
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="true" />
+     <aura:handler name="onchange"
+                  event="l_lookup:OnChange"
+                  action="{!c.handleChange}"/>
+    <!--end sales rep-->
+    <aura:attribute name="showHideSalesUnits" type="boolean" default="true"/>
+     <!-- for Header Keys-->
+    <aura:attribute name="firstColumnKey" type="String"/>
+    <aura:attribute name="secondColumnKey" type="String"/>
+    <aura:attribute name="thirdColumnKey" type="String"/>
+    <aura:attribute name="fourthColumnKey" type="String"/>
+    <aura:attribute name="fifthColumnKey" type="String"/>
+    <aura:attribute name="sixthColumnKey" type="String"/>
+     <!--End for Header Keys-->
+      <!-- Summary-->
+    <aura:attribute name="firstColSalesSummary" type="Integer" />
+    <aura:attribute name="firstColUnitsSummary" type="Integer" />
+    <aura:attribute name="secColSalesSummary" type="Integer" />
+    <aura:attribute name="secColUnitsSummary" type="Integer" />
+    <aura:attribute name="thirdColSalesSummary" type="Integer" />
+    <aura:attribute name="thirdColUnitsSummary" type="Integer" />
+     <aura:attribute name="fourthColSalesSummary" type="Integer" />
+    <aura:attribute name="fourthColUnitsSummary" type="Integer" />
+    <aura:attribute name="fifthColSalesSummary" type="Integer" />
+    <aura:attribute name="fifthColUnitsSummary" type="Integer" />
+    <aura:attribute name="sixthColSalesSummary" type="Integer" />
+    <aura:attribute name="sixthColUnitsSummary" type="Integer" />
+     <aura:attribute name="avgofSalesSummary" type="Integer" />
+    <aura:attribute name="avgofUnitsSummary" type="Integer" />
+    <aura:attribute name="totalofSalesSummary" type="Integer" />
+     <aura:attribute name="totalofUnitsSummary" type="Integer" />
+    <!--End Summary-->
+	<aura:attribute name="chargebackList" type="List"/>
+    
+     <div class="slds-box" style="background-color:white;">
+         <div class="slds-grid">
+             <div class="slds-grid slds-col slds-size_2-of-8" style="border: 1px solid #cdcdcd;border-radius: 6px;padding-bottom: 4px;  background-color: #add8e6;">
+            	<div class=" slds-col slds-size_1-of-2" style="padding: 4px;">
+                    <aura:if isTrue="{!v.isLoggedinUser}">
+                            <l_lookup:Lookup aura:id="salesRepTerritoryUsersLookup" 
+                                             label="Sales Rep Territory"
+                                             objectType="User"
+                                             
+                                             placeHolder="Sales Rep Territory"
+                                             selectedRecordId="{!v.selectedUserId}"
+                                             orderBy="Name"  />
+                        <!--</aura:if>-->
+                        <aura:set attribute = "else">
+                            <l_lookup:Lookup aura:id="salesRepTerritoryUsersLookup" 
+                                           
+                                                         label="Sales Rep Territory"
+                                                         objectType="User"
+                                                         
+                                                         placeHolder="Sales Rep Territory"
+                                                         selectedRecordId="{!v.selectedUserId}"
+                                                         orderBy="Name"  />
+                        </aura:set>
+                       
+                    </aura:if>
+                 </div>
+             </div>
+         </div>
+         <div style="text-align: center; margin: 8px 4px 4px 4px;">
+                    <lightning:button class="myBtn" variant="brand" label="Refresh View" title="Refresh View" onclick="{!c.collectData }"/>
+                    	<aura:if isTrue="{!v.isSpinnerLoad}">
+            <center>
+                <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                         aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                    <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                        <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                            <img src="{!$Resource.LoadingProgress}" />  
+                        </div>  <br/>
+                       <!-- <aura:if isTrue="{!v.loadingMessage}">
+                            <div style="font-size:18px;color:black;">
+                                {!v.loadingMessage}
+                            </div>
+                        </aura:if>-->
+                    </div>  
+                </section>   
+                <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+            </center>
+        </aura:if>           
+        </div>
+         <aura:if isTrue="{!v.noData}">
+             <lightning:card >
+                 <center>
+                     <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                         <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                             <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                         </span>
+                         <h2>No data found.</h2>
+                     </div>
+                 </center>
+             </lightning:card>
+         </aura:if>
+         <aura:if isTrue="{!v.chargebackList.length != 0}">
+             <div class="slds-box" style="height:auto;padding: 4px 4px 0px 4px;margin-top: 10px;">
+                 <div aura:id="mainDiv" style="min-height: 175px; max-height: 600px;height:auto;overflow:auto;margin-top:6px; border-radius: 8px;">
+                     <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover slds-table--header-fixed" style="padding: 0px; margin: auto;">
+                         <thead class = ""> 
+                             <tr id="styleids">
+                                 <th class="hospitalheaderSticky"  style="font-size:16px;background-color: #0000FF; color: White;padding: 4px 8px;width:2%">Hospital({!v.hospitalCount})
+                                     <aura:if isTrue="{!v.showHideSalesUnits}">
+                                         <div style="float: right;">
+                                             <lightning:icon class="showBlack" size="x-small" iconName="utility:chevronright" 
+                                                             title="Show Sales and Units" onclick="{!c.showHideSalesUnits}" style="cursor:pointer;"/>
+                                         </div>
+                                         <aura:set attribute="else">
+                                             <div style="float: right;">
+                                                 <lightning:icon class="showBlack" size="x-small" iconName="utility:chevronleft" 
+                                                                 title="Hide Sales and Units" onclick="{!c.showHideSalesUnits}" style="cursor:pointer;"/>
+                                             </div>
+                                         </aura:set>
+                                     </aura:if>
+                                 </th>
+                                
+                                 <aura:if isTrue="{!v.showHideSalesUnits == false}">
+                                     <th class="slds-truncate headerSticky "  style="font-size:14px;background-color:  #D38AF1; color: black;text-align: center;" colSpan="2"><b><p>{!v.firstColumnKey}</p></b>
+                                         
+                                         
+                                     </th>
+                                     <th class="slds-truncate headerSticky"  style="font-size:14px;background-color:  #D38AF1; color: black;text-align: center;" colSpan="2"><b><p>{!v.secondColumnKey}</p></b>
+                                         
+                                     </th>
+                                     <th class="slds-truncate headerSticky"  style="font-size:14px;background-color:  #D38AF1; color: black;text-align: center;" colSpan="2"><b><p>{!v.thirdColumnKey}</p></b>
+                                         
+                                     </th>
+                                     <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #D38AF1; color: black;text-align: center;" colSpan="2"><b><p>{!v.fourthColumnKey}</p></b>
+                                         
+                                     </th>
+                                     <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #D38AF1; color: black;text-align: center;" colSpan="2"><b><p>{!v.fifthColumnKey}</p></b>
+                                         
+                                     </th>
+                                     <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #D38AF1; color: black;text-align: center;" colSpan="2"><b><p>{!v.sixthColumnKey}</p></b>
+                                         
+                                     </th>
+                                 </aura:if>
+                                 <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #7DCEA0; color: black;text-align: center" colSpan="2"><b><p>Avg of 6 Month</p></b></th>
+                                 <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #7FB3D5; color: black;text-align: center" colSpan="2"><b><p>Total of 6 Month</p></b></th>
+                                 <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #F8C471; color: black;text-align: center" colSpan="2"><b><p>Total of 12 Month</p></b></th>
+                              
+                             </tr>
+                             <tr>
+                                 <th class="aboveSummary" style="width:10%;"></th>
+                                 <aura:if isTrue="{!v.showHideSalesUnits == false}">
+                                     <th class="SalesUnits" style="font-size:12px;background-color: #7D3C98; color: white;text-align:center;">Sales</th>
+                                     <th class="SalesUnits" style="font-size:12px;background-color: #7D3C98; color: white;text-align:center;">Units</th>
+                                     <th class="SalesUnits" style="font-size:12px;background-color: #7D3C98; color: white;text-align:center;">Sales</th>
+                                     <th class="SalesUnits" style="font-size:12px;background-color: #7D3C98; color: white;text-align:center;">Units</th>
+                                     <th class="SalesUnits" style="font-size:12px;background-color: #7D3C98; color: white;text-align:center;">Sales</th>
+                                     <th class="SalesUnits" style="font-size:12px;background-color: #7D3C98; color: white;text-align:center;">Units</th>
+                                     <th class="SalesUnits" style="font-size:12px;background-color: #7D3C98; color: white;text-align:center;">Sales</th>
+                                     <th class="SalesUnits" style="font-size:12px;background-color: #7D3C98; color: white;text-align:center;">Units</th>
+                                     <th class="SalesUnits" style="font-size:12px;background-color: #7D3C98; color: white;text-align:center;">Sales</th>
+                                     <th class="SalesUnits" style="font-size:12px;background-color: #7D3C98; color: white;text-align:center;">Units</th>
+                                     <th class="SalesUnits" style="font-size:12px;background-color: #7D3C98; color: white;text-align:center;">Sales</th>
+                                     <th class="SalesUnits" style="font-size:12px;background-color: #7D3C98; color: white;text-align:center;">Units</th>
+                                 </aura:if>
+                                 <th class="SalesUnits" style="font-size:12px;background-color: #229954; color: white;text-align:center;">Sales </th>                                                                                                                            
+                                 <th class="SalesUnits" style="font-size:12px;background-color: #229954; color: white;text-align:center;">Units</th>
+                                 <th class="SalesUnits" style="font-size:12px;background-color: #2980B9; color: white;text-align:center;">Sales</th>
+                                 <th class="SalesUnits" style="font-size:12px;background-color: #2980B9; color: white;text-align:center;">Units</th>
+                                 <th class="SalesUnits" style="font-size:12px;background-color: #D68910; color: white;text-align:center;">Sales</th>
+                                 <th class="SalesUnits" style="font-size:12px;background-color: #D68910; color: white;text-align:center;">Units</th>
+                             </tr>
+                         </thead>
+                         <tbody>
+                             <tr style="font-weight: bold;background-color: #F3F3F3;">
+                                 <th aura:id="LineTable" class="summaryheaderSticky"  style="text-align: right;"><b><i>Summary</i></b></th>
+                                 <aura:if isTrue="{!v.showHideSalesUnits == false}">
+                                     <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                         <b>
+                                             <lightning:formattedNumber value="{!v.firstColSalesSummary}" style="currency" currencyCode="USD" maximumFractionDigits="0" />
+                                         </b>
+                                     </th>
+                                     <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                         <b>
+                                             {!v.firstColUnitsSummary}
+                                         </b>
+                                     </th>
+                                     <th class="slds-truncate summaryVal "  style="text-align: right;">
+                                         <b>
+                                             <lightning:formattedNumber value="{!v.secColSalesSummary}" style="currency" currencyCode="USD" maximumFractionDigits="0" />
+                                         </b>
+                                     </th>
+                                     <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                         <b>
+                                             {!v.secColUnitsSummary}
+                                         </b>
+                                     </th>
+                                     <th class="slds-truncate summaryVal "  style="text-align: right;" >
+                                         <b>
+                                             <lightning:formattedNumber value="{!v.thirdColSalesSummary}" style="currency" currencyCode="USD" maximumFractionDigits="0" />
+                                         </b>
+                                     </th>
+                                     <th class="slds-truncate summaryVal "  style="text-align: right;" >
+                                         <b>
+                                             {!v.thirdColUnitsSummary}
+                                         </b>
+                                     </th>
+                                     <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                         <b>
+                                             <lightning:formattedNumber value="{!v.fourthColSalesSummary}" style="currency" currencyCode="USD" maximumFractionDigits="0" />
+                                         </b>
+                                     </th>
+                                     <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                         <b>
+                                             {!v.fourthColUnitsSummary}
+                                         </b>
+                                     </th>
+                                     <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                         <b>
+                                             <lightning:formattedNumber value="{!v.fifthColSalesSummary}" style="currency" currencyCode="USD" maximumFractionDigits="0" />
+                                         </b>
+                                     </th>
+                                     <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                         <b>
+                                             {!v.fourthColUnitsSummary}
+                                         </b>
+                                     </th>
+                                     <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                         <b>
+                                             <lightning:formattedNumber value="{!v.sixthColSalesSummary}" style="currency" currencyCode="USD" maximumFractionDigits="0" />
+                                         </b>
+                                     </th>
+                                     <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                         <b>
+                                             {!v.sixthColUnitsSummary}
+                                         </b>
+                                     </th>
+                                 </aura:if>
+                                 <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                     <b>
+                                         <lightning:formattedNumber value="{!v.avgofSalesSummary}" style="currency" currencyCode="USD" maximumFractionDigits="0" />
+                                     </b>
+                                 </th>
+                                 <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                     <b>
+                                         {!v.avgofUnitsSummary}
+                                     </b>
+                                 </th>
+                                 <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                     <b>
+                                         <lightning:formattedNumber value="{!v.totalofSalesSummary}" style="currency" currencyCode="USD" maximumFractionDigits="0" />
+                                     </b>
+                                 </th>
+                                 <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                     <b>
+                                         {!v.totalofUnitsSummary}
+                                     </b>
+                                 </th>
+                                 <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                     <b>
+                                         <lightning:formattedNumber value="{!v.twmonthsSalesTotal}" style="currency" currencyCode="USD" maximumFractionDigits="0" />
+                                     </b>
+                                 </th>
+                                 <th class="slds-truncate summaryVal"  style="text-align: right;" >
+                                     <b>
+                                         <td style="text-align: right;">{!v.twmonthsUnitsTotal}</td>
+                                     </b>
+                                 </th>
+                             </tr>
+                            <!-- <aura:iteration items = "{!v.chargebackList}" var ="data" indexVar="index">
+                                 <c:Vision_IDN_ChargeBackChild_Cmp   record="{!data}" isPrevRec="false" index="{!index}" isChecked = "{!v.isChecked}" showHideSalesUnits = "{!v.showHideSalesUnits}"
+                                                                   firstColumnKey ="{!v.firstColumnKey}" secondColumnKey ="{!v.secondColumnKey}" thirdColumnKey ="{!v.thirdColumnKey}" fourthColumnKey ="{!v.fourthColumnKey}" fifthColumnKey ="{!v.fifthColumnKey}" sixthColumnKey ="{!v.sixthColumnKey}"
+                                                                   selectedUserId="{!v.selectedUserId}" userRegion = "{!v.userRegion}" selectedCategory = "{!v.selectedCategory}" child1Name = "{!v.child1Name}" child2Name= "{!v.child2Name}" selectedProductFamilies = "{!v.selectedProductFamilies}" selectedProducts = "{!v.selectedProducts}"
+                                                                   selectedaccountId = "{!v.selectedaccountId}" selectedContractDesc= "{!v.selectedContractDesc}" selectedMemberCity="{!v.selectedMemberCity}" selectedMemberState = "{!v.selectedMemberState}" selectedSubmitterName = "{!v.selectedSubmitterName}"
+                                                                   parent="{!this}"/>
+                             </aura:iteration>-->
+                         </tbody>
+                     </table>
+                 </div>
+             </div>
+         </aura:if>
+    </div>
+</aura:component>

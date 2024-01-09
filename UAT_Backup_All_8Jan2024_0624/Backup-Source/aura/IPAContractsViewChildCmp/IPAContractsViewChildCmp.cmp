@@ -1,0 +1,292 @@
+<aura:component controller="Phoenix_AddIPABidMainPageCls" access="global">     
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>    
+    <aura:attribute name="showSaveCancelBtn" type="boolean"/>
+    
+     <aura:attribute name="showPriceMsg" type="boolean"/>
+    <aura:attribute name="sNo" type="string" />
+    <aura:attribute name="lineItemId" type="String" />
+     <aura:attribute name="BidTypeVal" type="string" />
+	 <aura:attribute name="singleRec" type="sobject"/>
+     <aura:attribute name="isSpinner" type="boolean" default="false" />
+    <aura:attribute name="PIPEditMode" type="boolean" default="false" />
+      <aura:attribute name="ReasonEditMode" type="boolean" default="false" />
+    <aura:attribute name="IDNEditMode" type="boolean" default="false" />
+     <aura:attribute name="ContractsEditMode" type="boolean" default="false" />
+      <aura:attribute name="FinanceNotesEditMode" type="boolean" default="false" />
+    <aura:attribute name="CommentsEditMode" type="boolean" default="false" />
+     <aura:attribute name="FinanceEditMode" type="boolean" default="false" />
+     <aura:attribute name="MarketingEditMode" type="boolean" default="false" />
+    <aura:attribute name="NotesEditMode" type="boolean" default="false" />
+      <aura:attribute name="showRejectionbutton" type="boolean" default="true" />
+    <aura:attribute name="loggedInUserName" type="string" default=""/>
+  <aura:attribute name="BidAprrovalStatus" type="string"  />
+     <aura:attribute name="isContractsApprovePerson" type="string"  />
+      <aura:attribute name="isMarketingApprovePerson" type="string"  />
+      <aura:attribute name="showProceedBtn" type="boolean"  />
+      <aura:attribute name="conditionApproval" type="boolean" default="false" />
+      <aura:attribute name="BidContractPerson" type="string"  />
+    <aura:attribute name="isSCMApprovePerson" type="boolean" />
+     <aura:attribute name="isFinanceApprovePerson" type="boolean"  />
+        <aura:attribute name="scmRejactionReasonValues" type="List" default="None,FG Quality Issue, API Quality Issue, Raw Material/KSM Quality issue, Packing Material Quality Issue, API Supply Delay, Raw Material/KSM Supply issue, Packing Material Supply Issue, Manufacturing Delay, FG capacity constrained, API capacity constrained, Low FG Inventory on Hand, Others"/>
+
+    <aura:registerEvent name="lightningEvent" type="c:RefreshIPALinesEvt"/>
+    
+    <aura:if isTrue="{!v.isSpinner}">
+        <div class="">
+            <lightning:spinner alternativeText="Loading" variant="brand" />
+        </div>
+    </aura:if>
+     <tr>
+        <td scope="row">
+            <!--
+            <a name="{!v.lineItemId}" onclick="{!c.deleteLineItem}">
+                <lightning:icon iconName="utility:delete" alternativeText="delete" size="x-small" />
+            </a>-->
+        </td>
+       
+        
+        <td scope="row" >
+            <span class="slds-grid slds-grid_align-spread">
+                <span class="" title="Product">
+                    <lightning:formattedUrl value="{!'/' + v.singleRec.Phoenix_Product__r.Id}"  label="{!v.singleRec.Phoenix_Product__r.Name}" target="_self" />  
+                </span>
+            </span>
+        </td>
+           <td scope="row">{!v.singleRec.Phoenix_Product_Code1__c}</td>
+        <td scope="row">
+            <!--Added by Naseer to replace Product Family with Lookup-->
+            <lightning:formattedUrl value="{!'/' + v.singleRec.Product_Family__c}"
+                                    label="{!v.singleRec.Product_Family_Name__c}" target="_self" />
+            <!--End-->
+            <!--{!v.singleRec.Phoenix_Product_Family__c}-->
+         </td>
+          <td scope="row">{!v.singleRec.Phoenix_Product_Director1__c}</td>
+        <td scope="row">{!v.singleRec.Phoenix_NDC__c}</td>
+            <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_WAC1__c}" style="currency" currencyCode="USD"></lightning:formattedNumber></td>  
+        <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_IPA_Floor_Price1__c}" style="currency" currencyCode="USD"></lightning:formattedNumber></td>
+        <td class="{!and(not(empty(v.singleRec.Phoenix_Proposed_IPA_Price__c)),v.singleRec.Phoenix_IPA_Floor_Price1__c>v.singleRec.Phoenix_Proposed_IPA_Price__c)? 'colorClass':'noColorClass'}" scope="row"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_IPA_Price__c}" style="currency" currencyCode="USD"></lightning:formattedNumber></td>
+        
+          
+         <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_IDN_Usage__c}" maximumFractionDigits="0" /></td>
+      
+    		<aura:if isTrue="{! or (v.BidTypeVal=='SRx IPA Price Change',v.BidTypeVal=='SRx IPA Product Addition')}">
+           <td scope="row" >
+            <span class="slds-grid slds-grid_align-spread">
+                <span class="" title="Contract">
+                    
+                  <a href="{!'/'+v.singleRec.Phoenix_Contract__r.Id}" target="_blank">{!v.singleRec.Phoenix_Contract__r.Name}</a>
+                                                      
+                    
+                </span>
+            </span>
+        </td>
+        
+      
+           <td scope="row" >
+            <span class="slds-grid slds-grid_align-spread">
+                <span class="" title="Customer">
+                    <a href="{!'/'+v.singleRec.Phoenix_Customer__r.Id}" target="_blank">{!v.singleRec.Phoenix_Customer__r.Name}</a>
+                    
+                </span>
+            </span>
+        </td>
+                 </aura:if>
+       <!--  <aura:if isTrue="{!and(v.isSCMApprovePerson==true,v.BidAprrovalStatus=='Supply Chain')}">
+
+        <td scope="row" ondblclick="{!c.inlineEditPIP}" >
+                <span class="slds-grid slds-grid_align-spread">
+                    <aura:if isTrue="{!v.PIPEditMode == false}">
+                        <span class=""  >{!v.singleRec.Phoenix_SCM_Approval_Y_N__c}</span>
+                        <button onclick="{!c.inlineEditPIP}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                       
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <lightning:select class="slds-input inputWidth"
+                                                              aura:id="inputPIPId"
+                                                              onblur="{!c.closePIPBox}"
+                                                             
+                                                              value="{!v.singleRec.Phoenix_SCM_Approval_Y_N__c}" >
+                                                  <option value="None">-None-</option>
+                                                   <aura:if isTrue="{!and(v.singleRec.Phoenix_SCM_Approval_Y_N__c != null, v.singleRec.Phoenix_SCM_Approval_Y_N__c != '')}" >
+                                        <option value="{!v.singleRec.Phoenix_SCM_Approval_Y_N__c}">{!v.singleRec.Phoenix_SCM_Approval_Y_N__c}</option>
+                                    </aura:if>
+                                     
+                                                 <aura:if isTrue="{!(v.singleRec.Phoenix_SCM_Approval_Y_N__c != 'Y- Only Current Monthly Demand Approved')}">
+                                        <option value="Y- Only Current Monthly Demand Approved">Y- Only Current Monthly Demand Approved</option>
+                                    </aura:if>
+                                    <aura:if isTrue="{!(v.singleRec.Phoenix_SCM_Approval_Y_N__c != 'Y- Current + Inc Demand Approved')}">
+                                   		 <option value="Y- Current + Inc Demand Approved">Y- Current + Inc Demand Approved</option>
+                                    </aura:if>
+                                     <aura:if isTrue="{!(v.singleRec.Phoenix_SCM_Approval_Y_N__c != 'N- Not Approved')}">
+                                        <option value="N- Not Approved">N- Not Approved</option>
+                                    </aura:if>
+                                            </lightning:select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+              <td scope="row" ondblclick="{!c.inlineEditReason}" >
+                <span class="slds-grid slds-grid_align-spread">
+                   
+                    <aura:if isTrue="{!v.ReasonEditMode == false}">
+                        <span class=""  >{!v.singleRec.Phoenix_SCM_Rejection_Reason1__c}</span>
+                        <aura:if isTrue="{!v.showRejectionbutton}">
+                        <button onclick="{!c.inlineEditReason}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        </aura:if>
+                        
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <lightning:select class="slds-input inputWidth"
+                                                              aura:id="inputReasonId"
+                                                              onblur="{!c.closeReasonBox}"
+                                                              onchange="{!c.clickSCMRejection}"
+                                                              value="{!v.singleRec.Phoenix_SCM_Rejection_Reason1__c}" >
+                                                   <aura:if isTrue="{!and(v.singleRec.Phoenix_SCM_Rejection_Reason1__c != null, v.singleRec.Phoenix_SCM_Rejection_Reason1__c != '')}" >
+                                        <option value="{!v.singleRec.Phoenix_SCM_Rejection_Reason1__c}">{!v.singleRec.Phoenix_SCM_Rejection_Reason1__c}</option>
+                                    </aura:if>
+                                  
+                                                <aura:iteration items="{!v.scmRejactionReasonValues}" var="scmRejectionReason">
+                                                 <aura:if isTrue="{!(v.singleRec.Phoenix_SCM_Rejection_Reason1__c != scmRejectionReason)}" >
+                                                     <option value="{!scmRejectionReason}">{!scmRejectionReason}</option>
+                                                 </aura:if>
+                                             </aura:iteration>
+                                            </lightning:select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+          <td scope="row" ondblclick="{!c.inlineEditIDN}">
+                <span class="slds-grid slds-grid_align-spread">
+                   
+                    <aura:if isTrue="{!v.IDNEditMode == false}">
+                        <span class=""  >{!v.singleRec.Phoenix_SCM_Notes__c}</span>
+                        <button onclick="{!c.inlineEditIDN}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputText class="slds-input inputWidth"
+                                                              labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                              aura:id="inputIDNId"
+                                                              blur="{!c.closeIDNBox}"
+                                                             
+															  value="{!v.singleRec.Phoenix_SCM_Notes__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+        <aura:set attribute="else">
+                    <td scope="row"> {!v.singleRec.Phoenix_SCM_Approval_Y_N__c}</td>
+             <td scope="row">{!v.singleRec.Phoenix_SCM_Rejection_Reason1__c}</td>
+                    <td scope="row">{!v.singleRec.Phoenix_SCM_Notes__c}</td>
+                </aura:set>
+         </aura:if>-->
+        
+          <aura:if isTrue="{!and(and(v.isFinanceApprovePerson==true,v.BidAprrovalStatus=='Finance'),and(v.singleRec.Phoenix_Conditional_Approval_Req_for_Flo__c==true,v.conditionApproval==true))}">
+
+        <td scope="row" ondblclick="{!c.inlineEditFinance}" >
+                <span class="slds-grid slds-grid_align-spread">
+                    <!-- show input and output section based on boolean flag -->
+                    <aura:if isTrue="{!v.FinanceEditMode == false}">
+                        <span class=""  >{!v.singleRec.Phoenix_Finance_Approval__c}</span>
+                        <button onclick="{!c.inlineEditFinance}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <lightning:select class="slds-input inputWidth"
+                                                              aura:id="inputFinanceId"
+                                                              onblur="{!c.closeFinanceBox}"
+                                                             
+                                                              value="{!v.singleRec.Phoenix_Finance_Approval__c}" >
+                                                  <option value="None">-None-</option>
+                                                   <aura:if isTrue="{!and(v.singleRec.Phoenix_Finance_Approval__c != null, v.singleRec.Phoenix_Finance_Approval__c != '')}" >
+                                        <option value="{!v.singleRec.Phoenix_Finance_Approval__c}">{!v.singleRec.Phoenix_Finance_Approval__c}</option>
+                                    </aura:if>
+                                    
+                                                <aura:if isTrue="{!(v.singleRec.Phoenix_Finance_Approval__c != 'Approved')}" >
+                                                        <option value="Approved">Approved</option>
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!(v.singleRec.Phoenix_Finance_Approval__c != 'Not Approved')}" >
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </aura:if>
+                                            </lightning:select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+          <td scope="row" ondblclick="{!c.inlineEditFinanceNotes}">
+                <span class="slds-grid slds-grid_align-spread">
+                    <!-- show input and output section based on boolean flag -->
+                    <aura:if isTrue="{!v.FinanceNotesEditMode == false}">
+                        <span class=""  >{!v.singleRec.Phoenix_Finance_Comments__c}</span>
+                        <button onclick="{!c.inlineEditFinanceNotes}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputText class="slds-input inputWidth"
+                                                              labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                              aura:id="inputFinanceNotesId"
+                                                              blur="{!c.closeFinanceNotesBox}"
+                                                             
+															  value="{!v.singleRec.Phoenix_Finance_Comments__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+         <aura:set attribute="else">
+                  <td scope="row"> {!v.singleRec.Phoenix_Finance_Approval__c}</td>
+                    <td scope="row">{!v.singleRec.Phoenix_Finance_Comments__c}</td>
+                </aura:set>
+         </aura:if>
+          
+    </tr>
+</aura:component>

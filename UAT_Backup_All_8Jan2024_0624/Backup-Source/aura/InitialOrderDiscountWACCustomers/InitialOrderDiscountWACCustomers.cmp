@@ -1,0 +1,770 @@
+<!--
+  @description       : 
+  @author            : Surender Patel (Dhruvsoft)
+  @group             : 
+  @last modified on  : 29-05-2021
+  @last modified by  : Surender Patel (Dhruvsoft)
+  Modifications Log 
+  Ver   Date         Author                       Modification
+  1.0   29-05-2021   Surender Patel (Dhruvsoft)   Initial Version
+-->
+<aura:component controller="Phoenix_DSHCls"
+                implements="flexipage:availableForAllPageTypes,force:hasRecordId,force:appHostable,lightning:isUrlAddressable"
+                access="global">
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="columns" type="List" />
+    <lightning:navigation aura:id="navService" />
+    <aura:handler name="init" value="{!this}" action="{!c.initRecords}" />
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.initRecords}" />
+    <aura:attribute name="BidLineItemListAll" type="Phoenix_Bid_Line_Item__c[]" />
+    <aura:attribute name="isRelatedLineItemsEmpty" type="boolean" default="true" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="lstSelectedRecords" type="sObject[]" default="[]"
+                    description="Use,for store SELECTED sObject Records" />
+    <aura:attribute name="listOfSearchRecords" type="List"
+                    description="Use,for store the list of search records which returns from apex class" />
+    <aura:attribute name="defaultlistOfProductFamily" type="List" />
+    <aura:attribute name="lstSelectedPDRecords" type="sObject[]" default="[]"
+                    description="Use,for store SELECTED sObject Records" />
+    <aura:attribute name="listOfSearchPDRecords" type="List"
+                    description="Use,for store the list of search records which returns from apex class" />
+    <aura:attribute name="defaultlistOfProductDirectors" type="List" />
+    <aura:attribute name="SearchKeyWord" type="string" />
+    <aura:attribute name="SearchKeyWordPD" type="string" />
+    <aura:attribute name="activeSections" type="List" default="['FilterTerms','FilterInputs']" />
+    <aura:attribute name="objectAPIName" type="string" default="" />
+    <aura:attribute name="IconName" type="string" default="" />
+    <aura:attribute name="label" type="string" default="" />
+    <aura:attribute name="options" type="List" />
+    <aura:attribute name="selectedValues" type="List" default="" description="Selected value in Multi Select" />
+    <lightning:navigation aura:id="navigationService" />
+    <aura:handler name="lightningEvent" event="c:RefreshBidLineItemCmpEvt" action="{!c.handleEvent}" />
+    <aura:attribute name="showSaveCancelBtn" type="boolean" default="false"
+                    description="flag for rendered save and cancel buttons in aura:if " />
+    <aura:attribute name="isRxChecked" type="boolean" default="false" />
+    <aura:attribute name="isSRxChecked" type="boolean" default="false" />
+    <aura:attribute name="isOtcChecked" type="boolean" default="false" />
+    <aura:attribute name="RxSrxList" type="List" />
+    <aura:attribute name="crntVipVal" type="decimal" />
+    <aura:attribute name="VipReadOnly" type="boolean" />
+    <aura:attribute name="customerId" type="string" />
+    <aura:attribute name="bidNumber" type="string" />
+    <aura:attribute name="bidName" type="string" />
+    <aura:attribute name="BidTypeVal" type="string" />
+    <aura:attribute name="BidAprrovalStatus" type="string" />
+    <aura:attribute name="isMarketingApprovePerson" type="string" />
+    <aura:attribute name="isContractsApprovePerson" type="string" />
+    <aura:attribute name="showProceedBtn" type="boolean" />
+    <aura:attribute name="hasDirectorLines" type="boolean" />
+    <aura:attribute name="bidRecord" type="sObject" />
+    <aura:attribute name="IODType" type="string" />
+    <aura:attribute name="autoSubFlag" type="string" />
+    <!-- totalvalues -->
+    <aura:attribute name="ItemsLength" type="Decimal" />
+    <aura:attribute name="CISUTotal" type="Decimal" />
+    <aura:attribute name="CDSUTotal" type="Decimal" />
+    <aura:attribute name="FISUTotal" type="Decimal" />
+    <aura:attribute name="FDSUTotal" type="Decimal" />
+    <aura:attribute name="TotalSellingUnits" type="Decimal" />
+    <aura:attribute name="FinalTotalSellingUnits" type="Decimal" />
+    
+    <aura:attribute name="netSalesIntTotal" type="Decimal" />
+    <aura:attribute name="RetailDirGuideP" type="Decimal" />
+    <aura:attribute name="WHLSGuideP" type="Decimal" />
+    <aura:attribute name="intDeadNetTotal" type="Decimal" />
+    
+    <aura:attribute name="RetailGuideP" type="Decimal" />
+    <aura:attribute name="WHLSP" type="Decimal" />
+    <aura:attribute name="RetailDirP" type="Decimal" />
+    <aura:attribute name="RetailInDirP" type="Decimal" />
+    <aura:attribute name="ProposedTpMargin" type="Decimal" />
+    <aura:attribute name="currentDSHP" type="Decimal" />
+    <aura:attribute name="proposedDSHP" type="Decimal" />
+    <aura:attribute name="ActualTotalUnits" type="Decimal" />
+    <aura:attribute name="OverrideTotalUnits" type="Decimal" />
+    <aura:attribute name="BASEDRLNetP" type="Decimal" />
+    <aura:attribute name="DSHDRLNetP" type="Decimal" />
+    <aura:attribute name="AutoSubDRLNetP" type="Decimal" />
+    
+    <aura:attribute name="BASEAnnualUsage" type="Decimal" />
+    <aura:attribute name="BASEAnnualNetSales" type="Decimal" />
+    <aura:attribute name="BASECOGS" type="Decimal" />
+    <aura:attribute name="BASETPbeforePS" type="Decimal" />
+    
+    <aura:attribute name="DSHAnnualUsage" type="Decimal" />
+    <aura:attribute name="DSHAnnualNetSales" type="Decimal" />
+    <aura:attribute name="DSHCOGS" type="Decimal" />
+    <aura:attribute name="DSHTPbeforePS" type="Decimal" />
+    
+    <aura:attribute name="AUTOSUBAnnualUsage" type="Decimal" />
+    <aura:attribute name="AUTOSUBAnnualNetSales" type="Decimal" />
+    <aura:attribute name="AUTOSUBCOGS" type="Decimal" />
+    <aura:attribute name="AUTOSUBTPbeforePS" type="Decimal" />
+    
+    <aura:attribute name="BASEMonthlyUnits" type="Decimal" />
+    <aura:attribute name="DSHMonthlyUnits" type="Decimal" />
+    <aura:attribute name="AutoSubMonthlyUnits" type="Decimal" />
+    
+    <aura:attribute name="baseSCMQty" type="Decimal" />
+    <aura:attribute name="DSHSCMQty" type="Decimal" />
+    <aura:attribute name="AutoSubSCMQty" type="Decimal" />
+    <aura:attribute name="TotalSCMQty" type="Decimal" />
+    
+    <aura:attribute name="currentwholesalerUnits" type="Decimal" />
+    <aura:attribute name="currentAndaUnits" type="Decimal" />
+    <aura:attribute name="currentRetailDirectUnits" type="Decimal" />
+    
+    <aura:attribute name="actSalInd12months" type="Decimal" />
+    <aura:attribute name="actSaDir12Months" type="Decimal" />
+    <aura:attribute name="proposedDirGiantUnits" type="Decimal" />
+    
+    <aura:attribute name="overRideDirectUnits" type="Decimal" />
+    <aura:attribute name="overRideIndirectUnits" type="Decimal" />
+    <aura:attribute name="OverUnits" type="Decimal" />
+    
+    <aura:attribute name="proposedBase" type="Decimal" />
+    <aura:attribute name="proposedDSH" type="Decimal" />
+    <aura:attribute name="proposedAutoSub" type="Decimal" />
+    
+      <!-- New Product Launch Totals Attributes-->
+    <aura:attribute name="OpeningOrderTotal" type="Decimal" />
+    <aura:attribute name="OpeningOrderNetSalesTotal" type="Decimal" />
+    <aura:attribute name="OpeningOrderTPTTotal" type="Decimal" />
+    <aura:attribute name="OpeningOrderTPTPercTotal" type="Decimal" />
+     <!-- New Product Launch Attributes-->
+    
+    
+    <!--<aura:attribute name="proTPTPerIndir" type="Decimal" /> 
+    <aura:attribute name="BlendedTPMargin" type="Decimal" /> -->
+    
+    
+    <!-- totalvalues -->
+    <!--specific customer attributes-->
+    <aura:attribute name="isSpecificCustomer" type="boolean" />
+    <aura:attribute name="isDirectType" type="boolean" default="false" />
+    <aura:attribute name="templateType" type="string" default="" />
+    <aura:attribute name="loggedInUserName" type="string" default="" />
+    <aura:attribute name="submitModel" type="boolean" default="false" />
+    <!--specific customer attributes-->
+    
+    <!--Contract Model section-->
+    <aura:attribute name="showModal" type="boolean" default="false" />
+    <aura:attribute type="List" name="contratcsList" />
+    <aura:attribute name="mycolumns" type="List" />
+    <aura:attribute name="selectedCntrcts" type="list" />
+    
+    <!--Rebate and Fee type attributes-->
+    <aura:attribute name="isRebateChanged" type="boolean" default="false" />
+    <aura:attribute name="isFeeChanged" type="boolean" default="false" />
+      <aura:attribute name="isAdminFeeChanged" type="boolean" default="false" />
+     <aura:attribute name="isVIPChanged" type="boolean" default="false" />
+    <aura:handler name="calcEvent" event="c:TotalCalculationEvt" action="{!c.handleCalcEvent}" />
+    <!--declare events hendlers-->
+    <aura:handler name="oSelectedRecordEvent" event="c:selectedsObjectRecordsEvent"
+                  action="{!c.handleComponentEvent}" />
+    <aura:attribute name="Message" type="String" default="" />
+    <aura:attribute name="isMarketingChanged" type="boolean" default="false" />
+    <!--Positions Attributes-->
+    <aura:attribute name="positionColumns" type="List" />
+    <aura:attribute type="List" name="positionsList" />
+    <aura:attribute name="showPositionsModal" type="boolean" default="false" />
+    <aura:attribute name="selectedPosistions" type="list" />
+    
+    
+    <!--re bid-->
+    <aura:attribute name="allContractsChecked" type="boolean" default='false' />
+    <aura:attribute name="isReBid" type="boolean" default="false" />
+    <aura:attribute name="tableRef" type="String" default="" />
+    <!--re bid-->
+    
+    <!-- Deligation attributes -->
+    <aura:attribute name="isdeligationApprover" type="Boolean" default="false" />
+	<aura:attribute name="deligatedUserName" type="String" default="" />
+    <aura:attribute name="ismarketingDeligator" type="boolean" default="false" />
+    
+    <aura:handler name="PDSelectedRecordEvent" event="c:ProductDirectorSearchEvent"
+                  action="{!c.handleComponentEventProdDir}" />
+    <aura:attribute name="MessagePD" type="String" default="" />
+      <!-- Added Code By Rama -->
+    <aura:handler name="init" value="this" action="{!c.doInit}"/>
+    <aura:attribute name="userInfo" type="user"/> 
+    <!-- Ended Code By Rama --> 
+    
+    <lightning:tabset aura:id="Tabset" selectedTabId="EBLI">
+        <!-- DSH Calculation View Tab starts -->
+        <lightning:tab label="Input View" id="EBLI" onactive="{!c.initRecords}">
+            <lightning:card iconName="custom:custom90" title="{!(v.bidNumber+'-'+v.bidName)}">
+                <aura:set attribute="actions">
+                    <lightning:button variant="neutral" label="Back" title="Back" onclick="{! c.backToBid }" />
+                    <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+                        <lightning:button label="Export" onclick="{!c.downloadCsv}" />
+                    </aura:if>
+					<!--<aura:if isTrue="{!and(or(and(or(v.BidAprrovalStatus=='Draft',or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing')),v.BidLineItemListAll.length > 0),and(v.isMarketingApprovePerson==v.loggedInUserName,v.hasDirectorLines==true)),and(v.BidTypeVal == 'New Product Launch',and(v.showProceedBtn==true,v.showSaveCancelBtn==false)))}">-->
+                    <aura:if isTrue="{!and(or(v.BidAprrovalStatus=='Draft',and(or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'),and(v.isMarketingApprovePerson==v.loggedInUserName,v.hasDirectorLines==true))),and(v.BidTypeVal == 'New Product Launch',v.BidLineItemListAll.length > 0),and(v.showProceedBtn==true,v.showSaveCancelBtn==false))}">     
+                    	<lightning:button label="Update WAC / Lowest Price/SKU" variant="brand" onclick="{!c.updateFields}"/>
+                    </aura:if>
+                    <aura:if
+                             isTrue="{!and(v.BidAprrovalStatus=='Draft',and(v.BidLineItemListAll.length > 0,v.showSaveCancelBtn==false))}">
+                        <lightning:button label="Submit For Approval" variant="brand" onclick="{!c.submitFor}" />
+                    </aura:if>
+                    <!-- <lightning:button label="Submit For Approval" onclick="{!c.submitFor}"/>-->
+                    
+                    <aura:if isTrue="{!and(v.BidAprrovalStatus!='Draft',and((v.BidAprrovalStatus==(or(or(equals(v.BidTypeVal,'New Product Launch'),equals(v.BidTypeVal,'Customer Rebate Change')),or(equals(v.BidTypeVal,'Price Change'),equals(v.BidTypeVal,'Sales Out Rebate')))?'Marketing':'SCM &amp; Marketing')), and(v.BidLineItemListAll.length > 0,and(v.isMarketingApprovePerson==v.loggedInUserName,and(v.showProceedBtn==true,and(v.showSaveCancelBtn==false,v.hasDirectorLines))))))}">
+                        <lightning:button variant="brand" label="Submit" title="Proceed"
+                                          onclick="{! c.saveToProceed }" />
+                    </aura:if>
+                    <!--<aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Contracts',v.BidLineItemListAll.length > 0),v.isContractsApprovePerson==v.loggedInUserName)}">
+                        <lightning:button variant="neutral" label="Proceed" title="Proceed" onclick="{! c.saveToProceedContracts }"/>
+                    </aura:if> -->
+                </aura:set>
+                <p>
+                    <lightning:recordEditForm objectApiName="Phoenix_Bid__c" density="comfy" recordId="{!v.recordId}"
+                                              aura:id="bidForm" onload="{!c.handleOnload}" onsubmit="{!c.onRecordSubmit}"
+                                              onsuccess="{!c.onRecordSuccess}">
+                        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="BidTerms">
+                            <aura:if isTrue="{!or(v.BidAprrovalStatus=='Draft', and(or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'),and(v.isMarketingApprovePerson==v.loggedInUserName,and(v.showProceedBtn==true,v.hasDirectorLines))))}">
+                                <lightning:accordionSection name="BidTerms" label=" Bid Terms and Details">
+                                       <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidCustmr"
+                                                                      fieldName="Phoenix_Customer__c" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_CM_Wholesaler_Name__c"
+                                                                      onchange="{!c.showSaveCancel}" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="ProValId"
+                                                                      fieldName="Phoenix_Proposed_Initial_Order_Discount__c"
+                                                                      onchange="{!c.onAdminFeeChange}"
+                                                                     />
+                                            </div>  
+                                         
+                                     </div>
+                                        
+                                    
+                                </lightning:accordionSection>
+                            </aura:if>
+                            <aura:if isTrue="{!not(or(v.BidAprrovalStatus=='Draft', and(or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'),and(v.isMarketingApprovePerson==v.loggedInUserName,and(v.showProceedBtn==true,v.hasDirectorLines)))))}">
+                                <lightning:accordionSection name="BidTerms" label="Bid Terms and Details">
+                                    <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="bidCustmr"
+                                                                      fieldName="Phoenix_Customer__c" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField fieldName="Phoenix_CM_Wholesaler_Name__c"
+                                                                      onchange="{!c.showSaveCancel}" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <lightning:inputField aura:id="ProValId"
+                                                                      fieldName="Phoenix_Proposed_Initial_Order_Discount__c"
+                                                                      onchange="{!c.onAdminFeeChange}"
+                                                                       disabled="true" 
+                                                                     />
+                                            </div>  
+                                            
+                                     </div>
+                                </lightning:accordionSection>
+                            </aura:if>
+                        </lightning:accordion>
+                        <center>
+                            <!-- use aura:if for show/hide buttons -->
+                            <aura:if isTrue="{!v.showSaveCancelBtn}">
+                                <!--button for save and cancel Record after Inline Edit-->
+                                <lightning:button label="Cancel" onclick="{!c.cancel}" />&nbsp;
+                                <lightning:button label="Save" type="submit" variant="brand" />&nbsp;
+                                <!-- <lightning:button variant="brand" label="Save &amp; Close"  onclick="{!c.SaveAndNavigate}"/>-->
+                            </aura:if>
+                        </center>
+                    </lightning:recordEditForm>
+                </p>
+                <aura:if isTrue="{!v.submitModel}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                             aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                                    Submit Bid For Approval</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <p>
+                                    <div style="text-align:center;padding-bottom:3px;">Are you sure you want to submit
+                                        this bid for approval?</div>
+                                </p>
+                            </div>
+                            <!--Modal/Popup Box Footer Starts here-->
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral" label="No" title="No"
+                                                  onclick="{! c.hideSubmitModel }" />
+                                <lightning:button variant="brand" label="Yes" title="Yes"
+                                                  onclick="{!c.proceedToSubmit}" />
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+                <aura:if isTrue="{!v.showModal}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                             aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close" onclick="{! c.hideModel }"
+                                                      alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                                    Contracts</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <p>
+                                    <div class="slds-grid" style="margin-bottom:6px;">
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <div aura:id=""
+                                                 class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                 style="width: 100%;">
+                                                <ui:inputText aura:id="cntInput"
+                                                              class="slds-lookup__search-input slds-input inputSize"
+                                                              placeholder="Search contracts..." />
+                                                <span
+                                                      class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                    <lightning:icon iconName="utility:search" size="x-small"
+                                                                    alternativeText="icon" />
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <div class="slds-grid">
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <lightning:input class="slds-p-left_large slds-p-top_x-small"
+                                                                     type="checkbox" label="Show All" name="input1"
+                                                                     aura:id="tgleCntrct" onchange="{!c.searchContracts}" />
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <div class="slds-m-top_medium slds-m-left_small"
+                                                         style="margin-top:1px;">
+                                                        <lightning:button label="Search" onclick="{!c.searchContracts}"
+                                                                          variant="brand" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <aura:if isTrue="{!not(empty(v.contratcsList))}">
+                                        <lightning:datatable aura:id="linesTable" data="{! v.contratcsList }"
+                                                             columns="{! v.mycolumns }" keyField="id" />
+                                        <aura:set attribute="else">
+                                            <center>
+                                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                                     role="alert" style="width:50%;">
+                                                    <span class="slds-icon_container slds-m-right_x-small"
+                                                          title="Please add line items to view the table">
+                                                        <lightning:icon iconName="utility:info" alternativeText="info"
+                                                                        size="x-small" variant="inverse" />
+                                                    </span>
+                                                    <h2> No Records Found</h2>
+                                                </div>
+                                            </center>
+                                        </aura:set>
+                                    </aura:if>
+                                </p>
+                            </div>
+                            <!--Modal/Popup Box Footer Starts here-->
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral" label="Cancel" title="Cancel"
+                                                  onclick="{! c.hideModel }" />
+                                <lightning:button variant="brand" label="OK" title="OK"
+                                                  disabled="{!empty(v.contratcsList)}" onclick="{!c.saveDetails}" />
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+                <!--Positions Logic Start-->
+                <aura:if isTrue="{!v.showPositionsModal}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                             aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container">
+                            <header class="slds-modal__header">
+                                <lightning:buttonIcon iconName="utility:close" onclick="{! c.hideModel }"
+                                                      alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                                    Positions</h2>
+                            </header>
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <p>
+                                    <!-- <div class="slds-grid" style="margin-bottom:6px;">
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                <ui:inputText aura:id="posInput" class="slds-lookup__search-input slds-input inputSize"
+                                                              placeholder="Search contracts..."/>
+                                                <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                    <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                </span>
+                                            </div> 
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-3">
+                                            <div class="slds-grid">
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <lightning:input class="slds-p-left_large slds-p-top_x-small" type="checkbox" label="Show All" name="input1" aura:id="tgleCntrct" onchange="{!c.searchContracts}"/>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <div  class="slds-m-top_medium slds-m-left_small" style="margin-top:1px;"><lightning:button label="Search" onclick="{!c.searchContracts}"  variant="brand"/></div> 
+                                                </div>
+                                            </div>
+                                        </div>                                       
+                                    </div>  -->
+                                    <aura:if isTrue="{!not(empty(v.positionsList))}">
+                                        <lightning:datatable aura:id="PoslinesTable" data="{! v.positionsList }"
+                                                             columns="{! v.positionColumns }" keyField="id" />
+                                        <aura:set attribute="else">
+                                            <center>
+                                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                                     role="alert" style="width:50%;">
+                                                    <span class="slds-icon_container slds-m-right_x-small"
+                                                          title="Please add line items to view the table">
+                                                        <lightning:icon iconName="utility:info" alternativeText="info"
+                                                                        size="x-small" variant="inverse" />
+                                                    </span>
+                                                    <h2> No Records Found</h2>
+                                                </div>
+                                            </center>
+                                        </aura:set>
+                                    </aura:if>
+                                </p>
+                            </div>
+                            <!--Modal/Popup Box Footer Starts here-->
+                            <footer class="slds-modal__footer">
+                                <lightning:button variant="neutral" label="Cancel" title="Cancel"
+                                                  onclick="{! c.hideModel }" />
+                                <lightning:button variant="brand" label="OK" title="OK"
+                                                  disabled="{!empty(v.positionsList)}" onclick="{!c.savePosDetails}" />
+                            </footer>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+                <!--Positions Logic End-->
+                <lightning:accordion aura:id="filterId" allowMultipleSectionsOpen="true"
+                                     activeSectionName="FilterInput">
+                    <lightning:accordionSection name="FilterInput" label="Product Details and Inputs">
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of-3">
+                                <div class="slds-grid">
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <lightning:input aura:id="RX" type="checkbox" label="Rx"
+                                                         onchange="{!c.searchSrxRxOttc}" checked="{!v.isRxChecked}" />
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <lightning:input aura:id="SRX" type="checkbox" label="SRx"
+                                                         onchange="{!c.searchSrxRxOttc}" checked="{!v.isSRxChecked}" />
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3">
+                                        <lightning:input aura:id="OTC" type="checkbox" label="OTC"
+                                                         onchange="{!c.searchSrxRxOttc}" checked="{!v.isOtcChecked}" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3">
+                                <div onmouseleave="{!c.onblurProDir}" aura:id="searchResPD"
+                                     class="slds-form-element slds-lookup slds-is-close">
+                                    <div class="slds-form-element__control">
+                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                            <div aura:id="lookup-pill-PD" class="slds-pill-container">
+                                                <div aura:id="lookupFieldPD"
+                                                     class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                     style="width: 100%;">
+                                                    <ui:inputText updateOn="keyup"
+                                                                  keyup="{!c.keyPressControllerProdDir}"
+                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                  value="{!v.SearchKeyWordPD}"
+                                                                  placeholder="Search Product Directors here.." />
+                                                    <span
+                                                          class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                        <lightning:icon iconName="utility:search" size="x-small"
+                                                                        alternativeText="icon" />
+                                                    </span>
+                                                </div>
+                                                <aura:iteration items="{!v.lstSelectedPDRecords}" var="sr">
+                                                    <lightning:pill class="slds-m-around_xx-small" label="{!sr}"
+                                                                    name="{!sr}" onremove="{! c.clearProdDir }">
+                                                    </lightning:pill>
+                                                </aura:iteration>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <ul style="min-height:40px;margin-top:0px !important"
+                                        class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds"
+                                        role="listbox">
+                                        <lightning:spinner class="slds-hide" variant="brand" size="small"
+                                                           aura:id="mySpinner" />
+                                        <center> {!v.MessagePD}</center>
+                                        <aura:iteration items="{!v.listOfSearchPDRecords}" var="singleRec">
+                                            <c:ProductDirectorSearchFilterCmp oRecord="{!singleRec}" />
+                                        </aura:iteration>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3">
+                                <div class="slds-grid">
+                                    <div class="slds-col slds-size_9-of-12">
+                                        <div onmouseleave="{!c.onblur}" aura:id="searchRes"
+                                             class="slds-form-element slds-lookup slds-is-close">
+                                            <div class="slds-form-element__control">
+                                                <div class="slds-input-has-icon slds-input-has-icon--right">
+                                                    <div aura:id="lookup-pill" class="slds-pill-container">
+                                                        <div aura:id="lookupField"
+                                                             class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                                                             style="width: 100%;">
+                                                            <ui:inputText updateOn="keyup"
+                                                                          keyup="{!c.keyPressController}"
+                                                                          class="slds-lookup__search-input slds-input inputSize"
+                                                                          value="{!v.SearchKeyWord}"
+                                                                          placeholder="Search Product Family here.." />
+                                                            <span
+                                                                  class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                                <lightning:icon iconName="utility:search" size="x-small"
+                                                                                alternativeText="icon" />
+                                                            </span>
+                                                        </div>
+                                                        <aura:iteration items="{!v.lstSelectedRecords}" var="sr">
+                                                            <lightning:pill class="slds-m-around_xx-small" label="{!sr}"
+                                                                            name="{!sr}" onremove="{! c.clear }">
+                                                                <aura:set attribute="media">
+                                                                    <lightning:icon iconName="{!v.IconName}"
+                                                                                    size="x-small" alternativeText="icon" />
+                                                                </aura:set>
+                                                            </lightning:pill>
+                                                        </aura:iteration>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <ul style="min-height:40px;margin-top:0px !important"
+                                                class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds"
+                                                role="listbox">
+                                                <lightning:spinner class="slds-hide" variant="brand" size="small"
+                                                                   aura:id="mySpinner" />
+                                                <center> {!v.Message}</center>
+                                                <aura:iteration items="{!v.listOfSearchRecords}" var="singleRec">
+                                                    <!--Child Component-->
+                                                    <c:reUsableMultiSelectLookupResult oRecord="{!singleRec}"
+                                                                                       IconName="{!v.IconName}" />
+                                                </aura:iteration>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_3-of-12">
+                                        <div class="slds-m-top_medium  slds-m-right_small" style="margin-top:1.6%">
+                                            <lightning:button label="Search" onclick="{!c.searchProFamilyChange}"
+                                                              variant="brand" />
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </div>
+                        <!-- <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_11-of-12">
+                            </div>
+                            <div class="slds-col slds-size_1-of-12 slds-m-top_medium slds-m-left_small" style="margin-top:1.6%">
+                               <div  class="slds-m-top_medium s slds-m-right_small" style="margin-top:1.6%"><lightning:button label="Search" onclick="{!c.searchProFamilyChange}" variant="brand"/></div>
+                            </div>
+                        </div> -->
+                    </lightning:accordionSection>
+                </lightning:accordion>
+                <aura:if isTrue="{!v.isSpinnerLoad}">
+                    <div class="backgroundInverse">
+                        <lightning:spinner alternativeText="Loading" variant="brand" />
+                    </div>
+                </aura:if>
+                 <!-- Add Code by Rama -->
+                <!-- <div style="margin-left: 1000px"> -->              
+                <aura:if isTrue="{!and(v.userInfo.Name != 'Surender Patel',v.userInfo.Name != 'Sneha Shah',v.userInfo.Name != 'Sudheer Nanduri',v.userInfo.Name != 'Leigh Avery',v.userInfo.Name != 'Matthew Bilbao',v.userInfo.Name != 'Matthew Bilbao',v.userInfo.Name != 'Abhijit Patil',v.userInfo.Name != 'Ahmed Rifayee',v.userInfo.Name != 'Shruti Shah',v.userInfo.Name != 'Saunak Savla')}">
+                    <div style="margin-left: 93%" onclick="{!c.navigate}">
+                        <img src="{!$Resource.CI}"/>
+                        <!--  <a href="javascript:void(0)" onclick="{!c.competitoinfoview}">Competitor Info View</a> -->
+                    </div>                   
+                </aura:if>
+                <!-- End Code by Rama -->
+                <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+                    
+                    <div aura:id="mainDiv" style="height:60vh;overflow:auto;margin-top:10px;"
+                         class=" slds-m-right_small slds-m-left_small">
+                        <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                            <table aura:id="LineTable"
+                                   class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th class="slds-truncate slds-cell-wrap">NDC</th>
+                                        <th class="slds-truncate slds-cell-wrap">SAP Number</th>
+                                        
+                                        
+                                        
+                                        <th class="slds-truncate slds-cell-wrap zindexPrd" aura:id="zvaluePrd">Product
+                                            Family</th>
+                                        <th class="slds-truncate slds-cell-wrap zindexPkg" aura:id="zvaluePkg">Pkg Size
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap zindex" aura:id="zvalue">Product Name
+                                            <a onclick="{!c.collpase}">
+                                                <lightning:icon iconName="utility:preview" alternativeText="delete"
+                                                                size="x-small" />
+                                            </a>
+                                        </th>
+                                        <!-- logic for Re-Bid functionality- starts-->
+                                        <aura:if isTrue="{!v.isReBid}">
+                                            <th class="slds-truncate slds-cell-wrap">Previous Bid</th>
+                                            <th class="slds-truncate slds-cell-wrap">Previous Bid Line Item</th>
+                                        </aura:if>
+                                        <!-- logic for Re-Bid functionality- ends-->
+                                        <th class="slds-truncate slds-cell-wrap">Case Pack</th>
+                                        <th class="slds-truncate slds-cell-wrap">MOQ</th>
+                                        <th class="slds-truncate slds-cell-wrap">Compare To (Brand Name)</th>
+                                        <th class="slds-truncate slds-cell-wrap">Product Director</th>
+                                        <th class="slds-truncate slds-cell-wrap">Orange Book Rating</th>
+                                        <th class="slds-truncate slds-cell-wrap">WAC</th>
+                                        <th class="slds-truncate slds-cell-wrap">Throughput Cost</th>
+                                        <th class="slds-truncate slds-cell-wrap">REMS Program</th>
+                                        <!--<th class="slds-truncate slds-cell-wrap">Proposed Position</th>-->
+                                       <!-- <th class="slds-truncate slds-cell-wrap">Profit Sharing</th>
+                                        <th class="slds-truncate slds-cell-wrap">Indirect Contract Price</th>
+                                        <th class="slds-truncate slds-cell-wrap">PUR</th>
+                                        <th class="slds-truncate slds-cell-wrap">Rebates</th>
+                                        <th class="slds-truncate slds-cell-wrap">Rebates %</th>
+                                        <th class="slds-truncate slds-cell-wrap">VIP $</th>
+                                        <th class="slds-truncate slds-cell-wrap">VIP %</th>
+                                        <th class="slds-truncate slds-cell-wrap">Bonafide Fee</th>
+                                        <th class="slds-truncate slds-cell-wrap">Bonafide Fee % </th>
+                                        <th class="slds-truncate slds-cell-wrap">Customer Net Price</th>
+                                        <th class="slds-truncate slds-cell-wrap">Cash Discount</th>
+                                        <th class="slds-truncate slds-cell-wrap">Cash Discount %</th>
+                                        <th class="slds-truncate slds-cell-wrap">Wholesaler Fee</th>
+                                        <th class="slds-truncate slds-cell-wrap">Wholesaler Fee%</th>
+                                        <th class="slds-truncate slds-cell-wrap">Medicaid &amp; Med Accruals</th>
+                                        <th class="slds-truncate slds-cell-wrap">Medicaid &amp; Med Accruals %</th>
+                                        <th class="slds-truncate slds-cell-wrap">DRL Net Price</th>-->
+                                        
+                                        
+                                        <th class="slds-truncate slds-cell-wrap">Proposed IOD Units</th>
+                                        <th class="slds-truncate slds-cell-wrap">IOD Per Unit $</th>
+                                        <th class="slds-truncate slds-cell-wrap">IOD Overall Amount</th>
+                                         <th class="slds-truncate slds-cell-wrap">Budgeted ASP</th>
+                                        <th class="slds-truncate slds-cell-wrap">Latest Estimate ASP</th>
+                                        <th class="slds-truncate slds-cell-wrap">Lowest Price SKU</th>
+                                        <!--<th class="slds-truncate slds-cell-wrap">Estimated Lead Time</th>-->
+                                        <th class="slds-truncate slds-cell-wrap">Marketing Notes</th>
+                                        <aura:if isTrue="{!v.BidTypeVal !='Volume Review Only'}">
+                                            <th class="slds-truncate slds-cell-wrap">Finance Approval</th>
+                                            <th class="slds-truncate slds-cell-wrap">Finance Comments</th>
+                                        </aura:if>
+                                        <th class="slds-truncate slds-cell-wrap">Contract Status</th>
+                                        <th class="slds-truncate slds-cell-wrap">Contract Comments</th>
+                                        <th class="slds-truncate slds-cell-wrap">WAC Check</th>
+                                        
+                                        <!--Analytics Components related Icons START-->
+                                        
+                                        <th></th>
+                                        
+                                        
+                                        <!--Analytics Components related Icons END-->
+                                        
+                                        
+                                    </tr>
+                                    
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.BidLineItemListAll}" var="biltem" indexVar="sNo">
+                                        <!-- Child Lightning Component -->
+                                        <c:InitialOrderDiscountWACCustomersChild customerId="{!v.customerId}" autoSubFlag="{!v.autoSubFlag}" bidRecord="{!v.bidRecord}" tableRef="{!v.tableRef}"
+                                                            currentDSHP="{!v.currentDSHP}" proposedDSHP="{!v.proposedDSHP}" TotalSCMQty="{!v.TotalSCMQty}"
+                                                            baseSCMQty="{!v.baseSCMQty}" DSHSCMQty="{!v.DSHSCMQty}" AutoSubSCMQty="{!v.AutoSubSCMQty}"
+                                                            currentwholesalerUnits="{!v.currentwholesalerUnits}" currentAndaUnits="{!v.currentAndaUnits}" currentRetailDirectUnits="{!v.currentRetailDirectUnits}"
+                                                            actSalInd12months="{!v.actSalInd12months}" actSaDir12Months="{!v.actSaDir12Months}" proposedDirGiantUnits="{!v.proposedDirGiantUnits}"
+                                                            overRideDirectUnits="{!v.overRideDirectUnits}" overRideIndirectUnits="{!v.overRideIndirectUnits}" OverUnits="{!v.OverUnits}"
+                                                            deligatedUserName = "{!v.deligatedUserName}"
+                                                            ismarketingDeligator = "{!v.ismarketingDeligator}"
+                                                            proposedBase="{!v.proposedBase}" proposedDSH="{!v.proposedDSH}" proposedAutoSub="{!v.proposedAutoSub}"
+                                                            BASEMonthlyUnits="{!v.BASEMonthlyUnits}" DSHMonthlyUnits="{!v.DSHMonthlyUnits}"  AutoSubMonthlyUnits="{!v.AutoSubMonthlyUnits}"
+                                                            BASEAnnualUsage="{!v.BASEAnnualUsage}" BASEAnnualNetSales="{!v.BASEAnnualNetSales}"
+                                                            BASECOGS="{!v.BASECOGS}" BASETPbeforePS="{!v.BASETPbeforePS}"
+                                                            DSHAnnualUsage="{!v.DSHAnnualUsage}" DSHAnnualNetSales="{!v.DSHAnnualNetSales}"
+                                                            DSHCOGS="{!v.DSHCOGS}" DSHTPbeforePS="{!v.DSHTPbeforePS}"
+                                                            AUTOSUBAnnualUsage="{!v.AUTOSUBAnnualUsage}" AUTOSUBAnnualNetSales="{!v.AUTOSUBAnnualNetSales}"
+                                                            AUTOSUBCOGS="{!v.AUTOSUBCOGS}" AUTOSUBTPbeforePS="{!v.AUTOSUBTPbeforePS}"
+                                                            ActualTotalUnits="{!v.ActualTotalUnits}"
+                                                            OverrideTotalUnits="{!v.OverrideTotalUnits}" BASEDRLNetP="{!v.BASEDRLNetP}"
+                                                            DSHDRLNetP="{!v.DSHDRLNetP}" AutoSubDRLNetP="{!v.AutoSubDRLNetP}"
+                                                            netSalesIntTotal="{!v.netSalesIntTotal}"
+                                                            TotalSellingUnits="{!v.TotalSellingUnits}"
+                                                            FinalTotalSellingUnits="{!v.FinalTotalSellingUnits}"
+                                                            intDeadNetTotal="{!v.intDeadNetTotal}" ItemsLength="{!v.ItemsLength}"
+                                                            FISUTotal="{!v.FISUTotal}" FDSUTotal="{!v.FDSUTotal}"
+                                                            CISUTotal="{!v.CISUTotal}" CDSUTotal="{!v.CDSUTotal}"
+                                                            RetailDirGuideP="{!v.RetailDirGuideP}" WHLSGuideP="{!v.WHLSGuideP}"
+                                                            RetailGuideP="{!v.RetailGuideP}" WHLSP="{!v.WHLSP}"
+                                                            isContractsApprovePerson="{!v.isContractsApprovePerson}"
+                                                            isMarketingApprovePerson="{!v.isMarketingApprovePerson}"
+                                                            RetailDirP="{!v.RetailDirP}" RetailInDirP="{!v.RetailInDirP}"
+                                                            ProposedTpMargin="{!v.ProposedTpMargin}"
+                                                            loggedInUserName="{!v.loggedInUserName}"
+                                                            BidAprrovalStatus="{!v.BidAprrovalStatus}" bidType="{!v.BidTypeVal}"
+                                                            templateType="{!v.templateType}" isSpecificCust="{!v.isSpecificCustomer}"
+                                                            singleRec="{!biltem}" showSaveCancelBtn="{!v.showSaveCancelBtn}"
+                                                            OpeningOrderTotal="{!v.OpeningOrderTotal}" OpeningOrderNetSalesTotal="{!v.OpeningOrderNetSalesTotal}" OpeningOrderTPTTotal="{!v.OpeningOrderTPTTotal}" OpeningOrderTPTPercTotal="{!v.OpeningOrderTPTPercTotal}"
+                                                            sNo="{!sNo + 1}" lineItemId="{!biltem.Id}" isReBid="{!v.isReBid}"  recordId="{!v.recordId}" productId= "{!(biltem.Phoenix_Product__r.Id)}"/>
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <br />
+                    <aura:set attribute="else">
+                        <lightning:card>
+                            <center>
+                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                     role="alert" style="width:50%;">
+                                    <span class="slds-icon_container slds-m-right_x-small"
+                                          title="Please add line items to view the table">
+                                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small"
+                                                        variant="inverse" />
+                                    </span>
+                                    <h2>There are no line items for this bid</h2>
+                                </div>
+                            </center>
+                        </lightning:card>
+                    </aura:set>
+                </aura:if>
+                
+            </lightning:card>
+        </lightning:tab>
+        
+       
+        <aura:if isTrue="{!v.BidTypeVal!='Volume Review Only'}">
+            <lightning:tab label="Finance View" id="FIV" onactive="{!c.initFinnaceCmp}">
+                <c:Phoenix_FinanceView aura:id="financeChildCmp" title="{!(v.bidNumber+'-'+v.bidName)}"
+                                       recordId='{!v.recordId}' />
+            </lightning:tab>
+        </aura:if>
+        <aura:if isTrue="{!v.BidTypeVal!='Volume Review Only'}">
+            <lightning:tab label="NDC Finance View" onactive="{!c.initNDCFinanceCmp}">
+                <c:NDCFinanceView aura:id="NDCFinance" title="{!(v.bidNumber+'-'+v.bidName)}"
+                                  recordId='{!v.recordId}' />
+            </lightning:tab>
+        </aura:if>
+      <!--   <aura:if isTrue="{!v.BidTypeVal!='Volume Review Only'}">
+            <lightning:tab label="Management Approvals">
+                <c:Phoenix_FinanceApprovalGrid aura:id="ApprovalGrid" title="{!(v.bidNumber+'-'+v.bidName)}"
+                                               recordId='{!v.recordId}' />
+            </lightning:tab>
+        </aura:if> -->
+        
+        <lightning:tab label="Contracts View" id="Contracts" onactive="{!c.initContractsView}">
+            <c:IODWACCustomerContractsView aura:id="ContractsTab" recordId='{!v.recordId}' />
+        </lightning:tab>
+        
+        <!-- <lightning:tab label="SCM &amp; Marketing Detail View" id="details" onactive="{!c.initDetailView}">
+                <c:Phoenix_Edit_Bid_Line_Item_Cmp aura:id="detailTab"  recordId='{!v.recordId}'/>
+            </lightning:tab>-->
+        <lightning:tab label="Rejected View" id="RejectedStatus" onactive="{!c.initRejectedStatus}">
+            <c:IODCustomerRejectedView aura:id="RejectedStatusChildCmp" recordId='{!v.recordId}' />
+        </lightning:tab>
+    </lightning:tabset>
+</aura:component>

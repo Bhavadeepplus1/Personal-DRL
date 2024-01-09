@@ -1,0 +1,343 @@
+<aura:component controller="Phoenix_RCAWholesalerChange" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithOutHeader" access="global" >
+    
+    <aura:attribute name="recordId" type="String"  />
+    <aura:attribute name="wrap" type="Object" description="To hold all objects" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="rcaList" type="list" description="All Product details" default="[]" />
+    <aura:attribute name="rcaNewList" type="list" description="All Product details" default="[]" />
+    <aura:attribute name="showProducts" type="Boolean" default="false" />
+    <aura:attribute name="showSpinnerSelProds" type="Boolean" default="false" />
+    <aura:attribute name="noProducts" type="Boolean" default="false" />
+    <aura:attribute name="showContrStatus" type="Boolean" default="false" />
+    <aura:attribute name="showNoType" type="Boolean" default="false" />
+    <aura:attribute name="GPOvalues" type="String[]" />
+    <aura:attribute name="wholesaler" type="String[]" />
+    <aura:attribute name="wholesalerLocation" type="String[]" />
+    <aura:attribute name="rcaDate" type="Date" />
+    <aura:attribute name="isQLlistempty" type="Boolean" default="false" />
+    <aura:attribute name="agreement" type="String" />
+    <aura:attribute name="accountId" type="String" default="" />
+    
+    <lightning:navigation aura:id="navigationService" />
+    
+    
+    
+    <aura:html tag="style">
+        .slds-modal__container{
+        max-width: 100rem !important;
+        width:100% !important;
+        
+        }
+        .slds-button slds-button_brand{
+        padding: initial; !important;
+        }
+        
+        .slds-modal__content
+        {
+        
+        
+        background-color: transparent;
+        box-shadow: none !important;
+        
+        }
+        
+        .slds-modal__close {
+        display:none !important;
+        }
+        
+        
+        .slds-button__icon slds-button__icon_left{
+        
+        margin-left: 6px; !important;
+        }
+        
+        .slds-modal__content slds-p-around_large{
+        width:100%; !important;
+        }
+    </aura:html>
+    
+    
+    <aura:if isTrue="{!v.showNoType}">
+        <div class="panel slds-modal slds-fade-in-open"   tabindex="-1" role="dialog" aria-modal="true"  style="opacity: 1;outline:none;">  
+            
+            <div class="modal-container slds-modal__container" style="width:50rem !important;"> 
+                <div class="modal-header slds-modal__header" style="padding-right: 5px; padding-top: 10px; padding-bottom: 10px; padding-left: 10px;">
+                    
+                    <h2  class="slds-modal__title slds-hyphenate"
+                        style="color:#675e5e">
+                        <p style="font-size:21px;"><b>RCA IPA GPO/Wholesaler Change</b></p> 
+                        
+                    </h2>
+                    
+                </div>
+                <aura:if isTrue="{ ! !v.showContrStatus}">
+                <div class="matchPanelError" tabindex="0" role="alert" style="text-align:center;background-color:white;">
+                    <br/>
+                  
+                    <span>Please select Bid Type as RCA/IPA Member GPO or Wholesaler Change.</span>
+                   <br/> <br/>
+                    </div></aura:if>
+                
+                <aura:if isTrue="{!v.showContrStatus}">
+                <div class="matchPanelError" tabindex="0" role="alert" style="text-align:center;background-color:white;">
+                    <br/>
+                  
+                    <span>Please select contract status as Active and RCA flag as True for selected Contract in Bid.</span>
+                   <br/> <br/>
+                </div>
+                     </aura:if>
+                
+                <div class="modal-footer slds-modal__footer" style="background-color:white;">
+                    <lightning:button variant="neutral" label="Close" onclick="{!c.closeModal}" />
+                    
+                </div>
+            </div>
+        </div>
+    </aura:if>
+    
+    
+    
+    <aura:if isTrue="{!v.showProducts}">
+        
+        
+        <div class="panel slds-modal slds-fade-in-open"   tabindex="-1" role="dialog" aria-modal="true"  style="opacity: 1;outline:none;">  
+            
+            <div class="modal-container slds-modal__container customClass">            
+                <div class="modal-header slds-modal__header" style="padding-right: 5px; padding-top: 10px; padding-bottom: 10px; padding-left: 10px;">
+                    
+                    <h2  class="slds-modal__title slds-hyphenate"  style="color:#675e5e">
+                        
+                        <p style="font-size:21px;"><b>RCA IPA GPO/Wholesaler Change</b></p> 
+                        
+                    </h2>
+                    
+                    
+                    <aura:if isTrue="{!v.noProducts}">
+                        <div class="matchPanelError" tabindex="0" role="alert" style="color:#c23934;text-align:center;">
+                            <span>No items to display</span>
+                        </div>
+                    </aura:if>
+                </div>
+                <aura:if isTrue="{!v.showProducts}">
+                    <div class="modal-body scrollable slds-modal__content slds-p-around--medium" data-scoped-scroll="true" style="background-color:white;padding-bottom: 11px; padding-left: 11px;padding:0px;">
+                        <div>
+                            <div class="slds-modal__content slds-p-around_large" style="width: -webkit-fill-available;padding:5px;">
+                                
+                                
+                                
+                                <aura:if isTrue="{!v.showSpinnerSelProds}">
+                                    <lightning:spinner variant="brand" class="spinColor" size="large" />
+                                </aura:if>
+                                
+                                
+                                
+                                
+                                <div class="slds-col  slds-size_1-of-1 slds-medium-size_6-of-6 slds-large-size_12-of-12 slds-p-top_large">
+                                    
+                                    
+                                    
+                                    
+                                    
+                                    <aura:if isTrue="{!not(empty(v.rcaList))}">
+                                        <table
+                                               class=" maintable slds-table slds-table_cell_buffered slds-max-medium-table_stacked-horizontal slds-table_bordered" style="border:1px solid #eaeaea;">
+                                            <thead>
+                                                
+                                                <tr class="slds-text-title">
+                                                    
+                                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                                        <div class="slds-truncate">Sr.No.</div>
+                                                    </th>
+                                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                                        <div class="slds-truncate" title="RCA Change Date">
+                                                         Change Date
+                                                        </div>
+                                                    </th>
+                                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                                        <div class="slds-truncate" title="RCA Agreement">
+                                                            RCA Agreement
+                                                            
+                                                        </div>
+                                                    </th>
+                                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                                        <div class="slds-truncate" title="Customer Name">
+                                                            Customer
+                                                        </div>
+                                                    </th>
+                                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                                        <div class="slds-truncate" title="New RCA Agreement">
+                                                            New RCA/IPA Agreement 
+                                                            
+                                                        </div>
+                                                    </th>
+                                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                                        <div class="slds-truncate" title="Current GPO">
+                                                            Current GPO
+                                                            
+                                                        </div>
+                                                    </th>
+                                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                                        <div class="slds-truncate" title=" New GPO">
+                                                            New GPO
+                                                        </div>
+                                                    </th>
+                                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                                        <div class="slds-truncate" title="Current Wholesaler">
+                                                            Current Wholesaler
+                                                        </div>
+                                                    </th>
+                                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                                        <div class="slds-truncate" title="New Wholesaler Name">
+                                                            New Wholesaler Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; New Wholesaler Location
+                                                        </div>
+                                                    </th>
+                                                    <!--th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                        <div class="slds-truncate" title="New Wholesaler Location">
+                                           
+                                        </div>
+                                    </th-->
+                                                    
+                                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                                        <div class="slds-truncate" title="RAM">
+                                                            RAM
+                                                        </div>
+                                                    </th>           
+                                                    
+                                                    
+                                                    
+                                                    
+                                                    
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <aura:iteration items="{!v.rcaList}" var="rca" indexVar="itemIndex">
+                                                    <tr class="slds-text-title" >
+                                                        <td class="slds-cell-wrap" scope="col">
+                                                            
+                                                            {!itemIndex + 1}
+                                                        </td>
+                                                        <td class="slds-cell-wrap " scope="col">
+                                                            {!v.rcaDate}
+                                                        </td>
+                                                        <td class="slds-cell-wrap" scope="col">
+                                                            <a href="{!'/'+rca.bid.Phoenix_RCA_Agreement__c}" target="_blank">{!rca.bid.Phoenix_RCA_Agreement__r.Name}</a>
+                                                        </td>
+                                                        
+                                                        <td class="slds-cell-wrap " scope="col">
+                                                            <aura:if isTrue="{!rca.flag}">
+                                                                <lightning:recordEditForm objectApiName="Phoenix_RCA_IPA_LINE__c" aura:id="bidForm"   onload="" onsubmit="" onsuccess="">
+                                                                    <lightning:messages />
+                                                                    <lightning:inputField aura:id="ProValEstId" fieldName="Phoenix_Customer__c"  value="{!rca.rcItem.Phoenix_Customer__c}" variant="label-hidden" onchange="{!c.getupdateCustomer}"/>
+                                                                </lightning:recordEditForm>
+                                                                <aura:set attribute="else">
+                                                                    <a href="{!'/'+rca.acc.Id}" target="_blank"> {!rca.acc.Name}</a>
+                                                                </aura:set>
+                                                            </aura:if>
+                                                        </td>
+                                                        
+                                                        <td class="slds-cell-wrap " scope="col">
+                                                            <lightning:recordEditForm objectApiName="Phoenix_RCA_IPA_LINE__c" aura:id="bidForm"   onload="" onsubmit="" onsuccess="">
+                                                                <lightning:messages />
+                                                                <lightning:inputField aura:id="ProValEstId" fieldName="Phoenix_New_RCA_Agreement__c" value="{!rca.rcItem.Phoenix_New_RCA_Agreement__c}" variant="label-hidden" disabled="{!rca.flag}"/>
+                                                            </lightning:recordEditForm>
+                                                        </td>
+                                                        <td class="slds-cell-wrap " scope="col">
+                                                            {!rca.acc.GPO1__c}
+                                                        </td>
+                                                        <td class="slds-cell-wrap " scope="col">
+                                                            <lightning:recordEditForm objectApiName="Phoenix_RCA_IPA_LINE__c"  aura:id="bidForm"   onload="" onsubmit="" onsuccess="">
+                                                                <lightning:messages />
+                                                                <lightning:inputField aura:id="ProValEstId" fieldName="Phoenix_New_GPO__c" value="{!rca.rcItem.Phoenix_New_GPO__c}" variant="label-hidden"/>
+                                                            </lightning:recordEditForm>
+                                                            
+                                                        </td>
+                                                        
+                                                        <td class="slds-cell-wrap " scope="col">
+                                                            {!rca.acc.Wholesaler1__c}
+                                                        </td>
+                                                        <td class="slds-cell-wrap " scope="col">
+                                                            
+                                                            <lightning:recordEditForm objectApiName="Phoenix_RCA_IPA_LINE__c"  aura:id="bidForm"   onload="" onsubmit="" onsuccess="">
+                                                                <lightning:messages />
+                                                                <div class="slds-scope" >
+                                                                    <div class="slds-grid slds-wrap slds-text-align_center custom-container">
+                                                                        <div class="slds-size_1-of-2 slds-max-small-size_1-of-1 sapdata">
+                                                                            <lightning:inputField aura:id="ProValEstId" fieldName="Phoenix_Wholesaler__c" value="{!rca.rcItem.Phoenix_Wholesaler__c}" variant="label-hidden"/>
+                                                                        </div>
+                                                                        <div class="slds-size_1-of-2 slds-max-small-size_1-of-1 sapdata" style="padding-left:10px;">
+                                                                            <lightning:inputField aura:id="ProValEstId" fieldName="Phoenix_Wholesaler_Location__c" value="{!rca.rcItem.Phoenix_Wholesaler_Location__c}" variant="label-hidden"/>
+                                                                            
+                                                                        </div></div></div></lightning:recordEditForm>
+                                                            
+                                                        </td>
+                                                        <!--td class="slds-cell-wrap " scope="col">
+                                                          <lightning:recordEditForm objectApiName="Phoenix_RCA_IPA_LINE__c" aura:id="bidForm"   onload="" onsubmit="" onsuccess="">
+                                                         <lightning:inputField aura:id="ProValEstId" fieldName="Phoenix_Wholesaler_Location__c" value="{!rca.rcItem.Phoenix_Wholesaler_Location__c}" variant="label-hidden"/>
+                                                         </lightning:recordEditForm>
+                                                     
+                                                  
+                                                    </td-->
+                                                        <td class="slds-cell-wrap " scope="col">
+                                                            {!rca.acc.Owner.Name}
+                                                        </td>
+                                                        
+                                                        
+                                                        <td class="slds-cell-wrap" scope="col" title="Delete Line Item" style="padding-left: 0px;padding-right: 0px;padding-bottom: 7px;padding-top: 10px;">
+                                                            <aura:if isTrue="{!rca.flag}">
+                                                                <lightning:button class="customBIcon"
+                                                                                  iconName="action:delete" iconPosition="left"
+                                                                                  onclick="{!c.removeDeletedRow }"
+                                                                                  name="{!itemIndex + 1}" />
+                                                                <aura:set attribute="else">
+                                                                    <lightning:button class="customBIcon"
+                                                                                      iconName="action:delete" iconPosition="left"
+                                                                                      onclick="{!c.removeDeletedRow }"
+                                                                                      name="{!rca.acc.Id}" />
+                                                                </aura:set>
+                                                            </aura:if>
+                                                        </td>
+                                                        
+                                                        
+                                                        
+                                                    </tr>
+                                                </aura:iteration>
+                                            </tbody>
+                                        </table>
+                                       
+                                    </aura:if>
+                                     <aura:if isTrue="{!v.isQLlistempty}">
+                                      <div class="matchPanelError" tabindex="0" role="alert"
+                             style="color:#c23934;text-align:center;">
+                            <span>No items to display</span>
+                        </div>
+                                        </aura:if>
+                                 
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
+                    <div class="modal-footer slds-modal__footer" style="background-color:white;">
+                        <aura:if isTrue="{!not(empty(v.rcaList))}">
+                            
+                            <lightning:button variant="brand" label="Save" onclick="{!c.insertRCALines}" />
+                            <lightning:button variant="brand" label="New" onclick="{!c.processNewRCALine}" />
+                            <lightning:button variant="neutral" label="Back" onclick="{!c.closeModal}" />
+                            
+                            
+                            <aura:set attribute="else">
+                                <div class="" style="background-color:white;">
+                                    <lightning:button variant="brand" label="New" onclick="{!c.processNewRCALine}" />
+                                    <lightning:button variant="neutral" label="Back" onclick="{!c.closeModal}" />
+                                    
+                                </div>
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                </aura:if>
+            </div>
+        </div>
+        
+    </aura:if>
+</aura:component>

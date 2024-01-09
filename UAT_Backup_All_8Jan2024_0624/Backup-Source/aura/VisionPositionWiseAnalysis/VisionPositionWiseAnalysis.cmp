@@ -1,0 +1,670 @@
+<aura:component controller="VisionPositionWiseAnalysisCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="categoriesList" type="list" />
+    <aura:attribute name="primaryList" type="list" />
+    <aura:attribute name="backupList" type="list" />
+    <aura:attribute name="optyList" type="list" />
+    <aura:attribute name="selectedBids" type="list" />
+    <aura:attribute name="expandPrimary" type="boolean" default="false" />
+    <aura:attribute name="expandBackup" type="boolean" default="false" />
+    <aura:attribute name="expandOpty" type="boolean" default="false" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="summaryAtPrimaryObj" type="Object" />
+    <aura:attribute name="summaryAtBackupObj" type="Object" />
+    <aura:attribute name="summaryAtOptyObj" type="Object" />
+    <aura:attribute name="showSelectBidsPopup" type="boolean" />
+    <aura:attribute name="approvalStatus" type="list" default="['Closed', 'Vistex Update']"/>
+    <aura:attribute name="expandCollapseLabel" type="String" default="Expand All" />
+    <aura:attribute name="expandAll" type="boolean" default="false" />
+    <aura:attribute name="isModalOpen" type="boolean" />
+    <!--<aura:handler name="change" value="{!v.selectedBidId}" action="{!c.selectedBidsChange}"/>-->
+    <aura:handler name="change" value="{!v.selectedBids}" action="{!c.selectedBidsChange}"/>
+    <aura:handler name = "init" value ="{!this}" action = "{!c.doInit}"/>
+    
+    <div style="width: 100%;margin-bottom: 8px;text-align: right;">
+        <!--<l_lookup:Lookup aura:id="bidLookup" 
+                         label="Select RFP Bid"
+                         objectType="Phoenix_Bid__c"
+                         placeHolder="Select and Select RFP Bid"
+                         selectedRecordId="{!v.selectedBidId}" 
+                         primarySearchField="Name"
+                         fuzzySearch="true"
+                         queryCondition="(Phoenix_Bid_Type__c = 'RFP Bids' OR Phoenix_Bid_Type__c = 'OTC RFP') AND (Phoenix_Approval_Status__c = 'Closed' OR Phoenix_Approval_Status__c = 'Vistex Update' OR Phoenix_Approval_Status__c = 'Customer\'s Update')"
+                         dropDownQuery="(Phoenix_Bid_Type__c = 'RFP Bids' OR Phoenix_Bid_Type__c = 'OTC RFP') AND (Phoenix_Approval_Status__c = 'Closed' OR Phoenix_Approval_Status__c = 'Vistex Update' OR Phoenix_Approval_Status__c = 'Customer\'s Update')"
+                         orderBy="Name"  />-->
+        <div style="width: 70%;padding: 8px;display:inline-block;">
+        </div>
+        <div style="width: 30%;padding: 8px;display:inline-block;">
+            <span align="right" style="color:#5224B2;">Legends&nbsp;<lightning:icon class="purpleIcon" iconName="utility:in_app_assistant" size="small" onclick="{!c.openModal}"/></span>  
+            &nbsp;&nbsp;<lightning:button label="Select RFP Bids" title="Select RFP Bids" onclick="{! c.selectBids }"/>
+        </div>
+    </div>
+    <aura:if isTrue="{!v.isSpinnerLoad}">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+    <aura:if isTrue="{!v.isModalOpen}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__content_headless" style="text-align: right;">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModal }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;">
+                    <div style="padding:5px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 13%;">Primary to Backup</th>
+                                    <th style="font-weight: normal;">Customer Awarded Line Items where Current Category is <b><i>Primary</i></b> &amp; Awarded Category is <b><i>Backup</i></b>&nbsp;(or)&nbsp;<b><i>Secondary</i></b></th>
+                                </tr>
+                                <tr>
+                                    <th>Retained Primary</th>
+                                    <th style="font-weight: normal;">Customer Awarded Line Items where Current Category is <b><i>Primary</i></b> &amp; Awarded Category is <b><i>Primary</i></b></th>
+                                </tr>
+                                <tr>
+                                    <th>Lost Primary</th>
+                                    <th style="font-weight: normal;">Customer Declined Line Items where Current Category is <b><i>Primary</i></b> &amp; Awarded Category is <b><i>Null</i></b></th>
+                                </tr>
+                                <tr>
+                                    <th>Backup to Primary</th>
+                                    <th style="font-weight: normal;">Customer Awarded Line Items where Current Category is <b><i>Backup</i></b>&nbsp;(or)&nbsp;<b><i>Secondary</i></b> &amp; Awarded Category is <b><i>Primary</i></b></th>
+                                </tr>
+                                <tr>
+                                    <th>Retained Backup</th>
+                                    <th style="font-weight: normal;">Customer Awarded Line Items where Current Category is <b><i>Backup</i></b>&nbsp;(or)&nbsp;<b><i>Secondary</i></b> &amp; Awarded Category is <b><i>Backup</i></b>&nbsp;(or)&nbsp;<b><i>Secondary</i></b></th>
+                                </tr>
+                                <tr>
+                                    <th>Lost Backup</th>
+                                    <th style="font-weight: normal;">Customer Declined Line Items where Current Category is <b><i>Backup</i></b>&nbsp;(or)&nbsp;<b><i>Secondary</i></b> &amp; Awarded Category is <b><i>Null</i></b></th>
+                                </tr>
+                                <tr>
+                                    <th>Bid in RFP didn\'t win</th>
+                                    <th style="font-weight: normal;">Customer Declined Line Items where Current Category is <b><i>Null</i></b> &amp; Awarded Category is <b><i>Null</i></b></th>
+                                </tr>
+                                <tr>
+                                    <th>New Backup</th>
+                                    <th style="font-weight: normal;">Customer Awarded Line Items where Current Category is <b><i>Null</i></b> &amp; Awarded Category is <b><i>Backup</i></b>&nbsp;(or)&nbsp;<b><i>Secondary</i></b></th>
+                                </tr>
+                                <tr>
+                                    <th>New Primary</th>
+                                    <th style="font-weight: normal;">Customer Awarded Line Items where Current Category is <b><i>Null</i></b> &amp; Awarded Category is <b><i>Primary</i></b></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div> 
+                </div>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if>
+    <aura:if isTrue="{!v.categoriesList.length != 0}">
+        <div class="slds-box" style="max-width: 700px;padding: 8px;margin-bottom: 8px;"> 
+            <span style="font-size: 16px;"><b>Summary based on Final Positions</b></span>
+            <div aura:id="mainDiv" style="height:auto;overflow:auto;margin-top:6px; border-radius: 8px;">
+                <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px; margin: auto;">
+                    <thead class="headerOfTable">
+                        <tr>
+                            <th class="mainHeaderSticky"></th>
+                            <th colspan="3" style="text-align: center;" class="mainHeaderSticky">
+                                Current Business
+                            </th>
+                            <th colspan="3" style="text-align: center;" class="mainHeaderSticky">
+                                Final RFP
+                            </th>
+                        </tr>
+                        <tr id="styleids">
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #6f30a0; color: white;padding-left: 8px;">Category</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #6f30a0; color: white;">Sales($)</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #6f30a0; color: white;">TPT($)</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #6f30a0; color: white;">TPT(%)</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #6f30a0; color: white;">Sales($)</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #6f30a0; color: white;">TPT($)</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #6f30a0; color: white;">TPT(%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="font-weight: bold;">
+                            <td>Primary</td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.CurrentBusinessSales + v.summaryAtOptyObj.currentBusinessNewPrimarySales)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.CurrentBusinessTPT + v.summaryAtOptyObj.currentBusinessNewPrimaryTPT)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <aura:if isTrue="{!(v.summaryAtPrimaryObj.CurrentBusinessSales + v.summaryAtOptyObj.currentBusinessNewPrimarySales) != 0}">
+                                    <lightning:formattedNumber value="{!((v.summaryAtPrimaryObj.CurrentBusinessTPT + v.summaryAtOptyObj.currentBusinessNewPrimaryTPT)/(v.summaryAtPrimaryObj.CurrentBusinessSales + v.summaryAtOptyObj.currentBusinessNewPrimarySales))}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    <aura:set attribute="else">
+                                        <lightning:formattedNumber value="0" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.FinalRFPSales + v.summaryAtOptyObj.FinalRFPNewPrimarySales)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.FinalRFPTPT + v.summaryAtOptyObj.FinalRFPNewPrimaryTPT)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <aura:if isTrue="{!(v.summaryAtPrimaryObj.FinalRFPSales + v.summaryAtOptyObj.FinalRFPNewPrimarySales) != 0}">
+                                    <lightning:formattedNumber value="{!((v.summaryAtPrimaryObj.FinalRFPTPT + v.summaryAtOptyObj.FinalRFPNewPrimaryTPT)/(v.summaryAtPrimaryObj.FinalRFPSales + v.summaryAtOptyObj.FinalRFPNewPrimarySales))}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    <aura:set attribute="else">
+                                        <lightning:formattedNumber value="0" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                        </tr>
+                        <tr style="font-weight: bold;">
+                            <td>Backup</td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtBackupObj.CurrentBusinessSales + v.summaryAtOptyObj.currentBusinessNewBackupSales)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtBackupObj.CurrentBusinessTPT + v.summaryAtOptyObj.currentBusinessNewBackupTPT)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <aura:if isTrue="{!(v.summaryAtBackupObj.CurrentBusinessSales + v.summaryAtOptyObj.currentBusinessNewBackupSales) != 0}">
+                                    <lightning:formattedNumber value="{!((v.summaryAtBackupObj.CurrentBusinessTPT + v.summaryAtOptyObj.currentBusinessNewBackupTPT)/(v.summaryAtBackupObj.CurrentBusinessSales + v.summaryAtOptyObj.currentBusinessNewBackupSales))}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    <aura:set attribute="else">
+                                        <lightning:formattedNumber value="0" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtBackupObj.FinalRFPSales + v.summaryAtOptyObj.FinalRFPNewBackupSales)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtBackupObj.FinalRFPTPT + v.summaryAtOptyObj.FinalRFPNewBackupTPT)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <aura:if isTrue="{!(v.summaryAtBackupObj.FinalRFPSales + v.summaryAtOptyObj.FinalRFPNewBackupSales) != 0}">
+                                    <lightning:formattedNumber value="{!((v.summaryAtBackupObj.FinalRFPTPT + v.summaryAtOptyObj.FinalRFPNewBackupTPT)/(v.summaryAtBackupObj.FinalRFPSales + v.summaryAtOptyObj.FinalRFPNewBackupSales))}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    <aura:set attribute="else">
+                                        <lightning:formattedNumber value="0" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                        </tr>
+                        <tr style="font-weight: bold; background: #efefef">
+                            <td>Total</td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.CurrentBusinessSales + v.summaryAtOptyObj.currentBusinessNewPrimarySales + v.summaryAtBackupObj.CurrentBusinessSales + v.summaryAtOptyObj.currentBusinessNewBackupSales)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtBackupObj.CurrentBusinessTPT + v.summaryAtOptyObj.currentBusinessNewBackupTPT + v.summaryAtPrimaryObj.CurrentBusinessTPT + v.summaryAtOptyObj.currentBusinessNewPrimaryTPT)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <aura:if isTrue="{!(v.summaryAtBackupObj.CurrentBusinessSales + v.summaryAtOptyObj.currentBusinessNewBackupSales + v.summaryAtPrimaryObj.CurrentBusinessSales + v.summaryAtOptyObj.currentBusinessNewPrimarySales) != 0}">
+                                    <lightning:formattedNumber value="{!((v.summaryAtBackupObj.CurrentBusinessTPT + v.summaryAtOptyObj.currentBusinessNewBackupTPT + v.summaryAtPrimaryObj.CurrentBusinessTPT + v.summaryAtOptyObj.currentBusinessNewPrimaryTPT)/(v.summaryAtBackupObj.CurrentBusinessSales + v.summaryAtOptyObj.currentBusinessNewBackupSales + v.summaryAtPrimaryObj.CurrentBusinessSales + v.summaryAtOptyObj.currentBusinessNewPrimarySales))}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    <aura:set attribute="else">
+                                        <lightning:formattedNumber value="0" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtBackupObj.FinalRFPSales + v.summaryAtOptyObj.FinalRFPNewBackupSales + v.summaryAtPrimaryObj.FinalRFPSales + v.summaryAtOptyObj.FinalRFPNewPrimarySales)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtBackupObj.FinalRFPTPT + v.summaryAtOptyObj.FinalRFPNewBackupTPT + v.summaryAtPrimaryObj.FinalRFPTPT + v.summaryAtOptyObj.FinalRFPNewPrimaryTPT)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <aura:if isTrue="{!(v.summaryAtBackupObj.FinalRFPSales + v.summaryAtOptyObj.FinalRFPNewBackupSales + v.summaryAtPrimaryObj.FinalRFPSales + v.summaryAtOptyObj.FinalRFPNewPrimarySales) != 0}">
+                                    <lightning:formattedNumber value="{!((v.summaryAtBackupObj.FinalRFPTPT + v.summaryAtOptyObj.FinalRFPNewBackupTPT + v.summaryAtPrimaryObj.FinalRFPTPT + v.summaryAtOptyObj.FinalRFPNewPrimaryTPT)/(v.summaryAtBackupObj.FinalRFPSales + v.summaryAtOptyObj.FinalRFPNewBackupSales + v.summaryAtPrimaryObj.FinalRFPSales + v.summaryAtOptyObj.FinalRFPNewPrimarySales))}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    <aura:set attribute="else">
+                                        <lightning:formattedNumber value="0" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="slds-box" style="padding: 8px;">
+            <div>
+                <div style="font-size: 16px;width: 70%;display: inline-block;">
+                    <b>Summary based on Current Positions</b>
+                </div>
+                <div style="flaot: right;width: 30%;display: inline-block;">
+                    <span style="float: right;"><lightning:button label="{!v.expandCollapseLabel}" onclick="{! c.expandCollapse }"/></span>
+                </div>
+            </div>
+            <div aura:id="mainDiv" style="min-height: 175px; max-height: 600px;height:auto;overflow:auto;margin-top:6px; border-radius: 8px;">
+                <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px; margin: auto;">
+                    <thead class="headerOfTable">
+                        <tr>
+                            <th class="mainHeaderSticky" colspan="2"></th>
+                            <th colspan="4" style="text-align: center;" class="mainHeaderSticky">
+                                Current Business
+                            </th>
+                            <th colspan="4" style="text-align: center;" class="mainHeaderSticky">
+                                Bid RFP
+                            </th>
+                            <th colspan="4" style="text-align: center;" class="mainHeaderSticky">
+                                Final RFP
+                            </th>
+                            <th colspan="3" style="text-align: center;" class="mainHeaderSticky">
+                                Variance(Final RFP vs Current)
+                            </th>
+                        </tr>
+                        <tr id="styleids">
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;padding-left: 8px;">Category</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">Bid</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">Quantity</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">Sales($)</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">TPT($)</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">TPT(%)</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">Quantity</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">Sales($)</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">TPT($)</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">TPT(%)</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">Quantity</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">Sales($)</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">TPT($)</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">TPT(%)</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">Volume</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">Price</th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:if isTrue="{!v.primaryList.length != 0}">
+                            <tr style="font-weight: bold;background-color: #F3F3F3;">
+                                <td style="padding-left: 8px;">
+                                    <b>
+                                        <aura:if isTrue="{!v.expandPrimary}">
+                                            (<lightning:buttonIcon iconName="utility:minimize_window" variant="bare" class="iconCSS" size="small" onclick="{!c.expandPrimary}" alternativeText="Collapse Category" title="Collapse Category" />)
+                                            <aura:set attribute="else">
+                                                (<lightning:buttonIcon iconName="utility:add" class="iconCSS1" size="small" variant="bare" onclick="{! c.expandPrimary }" alternativeText="Expand Category" title="Expand Category" />)
+                                            </aura:set>
+                                        </aura:if>
+                                        Primary({!v.summaryAtPrimaryObj.lineItemsCount})&nbsp;
+                                    </b>
+                                </td>
+                                <td></td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.CurrentBusinessQty}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.CurrentBusinessSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.CurrentBusinessTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.CurrentBusinessTPTPercent}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.BidRFPQty}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.BidRFPSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.BidRFPTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.BidRFPTPTPercent}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.FinalRFPQty}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.FinalRFPSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.FinalRFPTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.FinalRFPTPTPercent}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.volumeVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.priceVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtPrimaryObj.totalVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                            </tr>
+                            <aura:if isTrue="{!v.expandPrimary}">
+                                <aura:iteration items="{!v.primaryList}" var="categoryObj">
+                                    <c:VisionPositionWiseAnalysisChild positionWrap="{!categoryObj}" expandAll="{!v.expandAll}" />
+                                </aura:iteration>
+                            </aura:if>
+                            <aura:set attribute="else">
+                                <tr style="font-weight: bold;background-color: #F3F3F3;">
+                                    <td style="padding-left: 8px;">
+                                        <b>
+                                            Primary(0)&nbsp;
+                                        </b>
+                                    </td>
+                                    <td></td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            </aura:set>
+                        </aura:if>
+                        <aura:if isTrue="{!v.backupList.length != 0}">
+                            <tr style="font-weight: bold;background-color: #F3F3F3;">
+                                <td style="padding-left: 8px;">
+                                    <b>
+                                        <aura:if isTrue="{!v.expandBackup}">
+                                            (<lightning:buttonIcon iconName="utility:minimize_window" variant="bare" class="iconCSS" size="small" onclick="{!c.expandBackup}" alternativeText="Collapse Category" title="Collapse Category" />)
+                                            <aura:set attribute="else">
+                                                (<lightning:buttonIcon iconName="utility:add" class="iconCSS1" size="small" variant="bare" onclick="{! c.expandBackup }" alternativeText="Expand Category" title="Expand Category" />)
+                                            </aura:set>
+                                        </aura:if>
+                                        Backup({!v.summaryAtBackupObj.lineItemsCount})&nbsp;
+                                    </b>
+                                </td>
+                                <td></td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.CurrentBusinessQty}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.CurrentBusinessSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.CurrentBusinessTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.CurrentBusinessTPTPercent}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.BidRFPQty}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.BidRFPSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.BidRFPTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.BidRFPTPTPercent}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.FinalRFPQty}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.FinalRFPSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.FinalRFPTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.FinalRFPTPTPercent}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.volumeVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.priceVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtBackupObj.totalVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                            </tr>
+                            <aura:if isTrue="{!v.expandBackup}">
+                                <aura:iteration items="{!v.backupList}" var="categoryObj">
+                                    <c:VisionPositionWiseAnalysisChild positionWrap="{!categoryObj}" expandAll="{!v.expandAll}"/>
+                                </aura:iteration>
+                            </aura:if>
+                            <aura:set attribute="else">
+                                <tr style="font-weight: bold;background-color: #F3F3F3;">
+                                    <td style="padding-left: 8px;">
+                                        <b>
+                                            Backup(0)&nbsp;
+                                        </b>
+                                    </td>
+                                    <td></td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            </aura:set>
+                        </aura:if>
+                        <aura:if isTrue="{!v.optyList.length != 0}">
+                            <tr style="font-weight: bold;background-color: #F3F3F3;">
+                                <td style="padding-left: 8px;">
+                                    <b>
+                                        <aura:if isTrue="{!v.expandOpty}">
+                                            (<lightning:buttonIcon iconName="utility:minimize_window" variant="bare" class="iconCSS" size="small" onclick="{!c.expandOpty}" alternativeText="Collapse Category" title="Collapse Category" />)
+                                            <aura:set attribute="else">
+                                                (<lightning:buttonIcon iconName="utility:add" class="iconCSS1" size="small" variant="bare" onclick="{! c.expandOpty }" alternativeText="Expand Category" title="Expand Category" />)
+                                            </aura:set>
+                                        </aura:if>
+                                        New Opportunity({!v.summaryAtOptyObj.lineItemsCount})&nbsp;
+                                    </b>
+                                </td>
+                                <td></td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.CurrentBusinessQty}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.CurrentBusinessSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.CurrentBusinessTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.CurrentBusinessTPTPercent}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.BidRFPQty}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.BidRFPSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.BidRFPTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.BidRFPTPTPercent}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.FinalRFPQty}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.FinalRFPSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.FinalRFPTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.FinalRFPTPTPercent}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.volumeVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.priceVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: right;">
+                                    <lightning:formattedNumber value="{!v.summaryAtOptyObj.totalVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                            </tr>
+                            <aura:if isTrue="{!v.expandOpty}">
+                                <aura:iteration items="{!v.optyList}" var="categoryObj">
+                                    <c:VisionPositionWiseAnalysisChild positionWrap="{!categoryObj}" expandAll="{!v.expandAll}"/>
+                                </aura:iteration>
+                            </aura:if>
+                            <aura:set attribute="else">
+                                <tr style="font-weight: bold;background-color: #F3F3F3;">
+                                    <td style="padding-left: 8px;">
+                                        <b>
+                                            New Opportunity(0)&nbsp;
+                                        </b>
+                                    </td>
+                                    <td></td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td style="text-align: right;">
+                                    </td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            </aura:set>
+                        </aura:if>
+                        <tr style="font-weight: bold;background-color: #F3F3F3;">
+                            <td></td>
+                            <td style="padding-left: 8px;">
+                                <b>
+                                    Total
+                                </b>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.CurrentBusinessQty+v.summaryAtBackupObj.CurrentBusinessQty+v.summaryAtOptyObj.CurrentBusinessQty)}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.CurrentBusinessSales+v.summaryAtBackupObj.CurrentBusinessSales+v.summaryAtOptyObj.CurrentBusinessSales)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.CurrentBusinessTPT+v.summaryAtBackupObj.CurrentBusinessTPT+v.summaryAtOptyObj.CurrentBusinessTPT)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <aura:if isTrue="{!(v.summaryAtPrimaryObj.CurrentBusinessSales+v.summaryAtBackupObj.CurrentBusinessSales+v.summaryAtOptyObj.CurrentBusinessSales) != 0}">
+                                    <lightning:formattedNumber value="{!((v.summaryAtPrimaryObj.CurrentBusinessTPT+v.summaryAtBackupObj.CurrentBusinessTPT+v.summaryAtOptyObj.CurrentBusinessTPT)/(v.summaryAtPrimaryObj.CurrentBusinessSales+v.summaryAtBackupObj.CurrentBusinessSales+v.summaryAtOptyObj.CurrentBusinessSales))}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    <aura:set attribute="else">
+                                        <lightning:formattedNumber value="0" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.BidRFPQty+v.summaryAtBackupObj.BidRFPQty+v.summaryAtOptyObj.BidRFPQty)}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.BidRFPSales+v.summaryAtBackupObj.BidRFPSales+v.summaryAtOptyObj.BidRFPSales)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.BidRFPTPT+v.summaryAtBackupObj.BidRFPTPT+v.summaryAtOptyObj.BidRFPTPT)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <aura:if isTrue="{!(v.summaryAtPrimaryObj.BidRFPSales+v.summaryAtBackupObj.BidRFPSales+v.summaryAtOptyObj.BidRFPSales) != 0}">
+                                    <lightning:formattedNumber value="{!((v.summaryAtPrimaryObj.BidRFPTPT+v.summaryAtBackupObj.BidRFPTPT+v.summaryAtOptyObj.BidRFPTPT)/(v.summaryAtPrimaryObj.BidRFPSales+v.summaryAtBackupObj.BidRFPSales+v.summaryAtOptyObj.BidRFPSales))}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    <aura:set attribute="else">
+                                        <lightning:formattedNumber value="0" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.FinalRFPQty+v.summaryAtBackupObj.FinalRFPQty+v.summaryAtOptyObj.FinalRFPQty)}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.FinalRFPSales+v.summaryAtBackupObj.FinalRFPSales+v.summaryAtOptyObj.FinalRFPSales)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.FinalRFPTPT+v.summaryAtBackupObj.FinalRFPTPT+v.summaryAtOptyObj.FinalRFPTPT)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <aura:if isTrue="{!(v.summaryAtPrimaryObj.FinalRFPSales+v.summaryAtBackupObj.FinalRFPSales+v.summaryAtOptyObj.FinalRFPSales) != 0}">
+                                    <lightning:formattedNumber value="{!((v.summaryAtPrimaryObj.FinalRFPTPT+v.summaryAtBackupObj.FinalRFPTPT+v.summaryAtOptyObj.FinalRFPTPT)/(v.summaryAtPrimaryObj.FinalRFPSales+v.summaryAtBackupObj.FinalRFPSales+v.summaryAtOptyObj.FinalRFPSales))}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    <aura:set attribute="else">
+                                        <lightning:formattedNumber value="0" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.volumeVariance+v.summaryAtBackupObj.volumeVariance+v.summaryAtOptyObj.volumeVariance)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.priceVariance+v.summaryAtBackupObj.priceVariance+v.summaryAtOptyObj.priceVariance)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: right;">
+                                <lightning:formattedNumber value="{!(v.summaryAtPrimaryObj.totalVariance+v.summaryAtBackupObj.totalVariance+v.summaryAtOptyObj.totalVariance)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table><br/>
+            </div>
+        </div>
+    </aura:if>
+    <c:VisionSearchSelectBids showProducts="{!v.showSelectBidsPopup}" bidType="RFP Bids" selectedBids="{!v.selectedBids}" />
+</aura:component>

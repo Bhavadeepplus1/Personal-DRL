@@ -1,0 +1,320 @@
+<aura:component controller="Phoenix_EditIPAMemberLineCls" access="global">     
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>    
+    <aura:attribute name="showSaveCancelBtn" type="boolean"/>
+     <aura:attribute name="parentList" type="list" default="[]" description=""/>
+    <aura:attribute name="childList" type="list" default="[]"/>
+    <aura:attribute name="pickListMap" type="map"/>
+    <aura:attribute name="disabledChildField" type="boolean" default="true"/>
+     <aura:attribute name="showPriceMsg" type="boolean"/>
+    <aura:attribute name="sNo" type="string" />
+    <aura:attribute name="lineItemId" type="String" />
+     <aura:attribute name="BidTypeVal" type="string" />
+	 <aura:attribute name="singleRec" type="sobject"/>
+     <aura:attribute name="isSpinner" type="boolean" default="false" />
+    <aura:attribute name="GPOEditMode" type="boolean" default="false" />
+     <aura:attribute name="DEAEditMode" type="boolean" default="false" />
+     <aura:attribute name="HINEditMode" type="boolean" default="false" />
+     <aura:attribute name="GLNEditMode" type="boolean" default="false" />
+    <aura:attribute name="WholesalerEditMode" type="boolean" default="false" />
+     <aura:attribute name="LocationEditMode" type="boolean" default="false" />
+     <aura:attribute name="GPOvalues" type="list" />
+  
+    <aura:attribute name="parentFieldLabel" type="string" />
+    <aura:attribute name="childFieldLabel" type="string"/>
+    <aura:attribute name="loggedInUserName" type="string" default=""/>
+    <aura:attribute name="BidAprrovalStatus" type="string" default=""/>
+    <aura:attribute name="isContractsApprovePerson" type="string" />
+    <aura:registerEvent name="lightningEvent" type="c:Phoenix_EditIPALinesEvt"/>
+    
+    <aura:if isTrue="{!v.isSpinner}">
+        <div class="">
+            <lightning:spinner alternativeText="Loading" variant="brand" />
+        </div>
+    </aura:if>
+     <tr>
+        <td scope="row">
+              <aura:if isTrue="{!v.BidAprrovalStatus=='Draft'}">
+            <a name="{!v.lineItemId}" onclick="{!c.deleteLineItem}">
+                <lightning:icon iconName="utility:delete" alternativeText="delete" size="x-small" />
+            </a>
+            </aura:if>
+        </td>
+       
+         <td scope="row"> <p><lightning:formattedDateTime value="{!v.singleRec.Phoenix_RCA_Change_Date__c}"/></p></td>
+
+         <td scope="row" >
+            <span class="slds-grid slds-grid_align-spread">
+                <span class="" title="Customer">
+                    <a href="{!'/'+v.singleRec.Phoenix_Customer__c}" target="_blank">{!v.singleRec.Phoenix_Customer__r.Name}</a>
+                    
+                </span>
+            </span>
+        </td>
+         <td scope="row">{!v.singleRec.Phoenix_Street_Name__c}</td>
+           <td scope="row">{!v.singleRec.Phoenix_City__c}</td>
+           <td scope="row">{!v.singleRec.Phoenix_State__c}</td>
+           <td scope="row">{!v.singleRec.Phoenix_Zip__c}</td>
+          <aura:if isTrue="{!v.BidAprrovalStatus=='Draft'}">
+        <td scope="row" ondblclick="{!c.inlineEditDEA}" >
+                <span class="slds-grid slds-grid_align-spread">
+                    <!-- show input and output section based on boolean flag -->
+                    <aura:if isTrue="{!v.DEAEditMode == false}">
+                        <span class=""  >{!v.singleRec.Phoenix_DEA__c}</span>
+                        <button onclick="{!c.inlineEditDEA}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width:180px !important;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputText class="slds-input inputWidth" 
+                                                            labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex" 
+                                                            aura:id="inputDEAId"   value="{!v.singleRec.Phoenix_DEA__c}"  
+                                                            blur="{!c.closeDEABox}" 
+                                                           >
+                                           
+                                          </ui:inputText>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>  
+             <aura:set attribute="else">
+                  <td scope="row">{!v.singleRec.Phoenix_DEA__c}</td>
+             </aura:set>
+         </aura:if>
+         <aura:if isTrue="{!v.BidAprrovalStatus=='Draft'}">
+        <td scope="row" ondblclick="{!c.inlineEditHIN}" >
+                <span class="slds-grid slds-grid_align-spread">
+                    <!-- show input and output section based on boolean flag -->
+                    <aura:if isTrue="{!v.HINEditMode == false}">
+                        <span class=""  >{!v.singleRec.Phoenix_HIN__c}</span>
+                        <button onclick="{!c.inlineEditHIN}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width:180px !important;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputText class="slds-input inputWidth" 
+                                                            labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex" 
+                                                            aura:id="inputHINId"   value="{!v.singleRec.Phoenix_HIN__c}"  
+                                                            blur="{!c.closeHINBox}" 
+                                                           >
+                                           
+                                          </ui:inputText>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>  
+             <aura:set attribute="else">
+                  <td scope="row">{!v.singleRec.Phoenix_HIN__c}</td>
+             </aura:set>
+         </aura:if>
+         <aura:if isTrue="{!v.BidAprrovalStatus=='Draft'}">
+        <td scope="row" ondblclick="{!c.inlineEditGLN}" >
+                <span class="slds-grid slds-grid_align-spread">
+                    <!-- show input and output section based on boolean flag -->
+                    <aura:if isTrue="{!v.GLNEditMode == false}">
+                        <span class=""  >{!v.singleRec.Phoenix_GLN__c}</span>
+                        <button onclick="{!c.inlineEditGLN}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width:180px !important;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputText class="slds-input inputWidth" 
+                                                            labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex" 
+                                                            aura:id="inputGLNId"   value="{!v.singleRec.Phoenix_GLN__c}"  
+                                                            blur="{!c.closeGLNBox}" 
+                                                           >
+                                           
+                                          </ui:inputText>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>  
+             <aura:set attribute="else">
+                  <td>{!v.singleRec.Phoenix_GLN__c}</td>
+             </aura:set>
+         </aura:if>
+         <aura:if isTrue="{!v.BidAprrovalStatus=='Draft'}">
+        <td scope="row" ondblclick="{!c.inlineEditGPO}" >
+                <span class="slds-grid slds-grid_align-spread">
+                    <!-- show input and output section based on boolean flag -->
+                    <aura:if isTrue="{!v.GPOEditMode == false}">
+                        <span class=""  >{!v.singleRec.Phoenix_New_GPO__c}</span>
+                        <button onclick="{!c.inlineEditGPO}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width:180px !important;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputSelect class="slds-input inputWidth" 
+                                                            labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex" 
+                                                            aura:id="inputGPOId"   value="{!v.singleRec.Phoenix_New_GPO__c}"  
+                                                            blur="{!c.closeGPOBox}" 
+                                                           >
+                                            <ui:inputSelectOption text="--None--" label="--None--"/>
+                                        <aura:iteration items="{!v.GPOvalues}" var="gpo">
+                                            <ui:inputSelectOption text="{!gpo}" label="{!gpo}" />
+                                       </aura:iteration>
+                                          </ui:inputSelect>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>  
+             <aura:set attribute="else">
+                  <td scope="row">{!v.singleRec.Phoenix_New_GPO__c}</td>
+             </aura:set>
+         </aura:if>
+      
+           <aura:if isTrue="{!v.BidAprrovalStatus=='Draft'}">
+      <td scope="row" ondblclick="{!c.inlineEditWholesaler}" >
+                <span class="slds-grid slds-grid_align-spread">
+                    <!-- show input and output section based on boolean flag -->
+                    <aura:if isTrue="{!v.WholesalerEditMode == false}">
+                        <span class=""  >{!v.singleRec.Phoenix_Wholesaler__c}</span>
+                        <button onclick="{!c.inlineEditWholesaler}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width:150px !important;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                             <ui:inputSelect class="slds-input inputWidth" 
+                                                             labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex" 
+                                                             aura:id="inputWholesalerId"   
+                                                             value="{!v.singleRec.Phoenix_Wholesaler__c}"  
+                                                             blur="{!c.closeWholesalerBox}" 
+                                                             change="{!c.parentFieldChange}">   
+                                           
+                                        <aura:iteration items="{!v.parentList}" var="gpo">
+                                            <ui:inputSelectOption text="{!gpo}" label="{!gpo}" />
+                                       </aura:iteration>
+                                          </ui:inputSelect>
+                                           
+                                                             
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+           <td scope="row" ondblclick="{!c.inlineEditLocation}" >
+                <span class="slds-grid slds-grid_align-spread">
+                    <!-- show input and output section based on boolean flag -->
+                    <aura:if isTrue="{!v.LocationEditMode == false}">
+                        <span class=""  >{!v.singleRec.Phoenix_Wholesaler_Location__c}</span>
+                        <button onclick="{!c.inlineEditLocation}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width:140px !important;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                             <ui:inputSelect class="slds-input inputWidth" 
+                                                             labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex" 
+                                                             aura:id="inputLocationId"   
+                                                             value="{!v.singleRec.Phoenix_Wholesaler_Location__c}"  
+                                                             blur="{!c.closeLocationBox}" 
+                                                             >   
+                                               
+                                           
+                                        <aura:iteration items="{!v.childList}" var="gpo">
+                                            <ui:inputSelectOption text="{!gpo}" label="{!gpo}" />
+                                       </aura:iteration>
+                                          </ui:inputSelect>
+                                             <!--disabled="{!v.disabledChildField}"-->
+                                                             
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+    		 <aura:set attribute="else">
+                  <td scope="row">{!v.singleRec.Phoenix_Wholesaler__c}</td>
+                  <td scope="row">{!v.singleRec.Phoenix_Wholesaler_Location__c}</td>
+             </aura:set>
+         </aura:if>
+
+      
+         
+       
+                 <td scope="row" >
+            <span class="slds-grid slds-grid_align-spread">
+                <span class="" title="Parent IPA Account">
+                    <a href="{!'/'+v.singleRec.Phoenix_Parent_IPA_Customer__c}" target="_blank">{!v.singleRec.Phoenix_Parent_IPA_Customer__r.Name}</a>
+                    
+                </span>
+            </span>
+        </td>
+          <td scope="row" >
+            <span class="slds-grid slds-grid_align-spread">
+                <span class="" title="Contract">
+                    <a href="{!'/'+v.singleRec.Phoenix_RCA_Agreement__c}" target="_blank">{!v.singleRec.Phoenix_RCA_Agreement__r.Name}</a>
+                    
+                </span>
+            </span>
+        </td>
+                 <td scope="row" >
+            <span class="slds-grid slds-grid_align-spread">
+                <span class="" title="Contact">
+                    <a href="{!'/'+v.singleRec.Phoenix_Contact__c}" target="_blank">{!v.singleRec.Phoenix_Contact__r.Name}</a>
+                    
+                </span>
+            </span>
+        </td>
+        <td scope="row">{!v.singleRec.Phoenix_Contact_Email__c}</td>
+         <td scope="row">{!v.singleRec.Phoenix_Contact_Phone__c}</td>
+         <td scope="row">{!v.singleRec.Phoenix_Contact_Phone_External__c}</td>
+         
+     
+    		
+      
+         
+         
+       
+      
+    </tr>
+</aura:component>

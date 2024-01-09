@@ -1,0 +1,217 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="singleRec" type="Phoenix_NewProduct_WAC_Pricing_LineItems__c[]" />
+    <aura:attribute name="WACEditMode" type="boolean" default="false" />
+    <aura:attribute name="BrandWACEditMode" type="boolean" default="false" />
+    <aura:attribute name="LowestPriceEditMode" type="boolean" default="false" />
+    <aura:attribute name="TPTGMEditMode" type="boolean" default="false" />
+    <aura:attribute name="inputWAC" type="String" />
+    <aura:attribute name="inputBrandWAC" type="String" />
+    <aura:attribute name="ApprovalStatus" type="String" />   
+    <aura:attribute name="rowIndex" type="String"/>
+    <aura:attribute name="showErrorClass" type="boolean" default="false" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <aura:registerEvent name="WACChangeEvent" type="c:WACValueChangeEvent"/>
+    <aura:registerEvent name="DeleteRowEvt" type="c:DeleteRowEvt"/> 
+    
+    <tr>
+        <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+            <td scope="row" style="text-align: center; padding-left: 4px;">
+                <lightning:button variant="neutral" iconName="utility:delete" iconPosition="left" onclick="{!c.removeRow}"/>
+            </td>
+        </aura:if>
+      
+        <aura:if isTrue="{!v.singleRec.Phoenix_Material_Number__c != ''}">
+            <th scope="row">{!v.singleRec.Phoenix_Material_Number__c}</th>
+            <aura:set attribute="else">
+                <th></th>
+            </aura:set>
+        </aura:if>
+        <aura:if isTrue="{!v.singleRec.Phoenix_NDC_11__c != ''}">
+            <th scope="row">{!v.singleRec.Phoenix_NDC_11__c}</th>
+            <aura:set attribute="else">
+                <th></th>
+            </aura:set>
+        </aura:if>
+        <aura:if isTrue="{!v.singleRec.ProductName != ''}">
+            <td scope="row">
+                <span class="slds-grid slds-grid_align-spread">
+                    <span class="" title="Product">
+                        <lightning:formattedUrl value="{!'/' + v.singleRec.Phoenix_Product__c}"  label="{!v.singleRec.ProductName}" target="_blank" />
+                    </span>
+                </span>
+            </td>
+            <aura:set attribute="else">
+                <td></td>
+            </aura:set>
+        </aura:if>
+        <aura:if isTrue="{!v.singleRec.Phoenix_Pkg_Size__c != ''}">
+            <td>{!v.singleRec.Phoenix_Pkg_Size__c}</td>
+            <aura:set attribute="else">
+                <td></td>
+            </aura:set>
+        </aura:if>
+        <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+            <td ondblclick="{!c.inlineEditWAC}" aura:id="inlineInputWAC">
+                <span class="slds-grid slds-grid_align-spread customCss">
+                    <aura:if isTrue="{!v.WACEditMode == false}">
+                        <span style="text-align: right;">
+                            <lightning:formattedNumber value="{!v.singleRec.Phoenix_WAC__c}" style="currency" currencyCode="USD" />
+                        </span>
+                        <button onclick="{!c.inlineEditWAC}"
+                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                tabindex="0">
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <aura:set attribute="else">
+                            <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                     style="position: absolute; top: 0px;width:max-content;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputCurrency class="slds-input inputWidth"
+                                                              labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                              aura:id="inputWAC" blur="{!c.closeWACBox}"
+                                                              change="{!c.onWACChange}"
+                                                              value="{!v.singleRec.Phoenix_WAC__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+            <aura:set attribute="else">
+                <td style="text-align: right;">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_WAC__c}" style="currency" currencyCode="USD" />
+                </td>
+            </aura:set>
+        </aura:if>
+        <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+            <td ondblclick="{!c.inlineEditBrandWAC}" aura:id="inlineInputBrandWAC">
+                <span class="slds-grid slds-grid_align-spread customCss">
+                    <aura:if isTrue="{!v.BrandWACEditMode == false}">
+                        <span style="text-align: right;">
+                            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Brand_WAC__c}" style="currency" currencyCode="USD" />
+                        </span>
+                        <button onclick="{!c.inlineEditBrandWAC}"
+                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                tabindex="0">
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <aura:set attribute="else">
+                            <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                     style="position: absolute; top: 0px;width:max-content;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputCurrency class="slds-input inputWidth"
+                                                              labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                              aura:id="inputBrandWAC" blur="{!c.closeBrandWACBox}"
+                                                              change="{!c.onBrandWACChange}"
+                                                              value="{!v.singleRec.Phoenix_Brand_WAC__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+            <aura:set attribute="else">
+                <td style="text-align: right;">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Brand_WAC__c}" style="currency" currencyCode="USD" />
+                </td>
+            </aura:set>
+        </aura:if>
+       <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+            <td ondblclick="{!c.inlineEditLowestPrice}" aura:id="inlineInputLowestPrice" style="text-align: right;">
+                <span class="slds-grid slds-grid_align-spread customCss">
+                    <aura:if isTrue="{!v.LowestPriceEditMode == false}">
+                        <span>
+                            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Lowest_Price__c}" style="currency" currencyCode="USD" />
+                        </span>
+                        <button onclick="{!c.inlineEditLowestPrice}"
+                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                tabindex="0">
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <aura:set attribute="else">
+                            <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                     style="position: absolute; top: 0px;width:max-content;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputCurrency class="slds-input inputWidth"
+                                                              labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                              aura:id="inputLowestPrice" blur="{!c.closeLowestPriceBox}"
+                                                              change="{!c.onLowestPriceChange}"
+                                                              value="{!v.singleRec.Phoenix_Lowest_Price__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+           <aura:set attribute="else">
+               <td style="text-align: right;">
+                   <lightning:formattedNumber value="{!v.singleRec.Phoenix_Lowest_Price__c}" style="currency" currencyCode="USD" />
+               </td>
+           </aura:set>
+        </aura:if>
+        <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+            <td ondblclick="{!c.inlineEditTPTGM}" aura:id="inlineInputTPTGM" style="text-align: right;">
+                <span class="slds-grid slds-grid_align-spread customCss">
+                    <aura:if isTrue="{!v.TPTGMEditMode == false}">
+                        <span>
+                            <lightning:formattedNumber value="{!v.singleRec.TPT_GM}" style="percent" maximumFractionDigits="2"/>
+                        </span>
+                        <button onclick="{!c.inlineEditTPTGM}"
+                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                tabindex="0">
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <aura:set attribute="else">
+                            <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                     style="position: absolute; top: 0px;width:max-content;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputCurrency class="slds-input inputWidth"
+                                                              labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                              aura:id="inputTPTGM" blur="{!c.closeTPTGMBox}"
+                                                              change="{!c.onTPTGMChange}"
+                                                              value="{!v.singleRec.Phoenix_TPT_GM__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+            <aura:set attribute="else">
+                <td style="text-align: right;">
+                    <lightning:formattedNumber value="{!v.singleRec.TPT_GM}" style="percent" maximumFractionDigits="2"/>
+                </td>
+            </aura:set>
+        </aura:if>
+          <aura:if isTrue="{!v.singleRec.Name != ''}">
+            <th scope="row">
+                <span class="slds-grid slds-grid_align-spread">
+                    <lightning:formattedUrl value="{!'/' + v.singleRec.Id}"  label="{!v.singleRec.Name}" target="_blank" />
+                </span>
+            </th>
+            <aura:set attribute="else">
+                <th></th>
+            </aura:set>
+        </aura:if>
+    </tr>
+</aura:component>

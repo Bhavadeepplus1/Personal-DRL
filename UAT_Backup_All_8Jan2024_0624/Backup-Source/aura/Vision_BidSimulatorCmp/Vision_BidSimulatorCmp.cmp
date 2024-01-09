@@ -1,0 +1,492 @@
+<aura:component controller="Vision_BidSimulatorController" 
+                access="global">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="optyObj" type="Object" />
+    <aura:attribute name="accObj" type="Object" />
+    <aura:attribute name="accId" type="String" />
+    <aura:attribute name="prodObj" type="Object" />
+    <aura:attribute name="optyId" type="String" />
+    <aura:attribute name="prodId" type="String" />
+    <aura:attribute name="bidLineData" type="object"/>
+    <aura:attribute name="bidData" type="object"/>
+    <aura:attribute name="scenarioList" type="list"/>
+    <aura:attribute name="showList" type="boolean" default="true"/>
+    <aura:attribute name="showBuilder" type="boolean" default="false"/>
+    <aura:attribute name="scenarioTypeList" type="list"/>
+    <aura:attribute name="selectedScenario" type="String" default="Proposed Price Fine Tuning"/>
+    <aura:attribute name="showScenarioDetails" type="boolean" default="false"/>
+    <aura:attribute name="wifVariable" type="String" default="Price Per Unit ($)"/>
+    <aura:attribute name="wifCurrentValue" type="String"/>
+    <aura:attribute name="changeVal" type="Integer"/>
+    <aura:attribute name="wifProposedValue" type="String"/>
+    <aura:attribute name="simulationData" type="object"/>
+    <aura:attribute name="affectedItems" type="list"/>
+    <aura:attribute name="showConstantFacts" type="boolean" default="false"/>
+    <aura:attribute name="showBidSimulator" type="boolean"/>
+    <aura:attribute name="changePercent" type="string" default="1"/>
+    <aura:attribute name="showPreCalcs" type="boolean" default="false"/>
+    <aura:attribute name="preCalcList" type="list"/>
+    
+    <aura:attribute name="selectedRowInPreCalc" type="Integer"/>
+    <aura:attribute name="timer" type="Integer"/>
+    <aura:attribute name="sNum" type="String"/>
+    <aura:attribute name="actualWac" type="string"/>
+    
+    <aura:registerEvent name="Vision_UpdateMarketingValuesInBid" type="c:Vision_UpdateMarketingValuesInBid"/>
+    
+    
+    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+        <div class="slds-modal__container" style="width:100% ! important;max-width: 110rem!important;max-height:100rem!important;">
+            <header class="slds-modal__header">
+                <lightning:buttonIcon iconName="utility:close"
+                                      onclick="{!c.closeBidSim}"
+                                      alternativeText="Close"
+                                      variant="bare-inverse"
+                                      class="slds-modal__close"/>
+                <h2 class="slds-text-heading_medium slds-hyphenate"><b>Bid Simulator</b></h2>
+            </header>
+            <div class="slds-modal__content slds-p-around_medium test" >
+                <div class="">
+                    <div class="slds-box" style="background-color:white;padding:0px;">
+                        <div style="padding:10px;" class="mainDivSection">
+                            <div style="font-weight:bold;">
+                                <h1 class="slds-text-heading_medium">{!v.accObj.Name}:&nbsp;{!v.prodObj.Name}</h1>
+                            </div>
+                            
+                            <aura:if isTrue="{!v.showScenarioDetails}">
+                                <span class="slds-text-longform constFactSection" style="{!v.showConstantFacts ? 'width:300px;' : ''}">
+                                    <h3 class="slds-text-heading_medium" style="cursor:pointer;background-color:#4b2a91; color:white;padding:5px;margin:0px;" onclick="{!c.openConstFacts}">☰ Constant Factors</h3>
+                                    <aura:if isTrue="{!v.showConstantFacts}">
+                                        <div class="constContent" style="">
+                                            <div class="slds-grid" style="border-bottom:1px solid;padding:5px;">
+                                                <div class="slds-col" style="text-align:left;width:150px;">
+                                                    WAC
+                                                </div>
+                                                <div class="slds-col slds-grid_align-spread" style="justify-content: right;display: flex;width:150px;">
+                                                    <lightning:input type="number" formatter="currency" step="0.01"
+                                                                     variant="label-hidden" value="{!v.bidLineData.Phoenix_WAC1__c}"/>
+                                                    
+                                                    <!-- <ui:outputCurrency value="{!v.bidLineData.Phoenix_WAC1__c}" format="$##,###,###,###.##"/> -->
+                                                </div>
+                                            </div>
+                                            <div class="slds-grid" style="border-bottom:1px solid;padding:5px;">
+                                                <div class="slds-col" style="text-align:left;width:150px;">
+                                                    Current Admin Fee %
+                                                </div>
+                                                <div class="slds-col" style="text-align:right;width:150px;">
+                                                    <aura:if isTrue="{!v.bidLineData.Phoenix_Current_Admin_Fee__c != null}">
+                                                        <lightning:input type="number" formatter="percent-fixed" step="0.01"
+                                                                         variant="label-hidden" value="{!v.bidLineData.Phoenix_Current_Admin_Fee__c}"/>
+                                                        <aura:set attribute="else">
+                                                            <lightning:input type="number" formatter="percent-fixed" step="0.01"
+                                                                             variant="label-hidden" value="{!v.accObj.Phoenix_Fee__c}"/>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </div>
+                                            </div>
+                                            <div class="slds-grid" style="border-bottom:1px solid;padding:5px;">
+                                                <div class="slds-col" style="text-align:left;width:150px;">
+                                                    Rebate %
+                                                </div>
+                                                <div class="slds-col" style="text-align:right;width:150px;">
+                                                    <aura:if isTrue="{!v.bidLineData.Phoenix_Proposed_Current_Rebate__c != null}">
+                                                        <lightning:input type="number" formatter="percent-fixed" step="0.01"
+                                                                         variant="label-hidden" value="{!v.bidLineData.Phoenix_Proposed_Current_Rebate__c}"/>
+                                                        <aura:set attribute="else">
+                                                            <lightning:input type="number" formatter="percent-fixed" step="0.01"
+                                                                             variant="label-hidden" value="{!v.accObj.Phoenix_Rebates__c}"/>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </div>
+                                            </div>
+                                            <div class="slds-grid" style="border-bottom:1px solid;padding:5px;">
+                                                <div class="slds-col" style="text-align:left;width:150px;">
+                                                    VIP %
+                                                </div>
+                                                <div class="slds-col" style="text-align:right;width:150px;">
+                                                    <aura:if isTrue="{!v.bidLineData.Phoenix_Proposed_Est_VIP__c != null}">
+                                                        <lightning:input type="number" formatter="percent-fixed" step="0.01"
+                                                                         variant="label-hidden" value="{!v.bidLineData.Phoenix_Proposed_Est_VIP__c}"/>
+                                                        <aura:set attribute="else">
+                                                            <lightning:input type="number" formatter="percent-fixed" step="0.01"
+                                                                             variant="label-hidden" value="{!v.accObj.Phoenix_VIP__c}"/>   
+                                                        </aura:set>
+                                                    </aura:if>   
+                                                </div>
+                                            </div>
+                                            <div class="slds-grid" style="border-bottom:1px solid;padding:5px;">
+                                                <div class="slds-col" style="text-align:left;width:150px;">
+                                                    Local VIP %
+                                                </div>
+                                                <div class="slds-col" style="text-align:right;width:150px;">
+                                                    <aura:if isTrue="{!v.bidLineData.Phoenix_Local_VIP__c != null}">
+                                                        <lightning:input type="number" formatter="percent-fixed" step="0.01"
+                                                                         variant="label-hidden" value="{!v.bidLineData.Phoenix_Local_VIP__c}"/>
+                                                        <aura:set attribute="else">
+                                                            <lightning:input type="number" formatter="percent-fixed" step="0.01"
+                                                                             variant="label-hidden" value="{!v.accObj.Phoenix_Local_VIP__c}"/> 
+                                                        </aura:set>
+                                                    </aura:if>   
+                                                </div>
+                                            </div>
+                                            <div class="slds-grid" style="border-bottom:1px solid;padding:5px;">
+                                                <div class="slds-col" style="text-align:left;width:150px;">
+                                                    Group VIP %
+                                                </div>
+                                                <div class="slds-col" style="text-align:right;width:150px;">
+                                                    <lightning:input type="number" formatter="percent-fixed" step="0.01"
+                                                                     variant="label-hidden" value="{!v.accObj.Phoenix_Wbad_VIR__c}"/>
+                                                </div>
+                                            </div>
+                                            <div class="slds-grid" style="border-bottom:1px solid;padding:5px;">
+                                                <div class="slds-col" style="text-align:left;width:150px;">
+                                                    Cash Discount %
+                                                </div>
+                                                <div class="slds-col" style="text-align:right;width:150px;">
+                                                    <aura:if isTrue="{!v.bidLineData.Phoenix_Cash_Discount_NPR__c != null}">
+                                                        <lightning:input type="number" formatter="percent-fixed" step="0.01"
+                                                                         variant="label-hidden" value="{!v.bidLineData.Phoenix_Cash_Discount_NPR__c}"/>
+                                                        <aura:set attribute="else">
+                                                            <lightning:input type="number" formatter="percent-fixed" step="0.01"
+                                                                             variant="label-hidden" value="{!v.accObj.Phoenix_Cash_Discount__c}"/> 
+                                                        </aura:set>
+                                                    </aura:if>  
+                                                </div>
+                                            </div>
+                                            <div class="slds-grid" style="border-bottom:1px solid;padding:5px;">
+                                                <div class="slds-col" style="text-align:left;width:150px;">
+                                                    Order Analytics Fees %
+                                                </div>
+                                                <div class="slds-col" style="text-align:right;width:150px;">
+                                                    <lightning:input type="number" formatter="percent-fixed" step="0.01"
+                                                                     variant="label-hidden" value="{!v.accObj.Phoenix_Order_Analytics_Fee__c}"/> 
+                                                </div>
+                                            </div>
+                                            <div style="text-align:right;">
+                                                &nbsp;&nbsp;<button class="slds-button slds-button_icon slds-button_icon-border-filled" title="save Constraint to SKUs">
+                                                <lightning:icon iconName="utility:check" size="x-small" onclick="{!c.applyTheChange}"/>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </aura:if>
+                                </span>
+                            </aura:if>
+                            
+                            
+                            <aura:if isTrue="{!v.showList}">
+                                <aura:if isTrue="{!v.scenarioList.length>0}">
+                                    <div>
+                                        
+                                    </div>            
+                                    <aura:set attribute="else">
+                                        <div style="text-align:right;">
+                                            <lightning:button variant="brand" onclick="{!c.createNewScenario}">Create</lightning:button>
+                                        </div>
+                                        <div style="text-align:center;">
+                                            <div class="slds-illustration">
+                                                <img src="/img/chatter/Desert.svg" class="slds-illustration__svg" alt="Desert" style="height:400px;"/>
+                                            </div>
+                                        </div>
+                                        <div class="slds-text-longform" style="margin-top:20px;">
+                                            <center>
+                                                <h3 class="slds-text-heading_medium">There are no scenarios found. Please click on Create to Start with this Product.</h3>
+                                            </center>
+                                        </div>
+                                    </aura:set>
+                                </aura:if>
+                            </aura:if>
+                            
+                            
+                            <aura:if isTrue="{!v.showBuilder}">
+                                <div class="slds-text-longform">
+                                    <center>
+                                        <h3 class="slds-text-heading_medium">Scenario Builder</h3>
+                                    </center>
+                                </div>
+                                <div class="slds-grid">
+                                    <div class="slds-col" style="font-weight:bold;margin-bottom:15px;">
+                                        <h1 class="slds-text-heading_small">Scenario Type:</h1>
+                                    </div>  
+                                    <div class="slds-col">
+                                        <div style="text-align:right;">
+                                            <lightning:button onclick="{!c.goBackToList}">Back</lightning:button>
+                                            <lightning:button variant="brand" onclick="{!c.pullPrecalcList}">Next</lightning:button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <aura:iteration items="{!v.scenarioTypeList}" var="st">
+                                        <span class="radioButtonSpan">
+                                            <input type="radio" checked="{!st == v.selectedScenario ? true : false}" variant="label-hidden"
+                                                   id="{!st}" onchange="{!c.updateScenarioChanged}"/>&nbsp;<b>{!st}</b>
+                                        </span>
+                                    </aura:iteration>
+                                    <!-- <lightning:radioGroup label="Scenario Type" options="{! v.scenarioTypeList }"  
+                                                          value="{! v.selectedScenario }" class="lableInput"  
+                                                          type="radio" style="display:inline-block !important"/> -->
+                                </div>
+                                <div class="slds-illustration" style="margin-top:25px;">
+                                    <img src="/img/chatter/OpenRoad.svg" class="slds-illustration__svg" alt="OpenRoad" style="height:350px;"/>
+                                </div>
+                                <div class="slds-text-longform" style="margin-top:20px;">
+                                    <center>
+                                        <h3 class="slds-text-heading_medium">Start Constructing your scenario by selecting a specific type.</h3>
+                                    </center>
+                                </div>
+                                
+                            </aura:if>
+                            
+                            
+                            <aura:if isTrue="{!v.showPreCalcs}">
+                                <div class="slds-text-longform" style="padding:10px;">
+                                    <center>
+                                        <h3 class="slds-text-heading_medium">Scenario Builder</h3>
+                                    </center>
+                                </div>
+                                <div class="slds-grid" style="margin:10px;width:1250px">
+                                    <div class="slds-col">
+                                        <div class="slds-grid">
+                                            <div class="slds-col" style="padding-top:5px;font-size:16px;">
+                                                <span style="font-weight:bold;color:green;">Current Price: <ui:outputCurrency value="{!v.wifCurrentValue}" format="$##,###,###,###.##"/> &nbsp;
+                                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Lowest Price SKU ($) : <ui:outputCurrency value="{!v.bidLineData.Phoenix_Lowest_Price_SKU__c}" format="$##,###,###,###.##"/> 
+                                                </span>
+                                            </div>
+                                            <div class="slds-col" style="">
+                                                <div style="" class="slds-grid">
+                                                    <div class="slds-col" style="padding-top:5px;text-align:right;">
+                                                        <b>Change Value % :</b>
+                                                    </div>
+                                                    <div class="slds-col" style="width:50px;">
+                                                        <lightning:select label="Change Percentage"
+                                                                          onchange="{!c.changePercentUpdated}" 
+                                                                          value="{!v.changePercent}">
+                                                            <aura:if isTrue="{!v.changePercent != 0.5}" >
+                                                                <option value="0.5">0.5</option>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!v.changePercent != 1}" >
+                                                                <option value="1">1</option>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!v.changePercent != 1.5}" >
+                                                                <option value="1.5">1.5</option>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!v.changePercent != 2}" >
+                                                                <option value="2">2</option>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!v.changePercent != 2.5}" >
+                                                                <option value="2.5">2.5</option>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!v.changePercent != 3}" >
+                                                                <option value="3">3</option>
+                                                            </aura:if>
+                                                        </lightning:select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col" style="text-align:right;">
+                                        <lightning:button variant="brand" onclick="{!c.editSelectedPreCalc}" disabled="{!!v.selectedRowInPreCalc}">Edit Selected</lightning:button>
+                                        <lightning:button variant="brand" onclick="{!c.saveToBid}" disabled="{!!v.selectedRowInPreCalc}">Save Selected to Bid</lightning:button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <table style="border: none;" class="whatIfTable">
+                                        <aura:iteration items="{!v.preCalcList}" var="item" indexVar="ind">
+                                            <tr>
+                                                <aura:iteration items="{!item.eachItems}" var="eachTd">
+                                                    <td style="width:250px;text-align:center;">
+                                                        <aura:if isTrue="{!eachTd.isradioButton}">
+                                                            <input type="radio" checked="{!eachTd.isSelectedButton}" variant="label-hidden"
+                                                                   id="{!ind}" onchange="{!c.updateSelectedValue}"/>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!eachTd.isLabel}">
+                                                            <b>{!eachTd.value}</b>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!eachTd.isCurrency}">
+                                                            <span style="{!eachTd.showRed ? 'color:red;' : ''}"><ui:outputCurrency value="{!eachTd.value}" format="$##,###,###,###.##"/></span>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!eachTd.isPercent}">
+                                                            <lightning:formattedNumber value="{!eachTd.value/100}" style="percent"
+                                                                                       minimumFractionDigits="2" maximumFractionDigits="2"/>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!eachTd.isChangeFactor}">
+                                                            <div class="slds-grid">
+                                                                <div class="slds-col">
+                                                                    <lightning:input variant="label-hidden" value="{!eachTd.value}" formatter="percent-fixed"
+                                                                                     style="width:80px;" class="changeValue" type="number" disabled="true"/>
+                                                                </div>
+                                                                <div class="slds-col">
+                                                                    <aura:if isTrue="{!eachTd.isDown}">
+                                                                        <lightning:icon class="showRed" iconName="utility:arrowdown" size="x-small" title="down"/>
+                                                                        <aura:set attribute="else">
+                                                                            <lightning:icon class="showGreen" iconName="utility:arrowup" size="x-small" title="up"/>
+                                                                        </aura:set>
+                                                                    </aura:if>
+                                                                </div>
+                                                            </div>
+                                                        </aura:if>
+                                                    </td>
+                                                </aura:iteration>
+                                            </tr>
+                                        </aura:iteration>
+                                    </table>
+                                </div>
+                            </aura:if>
+                            
+                            
+                            <aura:if isTrue="{!v.showScenarioDetails}">
+                                <div class="slds-text-longform" style="padding:20px;">
+                                    <center>
+                                        <h3 class="slds-text-heading_medium">Scenario Builder</h3>
+                                    </center>
+                                </div>
+                                <div class="slds-text-longform">
+                                    <h3 class="slds-text-heading_medium">What If Factor</h3>
+                                </div>
+                                <div class="slds-box slds-grid slds-region_narrow" style="font-weight:bold;">
+                                    <div class="slds-col" style="padding-right:30px;">
+                                        <table style="border: none;" class="whatIfTable">
+                                            <tr>
+                                                <td style="width:100px;">Variable:</td>
+                                                <td>{!v.wifVariable}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Current:</td>
+                                                <td><ui:outputCurrency value="{!v.wifCurrentValue}" format="$##,###,###,###.##"/></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Change:</td>
+                                                <td>
+                                                    <div class="slds-grid" style="width:200px;">
+                                                        <div class="slds-col" style="text-align:right !important;padding-right:10px;">
+                                                            <lightning:icon iconName="utility:dash" size="x-small" style="cursor:pointer;"
+                                                                            title="down" onclick="{!c.downTheChange}"/>
+                                                        </div>
+                                                        <div class="slds-col">
+                                                            <lightning:input variant="label-hidden" value="{!v.changeVal}" formatter="percent-fixed"
+                                                                             style="width:80px;" class="changeValue" type="number"
+                                                                             onchange="{!c.changeValUpdated}"/>
+                                                        </div>
+                                                        <div class="slds-col" style="text-align:left !important;">
+                                                            <lightning:icon iconName="utility:add" size="x-small" title="rise" 
+                                                                            style="cursor:pointer;" onclick="{!c.raiseTheChange}"/>
+                                                        </div>
+                                                        <div class="slds-col">
+                                                            <aura:if isTrue="{!lessthan(v.wifProposedValue,v.wifCurrentValue)}">
+                                                                <lightning:icon class="showRed" iconName="utility:arrowdown" size="x-small" title="down"/>
+                                                                <aura:set attribute="else">
+                                                                    <lightning:icon class="showGreen" iconName="utility:arrowup" size="x-small" title="up"/>
+                                                                </aura:set>
+                                                            </aura:if>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Proposed:</td>
+                                                <td><ui:outputCurrency value="{!v.wifProposedValue}" format="$##,###,###,###.##"/></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="slds-col" style="padding-right:30px;padding-left:30px;">
+                                        <table style="border: none;font-weight:bold;" class="whatIfTable">
+                                            <tr>
+                                                <th class="slds-truncate slds-cell-wrap">Current Bottles</th>
+                                                <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.bidLineData.Phoenix_Total_Selling_Unit__c}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="slds-truncate slds-cell-wrap">Current Sales(Finance)</th>
+                                                <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.bidLineData.Finance_Current_Sales__c != null ? v.bidLineData.Finance_Current_Sales__c : v.bidLineData.Phoenix_Current_Sales_Finance__c}"  style="currency" minimumFractionDigits="0" maximumFractionDigits="0" currencyCode="USD"/> </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="slds-truncate slds-cell-wrap">Current TP Margin $$$</th>
+                                                <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.bidLineData.Phoenix_Current_TP_Margin__c}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD"/> </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="slds-truncate slds-cell-wrap">Current TP Margin %</th>
+                                                <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.bidLineData.Phoenix_Current_TP_MarginPercent__c}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="slds-col" style="padding-right:30px;padding-left:30px;">
+                                        <table style="border: none;font-weight:bold;" class="whatIfTable">
+                                            <tr>
+                                                <th class="slds-truncate slds-cell-wrap">Proposed Bottles</th>
+                                                <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.bidLineData.Phoenix_SCM_Final_Approval__c == false ? v.bidLineData.Phoenix_Final_Total_Selling_Unit__c : v.bidLineData.Phoenix_Total_SCM_Approved_Qty__c}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>
+                                                
+                                            </tr>
+                                            <tr>
+                                                <th class="slds-truncate slds-cell-wrap">Proposed Sales</th>
+                                                <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.bidLineData.Phoenix_Proposed_Sales__c}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="slds-truncate slds-cell-wrap">Proposed TP Margin $$$</th>
+                                                <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.bidLineData.Phoenix_Proposed_TP_Margin__c}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="slds-truncate slds-cell-wrap">Proposed TP Margin %</th>
+                                                <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.bidLineData.Phoenix_Proposed_TPMargin__c}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="slds-text-longform" stye="margin-top:20px;">
+                                    <h3 class="slds-text-heading_medium">Affected Parameters</h3>
+                                </div>
+                                <div class="slds-box slds-region_narrow" style="font-weight:bold;">
+                                    <table style="border: none;" class="whatIfTable">
+                                        <aura:iteration items="{!v.affectedItems}" var="item">
+                                            <tr>
+                                                <aura:iteration items="{!item.eachItems}" var="eachTd">
+                                                    <td style="width:250px;">
+                                                        <aura:if isTrue="{!eachTd.isLabel}">
+                                                            {!eachTd.value}
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!eachTd.isCurrency}">
+                                                            <ui:outputCurrency value="{!eachTd.value}" format="$##,###,###,###.##"/>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!eachTd.isPercent}">
+                                                            <lightning:formattedNumber value="{!eachTd.value/100}" style="percent" maximumFractionDigits="2"/>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!eachTd.isChangeFactor}">
+                                                            <div class="slds-grid" style="width:120px;">
+                                                                <div class="slds-col">
+                                                                    <lightning:input variant="label-hidden" value="{!eachTd.value}" formatter="percent-fixed"
+                                                                                     style="width:80px;" class="changeValue" type="number" disabled="true"/>
+                                                                </div>
+                                                                <div class="slds-col">
+                                                                    <aura:if isTrue="{!eachTd.isDown}">
+                                                                        <lightning:icon class="showRed" iconName="utility:arrowdown" size="x-small" title="down"/>
+                                                                        <aura:set attribute="else">
+                                                                            <lightning:icon class="showGreen" iconName="utility:arrowup" size="x-small" title="up"/>
+                                                                        </aura:set>
+                                                                    </aura:if>
+                                                                </div>
+                                                            </div>
+                                                        </aura:if>
+                                                    </td>
+                                                </aura:iteration>
+                                            </tr>
+                                        </aura:iteration>
+                                    </table>
+                                </div>
+                                <div style="text-align:right;margin-top:10px;">
+                                    <lightning:button onclick="{!c.goBackToPreCalcList}">Back</lightning:button>
+                                    <lightning:button variant="brand" onclick="{!c.saveScenario}">Save</lightning:button>
+                                </div>
+                            </aura:if>
+                            
+                        </div>
+                    </div>
+                </div>
+                <!-- <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Close"
+                                      title="Close"
+                                      onclick="{!c.closeBidSim}"/>
+                </footer> -->
+            </div>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+</aura:component>

@@ -1,0 +1,870 @@
+<aura:component controller="Phoenix_CustomerResponseViewController" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="recordId" type="String" />
+    <lightning:overlayLibrary aura:id="overlayLibDemo1"/>
+    <lightning:notificationsLibrary aura:id="notifLib"/>
+    
+    <aura:attribute name="isFromEditButton" type="Boolean" default="false"/>
+    <aura:attribute name="bidRecordId" type="String" default="false"/>
+    <aura:attribute name="bidCustomerId" type="String" default="false"/>
+    <aura:attribute name="bidType" type="String"/>
+    <aura:attribute name="isSpinnerLoad" type="Boolean" default="false"/>
+    <aura:attribute name="isBidLISubmitted" type="Boolean" default="false"/>
+    <aura:attribute name="isVistexPending" type="Boolean" default="false"/>
+    
+    <aura:attribute name="isLoginUserAbleToPerform" type="boolean" default="false" />
+    <aura:attribute name="isLoginUserAbleToPerformVU" type="boolean" default="false" />
+    
+    <aura:attribute name="contractListFromBid" type="String" default=''/>
+    <aura:attribute name="contractVistexUpdate" type="String" default=''/>
+    
+    
+    <!--Contract Model section-->
+    <aura:attribute name="showModal" type="boolean" default="false"/>
+    <aura:attribute type="List" name="contratcsList"/>
+    <aura:attribute name="mycolumns" type="List"/>
+    <aura:attribute name="selectedCntrcts"  type="list"/>    
+    <aura:attribute name="isSpinner" type="Boolean" default="false"/>
+    
+    <!--code by Rama-->
+    <aura:attribute name="CompetitorInfowrapper" type="object"  />
+    <aura:attribute name="navigate" type="boolean" default="false" />
+    <aura:attribute name="selectedCompetitor" type="String" />
+    <aura:attribute name="Competitorlist" type="object"  />
+    
+    <aura:attribute name="incomes" type="Object"/>
+    <aura:attribute name="ProductFamilyNames" type="object" />
+
+    <aura:attribute name="selectedLookUpRecord" type="sObject" default="{}"/>
+    
+    <aura:handler name="init" value="this" action="{!c.doInit}"/>
+    <aura:attribute name="userInfo" type="user"/> 
+    
+    <aura:attribute name="AccountName" type="object"/>
+    
+    <aura:attribute name="newrec" type="boolean" default="false"/>
+    <aura:attribute name="ProductFamilyNamesNew" type="object" />
+    <aura:attribute name="CompetitorInfowrapperNew" type="object" />
+
+    <aura:handler name="init" value="{!this}" action="{!c.customerName}"/>
+    
+    <aura:html tag="style">
+        .slds-modal__container{ 
+        width: 100%;
+        } 
+        
+    </aura:html>
+    
+    <!--code by Rama end -->
+    
+    <div class="slds-theme_default">
+        <aura:if isTrue="{!v.isSpinnerLoad}">
+            <div class="backgroundInverse">
+                <lightning:spinner alternativeText="Loading" variant="brand" />
+            </div>
+        </aura:if>
+        
+        <aura:if isTrue="{!v.showModal}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" 
+                     aria-modal="true" aria-describedby="modal-content-id-1" 
+                     class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.hideModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                            Contracts</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                        <aura:if isTrue="{!v.isSpinner}">
+                            <lightning:spinner size="medium" variant="brand" />
+                        </aura:if>
+                        <p>
+                            <div class="slds-grid" style="margin-bottom:6px;">
+                                <div class="slds-col slds-size_1-of-3">
+                                    <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                        <ui:inputText aura:id="cntInput" class="slds-lookup__search-input slds-input inputSize"
+                                                      placeholder="Search contracts..."/>
+                                        <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                            <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                        </span>
+                                    </div> 
+                                </div>
+                                <div class="slds-col slds-size_1-of-3">
+                                    <div class="slds-grid">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:input class="slds-p-left_large slds-p-top_x-small" type="checkbox" label="Show All" name="input1" aura:id="tgleCntrct" onchange="{!c.searchContracts}"/>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <div  class="slds-m-top_medium slds-m-left_small" style="margin-top:1px;"><lightning:button label="Search" onclick="{!c.searchContracts}"  variant="brand"/></div> 
+                                        </div>
+                                    </div>
+                                </div>                                       
+                            </div>  
+                            <aura:if isTrue="{!not(empty(v.contratcsList))}">                            
+                                <lightning:datatable aura:id="linesTable"
+                                                     data="{! v.contratcsList }" 
+                                                     columns="{! v.mycolumns }"
+                                                     keyField="id"                                                
+                                                     />
+                                <aura:set attribute="else">
+                                    <center>
+                                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                            <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                            </span>
+                                            <h2> No Records Found</h2>
+                                        </div>
+                                    </center>
+                                </aura:set>
+                            </aura:if>
+                        </p>
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.hideContractModel }"/>
+                        <lightning:button variant="brand"
+                                          label="Save"
+                                          title="Save"
+                                          disabled= "{!empty(v.contratcsList)}"
+                                          onclick="{!c.saveDetails}"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+        
+        <lightning:recordEditForm aura:id="CRForm"
+                                  recordId="{!v.recordId}"
+                                  objectApiName="Phoenix_Customer_Response__c"     
+                                  onload="{!c.handleOnload}"
+                                  onsuccess="{!c.handleOnSuccess}"
+                                  onsubmit="{!c.onRecordSubmit}" 
+                                  class="slds-card__body_inner">
+            <lightning:messages/>
+            <h3 class="slds-section-title--divider slds-m-vertical_small">Customer Response Information</h3>
+            <div class="">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                        <lightning:outputField fieldName="Phoenix_Bid_No__c"/>
+                    </div>
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                        <lightning:inputField fieldName="Phoenix_Bid_Name__c" disabled="{!v.isBidLISubmitted}" />
+                    </div>      
+                </div>
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+						<lightning:outputField fieldName="Phoenix_Customer__c"/>
+                    </div>   
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                        <aura:if isTrue="{!v.isBidLISubmitted}">
+                            <lightning:outputField fieldName="Phoenix_Sent_to_Customer_Date__c"/>
+                            <aura:set attribute="else">
+                                <lightning:inputField fieldName="Phoenix_Sent_to_Customer_Date__c" disabled="{!not(v.isLoginUserAbleToPerform)}"/>
+                            </aura:set>
+                        </aura:if>
+                    </div>   
+                </div>
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                        <aura:if isTrue="{!v.isBidLISubmitted}">
+                            <lightning:outputField fieldName="Phoenix_Customer_Response_Date__c"/>
+                            <aura:set attribute="else">
+                                <lightning:inputField fieldName="Phoenix_Customer_Response_Date__c" disabled="{!not(v.isLoginUserAbleToPerform)}"/>
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                        <aura:if isTrue="{!v.isBidLISubmitted}">
+                            <lightning:outputField fieldName="Phoenix_Items_Pending__c" required="true"/>
+                            <aura:set attribute="else">
+                                <lightning:inputField fieldName="Phoenix_Items_Pending__c" disabled="{!not(v.isLoginUserAbleToPerform)}"/>
+                            </aura:set>
+                        </aura:if>
+                    </div>                                     
+                </div>
+            </div>
+            <h3 class="slds-section-title--divider slds-m-vertical_small">Change Type Update</h3>
+            <div class="">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                        <div class="slds-grid">
+                            <label class="slds-col slds-form-element__label slds-p-around_xx-small slds-size_1-of-3" for="pricingid">Pricing</label>
+                            <aura:if isTrue="{!v.isBidLISubmitted}">
+                                <lightning:outputField  class="slds-col slds-p-around_xx-small slds-p-left_none slds-size_2-of-3" aura:id="pricingid" variant="label-hidden" fieldName="Phoenix_Change_Type_Pricing__c"/>
+                                <aura:set attribute="else">
+                                    <lightning:inputField  class="slds-col slds-p-around_xx-small slds-p-left_none slds-size_2-of-3" aura:id="pricingid" variant="label-hidden" fieldName="Phoenix_Change_Type_Pricing__c" disabled="{!not(v.isLoginUserAbleToPerform)}"/>
+                                </aura:set>
+                            </aura:if>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                        <div class="slds-grid">
+                            <label class="slds-col slds-form-element__label slds-p-around_xx-small slds-size_1-of-3" for="rebateid">Rebate</label>
+                            <aura:if isTrue="{!v.isBidLISubmitted}">
+                                <lightning:outputField  class="slds-col slds-p-around_xx-small slds-p-left_none slds-size_2-of-3" aura:id="rebateid" variant="label-hidden" fieldName="Phoenix_Change_Type_Rebate__c"/>
+                                <aura:set attribute="else">
+                                    <lightning:inputField  class="slds-col slds-p-around_xx-small slds-p-left_none slds-size_2-of-3" aura:id="rebateid" variant="label-hidden" fieldName="Phoenix_Change_Type_Rebate__c" disabled="{!not(v.isLoginUserAbleToPerform)}"/>
+                                </aura:set>
+                            </aura:if>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                        <aura:if isTrue="{!!v.isBidLISubmitted}">
+                            <div class="slds-form-element slds-lookup slds-is-close frequired">
+                                <label class="slds-form-element__label ">Contract #'s for Position/Volume</label>
+                                <div class="slds-form-element__control">
+                                    <div class="slds-input-has-icon slds-input-has-icon--right">
+                                        <div aura:id="" class="slds-pill-container">
+                                            <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                <ui:inputText disabled="{!not(v.isLoginUserAbleToPerform)}"
+                                                              click="{!c.showModel}" 
+                                                              updateOn="keyup"
+                                                              class="slds-lookup__search-input slds-input inputSize"
+                                                              placeholder="Click to select contracts here.."/>
+                                                <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                    <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                </span>
+                                            </div> 
+                                            <aura:if isTrue="{!not(v.isLoginUserAbleToPerform)}">
+                                                <aura:iteration items="{!v.selectedCntrcts}" var="sr">
+                                                    <lightning:pill class="slds-m-around_xx-small pillRemove" 
+                                                                    label="{!sr}" 
+                                                                    name="{!sr}" 
+                                                                    onremove="{! c.clearCntract }">
+                                                    </lightning:pill>
+                                                </aura:iteration>
+                                                <aura:set attribute="else">
+                                                    <aura:iteration items="{!v.selectedCntrcts}" var="sr">
+                                                        <lightning:pill class="slds-m-around_xx-small" 
+                                                                        label="{!sr}" 
+                                                                        name="{!sr}" 
+                                                                        onremove="{! c.clearCntract }">
+                                                        </lightning:pill>
+                                                    </aura:iteration>
+                                                </aura:set>
+                                            </aura:if>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <aura:set attribute="else">
+                                <lightning:outputField fieldName="Phoenix_Affected_Contract_s__c"/>
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2" >
+                        <aura:if isTrue="{!v.isBidLISubmitted}">
+                            <lightning:outputField fieldName="Phoenix_Contracts_for_Vistex_Update__c"/>
+                            <aura:set attribute="else">
+                                <lightning:inputField fieldName="Phoenix_Contracts_for_Vistex_Update__c" disabled="{!not(v.isLoginUserAbleToPerform)}"/>
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                </div>
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                        <aura:if isTrue="{!v.isBidLISubmitted}">
+                            <lightning:outputField fieldName="Phoenix_Special_Instructions_to_AGR__c"/>
+                            <aura:set attribute="else">
+                                <lightning:inputField fieldName="Phoenix_Special_Instructions_to_AGR__c" disabled="{!not(v.isLoginUserAbleToPerform)}"/>
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                        <aura:if isTrue="{!v.isBidLISubmitted}">
+                            <lightning:outputField fieldName="Delay_Type__c"  required="true"/>
+                            <aura:set attribute="else">
+                                <lightning:inputField fieldName="Delay_Type__c" disabled="{!not(v.isLoginUserAbleToPerform)}"/>
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                </div>
+                 <div class="slds-grid">
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                        <aura:if isTrue="{!v.isBidLISubmitted}">
+                            <lightning:outputField fieldName="Ratification_Comments__c"/>
+                            <aura:set attribute="else">
+                                <lightning:inputField fieldName="Ratification_Comments__c" disabled="{!not(v.isLoginUserAbleToPerform)}"/>
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                  
+                </div>
+            </div>
+            
+            <aura:if isTrue="{!not(v.bidType == 'Volume Review Only')}">
+                <h3 class="slds-section-title--divider slds-m-vertical_small">Contract Status</h3>
+                <div class="">
+                <div class="slds-grid">
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                        <lightning:outputField fieldName="Phoenix_Contract_Status__c"/>
+                    </div>
+                    <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+						  <lightning:outputField fieldName="Phoenix_Contract_Update_Date__c"/>
+                    </div>
+                </div>
+            </div>
+            </aura:if>
+            <aura:if isTrue="{!not(v.bidType == 'Volume Review Only')}">
+                <h3 class="slds-section-title--divider slds-m-vertical_small">Vistex Status</h3>
+                <div class="">
+                    <div class="slds-grid">
+                        <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                            <aura:if isTrue="{!v.isBidLISubmitted == false}">
+                                <lightning:outputField fieldName="Phoenix_Vistex_Status__c"/>
+                                <aura:set attribute="else">
+                                    <lightning:inputField aura:id="vistexId" fieldName="Phoenix_Vistex_Status__c" disabled="{!or(v.isVistexPending == false, not(v.isLoginUserAbleToPerformVU))}"/>
+                                </aura:set>
+                            </aura:if>
+                        </div>
+                        <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                            <aura:if isTrue="{!v.isBidLISubmitted == false}">
+                                <lightning:outputField fieldName="Phoenix_Vistex_Comments__c"/>
+                                <aura:set attribute="else">
+                                    <lightning:inputField fieldName="Phoenix_Vistex_Comments__c" disabled="{!or(v.isVistexPending == false, not(v.isLoginUserAbleToPerformVU))}"/>
+                                </aura:set>
+                            </aura:if>
+                        </div>
+                    </div>
+					<div class="slds-grid">
+                        <div class="slds-col slds-p-around_xx-small slds-size_1-of-2">
+                            <lightning:outputField fieldName="Phoenix_Vistex_Update_Date__c"/>
+                        </div>
+                    </div>
+                    <!--code by Rama-->
+                    <aura:if isTrue="{!and(v.userInfo.Name != 'Surender Patel',v.userInfo.Name != 'Sneha Shah',v.userInfo.Name != 'Sudheer Nanduri',v.userInfo.Name != 'Leigh Avery',v.userInfo.Name != 'Matthew Bilbao',v.userInfo.Name != 'Matthew Bilbao',v.userInfo.Name != 'Abhijit Patil',v.userInfo.Name != 'Ahmed Rifayee',v.userInfo.Name != 'Shruti Shah',v.userInfo.Name != 'Saunak Savla')}">
+                        <lightning:button variant="neutral" label="Winning Competitor Info" title="Competitor Info" onclick="{!c.WinningCompetitorInfobuttion}" />
+                    </aura:if>
+                    <aura:if isTrue="{!v.navigate}">
+                        
+                        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+                            <div class="slds-modal__container"  style="max-width: 90rem !important;width: 90% !important;">
+                                <header class="slds-modal__header">                                   
+                                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Winning Competitor Info</h2>
+                                    <div class="slds-form_horizontal" style="width:18%">
+                                        <label for="CustomerId">Customer Name: {!v.AccountName.Phoenix_Customer__r.Name}</label><br/>
+                                        <lightning:outputField  fieldName="" aura:id="customername1" variant="label-hidden"/>
+                                    </div><br/>
+                                    <lightning:layout>                              
+                                        <lightning:layoutItem size="2" padding="around-small">                          
+                                            <div class="slds-form_horizontal" style="width:365px">
+                                                <lightning:select name="ChooseProductFamily" label="Product Family" aura:id="ChooseProductFamilyid" onchange="{!c.onChange }">
+                                                    <option value="ChooseProductFamily">Choose Product Family</option>
+                                                    <aura:iteration items="{!v.ProductFamilyNames}" var="color">
+                                                        <option 	text="{!color.Product_Family__c}" value="{!color.Product_Family__c}" />
+                                                    </aura:iteration>
+                                                </lightning:select>
+                                            </div>                              
+                                        </lightning:layoutItem>                           
+                                    </lightning:layout>
+                                    <div class="slds-form_horizontal" style="width:36%;font-style: italic;">
+                                        <label for="declm">(Price Range accepts only numbers and special characters e.g: +10%, 52.5 - 56.5)</label><br/>                         
+                                    </div>
+                                </header>
+                                <div class="slds-modal__content slds-p-around_medium slds-scrollable" id="modal-content-id-1">
+                                   <div class="" style="height: 100%; width:272rem;"> 
+                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped" aria-label="Example table of Opportunities with striped rows">
+                                        <thead>
+                                            <tr class="slds-line-height_reset">                                               
+                                                <th class="" scope="col" style="360px">
+                                                    <div class="slds-truncate" title="Product Name">Product Name</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:130px">
+                                                    <div class="slds-truncate" title="NDC">NDC</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:180px">
+                                                    <div class="slds-truncate" title="Product Family">Product Family</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Winning Competitor Name">Winning Competitor Name</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Winning Price Range">Winning Price Range</div>
+                                                </th>
+                                                <!-- Winning Competitor Info -->
+                                                <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Winning Competitor Name 2">Winning Competitor Name 2</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Winning Price Range 2">Winning Price Range 2</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Winning Competitor Name 3">Winning Competitor Name 3</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Winning Price Range 3">Winning Price Range 3</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Winning Competitor Name 4">Winning Competitor Name 4</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Winning Price Range 4">Winning Price Range 4</div>
+                                                </th>
+                                                 <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Winning Competitor Name 5">Winning Competitor Name 5</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Winning Price Range 5">Winning Price Range 5</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Incumbent Competitor Name">Incumbent Competitor Name</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Incumbent Price Range">Incumbent Price Range</div>
+                                                </th>
+                                                 <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Incumbent Competitor Name 2">Incumbent Competitor Name 2</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Incumbent Price Range 2">Incumbent Price Range 2</div>
+                                                </th>
+                                                 <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Incumbent Competitor Name 3">Incumbent Competitor Name 3</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Incumbent Price Range 3">Incumbent Price Range 3</div>
+                                                </th>
+                                                 <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Incumbent Competitor Name 4">Incumbent Competitor Name 4</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Incumbent Price Range 4">Incumbent Price Range 4</div>
+                                                </th>
+                                                 <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Incumbent Competitor Name 5">Incumbent Competitor Name 5</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Incumbent Price Range 5">Incumbent Price Range 5</div>
+                                                </th>                                                                                            
+                                                
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <aura:iteration items="{!v.CompetitorInfowrapper}" var="com">
+                                                <tr class="slds-hint-parent">                                 
+                                                    <td data-label="ProductName">
+                                                        <!--<div class="slds-truncate" title="Cloudhub">{!com.ProductName}</div>-->
+                                                        <lightning:input  value="{!com.ProductName}" aura:id="ProductNameauarid" readonly="true" />
+                                                    </td>
+                                                    <td data-label="NDC">
+                                                        <!--<div class="slds-truncate" title="Cloudhub">{!com.ProductName}</div>-->
+                                                        <lightning:input  value="{!com.ndc}" aura:id="Ndcauarid" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Productfamily">
+                                                        <!--<div class="slds-truncate" title="Cloudhub">{!com.ProductName}</div>-->
+                                                        <lightning:input  value="{!com.productfamily}" aura:id="productfamilyauarid" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Winning Competitor Name">
+                                                        <div class="slds-truncate" title="Cloudhub">                                                       
+                                                            <lightning:select name="Competitorname"  aura:id="WinningCompetitorauraid">
+                                                                <option selectedRecord="{!com.WinningCompetitorName}">{!com.WinningCompetitorName}</option>                                                                    
+                                                                <aura:iteration items="{!com.Competitorlist123}" var="comp">
+                                                                    <option value="{!comp.Id}" label="{!comp.Name}" /> 
+                                                                </aura:iteration>
+                                                            </lightning:select>
+                                                        </div>
+                                                    </td>
+                                                    <td data-label="Winning Price Range">
+                                                        <div class="slds-truncate" title="Cloudhub" >
+                                                            <span onkeypress="{!c.NumSplCharsCheck}"> 
+                                                            <lightning:input aura:id="WinningPriceRangeauraid"  placeholder="PriceRange" value="{!com.WinningPriceRange}"/> 
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <!-- Winning Competitor info -->
+                                                    <td data-label="Winning Competitor Name 2">
+                                                        <div class="slds-truncate" title="Cloudhub">                                                         
+                                                            <lightning:select name="Competitorname2"  aura:id="WinningCompetitoraura2id" >
+                                                                <option value="{!com.WinningCompetitorName2}">{!com.WinningCompetitorName2}</option>
+                                                                <aura:iteration items="{!com.Competitorlist123}" var="comp2">
+                                                                    <option 	text="{!comp2.Name}" value="{!comp2.Id}"/>
+                                                                </aura:iteration>
+                                                            </lightning:select>
+                                                        </div>
+                                                    </td>
+                                                    <td data-label="Winning Price Range 2">
+                                                        <div class="slds-truncate" title="Cloudhub" >
+                                                            <span onkeypress="{!c.NumSplCharsCheck}">
+                                                            <lightning:input aura:id="WinningPriceRangeaura2id"  placeholder="PriceRange" value="{!com.WinningPriceRange2}"/> 
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    
+                                                    <td data-label="Winning Competitor Name 3">
+                                                        <div class="slds-truncate" title="Cloudhub">                                                          
+                                                            <lightning:select name="Competitorname3"  aura:id="WinningCompetitoraura3id" >
+                                                                <option value="{!com.WinningCompetitorName3}">{!com.WinningCompetitorName3}</option>
+                                                                <aura:iteration items="{!com.Competitorlist123}" var="comp3">
+                                                                    <option 	text="{!comp3.Name}" value="{!comp3.Id}" />
+                                                                </aura:iteration>
+                                                            </lightning:select>
+                                                        </div>
+                                                    </td>
+                                                    <td data-label="Winning Price Range 3">
+                                                        <div class="slds-truncate" title="Cloudhub" >
+                                                            <span onkeypress="{!c.NumSplCharsCheck}">
+                                                            <lightning:input aura:id="WinningPriceRangeaura3id"  placeholder="PriceRange" value="{!com.WinningPriceRange3}"/> 
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    
+                                                    <td data-label="Winning Competitor Name 4">
+                                                        <div class="slds-truncate" title="Cloudhub">                                                         
+                                                            <lightning:select name="Competitorname4"  aura:id="WinningCompetitoraura4id" >
+                                                                <option value="{!com.WinningCompetitorName4}">{!com.WinningCompetitorName4}</option>
+                                                                <aura:iteration items="{!com.Competitorlist123}" var="comp4">
+                                                                    <option 	text="{!comp4.Name}" value="{!comp4.Id}" />
+                                                                </aura:iteration>
+                                                            </lightning:select>
+                                                        </div>
+                                                    </td>
+                                                    <td data-label="Winning Price Range 4">
+                                                        <div class="slds-truncate" title="Cloudhub" >
+                                                            <span onkeypress="{!c.NumSplCharsCheck}">
+                                                            <lightning:input aura:id="WinningPriceRangeaura4id"  placeholder="PriceRange" value="{!com.WinningPriceRange4}"/>
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    
+                                                    <td data-label="Winning Competitor Name 5">
+                                                        <div class="slds-truncate" title="Cloudhub">                                                         
+                                                            <lightning:select name="Competitorname5"  aura:id="WinningCompetitoraura5id" >
+                                                                <option value="{!com.WinningCompetitorName5}">{!com.WinningCompetitorName5}</option>
+                                                                <aura:iteration items="{!com.Competitorlist123}" var="comp5">
+                                                                    <option 	text="{!comp5.Name}" value="{!comp5.Id}" />
+                                                                </aura:iteration>
+                                                            </lightning:select>
+                                                        </div>
+                                                    </td>
+                                                    <td data-label="Winning Price Range 5">
+                                                        <div class="slds-truncate" title="Cloudhub" >
+                                                            <span onkeypress="{!c.NumSplCharsCheck}">
+                                                            <lightning:input aura:id="WinningPriceRangeaura5id"  placeholder="PriceRange" value="{!com.WinningPriceRange5}"/> 
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td data-label="Incumbent Competitor Name">
+                                                        <lightning:input  value="{!com.IncumbentCompetitorName}" aura:id="IncumbentCompetitorNameid" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Price Range">
+                                                        <lightning:input  value="{!com.IncumbentPriceRange}" aura:id="IncumbentPriceRangeid" readonly="true" />
+                                                    </td>
+                                                    <!-- Incumbent Competitor Values -->
+                                                    <td data-label="Incumbent Competitor Name 2">
+                                                        <lightning:input  value="{!com.IncumbentCompetitorName2}" aura:id="IncumbentCompetitorName2id" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Price Range 2">
+                                                        <lightning:input  value="{!com.IncumbentPriceRange2}" aura:id="IncumbentPriceRange2id" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Competitor Name 3">
+                                                        <lightning:input  value="{!com.IncumbentCompetitorName3}" aura:id="IncumbentCompetitorName3id" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Price Range 3">
+                                                        <lightning:input  value="{!com.IncumbentPriceRange3}" aura:id="IncumbentPriceRange3id" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Competitor Name 4">
+                                                        <lightning:input  value="{!com.IncumbentCompetitorName4}" aura:id="IncumbentCompetitorName4id" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Price Range 4">
+                                                        <lightning:input  value="{!com.IncumbentPriceRange4}" aura:id="IncumbentPriceRange4id" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Competitor Name 5">
+                                                        <lightning:input  value="{!com.IncumbentCompetitorName5}" aura:id="IncumbentCompetitorName5id" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Price Range 5">
+                                                        <lightning:input  value="{!com.IncumbentPriceRange5}" aura:id="IncumbentPriceRange5id" readonly="true" />
+                                                    </td>                                                                                                       
+                                                </tr>
+                                            </aura:iteration>                                            
+                                        </tbody>
+                                    </table>
+                                    </div>
+                                </div>
+                                <footer class="slds-modal__footer">
+                                 <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{!c.CompetitorCancel}" />
+                                    <lightning:button variant="brand" label="Save" title="Save" onclick="{!c.CompetitorinfoSave}" />                                    
+                                </footer>
+                            </div>
+                        </section>
+                        <div class="slds-backdrop slds-backdrop_open"></div>
+                    </aura:if>     
+                    
+                    <!--- New Winning Competitor Info -->
+                    <aura:if isTrue="{!v.newrec}">        
+                        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">
+                            <div class="slds-modal__container"  style="max-width: 90rem !important;width: 90% !important;">
+                                <header class="slds-modal__header">                                   
+                                    <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Winning Competitor Info</h2>
+                                    <div class="slds-form_horizontal" style="width:18%">
+                                        <label for="CustomerId">Customer Name: {!v.AccountName.Phoenix_Customer__r.Name}</label><br/>
+                                        <lightning:outputField  fieldName="" aura:id="customername1" variant="label-hidden"/>
+                                    </div><br/>
+                                    <lightning:layout>                              
+                                        <lightning:layoutItem size="2" padding="around-small">                          
+                                            <div class="slds-form_horizontal" style="width:365px">
+                                                <lightning:select name="ChooseProductFamily" label="Product Family" aura:id="ChooseProductFamilyidNew" onchange="{!c.onChangeNew}">
+                                                    <option value="ChooseProductFamily">Choose Product Family</option>
+                                                    <aura:iteration items="{!v.ProductFamilyNamesNew}" var="color">
+                                                        <option 	text="{!color}" value="{!color}" />
+                                                    </aura:iteration>
+                                                </lightning:select>
+                                            </div>                              
+                                        </lightning:layoutItem>                           
+                                    </lightning:layout>
+                                    <div class="slds-form_horizontal" style="width:36%;font-style: italic;">
+                                        <label for="declm">(Price Range accepts only numbers and special characters e.g: +10%, 52.5 - 56.5)</label><br/>                         
+                                    </div>
+                                </header>
+                               <div class="slds-modal__content slds-p-around_medium slds-scrollable" id="modal-content-id-1">
+                                   <div class="" style="height: 100%; width:272rem;"> 
+                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped" aria-label="Example table of Opportunities with striped rows">
+                                        <thead>
+                                            <tr class="slds-line-height_reset">                                               
+                                                <th class="" scope="col" style="360px">
+                                                    <div class="slds-truncate" title="Product Name">Product Name</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:5px">
+                                                    <div class="slds-hidden" title="Bid Line Item No">Bid Line Item</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:130px">
+                                                    <div class="slds-truncate" title="NDC">NDC</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:180px">
+                                                    <div class="slds-truncate" title="Product Family">Product Family</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Winning Competitor Name">Winning Competitor Name</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Winning Price Range">Winning Price Range</div>
+                                                </th>
+                                                <!-- Winning Competitor Info -->
+                                                <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Winning Competitor Name 2">Winning Competitor Name 2</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Winning Price Range 2">Winning Price Range 2</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Winning Competitor Name 3">Winning Competitor Name 3</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Winning Price Range 3">Winning Price Range 3</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Winning Competitor Name 4">Winning Competitor Name 4</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Winning Price Range 4">Winning Price Range 4</div>
+                                                </th>
+                                                 <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Winning Competitor Name 5">Winning Competitor Name 5</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Winning Price Range 5">Winning Price Range 5</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Incumbent Competitor Name">Incumbent Competitor Name</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Incumbent Price Range">Incumbent Price Range</div>
+                                                </th>
+                                                 <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Incumbent Competitor Name 2">Incumbent Competitor Name 2</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Incumbent Price Range 2">Incumbent Price Range 2</div>
+                                                </th>
+                                                 <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Incumbent Competitor Name 3">Incumbent Competitor Name 3</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Incumbent Price Range 3">Incumbent Price Range 3</div>
+                                                </th>
+                                                 <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Incumbent Competitor Name 4">Incumbent Competitor Name 4</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Incumbent Price Range 4">Incumbent Price Range 4</div>
+                                                </th>
+                                                 <th class="" scope="col" style="width:198px">
+                                                    <div class="slds-truncate" title="Incumbent Competitor Name 5">Incumbent Competitor Name 5</div>
+                                                </th>
+                                                <th class="" scope="col" style="width:60px">
+                                                    <div class="slds-truncate" title="Incumbent Price Range 5">Incumbent Price Range 5</div>
+                                                </th>                                                                                            
+                                                
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <aura:iteration items="{!v.CompetitorInfowrapperNew}" var="com">
+                                                <tr class="slds-hint-parent">                                 
+                                                    <td data-label="ProductName">
+                                                        <!--<div class="slds-truncate" title="Cloudhub">{!com.ProductName}</div>-->
+                                                        <lightning:input  value="{!com.ProductName}" aura:id="ProductNameauaridNew" readonly="true" />
+                                                    </td>
+                                                    <td data-label="BidlineitemNo">                                       
+                                                        <div class="slds-hidden"><lightning:input  value="{!com.BidLineItemNo}" aura:id="BidLineItemNoauraidNew" readonly="true"/></div>  
+                                                    </td>
+                                                    <td data-label="NDC">
+                                                        <!--<div class="slds-truncate" title="Cloudhub">{!com.ProductName}</div>-->
+                                                        <lightning:input  value="{!com.ndc}" aura:id="NdcauaridNew" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Productfamily">
+                                                        <!--<div class="slds-truncate" title="Cloudhub">{!com.ProductName}</div>-->
+                                                        <lightning:input  value="{!com.productfamily}" aura:id="productfamilyauaridNew" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Winning Competitor Name">
+                                                        <div class="slds-truncate" title="Cloudhub">                                                       
+                                                            <lightning:select name="Competitorname"  aura:id="WinningCompetitorauraidNew">
+                                                                <option selectedRecord="{!com.WinningCompetitorName}">{!com.WinningCompetitorName}</option>                                                                    
+                                                                <aura:iteration items="{!com.Competitorlist123}" var="comp">
+                                                                    <option value="{!comp.Id}" label="{!comp.Name}" /> 
+                                                                </aura:iteration>
+                                                            </lightning:select>
+                                                        </div>
+                                                    </td>
+                                                    <td data-label="Winning Price Range">
+                                                        <div class="slds-truncate" title="Cloudhub" >
+                                                            <span onkeypress="{!c.NumSplCharsCheck}"> 
+                                                            <lightning:input aura:id="WinningPriceRangeauraidNew"  placeholder="PriceRange" value="{!com.WinningPriceRange}"/> 
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <!-- Winning Competitor info -->
+                                                    <td data-label="Winning Competitor Name 2">
+                                                        <div class="slds-truncate" title="Cloudhub">                                                         
+                                                            <lightning:select name="Competitorname2"  aura:id="WinningCompetitoraura2idNew" >
+                                                                <option value="{!com.WinningCompetitorName2}">{!com.WinningCompetitorName2}</option>
+                                                                <aura:iteration items="{!com.Competitorlist123}" var="comp2">
+                                                                    <option 	text="{!comp2.Name}" value="{!comp2.Id}"/>
+                                                                </aura:iteration>
+                                                            </lightning:select>
+                                                        </div>
+                                                    </td>
+                                                    <td data-label="Winning Price Range 2">
+                                                        <div class="slds-truncate" title="Cloudhub" >
+                                                            <span onkeypress="{!c.NumSplCharsCheck}">
+                                                            <lightning:input aura:id="WinningPriceRangeaura2idNew"  placeholder="PriceRange" value="{!com.WinningPriceRange2}"/> 
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    
+                                                    <td data-label="Winning Competitor Name 3">
+                                                        <div class="slds-truncate" title="Cloudhub">                                                          
+                                                            <lightning:select name="Competitorname3"  aura:id="WinningCompetitoraura3idNew" >
+                                                                <option value="{!com.WinningCompetitorName3}">{!com.WinningCompetitorName3}</option>
+                                                                <aura:iteration items="{!com.Competitorlist123}" var="comp3">
+                                                                    <option 	text="{!comp3.Name}" value="{!comp3.Id}" />
+                                                                </aura:iteration>
+                                                            </lightning:select>
+                                                        </div>
+                                                    </td>
+                                                    <td data-label="Winning Price Range 3">
+                                                        <div class="slds-truncate" title="Cloudhub" >
+                                                            <span onkeypress="{!c.NumSplCharsCheck}">
+                                                            <lightning:input aura:id="WinningPriceRangeaura3idNew"  placeholder="PriceRange" value="{!com.WinningPriceRange3}"/> 
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    
+                                                    <td data-label="Winning Competitor Name 4">
+                                                        <div class="slds-truncate" title="Cloudhub">                                                         
+                                                            <lightning:select name="Competitorname4"  aura:id="WinningCompetitoraura4idNew" >
+                                                                <option value="{!com.WinningCompetitorName4}">{!com.WinningCompetitorName4}</option>
+                                                                <aura:iteration items="{!com.Competitorlist123}" var="comp4">
+                                                                    <option 	text="{!comp4.Name}" value="{!comp4.Id}" />
+                                                                </aura:iteration>
+                                                            </lightning:select>
+                                                        </div>
+                                                    </td>
+                                                    <td data-label="Winning Price Range 4">
+                                                        <div class="slds-truncate" title="Cloudhub" >
+                                                            <span onkeypress="{!c.NumSplCharsCheck}">
+                                                            <lightning:input aura:id="WinningPriceRangeaura4idNew"  placeholder="PriceRange" value="{!com.WinningPriceRange4}"/>
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    
+                                                    <td data-label="Winning Competitor Name 5">
+                                                        <div class="slds-truncate" title="Cloudhub">                                                         
+                                                            <lightning:select name="Competitorname5"  aura:id="WinningCompetitoraura5idNew" >
+                                                                <option value="{!com.WinningCompetitorName5}">{!com.WinningCompetitorName5}</option>
+                                                                <aura:iteration items="{!com.Competitorlist123}" var="comp5">
+                                                                    <option 	text="{!comp5.Name}" value="{!comp5.Id}" />
+                                                                </aura:iteration>
+                                                            </lightning:select>
+                                                        </div>
+                                                    </td>
+                                                    <td data-label="Winning Price Range 5">
+                                                        <div class="slds-truncate" title="Cloudhub" >
+                                                            <span onkeypress="{!c.NumSplCharsCheck}">
+                                                            <lightning:input aura:id="WinningPriceRangeaura5idNew"  placeholder="PriceRange" value="{!com.WinningPriceRange5}"/> 
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td data-label="Incumbent Competitor Name">
+                                                        <lightning:input  value="{!com.IncumbentCompetitorName}" aura:id="IncumbentCompetitorNameidNew" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Price Range">
+                                                        <lightning:input  value="{!com.IncumbentPriceRange}" aura:id="IncumbentPriceRangeidNew" readonly="true" />
+                                                    </td>
+                                                    <!-- Incumbent Competitor Values -->
+                                                    <td data-label="Incumbent Competitor Name 2">
+                                                        <lightning:input  value="{!com.IncumbentCompetitorName2}" aura:id="IncumbentCompetitorName2idNew" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Price Range 2">
+                                                        <lightning:input  value="{!com.IncumbentPriceRange2}" aura:id="IncumbentPriceRange2idNew" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Competitor Name 3">
+                                                        <lightning:input  value="{!com.IncumbentCompetitorName3}" aura:id="IncumbentCompetitorName3idNew" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Price Range 3">
+                                                        <lightning:input  value="{!com.IncumbentPriceRange3}" aura:id="IncumbentPriceRange3idNew" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Competitor Name 4">
+                                                        <lightning:input  value="{!com.IncumbentCompetitorName4}" aura:id="IncumbentCompetitorName4idNew" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Price Range 4">
+                                                        <lightning:input  value="{!com.IncumbentPriceRange4}" aura:id="IncumbentPriceRange4idNew" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Competitor Name 5">
+                                                        <lightning:input  value="{!com.IncumbentCompetitorName5}" aura:id="IncumbentCompetitorName5idNew" readonly="true" />
+                                                    </td>
+                                                    <td data-label="Incumbent Price Range 5">
+                                                        <lightning:input  value="{!com.IncumbentPriceRange5}" aura:id="IncumbentPriceRange5idNew" readonly="true" />
+                                                    </td>                                                                                                       
+                                                </tr>
+                                            </aura:iteration>                                            
+                                        </tbody>
+                                    </table>
+                                    </div>
+                                </div> 
+                                <footer class="slds-modal__footer">
+                                    <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{!c.CompetitorCancel}" />
+                                    <lightning:button variant="brand" label="Save" title="Save" onclick="{!c.CompetitorinfoSaveNew}" />                                    
+                                </footer>  
+                            </div>
+                        </section>
+                        <div class="slds-backdrop slds-backdrop_open"></div>
+                    </aura:if>
+                    <!--code by Rama end-->
+                </div>
+            </aura:if>
+            <center class="slds-m-vertical_medium">
+                <aura:if isTrue="{!not(and(v.isFromEditButton == false, and(v.isVistexPending == false, v.isBidLISubmitted)))}">
+                    <lightning:button label="Cancel" onclick="{!c.doCancel}" variant="neutral" disabled="{!or(v.isFromEditButton,and(v.isBidLISubmitted == false, not(v.isLoginUserAbleToPerform)), and(v.isBidLISubmitted,not(v.isLoginUserAbleToPerformVU)))}"/>&nbsp; &nbsp;
+                    <lightning:button variant="brand" label="Save" type="submit" disabled="{!or(and(not(v.isBidLISubmitted),not(v.isLoginUserAbleToPerform)), and(v.isVistexPending == false, v.isBidLISubmitted, not(v.isLoginUserAbleToPerformVU)))}"/> 
+                </aura:if>
+            </center>
+        </lightning:recordEditForm>
+    </div>
+</aura:component>

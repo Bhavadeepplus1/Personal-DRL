@@ -1,0 +1,918 @@
+<aura:component controller = "Vision_Rx_Compliance_NPR" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="singlerec" type="object" />
+    <aura:attribute name="awardedPosition" type="list" />
+    <aura:attribute name="isQuantityValue" type="boolean"/>
+    <aura:attribute name="show6Months" type="boolean" />
+    <aura:attribute name="showAll" type="boolean" /> 
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="recordId" type="String" /> 
+    <aura:attribute name="loaded" type="Boolean" />
+    <aura:attribute name="isDirect" type="boolean" />
+    <aura:attribute name="isIndirect" type="boolean" />
+    <aura:attribute name="isTotal" type="boolean" default="true" />
+    
+    <aura:attribute name="ProdName" type="String" /> 
+    <aura:attribute name="Ndc" type="String" /> 
+    
+    <aura:attribute name="showComments" type="boolean" default="false"/>
+    <aura:attribute name="showSpinnerInCommentPop" type="boolean" default="false"/>
+    <aura:attribute name="listOfCmnts" type="List"/>
+    <aura:attribute name="brightCmnts" type="list"/>
+    <aura:attribute name="showSaveComntButton" type="boolean" default="false"/>   
+    <aura:attribute name="ndcList" type="list"/>
+    <aura:attribute name="visionComment" type="String"/>
+    <aura:attribute name="ProdIdForComment" type="String"/>
+    <!-- Added by BV -->
+    <aura:attribute name="itemDescDrover" type="Boolean" />
+    <aura:attribute name="QTDdrover" type="Boolean" />
+    <aura:attribute name="FTDdrower" type="Boolean" />
+    <aura:attribute name="CTDdrover" type="Boolean" />
+    <aura:attribute name="MTDdrover" type="Boolean" />
+    <aura:attribute name="sixMonthsDrover" type="Boolean" />
+    
+    <!-- Added by BV -->
+    
+    <aura:if isTrue="{! v.loaded }">
+        
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if> 
+    
+    <aura:if  isTrue="{!v.singlerec.showProdFam}"> 
+        
+        <aura:iteration items="{!v.singlerec.rxComplianceList}" var="singlerec" >
+            
+            
+            <aura:if  isTrue="{!v.isTotal}"> 
+                
+                <tr>
+                    <aura:if isTrue="{!or(singlerec.QTD_Total_Complaince__c ge 75,singlerec.QTD_Total_Complaince__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.QTD_Total_Complaince__c lt 90, singlerec.QTD_Total_Complaince__c ge 75) ? 'greenIcon slds-text-align_center QTDColumnData' :
+                                    'purplelikeIcon slds-text-align_center QTDColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.QTD_Total_Complaince__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon QTDColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.QTD_Total_Complaince__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.FTD_Total_Compliance__c ge 75,singlerec.FTD_Total_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.FTD_Total_Compliance__c lt 90, singlerec.FTD_Total_Compliance__c ge 75) ? 'greenIcon slds-text-align_center FTDColumnData' :
+                                    'purplelikeIcon slds-text-align_center FTDColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.FTD_Total_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon FTDColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.FTD_Total_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.CTD_Total_Compliance__c ge 75,singlerec.CTD_Total_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.CTD_Total_Compliance__c lt 90, singlerec.CTD_Total_Compliance__c ge 75) ? 'greenIcon slds-text-align_center CTDColumnData' :
+                                    'purplelikeIcon slds-text-align_center CTDColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.CTD_Total_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon CTDColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.CTD_Total_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    
+                    <aura:if isTrue="{!or(singlerec.MTD_Total_Compliance__c ge 75,singlerec.MTD_Total_Compliance__c == undefined )}">          
+                        <td style="border-right-style: solid;border-right-color: #cac4c2;" class="{!(AND(singlerec.MTD_Total_Compliance__c lt 90, singlerec.MTD_Total_Compliance__c ge 75) ? 'greenIcon slds-text-align_center MTDColumnData' :
+                                                                                                  'purplelikeIcon slds-text-align_center MTDColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.MTD_Total_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td style="border-right-style: solid;border-right-color: #cac4c2;" class="redIcon MTDColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.MTD_Total_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    
+                    <aura:if isTrue="{!or(singlerec.M7_Total_Compliance__c ge 75,singlerec.M7_Total_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M7_Total_Compliance__c lt 90, singlerec.M7_Total_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month1ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month1ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M7_Total_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month1ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M7_Total_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M6_Total_Compliance__c ge 75,singlerec.M6_Total_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M6_Total_Compliance__c lt 90, singlerec.M6_Total_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month2ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month2ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M6_Total_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month2ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M6_Total_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M5_Total_Compliance__c ge 75,singlerec.M5_Total_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M5_Total_Compliance__c lt 90, singlerec.M5_Total_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month3ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month3ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M5_Total_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month3ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M5_Total_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M4_Total_Compliance__c ge 75,singlerec.M4_Total_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M4_Total_Compliance__c lt 90, singlerec.M4_Total_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month4ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month4ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M4_Total_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month4ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M4_Total_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M3_Total_Compliance__c ge 75,singlerec.M3_Total_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M3_Total_Compliance__c lt 90, singlerec.M3_Total_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month5ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month5ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M3_Total_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month5ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M3_Total_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M2_Total_Compliance__c ge 75,singlerec.M2_Total_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M2_Total_Compliance__c lt 90, singlerec.M2_Total_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month6ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month6ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M2_Total_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month6ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M2_Total_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if>
+                    
+                    
+                    <td class="itemDesColumnData  fixedcolumn" style="max-width:517px !important;overflow: hidden;" title="{!('Direct Supply Effective Date: '+singlerec.Supply_Effective_Date__c +' || Indirect Supply Effective Date: '+singlerec.Indirect_Supply_Effective_Date__c+' || Direct Price Effective Date: '+singlerec.Direct_Price_Effective_Date__c +' || Indirect Price Effective Date: '+singlerec.Indirect_Price_Effective_Date__c)}">
+                        <aura:if isTrue="{!singlerec.Awarded_Position__c != undefined}">
+                            <lightning:icon class="ribbonmIcon" iconName="utility:ribbon" size="x-small"
+                                            onclick="{!c.openModal}" style="cursor:pointer;"/>
+                        </aura:if> 
+                        
+                        {!singlerec.Vision_Product__r.Name} &nbsp;   <aura:if isTrue="{!(and(singlerec.Backorder_SRx_Rx__r.Vision_MoH__c lt 0, singlerec.product_Segment__c == 'Rx'))}">
+                        <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                             
+                        </aura:if>
+                        <aura:if isTrue="{!(and(singlerec.Backorder_SRx_Rx__r.Vision_On_Backorder__c == 'Yes' , singlerec.product_Segment__c == 'SRx'))}">
+                            <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                            
+                        </aura:if>
+                        <aura:if isTrue="{!(and(singlerec.GCP_Backorder_OTC__r.Vision_Backorder_Qty__c gt 0, singlerec.product_Segment__c == 'OTC'))}">
+                            <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                               
+                        </aura:if>&nbsp;
+                        <aura:if isTrue="{!singlerec.Is_in_Openorder__c}">     
+                            <img src="{!$Resource.Noopenorder}" class="imageclass" style="max-width: 20px;height: 20px;" title="Open Orders on this Product" />                         
+                            
+                            <aura:set attribute="else"> 
+                                <img src="{!$Resource.OpenorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="No Open Orders on this Product" />                           
+                            </aura:set> 
+                        </aura:if>  <aura:if isTrue="{!singlerec.Is_Initial_Order__c}"><img style="width: 30px !important;" src="{!$Resource.NewGIF}" />  </aura:if> 
+                        <aura:if isTrue="{!singlerec.Product_Position__c != null}">&nbsp;<span title="{!singlerec.Product_Position__c}">({!singlerec.Product_Position__c})</span></aura:if>
+                    </td>
+                    
+                    <aura:if isTrue="{!v.itemDescDrover}">
+                        <td class="ndcColumnData fixedcolumn2" title="" style="max-width:100px !important;overflow: hidden;">{!singlerec.Vision_Product__r.Phoenix_NDC_11__c}</td>
+                        
+                        <td class="packColumnData fixedcolumn3" style="text-align:center;max-width:80px !important;overflow: hidden;"><lightning:formattedNumber value="{!singlerec.Vision_Product__r.Phoenix_Pkg_Size__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    </aura:if>
+                    <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.Total_Awarded_Information__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    <aura:if isTrue="{!v.QTDdrover}">
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.QTD_Total_Awarded_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.QTD_Total_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    </aura:if>
+                    <td class="" style="{!(singlerec.QTD_Total_Complaince__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.QTD_Total_Complaince__c le 90, singlerec.QTD_Total_Complaince__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                        <lightning:formattedNumber value="{!singlerec.QTD_Total_Complaince__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                 
+                    <aura:if isTrue="{!v.FTDdrower}">
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.FTD_Total_Awarded_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.FTD_Total_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    </aura:if>
+                    <td class="" style="{!(singlerec.FTD_Total_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.FTD_Total_Compliance__c le 90, singlerec.FTD_Total_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                        <lightning:formattedNumber value="{!singlerec.FTD_Total_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                 
+                    <aura:if isTrue="{!v.CTDdrover}">
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.CTD_Total_Awarded_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.CTD_Total_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    </aura:if>
+                    <td class="" style="{!(singlerec.CTD_Total_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.CTD_Total_Compliance__c le 90, singlerec.CTD_Total_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                        <lightning:formattedNumber value="{!singlerec.CTD_Total_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>          
+                    <aura:if isTrue="{!v.MTDdrover}">
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.MTD_Total_Awarded_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M1_Total_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    </aura:if>
+                    <td class="" style="{!(singlerec.MTD_Total_Compliance__c ge 90 ? 'color:purple;text-align:center;border-right-style: solid;border-right-color: #cac4c2;' : AND(singlerec.MTD_Total_Compliance__c le 90, singlerec.MTD_Total_Compliance__c ge 75) ? 'color:green;text-align:center;border-right-style: solid;border-right-color: #cac4c2;' : 'color:red;text-align:center;border-right-style: solid;border-right-color: #cac4c2;')}">
+                        <lightning:formattedNumber value="{!singlerec.MTD_Total_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>          
+                    
+                    <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.Total_Awarded_Information_Monthly__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    
+                    <aura:if isTrue="{!v.sixMonthsDrover}">
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M7_Total_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            <aura:if isTrue="{!and(singlerec.M8_Total_Quantity__c gt 0,singlerec.M7_Total_Quantity__c gt 0)}">
+                                <span style="{!((((singlerec.M7_Total_Quantity__c/singlerec.M8_Total_Quantity__c)-1)*100) gt 90 ? 'color:purple ;text-align:center;' : AND((((singlerec.M7_Total_Quantity__c/singlerec.M8_Total_Quantity__c)-1)*100) le 75 , (((singlerec.M7_Total_Quantity__c/singlerec.M8_Total_Quantity__c)-1)*100) ge 90) ?  'color:green;text-align:center;' : 'color:red;text-align:center;')}"> (<lightning:formattedNumber value="{!((singlerec.M7_Total_Quantity__c/singlerec.M8_Total_Quantity__c)-1)*100}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="0"/>)
+                                </span>
+                            </aura:if>
+                        </td>
+                        <td class=""  style="{!(singlerec.M7_Total_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M7_Total_Compliance__c le 90, singlerec.M7_Total_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M7_Total_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                        
+                        
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M6_Total_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            <aura:if isTrue="{!and(singlerec.M6_Total_Quantity__c gt 0,singlerec.M7_Total_Quantity__c gt 0)}">
+                                <span style="{!((((singlerec.M6_Total_Quantity__c/singlerec.M7_Total_Quantity__c)-1)*100) gt 90 ? 'color:purple ;text-align:center;' : AND((((singlerec.M6_Total_Quantity__c/singlerec.M7_Total_Quantity__c)-1)*100) le 75 , (((singlerec.M6_Total_Quantity__c/singlerec.M7_Total_Quantity__c)-1)*100) ge 90) ?  'color:green;text-align:center;' : 'color:red;text-align:center;')}"> (<lightning:formattedNumber value="{!((singlerec.M6_Total_Quantity__c/singlerec.M7_Total_Quantity__c)-1)*100}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="0"/>)
+                                </span>
+                            </aura:if>
+                        </td>
+                        <td class=""  style="{!(singlerec.M6_Total_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M6_Total_Compliance__c le 90, singlerec.M6_Total_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M6_Total_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            
+                        </td>                        
+                        
+                        
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M5_Total_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            <aura:if isTrue="{!and(singlerec.M5_Total_Quantity__c gt 0,singlerec.M6_Total_Quantity__c gt 0)}">
+                                <span style="{!((((singlerec.M5_Total_Quantity__c/singlerec.M6_Total_Quantity__c)-1)*100) gt 90 ? 'color:purple ;text-align:center;' : AND((((singlerec.M5_Total_Quantity__c/singlerec.M6_Total_Quantity__c)-1)*100) le 75 , (((singlerec.M5_Total_Quantity__c/singlerec.M6_Total_Quantity__c)-1)*100) ge 90) ?  'color:green;text-align:center;' : 'color:red;text-align:center;')}"> (<lightning:formattedNumber value="{!((singlerec.M5_Total_Quantity__c/singlerec.M6_Total_Quantity__c)-1)*100}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="0"/>)
+                                </span>       
+                                
+                            </aura:if>
+                        </td>
+                        <td class="" style="{!(singlerec.M5_Total_Compliance__c ge 100 ? 'color:purple;text-align:center;' : AND(singlerec.M5_Total_Compliance__c le 90, singlerec.M5_Total_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M5_Total_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            
+                        </td>                        
+                        
+                        
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M4_Total_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            <aura:if isTrue="{!and(singlerec.M4_Total_Quantity__c gt 0,singlerec.M5_Total_Quantity__c gt 0)}">
+                                <span style="{!((((singlerec.M4_Total_Quantity__c/singlerec.M5_Total_Quantity__c)-1)*100) gt 90 ? 'color:purple ;text-align:center;' : AND((((singlerec.M4_Total_Quantity__c/singlerec.M5_Total_Quantity__c)-1)*100) le 75 , (((singlerec.M4_Total_Quantity__c/singlerec.M5_Total_Quantity__c)-1)*100) ge 90) ?  'color:green;text-align:center;' : 'color:red;text-align:center;')}"> (<lightning:formattedNumber value="{!((singlerec.M4_Total_Quantity__c/singlerec.M5_Total_Quantity__c)-1)*100}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="0"/>)
+                                </span>
+                            </aura:if>
+                        </td>
+                        <td class=""  style="{!(singlerec.M4_Total_Compliance__c ge 100 ? 'color:purple;text-align:center;' : AND(singlerec.M4_Total_Compliance__c le 90, singlerec.M4_Total_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M4_Total_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            
+                        </td>
+                        
+                        
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M3_Total_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            <aura:if isTrue="{!and(singlerec.M3_Total_Quantity__c gt 0,singlerec.M4_Total_Quantity__c gt 0)}">
+                                <span style="{!((((singlerec.M3_Total_Quantity__c/singlerec.M4_Total_Quantity__c)-1)*100) gt 90 ? 'color:purple ;text-align:center;' : AND((((singlerec.M3_Total_Quantity__c/singlerec.M4_Total_Quantity__c)-1)*100) le 75 , (((singlerec.M3_Total_Quantity__c/singlerec.M4_Total_Quantity__c)-1)*100) ge 90) ?  'color:green;text-align:center;' : 'color:red;text-align:center;')}"> (<lightning:formattedNumber value="{!((singlerec.M3_Total_Quantity__c/singlerec.M4_Total_Quantity__c)-1)*100}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="0"/>)
+                                </span>      
+                                
+                                
+                            </aura:if>
+                        </td>
+                        <td class="" style="{!(singlerec.M3_Total_Compliance__c ge 100 ? 'color:purple;text-align:center;' : AND(singlerec.M3_Total_Compliance__c le 90, singlerec.M3_Total_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M3_Total_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            
+                        </td>
+                        
+                        
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M2_Total_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            <aura:if isTrue="{!and(singlerec.M2_Total_Quantity__c gt 0,singlerec.M3_Total_Quantity__c gt 0)}">
+                                <span style="{!((((singlerec.M2_Total_Quantity__c/singlerec.M3_Total_Quantity__c)-1)*100) gt 90 ? 'color:purple ;text-align:center;' : AND((((singlerec.M2_Total_Quantity__c/singlerec.M3_Total_Quantity__c)-1)*100) le 75 , (((singlerec.M2_Total_Quantity__c/singlerec.M3_Total_Quantity__c)-1)*100) ge 90) ?  'color:green;text-align:center;' : 'color:red;text-align:center;')}"> (<lightning:formattedNumber value="{!((singlerec.M2_Total_Quantity__c/singlerec.M3_Total_Quantity__c)-1)*100}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="0"/>)
+                                </span>     
+                                
+                            </aura:if>
+                        </td>
+                        <td class="" style="{!(singlerec.M2_Total_Compliance__c ge 100 ? 'color:purple;text-align:center;' : AND(singlerec.M2_Total_Compliance__c le 90, singlerec.M2_Total_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M2_Total_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> 
+                            
+                        </td>
+                        <td class="slds-text-align--center">
+                            <!-- <button onclick="{!c.inlineEditComments}" 
+                        class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                        tabindex="0" id="{!indx}">-->
+                            <lightning:buttonIcon variant="bare" iconName="utility:comments"  size="medium"  value="{!singlerec.Vision_Product__c}" onclick="{!c.inlineEditComments}"/>
+                            
+                            
+                            <!-- </button>-->
+                        </td>
+                    </aura:if> 
+                    
+                </tr>
+                
+                
+            </aura:if>
+            <aura:if  isTrue="{!and(v.isDirect == true ,v.isIndirect == false) }">
+                
+                <tr>
+                    <aura:if isTrue="{!or(singlerec.QTD_Direct_Compliance__c ge 75,singlerec.QTD_Direct_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.QTD_Direct_Compliance__c lt 90, singlerec.QTD_Direct_Compliance__c ge 75) ? 'greenIcon slds-text-align_center QTDColumnData' :
+                                    'purplelikeIcon slds-text-align_center QTDColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.QTD_Direct_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon QTDColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.QTD_Direct_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.FTD_Direct_Compliance__c ge 75,singlerec.FTD_Direct_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.FTD_Direct_Compliance__c lt 90, singlerec.FTD_Direct_Compliance__c ge 75) ? 'greenIcon slds-text-align_center FTDColumnData' :
+                                    'purplelikeIcon slds-text-align_center FTDColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.FTD_Direct_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon FTDColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.FTD_Direct_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.CTD_Direct_Complaince__c ge 75,singlerec.CTD_Direct_Complaince__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.CTD_Direct_Complaince__c lt 90, singlerec.CTD_Direct_Complaince__c ge 75) ? 'greenIcon slds-text-align_center CTDColumnData' :
+                                    'purplelikeIcon slds-text-align_center CTDColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.CTD_Direct_Complaince__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td  class="redIcon CTDColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.CTD_Direct_Complaince__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.MTD_Direct_Complaince__c ge 75,singlerec.MTD_Direct_Complaince__c == undefined )}">          
+                        <td style="border-right-style: solid;border-right-color: #cac4c2;" class="{!(AND(singlerec.MTD_Direct_Complaince__c lt 90, singlerec.MTD_Direct_Complaince__c ge 75) ? 'greenIcon slds-text-align_center MTDColumnData' :
+                                                                                                  'purplelikeIcon slds-text-align_center MTDColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.MTD_Direct_Complaince__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td style="border-right-style: solid;border-right-color: #cac4c2;" class="redIcon MTDColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.MTD_Direct_Complaince__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M7_Direct_Qty_Compliance__c ge 75,singlerec.M7_Direct_Qty_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M7_Direct_Qty_Compliance__c lt 90, singlerec.M7_Direct_Qty_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month1ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month1ColumnData' )}"> <lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M7_Direct_Qty_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month1ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M7_Direct_Qty_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M6_Direct_Qty_Compliance__c ge 75,singlerec.M6_Direct_Qty_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M6_Direct_Qty_Compliance__c lt 90, singlerec.M6_Direct_Qty_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month2ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month2ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M6_Direct_Qty_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month2ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M6_Direct_Qty_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M5_Direct_Qty_Compliance__c ge 75,singlerec.M5_Direct_Qty_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M5_Direct_Qty_Compliance__c lt 90, singlerec.M5_Direct_Qty_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month3ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month3ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M5_Direct_Qty_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month3ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M5_Direct_Qty_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M4_Direct_Qty_Compliance__c ge 75,singlerec.M4_Direct_Qty_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M4_Direct_Qty_Compliance__c lt 90, singlerec.M4_Direct_Qty_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month4ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month4ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M4_Direct_Qty_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month4ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M4_Direct_Qty_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M3_Direct_Qty_Compliance__c ge 75,singlerec.M3_Direct_Qty_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M3_Direct_Qty_Compliance__c lt 90, singlerec.M3_Direct_Qty_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month5ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month5ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M3_Direct_Qty_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month5ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M3_Direct_Qty_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M2_Direct_Qty_Compliance__c ge 75,singlerec.M2_Direct_Qty_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M2_Direct_Qty_Compliance__c lt 90, singlerec.M2_Direct_Qty_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month6ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month6ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M2_Direct_Qty_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month6ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M2_Direct_Qty_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    
+                    <td class="itemDesColumnData fixedcolumn" style="max-width:517px !important;overflow: hidden;" title="{!('Direct Supply Effective Date: '+singlerec.Supply_Effective_Date__c +' || Direct Price Effective Date: '+singlerec.Direct_Price_Effective_Date__c )}">
+                        
+                        <aura:if isTrue="{!singlerec.Direct_Awarded_Position__c != undefined}">
+                            <lightning:icon class="ribbonmIcon" iconName="utility:ribbon" size="x-small"
+                                            onclick="{!c.openDirectModal}" style="cursor:pointer;"/>
+                        </aura:if> 
+                        <aura:if isTrue="{!singlerec.Is_New_Direct__c}"><img style="width: 30px !important;" src="{!$Resource.NewGIF}" />  </aura:if>  
+                        
+                        {!singlerec.Vision_Product__r.Name}&nbsp; <aura:if isTrue="{!(and(singlerec.GCP_Backorder_SRx_Rx__c.Vision_MoH__c lt 0, singlerec.product_Segment__c == 'Rx'))}">
+                        <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                             
+                        </aura:if>
+                        <aura:if isTrue="{!(and(singlerec.GCP_Backorder_SRx_Rx__c.Vision_On_Backorder__c == 'Yes' , singlerec.product_Segment__c == 'SRx'))}">
+                            <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                              
+                        </aura:if>
+                        <aura:if isTrue="{!(and(singlerec.GCP_Backorder_OTC__r.Vision_Backorder_Qty__c gt 0, singlerec.product_Segment__c == 'OTC'))}">
+                            <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                              
+                        </aura:if>&nbsp;
+                        <aura:if isTrue="{!singlerec.Is_in_Openorder__c}">     
+                            <img src="{!$Resource.Noopenorder}" class="imageclass" style="max-width: 20px;height: 20px;" title="Open Orders on this Product" /> 
+                            
+                            
+                            <aura:set attribute="else"> 
+                                <img src="{!$Resource.OpenorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="No Open Orders on this Product" />                              
+                                
+                            </aura:set> 
+                        </aura:if>
+                        <aura:if isTrue="{!singlerec.Product_Position__c != null}">&nbsp;<span title="{!singlerec.Product_Position__c}">({!singlerec.Product_Position__c})</span></aura:if>
+                    </td>
+                    
+                    <aura:if isTrue="{!v.itemDescDrover}">
+                        <td class="ndcColumnData fixedcolumn2" style="max-width:100px !important;overflow: hidden;" title="">{!singlerec.Vision_Product__r.Phoenix_NDC_11__c}</td>
+                        
+                        <td class="packColumnData fixedcolumn3" style="text-align:center;max-width:80px !important;overflow: hidden;"><lightning:formattedNumber value="{!singlerec.Vision_Product__r.Phoenix_Pkg_Size__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    </aura:if>
+                    <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.Awarded_Information__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    <aura:if isTrue="{!v.QTDdrover}">
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.QTD_Direct_Awarded_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.QTD_Direct_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    </aura:if>
+                    <td class="" style="{!(singlerec.QTD_Direct_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.QTD_Direct_Compliance__c le 90, singlerec.QTD_Direct_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                        <lightning:formattedNumber value="{!singlerec.QTD_Direct_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                 
+                    <aura:if isTrue="{!v.FTDdrower}">
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.FTD_Direct_Awarded_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.FTD_Direct_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    </aura:if>
+                    <td class="" style="{!(singlerec.FTD_Direct_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.FTD_Direct_Compliance__c le 90, singlerec.FTD_Direct_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                        <lightning:formattedNumber value="{!singlerec.FTD_Direct_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                 
+                    <aura:if isTrue="{!v.CTDdrover}">
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.CTD_Direct_Awarded_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.CTD_Direct_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    </aura:if>
+                    <td class="" style="{!(singlerec.CTD_Direct_Complaince__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.CTD_Direct_Complaince__c le 90, singlerec.CTD_Direct_Complaince__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                        <lightning:formattedNumber value="{!singlerec.CTD_Direct_Complaince__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                             
+                    <aura:if isTrue="{!v.MTDdrover}">
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.MTD_Direct_Awarded_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M1_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    </aura:if>
+                    <td class="" style="{!(singlerec.MTD_Direct_Complaince__c ge 90 ? 'color:purple;text-align:center;border-right-style: solid;border-right-color: #cac4c2;' : AND(singlerec.MTD_Direct_Complaince__c le 90, singlerec.MTD_Direct_Complaince__c ge 75) ? 'color:green;text-align:center;border-right-style: solid;border-right-color: #cac4c2;' : 'color:red;text-align:center;border-right-style: solid;border-right-color: #cac4c2;')}">
+                        <lightning:formattedNumber value="{!singlerec.MTD_Direct_Complaince__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                             
+                    <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.Direct_Awarded_Quantity_Monthly__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    <aura:if isTrue="{!v.sixMonthsDrover}">
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M7_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        
+                        <td class="" style="{!(singlerec.M7_Direct_Qty_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M7_Direct_Qty_Compliance__c le 90, singlerec.M7_Direct_Qty_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M7_Direct_Qty_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                                       
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M6_Quantity__c}"   minimumFractionDigits="0" maximumFractionDigits="0"/></td> 
+                        <td class="" style="{!(singlerec.M6_Direct_Qty_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M6_Direct_Qty_Compliance__c le 90, singlerec.M6_Direct_Qty_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M6_Direct_Qty_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                                        
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M5_Quantity__c}"   minimumFractionDigits="0" maximumFractionDigits="0"/></td>           
+                        <td class="" style="{!(singlerec.M5_Direct_Qty_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M5_Direct_Qty_Compliance__c le 90, singlerec.M5_Direct_Qty_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M5_Direct_Qty_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M4_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>           
+                        <td class="" style="{!(singlerec.M4_Direct_Qty_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M4_Direct_Qty_Compliance__c le 90, singlerec.M4_Direct_Qty_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M4_Direct_Qty_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M3_Quantity__c}"   minimumFractionDigits="0" maximumFractionDigits="0"/></td>           
+                        <td class="" style="{!(singlerec.M3_Direct_Qty_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M3_Direct_Qty_Compliance__c le 90, singlerec.M3_Direct_Qty_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M3_Direct_Qty_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M2_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>           
+                        <td class="" style="{!(singlerec.M2_Direct_Qty_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M2_Direct_Qty_Compliance__c le 90, singlerec.M2_Direct_Qty_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M2_Direct_Qty_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                        <td class="slds-text-align--center">
+                            <!-- <button onclick="{!c.inlineEditComments}" 
+                        class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                        tabindex="0" id="{!indx}">-->
+                            <lightning:buttonIcon variant="bare" iconName="utility:comments"  size="medium"  value="{!singlerec.Vision_Product__c}" onclick="{!c.inlineEditComments}"/>
+                            
+                            
+                            <!-- </button>-->
+                        </td>
+                    </aura:if>
+                </tr>
+                
+                
+            </aura:if>
+            <aura:if  isTrue="{!and(v.isDirect == false ,v.isIndirect == true) }">
+                
+                <tr>
+                    <aura:if isTrue="{!or(singlerec.QTD_Indirect_Complaince__c ge 75,singlerec.QTD_Indirect_Complaince__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.QTD_Indirect_Complaince__c lt 90, singlerec.QTD_Indirect_Complaince__c ge 75) ? 'greenIcon slds-text-align_center QTDColumnData' :
+                                    'purplelikeIcon slds-text-align_center QTDColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.QTD_Indirect_Complaince__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon QTDColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.QTD_Indirect_Complaince__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.FTD_Indirect_Complaince__c ge 75,singlerec.FTD_Indirect_Complaince__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.FTD_Indirect_Complaince__c lt 90, singlerec.FTD_Indirect_Complaince__c ge 75) ? 'greenIcon slds-text-align_center FTDColumnData' :
+                                    'purplelikeIcon slds-text-align_center FTDColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.FTD_Indirect_Complaince__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon FTDColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.FTD_Indirect_Complaince__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.CTD_Indirect_Compliance__c ge 75,singlerec.CTD_Indirect_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.CTD_Indirect_Compliance__c lt 90, singlerec.CTD_Indirect_Compliance__c ge 75) ? 'greenIcon slds-text-align_center CTDColumnData' :
+                                    'purplelikeIcon slds-text-align_center CTDColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.CTD_Indirect_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td  class="redIcon CTDColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.CTD_Indirect_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if>
+                    <aura:if isTrue="{!or(singlerec.MTD_Indirect_Compliance__c ge 75,singlerec.MTD_Indirect_Compliance__c == undefined )}">          
+                        <td  style="border-right-style: solid;border-right-color: #cac4c2;" class="{!(AND(singlerec.MTD_Indirect_Compliance__c lt 90, singlerec.MTD_Indirect_Compliance__c ge 75) ? 'greenIcon slds-text-align_center MTDColumnData' :
+                                                                                                   'purplelikeIcon slds-text-align_center MTDColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.MTD_Indirect_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td style="border-right-style: solid;border-right-color: #cac4c2;" class="redIcon MTDColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.MTD_Indirect_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if>
+                    <aura:if isTrue="{!or(singlerec.M7_Indirect_Qty_Compliance__c ge 75,singlerec.M7_Indirect_Qty_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M7_Indirect_Qty_Compliance__c lt 90, singlerec.M7_Indirect_Qty_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month1ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month1ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M7_Indirect_Qty_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month1ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M7_Indirect_Qty_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M6_Indirect_Qty_Compliance__c ge 75,singlerec.M6_Indirect_Qty_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M6_Indirect_Qty_Compliance__c lt 90, singlerec.M6_Indirect_Qty_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month2ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month2ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M6_Indirect_Qty_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month2ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M6_Indirect_Qty_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M5_Indirect_Qty_Compliance__c ge 75,singlerec.M5_Indirect_Qty_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M5_Indirect_Qty_Compliance__c lt 90, singlerec.M5_Indirect_Qty_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month3ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month3ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M5_Indirect_Qty_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month3ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M5_Indirect_Qty_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M4_Indirect_Qty_Compliance__c ge 75,singlerec.M4_Indirect_Qty_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M4_Indirect_Qty_Compliance__c lt 90, singlerec.M4_Indirect_Qty_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month4ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month4ColumnData')}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M4_Indirect_Qty_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month4ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M4_Indirect_Qty_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M3_Indirect_Qty_Compliance__c ge 75,singlerec.M3_Indirect_Qty_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M3_Indirect_Qty_Compliance__c lt 90, singlerec.M3_Indirect_Qty_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month5ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month5ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M3_Indirect_Qty_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month5ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M3_Indirect_Qty_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!or(singlerec.M2_Indirect_Qty_Compliance__c ge 75,singlerec.M2_Indirect_Qty_Compliance__c == undefined )}">          
+                        <td  class="{!(AND(singlerec.M2_Indirect_Qty_Compliance__c lt 90, singlerec.M2_Indirect_Qty_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month6ColumnData' :
+                                    'purplelikeIcon slds-text-align_center month6ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M2_Indirect_Qty_Compliance__c}"/></td>
+                        <aura:set attribute="else"> 
+                            <td class="redIcon month6ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M2_Indirect_Qty_Compliance__c }" size="x-small"/></td>
+                            
+                        </aura:set>
+                    </aura:if> 
+                    
+                    
+                    
+                    <td  class="itemDesColumnData fixedcolumn" style="max-width:517px !important;overflow: hidden;" title="{!('Indirect Supply Effective Date: '+singlerec.Indirect_Supply_Effective_Date__c+' || Indirect Price Effective Date: '+singlerec.Indirect_Price_Effective_Date__c )}">
+                        <aura:if isTrue="{!singlerec.Indirect_Awarded_Position__c  != undefined}">
+                            <lightning:icon class="ribbonmIcon" iconName="utility:ribbon" size="x-small"
+                                            onclick="{!c.openIndirectModal}" style="cursor:pointer;"/>
+                        </aura:if>
+                        
+                        
+                        &nbsp;{!singlerec.Vision_Product__r.Name}
+                        <aura:if isTrue="{!(and(singlerec.Backorder_SRx_Rx__r.Vision_MoH__c lt 0, singlerec.product_Segment__c == 'Rx'))}">
+                            <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" /> 
+                            
+                        </aura:if>
+                        <aura:if isTrue="{!(and(singlerec.Backorder_SRx_Rx__r.Vision_On_Backorder__c == 'Yes' , singlerec.product_Segment__c == 'SRx'))}">
+                            <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                             
+                        </aura:if>
+                        <aura:if isTrue="{!(and(singlerec.GCP_Backorder_OTC__r.Vision_Backorder_Qty__c gt 0, singlerec.product_Segment__c == 'OTC'))}">
+                            <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                              
+                        </aura:if>&nbsp;
+                        <aura:if isTrue="{!singlerec.Is_in_Openorder__c}">     
+                            <img src="{!$Resource.Noopenorder}" class="imageclass" style="max-width: 20px;height: 20px;" title="Open Orders on this Product" />                              
+                            
+                            <aura:set attribute="else"> 
+                                <img src="{!$Resource.OpenorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="No Open Orders on this Product" />                               
+                                
+                            </aura:set> 
+                        </aura:if> 
+                        <aura:if isTrue="{!singlerec.Is_Initial_Order__c}"><img style="width: 30px !important;" src="{!$Resource.NewGIF}" />  </aura:if> 
+                        <aura:if isTrue="{!singlerec.Product_Position__c != null}">&nbsp;<span title="{!singlerec.Product_Position__c}">({!singlerec.Product_Position__c})</span></aura:if>
+                    </td>
+                    <aura:if isTrue="{!v.itemDescDrover}">
+                        <td class="ndcColumnData fixedcolumn2" title="" style="max-width:100px !important;overflow: hidden;">{!singlerec.Vision_Product__r.Phoenix_NDC_11__c}</td>
+                        <td class="packColumnData fixedcolumn3" style="text-align:center;max-width:80px !important;overflow: hidden;"><lightning:formattedNumber value="{!singlerec.Vision_Product__r.Phoenix_Pkg_Size__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td> 
+                    </aura:if>
+                    <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.Indirect_Awarded_Information__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    <aura:if isTrue="{!v.QTDdrover}">
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.QTD_Indirect_Awarded_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.QTD_Indirect_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    </aura:if>
+                    <td class="" style="{!(singlerec.QTD_Indirect_Complaince__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.QTD_Indirect_Complaince__c le 90, singlerec.QTD_Indirect_Complaince__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                        <lightning:formattedNumber value="{!singlerec.QTD_Indirect_Complaince__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                 
+                    <aura:if isTrue="{!v.FTDdrower}">
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.FTD_Indirect_Awarded_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.FTD_Indirect_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    </aura:if>
+                    <td class="" style="{!(singlerec.FTD_Indirect_Complaince__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.FTD_Indirect_Complaince__c le 90, singlerec.FTD_Indirect_Complaince__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                        <lightning:formattedNumber value="{!singlerec.FTD_Indirect_Complaince__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                 
+                    <aura:if isTrue="{!v.CTDdrover}">
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.CTD_Indirect_Awarded_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.CTD_Indirect_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    </aura:if>
+                    <td class="" style="{!(singlerec.CTD_Indirect_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.CTD_Indirect_Compliance__c le 90, singlerec.CTD_Indirect_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                        <lightning:formattedNumber value="{!singlerec.CTD_Indirect_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>
+                    <aura:if isTrue="{!v.MTDdrover}">
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.MTD_Indirect_Awarded_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M1_Indirect_Quantity__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    </aura:if>
+                    <td class="" style="{!(singlerec.MTD_Indirect_Compliance__c ge 90 ? 'color:purple;text-align:center;border-right-style: solid;border-right-color: #cac4c2;' : AND(singlerec.MTD_Indirect_Compliance__c le 90, singlerec.MTD_Indirect_Compliance__c ge 75) ? 'color:green;text-align:center;border-right-style: solid;border-right-color: #cac4c2;' : 'color:red;text-align:center;border-right-style: solid;border-right-color: #cac4c2;')}">
+                        <lightning:formattedNumber value="{!singlerec.MTD_Indirect_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>          
+                    
+                    <td style="text-align:center;"><lightning:formattedNumber value="{!singlerec.Indirect_Awarded_Quantity_Monthly__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    <aura:if isTrue="{!v.sixMonthsDrover}">
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M7_Indirect_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td class="" style="{!(singlerec.M7_Indirect_Qty_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M7_Indirect_Qty_Compliance__c le 90, singlerec.M7_Indirect_Qty_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M7_Indirect_Qty_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                                       
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M6_Indirect_Quantity__c}"   minimumFractionDigits="0" maximumFractionDigits="0"/></td> 
+                        <td class="" style="{!(singlerec.M6_Indirect_Qty_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M6_Indirect_Qty_Compliance__c le 90, singlerec.M6_Indirect_Qty_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M6_Indirect_Qty_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                                        
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M5_Indirect_Quantity__c}"   minimumFractionDigits="0" maximumFractionDigits="0"/></td>           
+                        <td class="" style="{!(singlerec.M5_Indirect_Qty_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M5_Indirect_Qty_Compliance__c le 90, singlerec.M5_Indirect_Qty_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M5_Indirect_Qty_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M4_Indirect_Quantity__c}"   minimumFractionDigits="0" maximumFractionDigits="0"/></td>           
+                        <td class="" style="{!(singlerec.M4_Indirect_Qty_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M4_Indirect_Qty_Compliance__c le 90, singlerec.M4_Indirect_Qty_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M4_Indirect_Qty_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M3_Indirect_Quantity__c}"   minimumFractionDigits="0" maximumFractionDigits="0"/></td>           
+                        <td class="" style="{!(singlerec.M3_Indirect_Qty_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M3_Indirect_Qty_Compliance__c le 90, singlerec.M3_Indirect_Qty_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M3_Indirect_Qty_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                        <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M2_Indirect_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>           
+                        <td class="" style="{!(singlerec.M2_Indirect_Qty_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M2_Indirect_Qty_Compliance__c le 90, singlerec.M2_Indirect_Qty_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                            <lightning:formattedNumber value="{!singlerec.M2_Indirect_Qty_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                        <td class="slds-text-align--center">
+                            <!-- <button onclick="{!c.inlineEditComments}" 
+                        class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                        tabindex="0" id="{!indx}">-->
+                            <lightning:buttonIcon variant="bare" iconName="utility:comments"  size="medium"  value="{!singlerec.Vision_Product__c}" onclick="{!c.inlineEditComments}"/>
+                            
+                            
+                            <!-- </button>-->
+                        </td>
+                    </aura:if>
+                </tr>
+                
+                
+            </aura:if>
+            
+        </aura:iteration>  </aura:if>
+    <aura:if isTrue="{!v.isModalOpen}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    
+                    <div class="slds-text-align_center"> <b style="align:center;">{!v.ProdName}</b></div>  
+                    
+                    
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                    <div>
+                        <div style="padding-left:10px;padding-right:10px;">
+                            <div aura:id="mainDiv" style="overflow:auto;margin-top:10px;border-radius: 0.25rem;border: 1px solid #cfcfcf;">
+                                
+                                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                                    <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered slds-table--header-fixed">                            <thead>
+                                        <tr>
+                                            <th style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;padding:5px;">Contract Name</th>
+                                            <th style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;padding:5px;">Awarded Position</th> 
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                            <aura:iteration items="{!v.awardedPosition}" var="item" >
+                                                <tr>
+                                                    <td>{!item.Vision_Contract__r.Name}</td>
+                                                    <td>{!item.Vision_Current_Product_Position__c}</td>
+                                                </tr>
+                                            </aura:iteration>
+                                        </tbody>
+                                    </table>  
+                                </div>
+                            </div></div>
+                    </div>
+                </div>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if> 
+    <aura:if isTrue="{!v.showComments}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                 aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_medium">
+            
+            <div class="slds-modal__container">
+                
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" onclick="{!c.closeCommentPopup}"
+                                          alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                    
+                    <h2 class="slds-text-heading_medium slds-hyphenate"><b>{!v.gcpLineItem.Phoenix_Product_Family__c} Comments/Insights</b></h2>
+                    
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.showSpinnerInCommentPop}">
+                        <lightning:spinner size="medium" variant="brand" />
+                    </aura:if>
+                    <div>
+                        <div>
+                            <lightning:textarea label="Vision Comment"
+                                                value="{!v.visionComment}"
+                                                placeholder="Enter Comment Here..."/>
+                        </div>
+                        <div style="text-align:right;">
+                            <lightning:button variant="brand" label="Save" title="Save"
+                                              onclick="{! c.onSaveCmnt }"/>
+                        </div>
+                    </div>
+                    <!-- <aura:if isTrue="{!v.doesCmntsExist}">
+                        <div style="text-align:right;margin-top:5px;">
+                            <lightning:button aura:id="allCmnts" onclick="{!c.downloadCmnts}">
+                                <span>
+                                    Export All Comments&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                </span>
+                            </lightning:button>
+                        </div>
+                    </aura:if> -->
+                    <aura:iteration items="{!v.listOfCmnts}" var="cmntLineList" indexVar="sNo">
+                        <lightning:accordion allowMultipleSectionsOpen="true" aura:id="accordion" activeSectionName="CmntSection">
+                            <aura:if isTrue="{!cmntLineList.cmntCat=='Vision Comments'}">
+                                <lightning:accordionSection name="Vision Comments" label="Vision Comments">
+                                    <aura:if isTrue="{!not(empty(cmntLineList.cmntWrapList))}">
+                                        <!-- <div style="text-align:right;margin-bottom:5px;">
+                                            <lightning:button aura:id="visionCmnts" onclick="{!c.downloadCmnts}">
+                                                <span>
+                                                    Export&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                                </span>
+                                            </lightning:button>
+                                        </div> -->
+                                        <aura:iteration items="{!cmntLineList.cmntWrapList}" var="visionCmnts">
+                                            <div class="slds-box" style="padding:10px;margin-bottom:3px;">
+                                                <article class="slds-post slds-card">
+                                                    <header class="slds-post__header slds-media">
+                                                        <div class="slds-media__figure">
+                                                            <a href="#" class="slds-avatar slds-avatar_circle slds-avatar_large">
+                                                                <img alt="{!visionCmnts.userName}" src="{!visionCmnts.profilePicUrl}" 
+                                                                     title="{!visionCmnts.userName}"/>
+                                                            </a>
+                                                        </div>
+                                                        <div class="slds-media__body">
+                                                            <div class="slds-grid slds-grid_align-spread slds-has-flexi-truncate">
+                                                                <p class="slds-text-body_small">
+                                                                    {!visionCmnts.userName} 
+                                                                </p>
+                                                            </div>
+                                                            <p class="slds-text-body_small">
+                                                                <a href="#" title="" 
+                                                                   class="slds-text-link_reset">{!visionCmnts.cmntDate}
+                                                                </a>
+                                                            </p>
+                                                        </div>
+                                                    </header>
+                                                    <div class="slds-post__content">
+                                                        <p style="margin-left:5px;">{!visionCmnts.cmntString}</p>
+                                                    </div>
+                                                </article> 
+                                            </div>
+                                        </aura:iteration>
+                                        <aura:set attribute="else">
+                                            <center>
+                                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                                     role="alert" style="width:50%;">
+                                                    <span class="slds-icon_container slds-m-right_x-small"
+                                                          title="Please add line items to view the table">
+                                                        <lightning:icon iconName="utility:info" alternativeText="info"
+                                                                        size="x-small" variant="inverse" />
+                                                    </span>
+                                                    <h2>No Vision Comments Found</h2>
+                                                </div>
+                                            </center>
+                                        </aura:set>
+                                    </aura:if>
+                                </lightning:accordionSection>
+                            </aura:if>
+                            
+                            <aura:if isTrue="{!cmntLineList.cmntCat=='Panorama Comments'}">
+                                <lightning:accordionSection name="Panorama Comments" label="Panorama Comments">
+                                    <aura:if isTrue="{!not(empty(cmntLineList.cmntWrapList))}">
+                                        <!-- <div style="text-align:right;margin-bottom:5px;">
+                                            <lightning:button aura:id="panoramaCmnts" onclick="{!c.downloadCmnts}">
+                                                <span>
+                                                    Export&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                                </span>
+                                            </lightning:button>
+                                        </div> -->
+                                        <aura:iteration items="{!cmntLineList.cmntWrapList}" var="visionCmnts">
+                                            <div class="slds-box" style="padding:10px;margin-bottom:3px;">
+                                                <article class="slds-post slds-card">
+                                                    <header class="slds-post__header slds-media">
+                                                        <div class="slds-media__figure">
+                                                            <img alt="{!visionCmnts.userName}" src="/docs/component-library/app/images/examples/avatar1.jpg" 
+                                                                 title="{!visionCmnts.userName}"/>
+                                                        </div>
+                                                        <div class="slds-media__body">
+                                                            <div class="slds-grid slds-grid_align-spread slds-has-flexi-truncate">
+                                                                <p class="slds-text-body_small">
+                                                                    {!visionCmnts.userName}
+                                                                </p>
+                                                            </div>
+                                                            <p class="slds-text-body_small">
+                                                                <a href="#" title="" 
+                                                                   class="slds-text-link_reset">
+                                                                    {!visionCmnts.cmntDate}
+                                                                </a>
+                                                            </p>
+                                                        </div>
+                                                    </header>
+                                                    <div class="slds-post__content">
+                                                        <aura:if isTrue="{!visionCmnts.gcpCmntObj.long_term_strategy__c != ''}">
+                                                            <div class="slds-label" style="font-weight:bold;">Long Term Strategy</div>
+                                                            <div><p style="margin-left:5px;">{!visionCmnts.gcpCmntObj.long_term_strategy__c}</p></div>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!visionCmnts.gcpCmntObj.short_term_strategy__c != ''}">
+                                                            <div class="slds-label" style="font-weight:bold;">Short Term Strategy</div>
+                                                            <div><p style="margin-left:5px;">{!visionCmnts.gcpCmntObj.short_term_strategy__c}</p></div>
+                                                        </aura:if>
+                                                    </div>
+                                                </article> 
+                                            </div>
+                                        </aura:iteration>
+                                        <aura:set attribute="else">
+                                            <center>
+                                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                                     role="alert" style="width:50%;">
+                                                    <span class="slds-icon_container slds-m-right_x-small"
+                                                          title="Please add line items to view the table">
+                                                        <lightning:icon iconName="utility:info" alternativeText="info"
+                                                                        size="x-small" variant="inverse" />
+                                                    </span>
+                                                    <h2>No Vision Comments Found</h2>
+                                                </div>
+                                            </center>
+                                        </aura:set>
+                                    </aura:if>
+                                </lightning:accordionSection>
+                            </aura:if>
+                            
+                        </lightning:accordion>
+                    </aura:iteration>
+                    
+                    <aura:if isTrue="{!not(empty(v.brightCmnts))}">
+                        <lightning:accordion allowMultipleSectionsOpen="true" aura:id="accordion">
+                            <lightning:accordionSection name="Bright Comments" label="Bright Comments">
+                                <!-- <div style="text-align:right;margin-bottom:5px;">
+                                        <lightning:button aura:id="brightCmnts" onclick="{!c.downloadCmnts}">
+                                            <span>
+                                                Export&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                            </span>
+                                        </lightning:button>
+                                    </div> -->
+                                <aura:iteration items="{!v.brightCmnts}" var="brightCmnts">
+                                    <div class="slds-box" style="padding:10px;margin-bottom:3px;">
+                                        <div><b>Bid # <a href="{!'/'+brightCmnts.bidId}" target="_blank">{!brightCmnts.key}</a></b></div>
+                                        <br/>
+                                        <div>
+                                            <aura:iteration items="{!brightCmnts.value}" var="brightCmntLines">
+                                                <article class="slds-post slds-card">
+                                                    <header class="slds-post__header slds-media">
+                                                        <div class="slds-media__figure">
+                                                            <a href="#" class="slds-avatar slds-avatar_circle slds-avatar_large">
+                                                                <img alt="{!brightCmntLines.userName}" src="{!brightCmntLines.profilePicUrl}" 
+                                                                     title="{!brightCmntLines.userName}"/>
+                                                            </a>
+                                                        </div>
+                                                        <div class="slds-media__body">
+                                                            <div class="slds-grid slds-grid_align-spread slds-has-flexi-truncate">
+                                                                <p class="slds-text-body_small">
+                                                                    {!brightCmntLines.userName} - {!brightCmntLines.cmntAprvlStage}
+                                                                </p>
+                                                            </div>
+                                                            <p class="slds-text-body_small">
+                                                                {!brightCmntLines.cmntDate}
+                                                            </p>
+                                                        </div>
+                                                    </header>
+                                                    <div class="slds-post__content">
+                                                        <p>{!brightCmntLines.cmntString}</p>
+                                                    </div>
+                                                </article> 
+                                            </aura:iteration>
+                                        </div>
+                                    </div>
+                                </aura:iteration>
+                            </lightning:accordionSection>
+                        </lightning:accordion>
+                    </aura:if>
+                </div>
+                <!--/div-->
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" label="Close" title="Close"
+                                      onclick="{! c.closeCommentPopup }" />
+                    <aura:if isTrue="{!v.showSaveComntButton}">
+                        <lightning:button variant="brand" label="Save" title="Save"
+                                          onclick="{! c.onRecChange }" />
+                    </aura:if>
+                </footer>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+</aura:component>

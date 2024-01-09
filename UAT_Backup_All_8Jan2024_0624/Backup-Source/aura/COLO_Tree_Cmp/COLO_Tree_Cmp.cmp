@@ -1,0 +1,1045 @@
+<aura:component controller="Vision_COLO_Controller" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="selectedSection" type="String" />
+    <aura:attribute name="showFilterPopup" type="boolean"/>
+    <aura:attribute name="showWonPopup" type="boolean"/>
+    <aura:attribute name="showLostPopup" type="boolean"/>
+    <aura:attribute name="selectedProductType" type="string" default="All" />
+    <aura:attribute name="selectedMonth" type="string" />
+    <aura:attribute name="monthOptions" type="list" />
+    <aura:attribute name="tempMonthOptions2" type="list" />
+    <aura:attribute name="tempMonthOptions" type="list" />
+    <aura:attribute name="expandAllOpportunities" type="boolean" default="true"/>
+    <aura:attribute name="expandNPL" type="boolean" default="false" />
+    <aura:attribute name="expandShareExpansion" type="boolean" default="false" />
+    <aura:attribute name="expandPriceChange" type="boolean" default="false" />
+    <aura:attribute name="isDataLoaded" type="boolean" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" />
+    <aura:attribute name="responseWrapper" type="object" />
+    <aura:attribute name="shareExpansionList" type="list" />
+    <aura:attribute name="priceChangeList" type="list" />
+    <aura:attribute name="selectedId" type="String" />
+    
+    <aura:attribute name="selectedOptionsCount" type="Integer" default="0" />
+    <aura:attribute name="value" type="String" default="All" description="Selected value in single Select" />
+    <aura:attribute name="values" type="List"   default="" description="Selected value in Multi Select" />
+    <aura:attribute name="label" type="string" default="" description="Label will be displayed above input Box" />
+    <aura:attribute name="minChar" type="Integer" default="1" description="Minimum character to type for search" />
+    <aura:attribute name="disabled" type="Boolean" default="false" description="Disable the combobox" />
+    <aura:attribute name="multiSelect" type="Boolean" default="true" description="Switch between single and multiSelect" />
+    <aura:attribute name="searchString"   type="string" default="" description="String to search"/>
+    <aura:attribute name="message"   type="String" default="" />
+    <aura:attribute name="showPills" type="boolean" />
+    <aura:attribute name="allSelected" type="boolean" />
+    <aura:attribute name="showUL" type="boolean" />
+    <aura:attribute name="showPopup" type="boolean" />
+    <aura:attribute name="selectedPopup" type="string" />
+    <aura:attribute name="optyWonFamilyMap" type="Object" />
+    <aura:attribute name="optyLostFamilyMap" type="Object" />
+    <aura:attribute name="optyWonFamilyList" type="list" />
+    <aura:attribute name="optyLostFamilyList" type="list" />
+    <aura:attribute name="lackInventoryList" type="list" />
+    <aura:attribute name="supplyFamilyIssueMap" type="Object" />
+    <aura:attribute name="lackInventoryFamilyMap" type="Object" />
+    <aura:attribute name="familyIdMap" type="Object" />
+    <aura:attribute name="lackInventoryFamilyList" type="list" />
+    <aura:attribute name="lackInventoryFamilyMapTemp" type="Object" />
+    <aura:attribute name="familyIdMapTemp" type="Object" />
+    <aura:attribute name="lackInventoryFamilyListTemp" type="list" />
+    <aura:attribute name="lackInventorySummaryMap" type="Object" />
+    <aura:attribute name="productSearchString" type="string" />
+    <aura:attribute name="customerSearchString" type="string" />
+    <aura:attribute name="userName" type="string" />
+    <aura:attribute name="selectedUserName" type="string" />
+    <aura:attribute name="showLackOfInventoryPopup" type="boolean" />
+    <aura:attribute name="inventoryProductCount" type="integer" />
+    <aura:attribute name="dataObject" type="Object" default='{"totalSales": 0, "totalTPTSales": 0, "totalOpportunitiesCount": 0, "totalNPLCount": 0, "totalShareExpansionCount": 0, "totalPriceChangeCount": 0,
+                                                             "totalNPLSales": 0, "totalShareExpansionSales": 0, "totalPriceChangeSales": 0, "totalNPLTPTSales": 0, "totalShareExpansionTPTSales": 0,
+                                                             "totalPriceChangeTPTSales": 0}'/>
+    <aura:attribute name="productOptions" type="List" default="[
+                                                               {'label': 'Rx', 'value': 'Rx'},
+                                                               {'label': 'SRx', 'value': 'SRx'},
+                                                               {'label': 'OTC', 'value': 'OTC'},
+                                                               {'label': 'Rx+SRx', 'value': 'Rx+SRx'},
+                                                               {'label': 'SRx+OTC', 'value': 'SRx+OTC'},
+                                                               {'label': 'Rx+OTC', 'value': 'Rx+OTC'},
+                                                               {'label': 'All', 'value': 'All'},
+                                                               ]"/>
+    <aura:attribute name="expandCollapseObj" type="Object" default="{'expandAllOpportunities': false, 'expandNPL': false, 'expandShareExpansions': false, 'expandPriceChanges': false,
+                                                                    'expandDoNotBid': false, 'expandOptyWon': false, 'expandOptyLost': false, 'expandLessThreshold1': false, 'expandGreaterThreshold1': false,
+                                                                    'expandDueToPrice': false, 'expandDueToSupply': false, 'expandCIPOn1': false, 'expandCIPInititated1': false, 'expandLessThreshold2': false,'expandGreaterThreshold2': false,
+                                                                    'expandSupplyLeadTimesInDays': false, 'expandCIPOn2': false, 'expandCIPInititated2': false}"/>
+    <aura:attribute name="sampleList" type="list" default="['One', 'Two', 'Three']" />
+    <aura:handler name = "init" value ="{!this}" action = "{!c.doInit}"/>
+    <aura:attribute name="showTimeSeries" type="boolean" default="false"/>
+    <aura:attribute name="selectedTimeSeriesItem" type="string"/>
+    
+    
+    <!--  COLO_Tree_Cmp -->
+    <aura:if isTrue="{!v.isSpinnerLoad}">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+    <aura:if isTrue="{!v.showPopup}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__content_headless" style="text-align: right;">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeNPLPopup }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                
+                <div class="customCSS slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-top: 0px;padding-left:10px;font-size: 13px;">
+                    <div class="topContentSticky">
+                        <div style="padding:18px 5px 5px 5px;text-align: center; font-size: 16px;font-weight: bold;font-weight: 600;color:#3E3E3C;background-color: white;">
+                            <b>{!v.selectedPopup}</b>
+                        </div> 
+                        <div style="width: 100%;">
+                            <div style="float: right; width: 100%;background-color: white;">
+                                <div style="float: right;">
+                                    <div style="display: inline-block;margin-right: 16px;width: 300px;">
+                                        <lightning:input name="productDetails" label="Product Details" placeholder="Type Product Details" value="{!v.productSearchString}" />
+                                    </div>
+                                    <div style="display: inline-block;margin-right: 16px;width: 300px;">
+                                        <lightning:input name="customerDetails" label="Customer Name" placeholder="Type Customer Name" value="{!v.customerSearchString}"/>
+                                    </div>
+                                    <div style="display:inline-block;">
+                                        <lightning:button label="Search" variant="brand" iconName="utility:search" iconPosition="right" onclick="{!c.searchWon}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="width: 100%;overflow: auto;">
+                        <lightning:accordion allowMultipleSectionsOpen="true">
+                            <lightning:accordionSection name="Opportunity Won" label="Opportunity Won">
+                                <div style="max-height: 300px;overflow: auto;">
+                                    <table class="slds-table slds-table_cell-buffer slds-no-row-hover slds-table_bordered" style="border: 1px solid #c8c8c8;" >
+                                        <thead>
+                                            <tr class="slds-line-height_reset">
+                                                <th class="mainHeaderSticky" scope="col">
+                                                    <div class="slds-truncate" title="Product Family">Product Family</div>
+                                                </th>
+                                                <th class="mainHeaderSticky" scope="col">
+                                                    <div class="slds-truncate" title="Product">Product</div>
+                                                </th>
+                                                <th class="mainHeaderSticky" scope="col">
+                                                    <div class="slds-truncate" title="Customer Name">Customer Name</div>
+                                                </th>
+                                                <th class="mainHeaderSticky" scope="col">
+                                                    <div class="slds-truncate" title="Bid Number">Bid Number</div>
+                                                </th>
+                                                <th class="mainHeaderSticky" scope="col" style="text-align: right;">
+                                                    <div class="slds-truncate" title="Awarded Sales ($)">Awarded Sales ($)</div>
+                                                </th>
+                                                <th class="mainHeaderSticky" scope="col" style="text-align: right;">
+                                                    <div class="slds-truncate" title="Awarded GM ($)">Awarded GM ($)</div>
+                                                </th>
+                                                <th class="mainHeaderSticky" scope="col" style="text-align: right;">
+                                                    <div class="slds-truncate" title="Awarded GM (%)">Awarded GM (%)</div>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td class="totalsRowSticky" style="text-align: left;" colspan="4">Summary</td>
+                                                <td class="totalsRowSticky" style="text-align: right;">
+                                                    <lightning:formattedNumber value="{!v.dataObject.totalOptyAwardedSales}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                                </td>
+                                                <td class="totalsRowSticky" style="text-align: right;">
+                                                    <lightning:formattedNumber value="{!v.dataObject.totalOptyAwardedGM}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                                </td>
+                                                <td class="totalsRowSticky" style="text-align: right;">
+                                                    <aura:if isTrue="{!(v.dataObject.totalOptyAwardedGM/v.dataObject.totalOptyAwardedSales) != 'Infinity'}">
+                                                        <lightning:formattedNumber value="{!(v.dataObject.totalOptyAwardedGM/v.dataObject.totalOptyAwardedSales)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        <aura:set attribute="else">
+                                                            N/A
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </td>	
+                                            </tr>
+                                            <aura:iteration items="{!v.optyWonFamilyList}" var="family">
+                                                <c:COLO_Popup_Child family="{!family}" familyMap="{!v.optyWonFamilyMap}" popupName="OptyWon"/>
+                                            </aura:iteration>
+                                            <!--<tr style="background-color: #efefef;">
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>-->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </lightning:accordionSection>
+                            <lightning:accordionSection name="Opportunity Lost" label="Opportunity Lost">
+                                <div style="max-height: 300px;overflow: auto;">
+                                    <table class="slds-table slds-table_cell-buffer slds-no-row-hover slds-table_bordered" style="border: 1px solid #c8c8c8;" >
+                                        <thead>
+                                            <tr class="slds-line-height_reset">
+                                                <th class="mainHeaderSticky" scope="col">
+                                                    <div class="slds-truncate" title="Product Family">Product Family</div>
+                                                </th>
+                                                <th class="mainHeaderSticky" scope="col">
+                                                    <div class="slds-truncate" title="Product">Product</div>
+                                                </th>
+                                                <th class="mainHeaderSticky" scope="col">
+                                                    <div class="slds-truncate" title="Customer Name">Customer Name</div>
+                                                </th>
+                                                <th class="mainHeaderSticky" scope="col">
+                                                    <div class="slds-truncate" title="Bid Number">Bid Number</div>
+                                                </th>
+                                                <th class="mainHeaderSticky" scope="col">
+                                                    <div class="slds-truncate" title="Customer Decline Reasons">Customer Decline Reasons</div>
+                                                </th>
+                                                <th class="mainHeaderSticky" scope="col" style="text-align: right;">
+                                                    <div class="slds-truncate" title="Proposed Sales ($)">Proposed Sales ($)</div>
+                                                </th>
+                                                <th class="mainHeaderSticky" scope="col" style="text-align: right;">
+                                                    <div class="slds-truncate" title="Proposed TPT ($)">Proposed TPT ($)</div>
+                                                </th>
+                                                <th class="mainHeaderSticky" scope="col" style="text-align: right;">
+                                                    <div class="slds-truncate" title="Proposed TPT (%)">Proposed TPT (%)</div>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td class="totalsRowSticky" style="text-align: left;" colspan="5">Summary</td>
+                                                <td class="totalsRowSticky" style="text-align: right;">
+                                                    <lightning:formattedNumber value="{!v.dataObject.totalOptyProposedSales}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                                </td>
+                                                <td class="totalsRowSticky" style="text-align: right;">
+                                                    <lightning:formattedNumber value="{!v.dataObject.totalOptyProposedGM}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                                </td>
+                                                <td class="totalsRowSticky" style="text-align: right;">
+                                                    <aura:if isTrue="{!(v.dataObject.totalOptyProposedGM/v.dataObject.totalOptyProposedSales) != 'Infinity'}">
+                                                        <lightning:formattedNumber value="{!(v.dataObject.totalOptyProposedGM/v.dataObject.totalOptyProposedSales)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        <aura:set attribute="else">
+                                                            N/A
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </td>	
+                                            </tr>
+                                            <aura:iteration items="{!v.optyLostFamilyList}" var="family">
+                                                <c:COLO_Popup_Child family="{!family}" familyMap="{!v.optyLostFamilyMap}" popupName="OptyLost"/>
+                                            </aura:iteration>
+                                            <!--<tr style="background-color: #efefef;">
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>-->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </lightning:accordionSection>
+                        </lightning:accordion>
+                    </div>
+                </div>
+                <div class="slds-modal__footer">
+                    <lightning:button label="Close" variant="neutral" onclick="{!c.closeNPLPopup}"/>
+                </div>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if>
+    <div class="slds-box" style="background-color:white;">
+        <!--<div class="slds-grid">
+            <div>
+            </div>
+            <div>
+            </div>
+        </div>-->
+        <aura:if isTrue="{!v.showFilterPopup}">
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_x-small" aria-labelledby="modal-heading-01" aria-modal="true">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__content_headless" style="text-align: right;">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.handleClick }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close buttonCSS"/>
+                    </header>
+                    
+                    <div class="customCSS slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="border-radius: 8px;padding-left:10px;font-size: 13px;">
+                        <div style="padding:5px;text-align: center; font-size: 24px;color:#3E3E3C;">
+                            <b>COLO Analysis Criteria</b>
+                        </div> 
+                        <div style="padding: 24px 20px 12px 20px;" class="slds-grid">
+                            <!--<div style="display: inline-block;margin-right: 16px;">
+                                <lightning:input aura:id="date1" type="date" name="date1" label="Start Date" dateStyle="medium" value="" />
+                            </div>
+                            <div style="display: inline-block;margin-right: 16px;width: 180px;">
+                                <lightning:input aura:id="date1" type="date" name="date1" label="End Date" dateStyle="medium" value=""/>
+                            </div>-->
+                            <div style="display: inline-block;margin-right: 16px;width: 180px;" class="slds-col slds-size_1-of-3">
+                                <div>
+                                    <label class="slds-form-element__label">Bid Closed Date</label>
+                                    <div class="slds-combobox_container">
+                                        <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open" aura:id="resultsDiv" aria-expanded="true" aria-haspopup="listbox" role="combobox">
+                                            <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                                                <lightning:input disabled="{!v.disabled}" aura:id="inputLookup" class="inputBox" placeholder="Select Month" onblur="{!c.handleBlur}" onclick="{!c.showOptions}" onkeyup="{!c.filterOptions}" value="{!v.searchString}" autoComplete="off" variant="label-hidden" id="combobox-id-1" />
+                                                <lightning:icon class="slds-input__icon" iconName="utility:down" size="x-small" alternativeText="search"/>
+                                            </div>
+                                            <!-- Dropdown List -->
+                                            <aura:if isTrue="{!v.showUL}">
+                                                <div id="listbox-id-1" class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid" style=""> <!--{! 'max-height:' + (8 + (v.recordCount * 40)) + 'px' }-->
+                                                    <ul class="slds-listbox slds-listbox_vertical recordListBox" role="presentation">
+                                                        <aura:if isTrue="{!empty(v.message)}" >
+                                                            <!-- To display Drop down List -->
+                                                            <aura:iteration items="{!v.monthOptions}" var="option" >
+                                                                <aura:if isTrue="{!option.disabled}">
+                                                                    <li class="{!'slds-listbox__item disabledItem' + if(option.isVisible,'',' slds-hide')}">
+                                                                        <span class="slds-media slds-listbox__option_entity verticalAlign slds-truncate">{!option.label}</span>
+                                                                    </li>
+                                                                    <aura:set attribute="else">
+                                                                        <li id="{!option.value}" class="{!'slds-listbox__item eachItem' + if(option.isVisible,'',' slds-hide')}" onmousedown="{!c.selectItem}">
+                                                                            <lightning:icon class="{!if(option.selected,'','slds-hide')}" iconName="utility:check" size="x-small" alternativeText="icon" />
+                                                                            <span class="slds-media slds-listbox__option_entity verticalAlign slds-truncate">{!option.label}</span>
+                                                                        </li>
+                                                                    </aura:set>
+                                                                </aura:if>
+                                                            </aura:iteration>
+                                                            <!-- To display Error Message -->
+                                                            <aura:set attribute="else">
+                                                                <li class="slds-listbox__item">
+                                                                    <span class="slds-media slds-listbox__option_entity verticalAlign slds-truncate">{!v.message}</span>
+                                                                </li>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </ul>
+                                                </div>
+                                            </aura:if>
+                                        </div>
+                                    </div>
+                                    <aura:if isTrue="{!v.showPills == false}">
+                                        <aura:iteration items="{!v.options}" var="option">
+                                            <aura:if isTrue="{!option.selected}">
+                                                <lightning:pill class="slds-m-around_xx-small" name="{!option.value}" label="{!option.label}" onremove="{!c.closePill}"/>
+                                            </aura:if>
+                                        </aura:iteration>
+                                    </aura:if>
+                                </div>
+                                <!--<lightning:combobox name="Months" label="Select Month" placeholder="Select Month" options="{!v.monthOptions }" value="{!v.selectedMonth}"/>    -->
+                            </div>
+                            <div style="display: inline-block;margin-right: 16px;" class="slds-col slds-size_1-of-3">
+                                <lightning:combobox name="Products" label="Products" placeholder="Products" options="{!v.productOptions }" value="{!v.selectedProductType}" onchange="{!c.handleProductTypeChange}"/>    
+                            </div>
+                            <div style="display: inline-block;margin-right: 16px;" class="slds-col slds-size_1-of-3">
+                                <aura:if isTrue="{!v.selectedProductType == 'All'}">
+                                    <l_lookup:Lookup aura:id="productDirectorLookup" 
+                                                     label="Product Director"
+                                                     objectType="User"
+                                                     placeHolder="Product Director"
+                                                     selectedRecordId="{!v.selectedId}" 
+                                                     queryCondition=""
+                                                     orderBy="Name" 
+                                                     onchange="{!c.handleChange}"/>
+                                    <aura:set attribute="else">
+                                        <l_lookup:Lookup aura:id="productDirectorLookup" 
+                                                         label="Product Director"
+                                                         objectType="User"
+                                                         placeHolder="Product Director"
+                                                         selectedRecordId="{!v.selectedId}" 
+                                                         queryCondition="{! 'Division =\'' + v.selectedProductType + '\'' }"
+                                                         dropDownQuery="{! 'Division =\'' + v.selectedProductType + '\'' }"
+                                                         dropDownLimit="3"
+                                                         orderBy="Name"  
+                                                         setTo="{!v.changeTo}"
+                                                         onchange="{!c.handleChange}"/>
+                                    </aura:set>
+                                </aura:if>
+                            </div>
+                        </div>
+                        <div class="customButtonCSS" style="float:right;padding-bottom: 12px;">
+                            <div style="display: inline-block;margin-right: 8px;">
+                                <lightning:button label="Reset" onclick="{!c.resetPopup}" variant="neutral"/>
+                            </div>
+                            <div style="display: inline-block;">
+                                <lightning:button label="Submit" onclick="{!c.getData}" variant="brand" disabled="{!v.values.length == 0}"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </section>
+            <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+        </aura:if>
+        <aura:if isTrue="{!v.showLackOfInventoryPopup}">
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large" aria-labelledby="modal-heading-01" aria-modal="true">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__content_headless" style="text-align: right;">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.showLackOfInventoryPopup }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close buttonCSS"/>
+                    </header>
+                    
+                    <div class="customCSS slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;font-size: 13px;">
+                        <!--<div style="padding:5px;text-align: center; font-size: 16px;font-weight: bold;font-weight: 600;color:#3E3E3C;">
+                            <b>Did Not Bid Due to Lack of Inventory</b>
+                        </div>-->
+                        <div class="slds-modal__header" style="padding-top: 0px;">
+                            <h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate" style="color:#3E3E3C;">
+                                <b>Did Not Bid Due to Lack of Inventory Supply COLO</b>
+                            </h1>
+                        </div>
+                        <div style="width: 100%;">
+                            <div style="float: left; margin-top: 20px; width: 50%;color:#444444;">
+                                <b>Analysis for {!v.selectedMonth}</b><br/>
+                                <b># Product(s): {!v.inventoryProductCount} <span title="# of Product Families">({!v.lackInventoryFamilyList.length})</span></b>
+                            </div>
+                            <div style="float: right; margin-bottom: 16px; width: 50%;">
+                                <div style="float: right;">
+                                    <div style="display: inline-block;margin-right: 16px;width: 300px;">
+                                        <lightning:input name="productDetails" label="Product Details" placeholder="Type Product Details" value="{!v.productSearchString}" />
+                                    </div>
+                                    <div style="display: inline-block;margin-right: 16px;width: 300px;">
+                                        <lightning:input name="customerDetails" label="Customer Name" placeholder="Type Customer Name" value="{!v.customerSearchString}"/>
+                                    </div>
+                                    <div style="display:inline-block;">
+                                        <lightning:button label="Search" variant="brand" iconName="utility:search" iconPosition="right" onclick="{!c.searchLackOfInventoryList}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="padding: 0px;width: 100%;max-height: 400px;overflow: auto;">
+                            <table class="slds-table slds-table_cell-buffer slds-no-row-hover slds-table_bordered" style="border: 1px solid #c8c8c8;" >
+                                <thead>
+                                    <tr class="slds-line-height_reset">
+                                        <th rowspan="2" class="mainHeaderSticky" scope="col" style="padding-left: 8px;" width="10%">
+                                            <div class="slds-truncate" title="Product Family">Product Family</div>
+                                        </th>
+                                        <th rowspan="2" class="mainHeaderSticky" scope="col" width="10%">
+                                            <div class="slds-truncate" title="Product">Product(s)</div>
+                                        </th>
+                                        <th rowspan="2" class="mainHeaderSticky" scope="col" width="10%" style="text-align: center;">
+                                            <div class="slds-truncate" title="Customer">Customer(s)</div>
+                                        </th>
+                                        <th rowspan="2" class="mainHeaderSticky" scope="col" width="10%">
+                                            <div class="slds-truncate slds-cell-wrap" title="COLO Adjusted for Margin Threshold">COLO Adjusted for Margin Threshold</div>
+                                        </th>
+                                        <th colspan="2" class="mainHeaderSticky" scope="col" style="text-align: center;" width="10%">
+                                            <div class="slds-truncate" title="TPT">TPT</div>
+                                        </th>
+                                        <th rowspan="2" class="mainHeaderSticky" scope="col" style="text-align: center;" width="10%">
+                                            <div class="slds-truncate slds-cell-wrap" title="SCM Rejection Reasons">SCM Rejection Reasons</div>
+                                        </th>
+                                        <th rowspan="2" class="mainHeaderSticky" scope="col" style="text-align: center;" width="8%">
+                                            <div class="slds-truncate slds-cell-wrap" title="Capacity Constraint">Capacity Constraint</div>
+                                        </th>
+                                        <th rowspan="2" class="mainHeaderSticky" scope="col" style="text-align: center;" width="10%">
+                                            <div class="slds-truncate" title="Mitigation Plan(s) in Place">Mitigation Plan(s)</div>
+                                        </th>
+                                        <th rowspan="2" class="mainHeaderSticky" scope="col" style="text-align: center;padding-right: 8px;" width="12%" >
+                                            <div class="slds-truncate" title="Get Well Date">Get Well Date</div>
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                        <th class="tptHeaderSticky" style="height: 32.335px;background-color: #FFDBA5;width: 5%;text-align: center;padding-left: 8px;">$</th>
+                                        <th class="tptHeaderSticky" style="height: 32.335px;background-color: #FDEFBD;width: 5%;text-align: center;padding-right: 8px;">%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="background-color: #efefef;height: 40.89px;">
+                                        <td class="totalsColSticky" colspan="3" style="text-align: left;font-weight: bold;">Summary</td>
+                                        <td class="totalsColSticky" style="text-align: center;">
+                                            <lightning:formattedNumber value="{!v.lackInventorySummaryMap.netCOLO}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </td>
+                                        <td class="totalsColSticky" style="text-align: center;">
+                                            <lightning:formattedNumber value="{!v.lackInventorySummaryMap.netTPTDollar}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </td>
+                                        <td class="totalsColSticky" style="text-align: center;">
+                                            <aura:if isTrue="{!(v.lackInventorySummaryMap.netTPTDollar/v.lackInventorySummaryMap.netCOLO) != 'Infinity'}">
+                                                <lightning:formattedNumber value="{!(v.lackInventorySummaryMap.netTPTDollar/v.lackInventorySummaryMap.netCOLO)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                <aura:set attribute="else">
+                                                    N/A
+                                                </aura:set>
+                                            </aura:if>
+                                        </td>	
+                                        <td class="totalsColSticky"></td>
+                                        <td class="totalsColSticky">&nbsp;</td>
+                                        <td class="totalsColSticky">&nbsp;</td>
+                                        <td class="totalsColSticky">&nbsp;</td>
+                                    </tr>
+                                    <aura:iteration items="{!v.lackInventoryFamilyList}" var="family">
+                                        <c:COLO_LackOfInventoryChild family="{!family}" familyMap="{!v.lackInventoryFamilyMap}" familyIdMap="{!v.familyIdMap}" selectedMonth="{!v.selectedMonth}" productDirectorId="{!v.selectedId}" supplyFamilyIssueMap="{!v.supplyFamilyIssueMap}"/>
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!--<div style="float: right;padding-top: 12px;">
+                            <lightning:button label="Close" variant="neutral" onclick="{!c.showLackOfInventoryPopup}"/>
+                        </div>-->
+                    </div>
+                    <div class="slds-modal__footer">
+                        <lightning:button label="Close" variant="neutral" onclick="{!c.showLackOfInventoryPopup}"/>
+                    </div>
+                </div>
+                
+            </section>
+            <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+        </aura:if>
+        <aura:if isTrue="{!v.showTimeSeries}">
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium" aria-labelledby="modal-heading-01" aria-modal="true">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__content_headless" style="text-align: right;">
+                        <lightning:buttonIcon iconName="utility:close" onclick="{! c.closeTimeSeriesPopup }"
+                                              alternativeText="close" variant="bare-inverse"
+                                              class="slds-modal__close buttonCSS"/>
+                    </header>
+                    
+                    <div class="customCSS slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="border-radius: 8px;padding-left:10px;font-size: 13px;">
+                        <div class="slds-box" style="border-color:black;padding:5px;">
+                            <div style="padding:5px;text-align: center; font-size: 16px;font-weight: bold;font-weight: 600;color:#3E3E3C;">
+                                <b>{!v.selectedTimeSeriesItem}</b>
+                            </div> 
+                            <div style="width: 100%;">
+                                <c:vision_COLO_timeSeries selectedTimeSeriesItem = "{!v.selectedTimeSeriesItem}"
+                                                          selectedProductType = "{!v.selectedProductType}"
+                                                          selectedId = "{!v.selectedId}"/>
+                            </div>
+                            <div style="text-align:right;padding:5px;">
+                                <lightning:button label="Close" onclick="{! c.closeTimeSeriesPopup }"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </aura:if>
+        <div style="text-align: left;font-size: 13px;margin: 10px;">
+            <div style="width: 30%; display: inline-block;vertical-align: top;font-size: 24px;font-weight: bold;font-weight: 600;margin-top: -10px;">
+                Price and Supply <span onclick="{!c.showLackOfInventoryPopup}">COLO</span>
+            </div>
+            <div style="width: 70%; display: inline-block;">
+                <div style="float: right;">
+                    <!--<div style="font-size: 16px;padding-bottom: 8px;color:#3E3E3C;"><b>Legend</b></div>-->
+                    <div style="font-size: 13px;width: 22px;height:22px;background-color:#ffdba5;border:2px solid #ffc369;display:inline-block;border-radius: 50%;"></div>
+                    <div class="legendText">No. of Bids Line Items</div>
+                    <div style="font-size: 13px;width: 22px;height:22px;background-color:#fdefbd;border:2px solid #ffe791;display:inline-block;border-radius: 50%;"></div>
+                    <div class="legendText">% of Total Bids</div>
+                    <div style="font-size: 13px;width: 22px;height:22px;background-color:#e9d7f8;border:2px solid #d29bff;display:inline-block;border-radius: 50%;"></div>
+                    <div class="legendText">Sales ($M)</div>
+                    <div style="font-size: 13px;width: 22px;height:22px;background-color:#bee48f;border:2px solid #77af31;display:inline-block;border-radius: 50%;"></div>
+                    <div class="legendText">GM ($M)</div>
+                    <div class="legendText" style="margin-left: 0px;">                        
+                        <lightning:icon iconName="utility:clock" title="Time Series View" size="small" />
+                        <span class="legendText">Time Series View</span>
+                    </div>
+                    <div class="customButtonCSS" style="display:inline-block;vertical-align: top;margin-top: -6px;">
+                        <lightning:button label="COLO Analysis Criteria" onclick="{!c.handleClick}" variant="neutral" iconName="utility:filterList" iconPosition="right"/>
+                    </div>
+                </div>
+            </div>
+            <div style="font-size: 10px;">
+                The Price &amp; Supply COLO (Cost of Lost Opportunity) feature is a metric that quantifies the potential financial impact of missed opportunities in terms of both price fluctuations and supply shortages.<br/>
+                It helps businesses assess the cost of not capitalizing on favorable market conditions or failing to meet demand due to supply constraints as an outcome of our Bid process.
+            </div>
+        </div>
+        <aura:if isTrue="{!v.isDataLoaded}">
+            <div style="margin-left: 10px;font-weight: bold; font-weight: 500;">
+                Analysis for {!v.selectedMonth}
+                <aura:if isTrue="{!v.selectedProductType == 'All'}">
+                    with all Products and 
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.selectedProductType == 'Rx+SRx'}">
+                            with Rx, SRx Products and 
+                            <aura:set attribute="else">
+                                <aura:if isTrue="{!v.selectedProductType == 'SRx+OTC'}">
+                                    with SRx, OTC Products and 
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!v.selectedProductType == 'Rx+OTC'}">
+                                            with Rx, OTC Products and 
+                                            <aura:set attribute="else">
+                                                with {!v.selectedProductType} Products and 
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                            </aura:set>
+                        </aura:if>                        
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!v.selectedId != null}">
+                    {!v.selectedUserName} (Product Director)
+                    <aura:set attribute="else">
+                        all Product Directors
+                    </aura:set>
+                </aura:if>
+            </div>
+            <lightning:layout>
+                <div class="slds-scrollable" style="width:100%;font-size: 13px;margin-top: 8px;">
+                    <body style="margin-top: -19px;">
+                        <div class="tree"  style="width:95%;margin: auto;">																													
+                            <ul>
+                                <li style="width: 100%;">
+                                    <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;width: 284px; margin: auto;margin-bottom: 10px; font-size: 13px;" >
+                                        <thead>
+                                        </thead>
+                                        <tbody>
+                                            <tr style="height: 73.31px;">
+                                                <td class="Box1Css" style="font-weight:bold;" colspan="2">
+                                                    <span style="padding-left: 10px; cursor: pointer;" onclick="{!c.openAllOpportunitiesPopup}">All Opportunities</span>
+                                                    <span style="float: right;" onclick="{!c.openAllOptyTimeSeries}">
+                                                        <lightning:buttonIcon iconName="utility:clock" class="Popup" variant="bare" alternativeText="Click to view Time Series View" title="Click to view Time Series View" />
+                                                    </span>
+                                                    <br/>
+                                                    <aura:if isTrue="{!v.expandAllOpportunities}">
+                                                        <lightning:buttonIcon iconName="utility:minimize_window" class="buttonIconCSS collapse"  alternativeText="Collapse" title="Collapse" size="x-small" onclick="{!c.expandAllOpportunities}" />
+                                                        <aura:set attribute="else">
+                                                            <lightning:buttonIcon iconName="utility:add" class="buttonIconCSS expand"  alternativeText="Expand" title="Expand" size="x-small" onclick="{!c.expandAllOpportunities}" />
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </td>
+                                            </tr>
+                                            <tr style="font-weight: 500;font-weight:bold;">
+                                                <td class="Box2Css" >{!v.dataObject.totalOpportunities}</td>
+                                                <td class="Box3Css" >100%</td>
+                                            </tr>
+                                            <tr style="font-weight: 500;font-weight:bold;">
+                                                <td class="Box4Css" >{!v.dataObject.totalSales}</td>
+                                                <td class="Box5Css" >{!v.dataObject.totalTPTSales}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <aura:if isTrue="{!v.expandAllOpportunities}">
+                                        <ul style="margin:auto;width: 100%;">
+                                            <li style="width: 25%;">
+                                                <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;width: 284px; margin: auto;margin-top: 24px; font-size: 13px;" >
+                                                    <thead>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr style="height: 60px;">
+                                                            <td class="Box1Css" style="font-weight:bold;cursor:pointer;height: 73.31px;" colspan="2" name="NPL"> <!--onclick="{!c.onclickNPL}"-->
+                                                                <span style="padding-left: 10px;" onclick="{!c.openNPLPopup}">New Product Launches (NPL's)</span>
+                                                                <span style="float: right;" onclick="{!c.openNewPdLTimeSeries}">
+                                                                    <lightning:buttonIcon iconName="utility:clock" class="Popup" variant="bare" alternativeText="Click to view Time Series View" title="Click to view Time Series View"/>
+                                                                </span>
+                                                                <br/>
+                                                                <aura:if isTrue="{!v.expandNPL}">
+                                                                    <lightning:buttonIcon iconName="utility:minimize_window" class="buttonIconCSS collapse" name="NPL" alternativeText="Collapse" title="Collapse" size="x-small" onclick="{!c.onclickNPL}" />
+                                                                    <aura:set attribute="else">
+                                                                        <lightning:buttonIcon iconName="utility:add" class="buttonIconCSS expand" name="NPL" alternativeText="Expand" title="Expand" size="x-small" onclick="{!c.onclickNPL}" />
+                                                                    </aura:set>
+                                                                </aura:if>
+                                                            </td>
+                                                        </tr>
+                                                        <tr style="font-weight: 500;font-weight:bold;">
+                                                            <td class="Box2Css" >{!v.dataObject.totalNPLCount}</td>
+                                                            <td class="Box3Css" >
+                                                                <aura:if isTrue="{!(v.dataObject.totalNPLCount/v.dataObject.totalOpportunities) != 'Infinity'}">
+                                                                    <lightning:formattedNumber value="{!(v.dataObject.totalNPLCount/v.dataObject.totalOpportunities)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                    <aura:set attribute="else">
+                                                                        N/A
+                                                                    </aura:set>
+                                                                </aura:if>
+                                                            </td>
+                                                        </tr>
+                                                        <tr style="font-weight: 500;font-weight:bold;">
+                                                            <td class="Box4Css" >{!v.dataObject.totalNPLSales}</td>
+                                                            <td class="Box5Css">{!v.dataObject.totalNPLTPTSales}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </li>
+                                            <li style="width: 25%;">
+                                                <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;width: 284px; margin: auto;margin-top: 24px; font-size: 13px;" >
+                                                    <thead>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr style="height: 60px;">
+                                                            <td class="Box1Css" style=";font-weight:bold;cursor:pointer;height: 73.31px;" colspan="2" name="Share Expansions" > <!--onclick="{!c.onclickSE}"-->
+                                                                <span style="padding-left: 10px;" onclick="{!c.openSEPopup}">Share Expansions</span>
+                                                                <span style="float: right;" onclick="{!c.openSeTimeSeries}">
+                                                                    <lightning:buttonIcon iconName="utility:clock" class="Popup" variant="bare" alternativeText="Click to view Time Series View" title="Click to view Time Series View"/>
+                                                                </span>
+                                                                <br/>
+                                                                <aura:if isTrue="{!v.expandShareExpansion}">
+                                                                    <lightning:buttonIcon iconName="utility:minimize_window" class="buttonIconCSS collapse"  alternativeText="Collapse" title="Collapse" size="x-small" onclick="{!c.onclickSE}" />
+                                                                    <aura:set attribute="else">
+                                                                        <lightning:buttonIcon iconName="utility:add" class="buttonIconCSS expand"  alternativeText="Expand" title="Expand" size="x-small" onclick="{!c.onclickSE}" />
+                                                                    </aura:set>
+                                                                </aura:if>
+                                                            </td>
+                                                        </tr>
+                                                        <tr style="font-weight: 500;font-weight:bold;">
+                                                            <td class="Box2Css">{!v.dataObject.totalShareExpansionCount}</td>
+                                                            <td class="Box3Css" >
+                                                                <aura:if isTrue="{!(v.dataObject.totalShareExpansionCount/v.dataObject.totalOpportunities) != 'Infinity'}">
+                                                                    <lightning:formattedNumber value="{!(v.dataObject.totalShareExpansionCount/v.dataObject.totalOpportunities)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                    <aura:set attribute="else">
+                                                                        N/A
+                                                                    </aura:set>
+                                                                </aura:if>
+                                                            </td>
+                                                        </tr>
+                                                        <tr style="font-weight: 500;font-weight:bold;">
+                                                            <td class="Box4Css" >{!v.dataObject.totalShareExpansionSales}</td>
+                                                            <td class="Box5Css" >{!v.dataObject.totalShareExpansionTPTSales}</td>
+                                                        </tr>
+                                                        
+                                                    </tbody>
+                                                </table>
+                                                
+                                                
+                                            </li>
+                                            <li style="width: 25%;">
+                                                <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;width: 284px; margin: auto;margin-top: 24px; font-size: 13px;" >
+                                                    <thead>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr style="height: 60px;">
+                                                            <td class="Box1Css" style="font-weight:bold;cursor:pointer;height: 73.31px;" colspan="2" name="Price Change"> <!--onclick="{!c.onclickPC}"-->
+                                                                <span style="padding-left: 10px;" onclick="{!c.openPCPopup}">Price Changes</span>
+                                                                <span style="float: right;" onclick="{!c.openPcTimeSeries}">
+                                                                    <lightning:buttonIcon iconName="utility:clock" class="Popup" variant="bare" alternativeText="Click to view Time Series View" title="Click to view Time Series View"/>
+                                                                </span>
+                                                                <br/>
+                                                                <aura:if isTrue="{!v.expandPriceChange}">
+                                                                    <lightning:buttonIcon iconName="utility:minimize_window" class="buttonIconCSS collapse"  alternativeText="Collapse" title="Collapse" size="x-small" onclick="{!c.onclickPC}" />
+                                                                    <aura:set attribute="else">
+                                                                        <lightning:buttonIcon iconName="utility:add" class="buttonIconCSS expand"  alternativeText="Expand" title="Expand" size="x-small" onclick="{!c.onclickPC}" />
+                                                                    </aura:set>
+                                                                </aura:if>
+                                                            </td>
+                                                        </tr>
+                                                        <tr style="font-weight: 500;font-weight:bold;">
+                                                            <td class="Box2Css" >{!v.dataObject.totalPriceChangeCount}</td>
+                                                            <td class="Box3Css" >
+                                                                <aura:if isTrue="{!(v.dataObject.totalPriceChangeCount/v.dataObject.totalOpportunities) != 'Infinity'}">
+                                                                    <lightning:formattedNumber value="{!(v.dataObject.totalPriceChangeCount/v.dataObject.totalOpportunities)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                    <aura:set attribute="else">
+                                                                        N/A
+                                                                    </aura:set>
+                                                                </aura:if>
+                                                            </td>
+                                                        </tr>
+                                                        <tr style="font-weight: 500;font-weight:bold;">
+                                                            <td class="Box4Css" >{!v.dataObject.totalPriceChangeSales}</td>
+                                                            <td class="Box5Css" >{!v.dataObject.totalPriceChangeTPTSales}</td>
+                                                        </tr>
+                                                        
+                                                    </tbody>
+                                                </table>
+                                                
+                                                
+                                            </li>
+                                            <li style="width: 25%;">
+                                                <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;width: 284px; margin: auto;margin-top: 24px; font-size: 13px;" >
+                                                    <thead>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr style="height: 73.31px;">
+                                                            <td class="Box1Css" style="font-weight:bold;cursor:pointer;" colspan="2">
+                                                                <span onclick="{!c.showLackOfInventoryPopup}"><span style="padding-left: 10px;"><b>Did not bid due to lack</b></span><br/> <b><span>of inventory</span></b> Supply COLO</span>
+                                                                <span style="float: right;margin-top: -15px;" onclick="{!c.openScmTimeSeries}">
+                                                                    <lightning:buttonIcon iconName="utility:clock" class="Popup" variant="bare" alternativeText="Click to view Time Series View" title="Click to view Time Series View" />
+                                                                </span>
+                                                                <!--<br/>
+                                                                <aura:if isTrue="{!v.expandBidDidntWin}">
+                                                                    <lightning:buttonIcon iconName="utility:minimize_window" class="buttonIconCSS collapse"  alternativeText="Collapse" title="Collapse" size="x-small" />
+                                                                    <aura:set attribute="else">
+                                                                        <lightning:buttonIcon iconName="utility:add" class="buttonIconCSS expand"  alternativeText="Expand" title="Expand" size="x-small" />
+                                                                    </aura:set>
+                                                                </aura:if>-->
+                                                            </td>
+                                                        </tr>
+                                                        <tr style="font-weight: 500;font-weight:bold;">
+                                                            <td class="Box2Css">{!v.dataObject.totalLackInventoryCount}</td>
+                                                            <td class="Box3Css" >
+                                                                <aura:if isTrue="{!(v.dataObject.totalLackInventoryCount/v.dataObject.totalOpportunities) != 'Infinity'}">
+                                                                    <lightning:formattedNumber value="{!(v.dataObject.totalLackInventoryCount/v.dataObject.totalOpportunities)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                    <aura:set attribute="else">
+                                                                        N/A
+                                                                    </aura:set>
+                                                                </aura:if>
+                                                            </td>
+                                                        </tr>
+                                                        <tr style="font-weight: 500;font-weight:bold;">
+                                                            <td class="Box4Css" style="text-align: center;">{!v.dataObject.netCOLO}</td>
+                                                            <td class="Box5Css" style="text-align: center;">{!v.dataObject.netTPTDollar}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>       
+                                            </li>
+                                        </ul>
+                                    </aura:if>
+                                </li>
+                            </ul>
+                        </div>
+                    </body>
+                </div>
+                <!--   <div>
+                <li>
+                    <ul>
+                        
+                        <li style="width: 50%;">
+                            <br/>
+                            <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;width: 25%; margin: auto; font-size: 16px;" >
+                                <thead>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="Box1Css" style="background-color:#ADD8E6;" colspan="2">All Opportunities</td>
+                                        
+                                    </tr>
+                                    <tr>
+                                        <td class="Box2Css" >128</td>
+                                        <td class="Box3Css" >55%</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="Box4Css" >$51.5</td>
+                                        <td class="Box5Css" >$33.7</td>
+                                    </tr>
+                                    
+                                </tbody>
+                            </table>
+                        </li>
+                    </ul>
+                    <li style="width: 50%;">
+                        <br/>
+                        <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;width: 25%; margin: auto; font-size: 16px;" >
+                            <thead>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="Box1Css" style="background-color:#ADD8E6;" colspan="2">All Opportunities</td>
+                                    
+                                </tr>
+                                <tr>
+                                    <td class="Box2Css" >128</td>
+                                    <td class="Box3Css" >55%</td>
+                                </tr>
+                                <tr>
+                                    <td class="Box4Css" >$51.5</td>
+                                    <td class="Box5Css" >$33.7</td>
+                                </tr>
+                                
+                            </tbody>
+                        </table>
+                    </li>
+                </li>
+            </div>
+        -->
+            </lightning:layout>
+        </aura:if>
+        <!-- Share Expansion start -->
+        <!--<aura:if isTrue="{!v.selectedSection == 'New Product Launch'}">
+            <lightning:layout>
+                <div class="slds-scrollable" style="width:50%;">
+                    <body style="">
+                        <div class="tree"  style="width:95%;margin: auto;">																													
+                            <ul style="padding: 0px;">
+                                <li style="width: 100%;">
+                                    <ul>
+                                        <li style="width: 50%;">
+                                            <br/>
+                                            <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;width: 70%; margin: auto; font-size: 16px;" >
+                                                <thead>
+                                                </thead>
+                                                <tbody>
+                                                    <tr style="height: 60px;">
+                                                        <td class="Box1Css" style="font-weight:bold;" colspan="2">Opportunities Won</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="Box2Css" >128</td>
+                                                        <td class="Box3Css" >55%</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="Box4Css" >$51.5</td>
+                                                        <td class="Box5Css" >$33.7</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </li>
+                                        <li style="width: 50%;">
+                                            <br/>
+                                            <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;width: 70%; margin: auto; font-size: 16px;" >
+                                                <thead>
+                                                </thead>
+                                                <tbody>
+                                                    <tr style="height: 60px;">
+                                                        <td class="Box1Css" style="font-weight:bold;" colspan="2">Opportunities Lost</td>
+                                                        
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="Box2Css" >128</td>
+                                                        <td class="Box3Css" >55%</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="Box4Css" >$51.5</td>
+                                                        <td class="Box5Css" >$33.7</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </body>
+                </div>
+            </lightning:layout>
+        </aura:if>-->
+        <!--<lightning:layout>
+            <div class="slds-scrollable" style="width:100%;">
+                <body style="margin-top: -19px;">
+                    <div class="tree"  style="width:95%;margin: auto;">																													
+                        <ul>
+                            <li style="width: 70%;">
+                                <ul>
+                                    <li style="width: 70%;">
+                                        <br/>
+                                        <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;width: 25%; margin: auto; font-size: 16px;" >
+                                            <thead>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="Box1Css" style="font-weight:bold;" colspan="2">Opportunities Won</td>
+                                                    
+                                                </tr>
+                                                <tr>
+                                                    <td class="Box2Css" >128</td>
+                                                    <td class="Box3Css" >55%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="Box4Css" >$51.5</td>
+                                                    <td class="Box5Css" >$33.7</td>
+                                                </tr>
+                                                
+                                            </tbody>
+                                        </table>
+                                        
+                                        
+                                    </li>
+                                    <li style="width: 30%;">
+                                        <br/>
+                                        <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;width: 25%; margin: auto; font-size: 16px;" >
+                                            <thead>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="Box1Css" style="font-weight:bold;" colspan="2">Opportunities Lost</td>
+                                                    
+                                                </tr>
+                                                <tr>
+                                                    <td class="Box2Css" >128</td>
+                                                    <td class="Box3Css" >55%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="Box4Css" >$51.5</td>
+                                                    <td class="Box5Css" >$33.7</td>
+                                                </tr>
+                                                
+                                            </tbody>
+                                        </table>
+                                        
+                                        
+                                    </li>
+                                </ul>
+                            </li>
+                            
+                        </ul>
+                    </div>
+                </body>
+            </div>
+            
+        </lightning:layout>
+        <lightning:layout>
+            <div class="slds-scrollable" style="width:100%;">
+                <body style="margin-top: -19px;">
+                    <div class="tree"  style="width:95%;margin: auto;">																													
+                        <ul>
+                            <li style="width: 50%;">
+                                <ul>
+                                    <li style="width: 60%;">
+                                        <br/>
+                                        <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;width: 25%; margin: auto; font-size: 16px;" >
+                                            <thead>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="Box1Css" style="font-weight:bold;" colspan="2">CIP ON</td>
+                                                    
+                                                </tr>
+                                                <tr>
+                                                    <td class="Box2Css" >128</td>
+                                                    <td class="Box3Css" >55%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="Box4Css" >$51.5</td>
+                                                    <td class="Box5Css" >$33.7</td>
+                                                </tr>
+                                                
+                                            </tbody>
+                                        </table>
+                                        
+                                        
+                                    </li>
+                                    <li style="width: 40%;">
+                                        <br/>
+                                        <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;width: 25%; margin: auto; font-size: 16px;" >
+                                            <thead>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="Box1Css" style="font-weight:bold;" colspan="2">CIP needs to be <br/>initiated</td>
+                                                    
+                                                </tr>
+                                                <tr>
+                                                    <td class="Box2Css" >128</td>
+                                                    <td class="Box3Css" >55%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="Box4Css" >$51.5</td>
+                                                    <td class="Box5Css" >$33.7</td>
+                                                </tr>
+                                                
+                                            </tbody>
+                                        </table>
+                                        
+                                        
+                                    </li>
+                                </ul>
+                            </li>
+                            
+                        </ul>
+                    </div>
+                </body>
+            </div>
+            
+        </lightning:layout> -->
+        <!-- Share Expansion End -->
+        <br/><br/>
+        <div aura:id="scrollToDiv" style="">
+            <aura:if isTrue="{!v.expandNPL}">
+                <c:COLO_NPL_Tree_Cmp scrollToDiv ="true" dataObject="{!v.dataObject}" NPLDataList="{!v.responseWrapper.NPLList}"/>
+            </aura:if>
+            <aura:if isTrue="{!v.expandShareExpansion}">
+                <c:COLO_SE_Tree_Cmp scrollToDiv ="true" dataObject="{!v.dataObject}" ShareExpansionDataList="{!v.shareExpansionList}"/>
+            </aura:if>
+            <aura:if isTrue="{!v.expandPriceChange}">
+                <c:COLO_Price_Change_Tree_Cmp scrollToDiv ="true" dataObject="{!v.dataObject}" PriceChangeDataList="{!v.priceChangeList}"/>
+            </aura:if>
+        </div>
+    </div>
+</aura:component>

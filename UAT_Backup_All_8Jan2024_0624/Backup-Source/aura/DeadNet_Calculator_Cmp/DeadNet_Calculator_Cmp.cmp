@@ -1,0 +1,462 @@
+<aura:component controller = "DeadNet_Calculator_Class" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="selectedAccId" type="String" />
+    <aura:attribute name="contractPrice" type="Decimal" />
+    <aura:attribute name="directContractPrice" type="Decimal" />
+    <aura:attribute name="responseWrapper" type="Object" />
+    <aura:attribute name="wac" type="Decimal" />
+    <aura:attribute name="showResult" type="boolean" default="false"/>
+    <aura:attribute name="productType" type="String" default=''/>
+    <aura:attribute name="bidTemplate" type="String" />
+    <aura:attribute name="bidTemplateStr" type="String" default=''/>
+    <aura:attribute name="proposedPUR" type="Decimal"/>
+    <aura:attribute name="wholealerPrice" type="Decimal"/>
+    <aura:attribute name="salesoutPromotionDays" type="Integer"/>
+    <aura:attribute name="salesoutPromotionPercentage" type="Decimal"/>
+    <aura:attribute name="NCPWMTIndirectUnits" type="Decimal"/>
+    <aura:attribute name="osradUnits" type="Decimal"/>
+    <aura:attribute name="NCPWMTDirectUnits" type="Decimal"/>
+    <aura:attribute name="indirectNet" type="Decimal"/>
+    <aura:attribute name="CVSMktgPrice" type="Decimal"/><!--for ROS -->
+    <aura:attribute name="proposedBASEContractPrice" type="Decimal"/>
+    <aura:attribute name="ProposedDSHContractPrice" type="Decimal"/>
+    <aura:attribute name="ProposedAutoSubContractPrice" type="Decimal"/>
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'ABC Progen', 'value': 'ABC Progen'},
+                                                        {'label': 'ABC Pharmagen', 'value': 'ABC Pharmagen'}
+                                                        ]"/>
+    <aura:handler name="onchange"
+                  event="l_lookup:OnChange"
+                  action="{!c.handleChange}"/>
+    <div class="slds-card">
+        
+        <lightning:layout>
+            <lightning:layoutItem padding="around-small" size="7">
+                
+                <div class="slds-card boxCss ">
+                    <div class="slds-card" style="background-color:#FAFAF9">
+                        <div class="slds-grid">
+                            <div class="slds-grid slds-col slds-size_12-of-12">
+                                <div class="slds-col slds-wrap slds-size_6-of-12 slds-m-top_medium" align="left" style="padding:10px;">
+                                    <lightning:icon iconName="standard:account" size="small" />&nbsp;&nbsp; <b>Dead Net Calculator</b>   
+                                </div>
+                                <div class="slds-col slds-wrap slds-size_6-of-12 slds-m-top_medium" align="right" style="padding:10px;">
+                                    <lightning:button onclick="{!c.resetData}" name="Reset" label="Reset" variant="neutral"/>
+                                    
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-grid">
+                        <div class="slds-grid slds-col slds-size_12-of-12" >
+                            <div class="slds-col slds-wrap slds-size_6-of-12 slds-m-top_medium" align="left">
+                                <l_lookup:Lookup aura:id="accountLookup"
+                                                 label="Customer Name"
+                                                 objectType="Account"
+                                                 placeHolder="Enter Customer Name"
+                                                 selectedRecordId="{!v.selectedAccId}"
+                                                 queryCondition="Phoenix_Is_Bid_Account__c = true"
+                                                 orderBy="Name" 
+                                                 
+                                                 />
+                            </div>
+                            <div class="slds-col slds-wrap slds-size_6-of-12 slds-m-top_medium paddingClass" align="left">
+                                <aura:if isTrue="{!or(v.bidTemplate == 'Walgreens',or(v.bidTemplate == 'Government Pricing',or(v.bidTemplate == 'Direct',or(v.bidTemplate == 'Indirect',or(v.bidTemplate == 'Sams Club',or(v.bidTemplate == 'Net Indirect Pricing',or(v.bidTemplate == 'RXSS',or(v.bidTemplate == 'Econdisc',or(v.bidTemplate == 'ClarusOne',or(v.bidTemplate == 'ROS',or(v.bidTemplate == 'Costco',v.bidTemplate == 'BASE/DSH')))))))))))}">  
+                                    <lightning:select name="selectItem" label="Product Type"  onchange="{!c.doSomething}">
+                                        <aura:if isTrue="{!and(v.productType != null,and(v.productType != undefined,v.division != ''))}" >
+                                            
+                                            <option value="{!v.productType}">{!v.productType}</option>
+                                            
+                                        </aura:if>  
+                                        <aura:if isTrue="{!and(v.productType == '',v.productType != null)}" ><option value="">None</option> </aura:if>
+                                        <aura:if isTrue="{!and(v.productType != 'Regular Product',v.productType != null)}" ><option value="Regular Product">Regular Product</option> </aura:if>
+                                        <aura:if isTrue="{!and(v.productType != 'Special Product',v.productType != null)}" ><option value="Special Product">Special Product</option></aura:if>
+                                        <aura:if isTrue="{!and(v.productType != 'REMS',v.productType != null)}" ><option value="REMS">REMS</option></aura:if> 
+                                        <aura:if isTrue="{!and(v.productType != 'C2',v.productType != null)}" ><option value="C2">C2</option></aura:if>                 
+                                        
+                                    </lightning:select>
+                                </aura:if>
+                                <aura:if isTrue="{!or(v.bidTemplate == 'ABC Pharmagen',or(v.bidTemplate == 'ABC Progen',v.bidTemplate == 'ABC Progen'))}">
+                                    
+                                    <lightning:combobox name="progress" label="Bid Template" value="{!v.bidTemplateStr}" placeholder="Select Bid Template" options="{! v.options }" onchange="{! c.selectTemplateStr }"/>
+                                </aura:if>
+                                   <aura:if isTrue="{!v.bidTemplate == 'Humana'}">  
+                                    <lightning:select class="" name="selectTemplateVal" label="Bid Template"  onchange="{!c.selectTemplateStr}">
+                                        <aura:if isTrue="{!and(v.bidTemplateStr != null,and(v.bidTemplateStr != undefined,and(v.bidTemplateStr != '',v.bidTemplateStr != 'Humana')))}" >
+                                            
+                                            <option value="{!v.bidTemplateStr}">{!v.bidTemplateStr}</option>
+                                            
+                                        </aura:if>  
+                                        <aura:if isTrue="{!and(v.bidTemplateStr == '',v.bidTemplateStr != null)}" ><option value="">Select Bid Template</option> </aura:if>
+                                        <aura:if isTrue="{!and(v.bidTemplateStr != 'Humana Indirect retail',v.bidTemplateStr != null)}" ><option value="Humana Indirect retail">Humana Indirect retail</option> </aura:if>
+                                        <aura:if isTrue="{!and(v.bidTemplateStr != 'Humana Indirect CII',v.bidTemplateStr != null)}" ><option value="Humana Indirect CII">Humana Indirect CII</option></aura:if>
+                                        
+                                    </lightning:select>
+                                </aura:if>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    <div>            
+                        <aura:if isTrue="{!or(v.bidTemplate == 'Walgreens',or(v.bidTemplate == 'Government Pricing',or(v.bidTemplate == 'Indirect',or(v.bidTemplate == 'Sams Club',or(v.bidTemplate == 'Net Indirect Pricing',or(v.bidTemplate == 'RXSS',or(v.bidTemplate == 'Econdisc',or(v.bidTemplate == 'ClarusOne',or(v.bidTemplate == 'Costco',or(v.bidTemplate == 'BASE/DSH',v.bidTemplate == 'ROS'))))))))))}">
+                            <lightning:input class="" type="Number" name="WAC" label="WAC" formatter="currency" required="true" value="{!v.wac}"  step="0.01"/>
+                        </aura:if>
+                    </div>
+                    <div class="slds-grid">
+                        <div class="slds-grid slds-col slds-size_12-of-12" >
+                            <div class="slds-col slds-wrap slds-size_6-of-12 " align="left">
+                                <aura:if isTrue="{!or(v.bidTemplateStr == 'ABC Pharmagen',v.bidTemplateStr == 'ABC Progen')}">
+                                    
+                                    <lightning:select name="selectItem" label="Product Type"  onchange="{!c.doSomething}">
+                                        <aura:if isTrue="{!and(v.productType != null,and(v.productType != undefined,v.division != ''))}" >
+                                            
+                                            <option value="{!v.productType}">{!v.productType}</option>
+                                            
+                                        </aura:if>  
+                                        <aura:if isTrue="{!and(v.productType == '',v.productType != null)}" ><option value="">None</option> </aura:if>
+                                        <aura:if isTrue="{!and(v.productType != 'Regular Product',v.productType != null)}" ><option value="Regular Product">Regular Product</option> </aura:if>
+                                        <aura:if isTrue="{!and(v.productType != 'Special Product',v.productType != null)}" ><option value="Special Product">Special Product</option></aura:if>
+                                        <aura:if isTrue="{!and(v.productType != 'REMS',v.productType != null)}" ><option value="REMS">REMS</option></aura:if> 
+                                        <aura:if isTrue="{!and(v.productType != 'C2',v.productType != null)}" ><option value="C2">C2</option></aura:if>                 
+                                        
+                                    </lightning:select>
+                                </aura:if>
+                                <aura:if isTrue="{!or(v.bidTemplateStr == 'Humana Indirect retail',v.bidTemplateStr == 'Humana Indirect CII')}">
+                                    <lightning:input class="" type="Number" name="WAC" label="WAC" formatter="currency" required="true" value="{!v.wac}"  step="0.01"/>
+                                </aura:if>
+                            </div>
+                            <div class="slds-col slds-wrap slds-size_6-of-12 paddingClass" align="left">
+                                <aura:if isTrue="{!or(v.bidTemplateStr == 'ABC Pharmagen',or(v.bidTemplateStr == 'ABC Progen'))}">
+                                    <lightning:input class="" type="Number" name="WAC" label="WAC" formatter="currency" required="true" value="{!v.wac}"  step="0.01"/>
+                                </aura:if>
+                                 <aura:if isTrue="{!v.bidTemplateStr == 'Humana Indirect CII'}">
+                                    <lightning:input aura:id="Directcp" class="" type="Number" name="Proposed Direct Contract Price" formatter="currency" required="true" label="Proposed Direct Contract Price" value="{!v.directContractPrice}"  step="0.01"/>
+                                </aura:if>
+                                 <aura:if isTrue="{!v.bidTemplateStr == 'Humana Indirect retail'}">
+                                    <lightning:input aura:id="cp" class="" type="Number" name="Proposed Indirect Contract Price" formatter="currency" required="true" label="Proposed Indirect Contract Price" value="{!v.contractPrice}"  step="0.01"/>
+                                </aura:if>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    <div class="slds-grid">
+                        <div class="slds-grid slds-col slds-size_12-of-12" >
+                            <div class="slds-col slds-wrap slds-size_6-of-12 slds-m-top_medium" align="left">
+                                <aura:if isTrue="{!or(v.bidTemplate == 'Walgreens',v.bidTemplate == 'Government Pricing')}">
+                                    <lightning:input aura:id="cp" class="" type="Number" name="Proposed Contract Bid Price" formatter="currency" required="true" label="{!v.bidTemplate =='Walgreens'?'Proposed Contract Bid Price' :'Proposed Indirect Contract Price'}" value="{!v.contractPrice}"  step="0.01"/>
+                                </aura:if>
+                                
+                                <aura:if isTrue="{!or(v.bidTemplate == 'Indirect',v.bidTemplate == 'Direct')}">
+                                    <lightning:input  class="" type="Number" name="Proposed PUR" formatter="currency" required="true" label="Proposed PUR" value="{!v.proposedPUR}" step="0.01"/>
+                                    
+                                </aura:if>
+                                <aura:if isTrue="{!or(v.bidTemplate == 'Sams Club',v.bidTemplate == 'Net Indirect Pricing')}">
+                                    <lightning:input aura:id="Directcp" class="" type="Number" name="Proposed Direct Contract Price" formatter="currency" required="true" label="Proposed Direct Contract Price" value="{!v.directContractPrice}"  step="0.01"/>
+                                </aura:if>
+                                <aura:if isTrue="{!v.bidTemplate == 'RXSS'}">
+                                    <lightning:input aura:id="Directcp" class="" type="Number" name="Retail Direct Contract Price" formatter="currency" required="true" label="Retail Direct Contract Price" value="{!v.directContractPrice}"  step="0.01"/>
+                                </aura:if>
+                                <aura:if isTrue="{!v.bidTemplate == 'Econdisc'}">
+                                    <lightning:input aura:id="cp" class="" type="Number" name="Proposed Contract Bid Price" formatter="currency" required="true" label="Proposed Contract Bid Price" value="{!v.contractPrice}"  step="0.01"/>
+                                </aura:if>
+                                 <aura:if isTrue="{!v.bidTemplateStr == 'Humana Indirect CII'}">
+                                    <lightning:input aura:id="cp" class="" type="Number" name="Proposed Indirect Contract Price" formatter="currency" required="true" label="Proposed Indirect Contract Price" value="{!v.contractPrice}"  step="0.01"/>
+                                </aura:if>
+                                <aura:if isTrue="{!v.bidTemplate == 'ClarusOne'}">
+                                    <lightning:input class="" type="Number" name="Proposed NCP for McK OS + RAD" formatter="currency" required="true" label="Proposed NCP for McK OS + RAD" value="{!v.osradUnits}"  step="0.01"/>
+                                </aura:if>
+                                <aura:if isTrue="{!v.bidTemplate == 'ROS'}">
+                                    <lightning:input class="" type="Number" name="Proposed CVS Indirect Contract Price" formatter="currency" required="true" label="Proposed CVS Indirect Contract Price" value="{!v.contractPrice}"  step="0.01"/>
+                                </aura:if>
+                                <aura:if isTrue="{!v.bidTemplate == 'Costco'}">
+                                    <lightning:input  class="" type="Number" name="Proposed Contract Bid Price" formatter="currency" required="true" label="Indirect Price to be loaded" value="{!v.contractPrice}"  step="0.01"/>
+                                </aura:if>
+                                <aura:if isTrue="{!v.bidTemplate == 'BASE/DSH'}">
+                                    <lightning:input  class="" type="Number" name="Proposed BASE Contract Price" formatter="currency" required="true" label="Proposed BASE Contract Price" value="{!v.proposedBASEContractPrice}"  step="0.01"/>
+                                </aura:if>
+                                  <aura:if isTrue="{!or(v.bidTemplateStr == 'ABC Pharmagen',v.bidTemplateStr == 'ABC Progen')}">
+                                                            <lightning:input aura:id="cp" type="Number" formatter="currency" required="true" label="{!v.bidTemplateStr =='ABC Progen'?'Proposed Contract Bid Price' :'Proposed Indirect Contract Price'}" value="{!v.contractPrice}"  step="0.01"/>
+                            </aura:if>
+                            </div>
+                            <div class="slds-col slds-wrap slds-size_6-of-12 slds-m-top_medium paddingClass" align="left">
+                                <aura:if isTrue="{!or(v.bidTemplate == 'Indirect',or(v.bidTemplate == 'Sams Club',v.bidTemplate == 'Net Indirect Pricing'))}">
+                                    
+                                    <lightning:input aura:id="cp" type="Number" formatter="currency" required="true" label="{!v.bidTemplate == 'Direct' ? 'Proposed Direct Contract Price' : 'Proposed Indirect Contract Price'}" value="{!v.contractPrice}"  step="0.01"/>
+                                </aura:if>  
+                                <aura:if isTrue="{!v.bidTemplate == 'RXSS'}">
+                                    <lightning:input aura:id="cp" type="Number" formatter="currency" required="true" label="Retail Indirect Contract Price" value="{!v.contractPrice}"  step="0.01"/>
+                                    
+                                </aura:if>
+                                <aura:if isTrue="{!v.bidTemplate == 'Econdisc'}">
+                                    <lightning:input aura:id="cp" type="Number" formatter="currency" required="true" label="Wholesaler Diff Price (Indirect)" value="{!v.wholealerPrice}"  step="0.01"/>
+                                    
+                                </aura:if>
+                                
+                                <aura:if isTrue="{!v.bidTemplate == 'ClarusOne'}">
+                                    <lightning:input type="Number" formatter="currency" required="true" label="Proposed NCP for WMT Direct" value="{!v.NCPWMTDirectUnits}"  step="0.01"/>
+                                    
+                                </aura:if>
+                                <aura:if isTrue="{!v.bidTemplate == 'ROS'}">
+                                    <lightning:input type="Number" formatter="currency" required="true" label="Proposed Marketing CVS/Cardinal/Major Acquisition Costs/CVS Deadnet" value="{!v.CVSMktgPrice}"  step="0.01"/>
+                                    
+                                </aura:if>
+                                <aura:if isTrue="{!v.bidTemplate == 'Costco'}">
+                                    <lightning:input type="Number" formatter="currency" required="true" label="Indirect Net" value="{!v.indirectNet}"  step="0.01"/>
+                                    
+                                </aura:if>
+                                <aura:if isTrue="{!v.bidTemplate == 'BASE/DSH'}">
+                                    <lightning:input  class="" type="Number" name="Proposed DSH Contract Price" formatter="currency" required="true" label="Proposed DSH Contract Price" value="{!v.ProposedDSHContractPrice}"  step="0.01"/>
+                                </aura:if>
+                                <aura:if isTrue="{!v.bidTemplate == 'Direct'}">
+                                    <lightning:input aura:id="cp" class="" type="Number" formatter="currency" required="true" label="{!v.bidTemplate == 'Direct' ? 'Proposed Direct Contract Price' : 'Proposed Indirect Contract Price'}" value="{!v.contractPrice}"  step="0.01"/>
+                                    
+                                </aura:if>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    <div class="slds-grid">
+                        <div class="slds-grid slds-col slds-size_12-of-12" >
+                            <div class="slds-col slds-wrap slds-size_6-of-12 slds-m-top_medium" align="left">
+                                
+                              
+                                <aura:if isTrue="{!v.bidTemplate == 'ClarusOne'}">
+                                    <lightning:input type="Number" calss=""  formatter="currency" required="true" label="Proposed NCP for WMT Indirect" value="{!v.NCPWMTIndirectUnits}"  step="0.01"/>
+                                    
+                                </aura:if>
+                                <aura:if isTrue="{!v.bidTemplate == 'BASE/DSH'}">
+                                    <lightning:input  class="" type="Number" name="Proposed AutoSub Contract Price" formatter="currency" required="true" label="Proposed AutoSub Contract Price" value="{!v.ProposedAutoSubContractPrice}"  step="0.01"/>
+                                </aura:if>
+                            </div>
+                           
+                        </div>
+                    </div>
+                   
+                    <div style="padding-top:10px;">            
+                        <aura:if isTrue="{!AND(v.contractPrice == null,AND(v.wac == null,AND(v.productType ==null,v.bidTemplate == 'Walgreens')))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="true"/>
+                        </aura:if> 
+                        <aura:if isTrue="{!AND(v.contractPrice != null,AND(v.wac != null,AND(v.productType !=null,v.bidTemplate == 'Walgreens')))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if> 
+                        <aura:if isTrue="{!AND(v.contractPrice == null,AND(v.proposedPUR == null,AND(v.productType ==null,or(v.bidTemplate == 'Direct',v.bidTemplate == 'Indirect'))))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="true"/>
+                        </aura:if> 
+                        <aura:if isTrue="{!AND(v.contractPrice != null,AND(v.proposedPUR != null,AND(v.productType !=null,or(v.bidTemplate == 'Direct',v.bidTemplate == 'Indirect'))))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if> 
+                        <aura:if isTrue="{!AND(v.contractPrice != null,AND(v.wac != null,AND(v.productType !=null,v.bidTemplate == 'Government Pricing')))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if>
+                         <aura:if isTrue="{!AND(v.contractPrice != null,AND(v.wac != null,AND(v.productType !=null,v.bidTemplate == 'Costco')))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if>
+                         <aura:if isTrue="{!AND(v.contractPrice != null,AND(v.wac != null,AND(v.productType !=null,v.bidTemplateStr == 'Humana Indirect retail')))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if>
+                        <aura:if isTrue="{!AND(v.contractPrice != null,AND(v.wac != null,AND(v.productType !=null,AND(v.directContractPrice !=null,v.bidTemplateStr == 'Humana Indirect CII'))))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if>
+                          <aura:if isTrue="{!AND(v.contractPrice != null,AND(v.wac != null,AND(v.productType !=null,v.bidTemplate == 'Sams Club')))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if>
+                         <aura:if isTrue="{!AND(v.contractPrice != null,AND(v.wac != null,AND(v.productType !=null,AND(v.directContractPrice !=null,v.bidTemplate == 'Net Indirect Pricing'))))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if>
+                         <aura:if isTrue="{!AND(v.contractPrice != null,AND(v.wac != null,AND(v.productType !=null,AND(v.directContractPrice !=null,v.bidTemplate == 'RXSS'))))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if>
+                           <aura:if isTrue="{!AND(v.contractPrice != null,AND(v.wac != null,AND(v.productType !=null,v.bidTemplateStr =='ABC Progen')))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if>
+                         <aura:if isTrue="{!AND(v.contractPrice != null,AND(v.wac != null,AND(v.productType !=null,v.bidTemplateStr =='ABC Pharmagen')))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if>
+                         
+                         <aura:if isTrue="{!AND(v.osradUnits != null,AND(v.wac != null,AND(v.productType !=null,AND(v.NCPWMTIndirectUnits !=null,AND(v.bidTemplate == 'ClarusOne',v.NCPWMTIndirectUnits !=null)))))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if>
+                         <aura:if isTrue="{!AND(v.contractPrice != null,AND(v.wac != null,AND(v.productType !=null,AND(v.wholealerPrice !=null,v.bidTemplate =='Econdisc'))))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if>
+                         <aura:if isTrue="{!AND(v.contractPrice != null,AND(v.wac != null,AND(v.productType !=null,AND(v.CVSMktgPrice !=null,v.bidTemplate =='ROS'))))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if>
+                         <aura:if isTrue="{!AND(v.proposedBASEContractPrice != null,AND(v.wac != null,AND(v.productType !=null,AND(v.ProposedDSHContractPrice !=null,AND(v.bidTemplate == 'BASE/DSH',v.ProposedAutoSubContractPrice !=null)))))}">   
+                            <lightning:button onclick="{!c.handleSubmit}" name="Calculate" label="Calculate" class="buttonClass" variant="brand" disabled="false"/>
+                        </aura:if>
+                    </div>
+                </div>
+                
+            </lightning:layoutItem>
+            <aura:if isTrue="{!v.showResult== false}">
+                                <lightning:layoutItem padding="around-small" size="2" class="imgCSS">
+                                      <img src="{!$Resource.DeadnetCalculatorImage}" />  
+                                  <div><b>Please fill all the details for Deadnet Price</b></div>  
+                </lightning:layoutItem>
+
+            </aura:if>
+            <aura:if isTrue="{!and(v.showResult,or(v.bidTemplate == 'Costco',or(v.bidTemplate == 'Direct',or(v.bidTemplate == 'Indirect',or(v.bidTemplate == 'Government Pricing',v.bidTemplate == 'Sams Club')))))}">
+                
+                <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Internal Deadnet Price</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.customerDeadnet} </div>  
+                    </div>     
+                </lightning:layoutItem>
+            </aura:if>
+              <aura:if isTrue="{!and(v.showResult,v.bidTemplateStr == 'ABC Pharmagen')}">
+                
+                <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;"> DRL Dead Net</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.DRLDeadNet} </div>  
+                    </div>     
+                </lightning:layoutItem>
+            </aura:if>
+                          <aura:if isTrue="{!and(v.showResult,v.bidTemplate == 'Econdisc')}">
+                              <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">DRL Dead Net</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.DRLDeadNet} </div>  
+                    </div>    
+                                   <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Customer Deadnet</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.customerDeadnet} </div>  
+                    </div>    
+                </lightning:layoutItem>
+                              <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Indirect Dead Net</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.IndirectDeadNet} </div>  
+                    </div>     
+                </lightning:layoutItem>
+            </aura:if>
+               <aura:if isTrue="{!and(v.showResult,v.bidTemplate == 'Net Indirect Pricing')}">
+                              <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Direct Dead Net</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.directDeadNet} </div>  
+                    </div>    
+                                  
+                </lightning:layoutItem>
+                              <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Indirect Dead Net</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.IndirectDeadNet} </div>  
+                    </div>     
+                </lightning:layoutItem>
+            </aura:if>
+               <aura:if isTrue="{!and(v.showResult,or(v.bidTemplate == 'Walgreens',v.bidTemplateStr == 'ABC Progen'))}">
+                              <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Internal Dead Net Price</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.IndirectDeadNet} </div>  
+                    </div>    
+                                  
+                </lightning:layoutItem>
+                              <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Customer Dead Net</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.customerDeadnet} </div>  
+                    </div>     
+                </lightning:layoutItem>
+            </aura:if>
+             <aura:if isTrue="{!and(v.showResult,v.bidTemplate == 'RXSS')}">
+                              <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Retail Direct DRL Net Price</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.retailDirectDRLNETPrice} </div>  
+                    </div>    
+                       <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Retail Indirect DRL Dead Net</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.retailIndirectDRLDeadnet} </div>  
+                    </div>               
+                </lightning:layoutItem>
+                              <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Wholesaler DRL Net Price</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.wholesalerDRLNetPrice} </div>  
+                    </div>    
+                                   <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">ANDA DRL Net Price</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.ANDADRLNetPrice} </div>  
+                    </div>     
+                </lightning:layoutItem>
+            </aura:if>
+              <aura:if isTrue="{!and(v.showResult,v.bidTemplate == 'ClarusOne')}">
+                              <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">McK &amp; RAD Dead Net</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.McKRADDeadNet} </div>  
+                    </div>    
+                       <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">WMT Direct Dead Net</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.WMTDirectDeadNet} </div>  
+                    </div>               
+                </lightning:layoutItem>
+                              <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">WMT Indirect Dead Net</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.WMTIndirectDeadNet} </div>  
+                    </div>    
+                                   <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Customer Dead Net</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.customerDeadnet} </div>  
+                    </div>     
+                </lightning:layoutItem>
+            </aura:if>
+             <aura:if isTrue="{!and(v.showResult,v.bidTemplate == 'ROS')}">
+                              <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Internal CVS Direct Dead Net</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.InternalCVSDirectDeadNet} </div>  
+                    </div>    
+                       <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Internal CVS Indirect Dead Net</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.InternalCVSIndirectDeadNet} </div>  
+                    </div>               
+                </lightning:layoutItem>
+                              <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Internal Cardinal Dead Net </b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.InternalCardinalDeadNet} </div>  
+                    </div>    
+                                   <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Internal Major Dead Net </b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.InternalMajorDeadNet} </div>  
+                    </div>     
+                </lightning:layoutItem>
+            </aura:if>
+             <aura:if isTrue="{!and(v.showResult,v.bidTemplate == 'BASE/DSH')}">
+                              <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">BASE DRL Net Price</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.BASEDRLNetPrice} </div>  
+                    </div>    
+                       <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">DSH DRL Net Price</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.DSHDRLNetPrice} </div>  
+                    </div>               
+                </lightning:layoutItem>
+                              <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Auto Sub DRL Net Price</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.AutoSubDRLNetPrice} </div>  
+                    </div>    
+                                  
+                </lightning:layoutItem>
+            </aura:if>
+                <aura:if isTrue="{!and(v.showResult,or(v.bidTemplateStr == 'Humana Indirect retail',v.bidTemplateStr == 'Humana Indirect CII'))}">
+                
+                <lightning:layoutItem padding="around-small" size="2" class="walgreenOutputCSS">
+                    <div class="slds-card boxCss ">
+                        <b style="font-size:14px;">Indirect Deadnet Price</b><br></br>
+                        <div class="outputValCSS"> ${!v.responseWrapper.customerDeadnet} </div>  
+                    </div>     
+                </lightning:layoutItem>
+            </aura:if>
+        </lightning:layout>
+    </div>  
+  
+</aura:component>

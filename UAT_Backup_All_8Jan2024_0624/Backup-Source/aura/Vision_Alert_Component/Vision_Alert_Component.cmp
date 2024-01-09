@@ -1,0 +1,183 @@
+<aura:component controller="Vision_AlertCtrl" access="global"
+                implements="force:hasRecordId,force:appHostable,lightning:isUrlAddressable">     
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    
+    <aura:attribute name="accObj" type="Account"/>
+    <aura:attribute name="isModalOpen" type="boolean" />
+    <aura:attribute name="alertObj" type="Object"/>
+    <aura:attribute name="alertType" type="String"/>
+    <aura:attribute name="recId" type="String"/>
+    <aura:registerEvent name="alertEvent" type="c:AlertDataToParentEvent"/>
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+        </center>
+        <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        
+        <aura:set attribute="else">
+            <!-- <lightning:card> -->
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <p class="headingStyleForHPAPopUp">Alert Details</p>
+                            <lightning:buttonIcon iconName="utility:close"
+                                                  onclick="{! c.closeModel }"
+                                                  alternativeText="close"
+                                                  variant="bare-inverse"
+                                                  class="slds-modal__close"/>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                            <div style="margin-bottom:5px;">
+                                <label>Alert Subject:<abbr class="slds-required" title="required" aura:id="emailReq">*</abbr></label>
+                            </div>
+                            <div>
+                                <lightning:input type="text"  placeholder="Please enter Subject here..." 
+                                                 value="{!v.alertObj.Vision_Alert_Topic__c}" 
+                                                 variant="label-hidden"/>
+                            </div><br/>
+                            <div style="margin-bottom:5px;">
+                                <label>Alert Comment:</label>
+                            </div>
+                            <div>
+                                <lightning:textarea placeholder="Please enter comment here..."
+                                                    value="{!v.alertObj.Vision_Notification_Comment__c}"
+                                                    variant="label-hidden"/>
+                            </div><br/>
+                            <div class="slds-grid">
+                                <div class="slds-col slds-size_1-of-2" style="padding-right:5px;">
+                                    <div style="margin-bottom:5px;">
+                                        <label>Alert Due Date:<abbr class="slds-required" title="required" aura:id="emailReq">*</abbr></label>
+                                    </div>
+                                    <div>
+                                        <lightning:input placeholder="Please enter Activity date here..." type="date"
+                                                         value="{!v.alertObj.Vision_Notification_Due_Date__c}"
+                                                         variant="label-hidden" onchange="{!c.validateDueDate}"/>
+                                    </div>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2">
+                                    <div style="text-align:left;margin-bottom:5px;">
+                                        &nbsp;
+                                    </div>
+                                    <center>
+                                        <div style="padding-left:65px;">
+                                            <lightning:input aura:id="inputToggle" type="toggle" label="Alert Status" 
+                                                             name="togglevalue" value="{!v.alertObj.Vision_isActiveAlert__c}" 
+                                                             messageToggleActive="Active" messageToggleInactive="Inactive"
+                                                             checked="{!v.alertObj.Vision_isActiveAlert__c}"/>
+                                        </div>
+                                    </center>
+                                </div>
+                                <!-- <div class="slds-col slds-size_1-of-2" style="padding-left:5px;">
+                                <div style="margin-bottom:5px;">
+                                    <label>Alert Repeat Time<abbr class="slds-required" title="required" aura:id="emailReq">*</abbr></label>
+                                </div>
+                                <div>
+                                    <lightning:input type="time" value="{!v.alertObj.Vision_Notification_Repeat_Time__c}"
+                                                     variant="label-hidden"/>                                    
+                                </div>
+                            </div> -->
+                            </div>
+                            <br/>
+                            <div class="slds-grid">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <div style="text-align:left;margin-bottom:5px;">
+                                        <label>Repeat Days Before Alert Due Date</label>
+                                    </div>
+                                    <center>
+                                        <div class="slds-grid slds-gutters">
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div style="width:45px">
+                                                    <lightning:input readonly="true" type="number" value="10" class="centerAlignInput" variant="label-hidden"/> 
+                                                </div>
+                                                <!-- <div style="margin-top:5px;">
+                                                    <lightning:input type="checkbox" variant="label-hidden"  
+                                                                     value="{!v.alertObj.Vision_Repeat_Days_Before_Checkbox_1__c}" 
+                                                                     checked="{!v.alertObj.Vision_Repeat_Days_Before_Checkbox_1__c}"/>
+                                                </div> -->
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div style="width:45px">
+                                                    <!--<lightning:input class="centerAlignInput" type="number" onchange="{!c.checkDaysValidation}"
+                                                                     variant="label-hidden" value="{!v.alertObj.Vision_Repeat_Days_Before_2__c}" placeholder="3"/>-->
+                                                    <lightning:input readonly="true" type="number" value="7" class="centerAlignInput" variant="label-hidden"/> 
+                                                </div>
+                                                <!-- <div style="margin-top:5px;">
+                                                    <lightning:input type="checkbox" variant="label-hidden" 
+                                                                     value="{!v.alertObj.Vision_Repeat_Days_Before_Checkbox_2__c}"
+                                                                     checked="{!v.alertObj.Vision_Repeat_Days_Before_Checkbox_2__c}"/>
+                                                </div>-->
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div style="width:45px">
+                                                    <lightning:input readonly="true" type="number" value="3" class="centerAlignInput" variant="label-hidden"/> 
+                                                </div>
+                                                <!-- <div style="margin-top:5px;">
+                                                    <lightning:input type="checkbox" variant="label-hidden" 
+                                                                     value="{!v.alertObj.Vision_Repeat_Days_Before_Checkbox_3__c}"
+                                                                     checked="{!v.alertObj.Vision_Repeat_Days_Before_Checkbox_3__c}"/>
+                                                </div>-->
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-4">
+                                                <div style="width:45px">
+                                                    <lightning:input readonly="true" type="number" value="1" class="centerAlignInput" variant="label-hidden"/> 
+                                                </div>
+                                                <!-- <div style="margin-top:5px;">
+                                                    <lightning:input type="checkbox" variant="label-hidden" 
+                                                                     value="{!v.alertObj.Vision_Repeat_Days_Before_Checkbox_4__c}"
+                                                                     checked="{!v.alertObj.Vision_Repeat_Days_Before_Checkbox_4__c}"/>
+                                                </div>-->
+                                            </div>
+                                            <!-- <div class="slds-col slds-size_1-of-5">
+                                                <div style="width:45px">
+                                                    <lightning:input class="centerAlignInput" type="number" onchange="{!c.checkDaysValidation}"
+                                                                     variant="label-hidden" value="{!v.alertObj.Vision_Repeat_Days_Before_5__c}" placeholder="0"/> 
+                                                </div>
+                                                <div style="margin-top:5px;">
+                                                    <lightning:input type="checkbox" variant="label-hidden" 
+                                                                     value="{!v.alertObj.Vision_Repeat_Days_Before_Checkbox_5__c}"
+                                                                     checked="{!v.alertObj.Vision_Repeat_Days_Before_Checkbox_5__c}"/>
+                                                </div>
+                                                
+                                            </div> -->
+                                            
+                                        </div>
+                                    </center>
+                                </div> 
+                                <div class="slds-col">
+                                    <!--  <div style="text-align:left;margin-bottom:5px;">
+                                        &nbsp;
+                                    </div>
+                                    <center>
+                                        <div style="padding-left:65px;">
+                                            <lightning:input aura:id="inputToggle" type="toggle" label="Alert Status" 
+                                                             name="togglevalue" value="{!v.alertObj.Vision_isActiveAlert__c}" 
+                                                             messageToggleActive="Active" messageToggleInactive="Inactive"
+                                                             checked="{!v.alertObj.Vision_isActiveAlert__c}"/>
+                                        </div>
+                                    </center> -->
+                                </div>
+                            </div>
+                            
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <div class="slds-grid slds-grid_align-center">
+                                <lightning:button type="Cancel" label="Cancel" variant="neutral" onclick="{!c.closeModel}" />
+                                <lightning:button type="Submit" label="Save" variant="brand"  onclick="{!c.submitDetails}"/>
+                            </div>
+                        </footer> 
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+           <!--  </lightning:card> -->
+        </aura:set>
+    </aura:if>
+</aura:component>
