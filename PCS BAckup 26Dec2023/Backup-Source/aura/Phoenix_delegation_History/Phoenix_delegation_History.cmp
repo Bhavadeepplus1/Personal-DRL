@@ -1,0 +1,247 @@
+<aura:component controller="Phoenix_delegation_History" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    
+    <!--Attributes Start-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:attribute name="loadSpinner" type="boolean" default="false" />
+    <aura:attribute name="userLkp" type="string" />
+    <aura:attribute name="deleUserLkp" type="string" />
+    <aura:attribute name="excistingDeleList" type="list"/>
+    <aura:attribute name="showFilterPopup" type="boolean" />
+    <aura:attribute name="showPendingTasksPopup" type="boolean" />
+    <aura:attribute name="columns" type="List" />
+    <aura:attribute name="model" type="Object" description="used to store model structure"/>
+    <aura:attribute name="sortedBy" type="String" default= "bidUrl"/>
+    <aura:attribute name="sortedDirection" type="String" default="asc" />
+    <aura:attribute name="userName" type="string" />
+    
+    <!--Pagination Attributes-->
+    <aura:attribute name="PageNumber" type="integer" default="1"/>
+    <aura:attribute name="TotalPages" type="integer" default="0"/>
+    <aura:attribute name="TotalRecords" type="integer" default="0"/>
+    <aura:attribute name="RecordStart" type="integer" default="0"/>
+    <aura:attribute name="RecordEnd" type="integer" default="0"/>
+    <!--Pagination Attributes Ends-->
+    
+    <!--Attributes End-->  
+    <!--Spinner Code Start-->
+    <aura:if isTrue="{! v.loadSpinner }">
+        <lightning:spinner variant="brand" class="spinColor" size="large" />
+    </aura:if>
+    <!--Spinner Code End-->
+    
+    <!--Section 1 Start-->
+    <div class="slds-box slds-theme_default slds-m-top_small" id="top">
+        <div style = "font-size:20px;margin-left:14px;color:black;">
+            <b>Delegation History</b>
+        </div>
+        <aura:if isTrue="{!v.showFilterPopup}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                     aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__content_headless" style="text-align: right;">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModal }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close buttonCSS"/>
+                    </header>
+                    
+                    <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;overflow: visible !important;overflow-y: visible !important;">
+                        <p style="text-align: left;padding-left: 12px;font-weight: bold; font-size: 16px;">Filter Table</p><br/>
+                        <div class="slds-m-right_small slds-m-left_small slds-grid" style="margin-bottom: 10px;">
+                            <div class="slds-col slds-grid slds-size_1-of-1 boldLabel">
+                                <div class="slds-col slds-size_2-of-5">
+                                    <l_lookup:Lookup label="Delegator" aura:id="userLookup"
+                                                     objectType="User" 
+                                                     placeHolder="Delegator"
+                                                     selectedRecordId="{!v.userLkp}"
+                                                     styleClass="customDropdownCSS"
+                                                     setTo="{!v.changeTo}"
+                                                     />
+                                </div>
+                                <div  class="slds-col slds-size_1-of-5"> 
+                                </div>
+                                <div  class="slds-col slds-size_2-of-5"> 
+                                    <l_lookup:Lookup label="Delegation of Authority To" aura:id="delegatedUserLookup"
+                                                     objectType="User" 
+                                                     placeHolder="Search Delegated User"
+                                                     selectedRecordId="{!v.deleUserLkp}"
+                                                     styleClass="customDropdownCSS"
+                                                     setTo="{!v.changeTo}"
+                                                     />
+                                </div>
+                            </div>
+                        </div>
+                        <div style="text-align: center;margin-top: 20px;">
+                            <lightning:button variant="brand" label="Save" title="Save" onclick="{! c.doInit }" />
+                            <lightning:button variant="brand" label="Reset" title="reset" onclick="{! c.reset }" />
+                        </div>
+                    </div>
+                </div>
+                
+            </section>
+            <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+        </aura:if>
+        <aura:if isTrue="{!v.showPendingTasksPopup}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                     aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_large">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close" onclick="{! c.closePendingTasksModal }"
+                                              alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" style="text-align: center;">
+                            Pending Items for {!v.userName} </h2>
+                    </header>
+                    
+                    <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;overflow: visible !important;overflow-y: visible !important;">
+                        <div class="slds-m-right_small slds-m-left_small slds-grid" style="margin-bottom: 10px; max-height: 400px;">
+                            <lightning:datatable
+                                                 keyField="id"
+                                                 data="{! v.model.bids }"
+                                                 columns="{! v.columns }"
+                                                 hideCheckboxColumn="true"
+                                                 onsort="{! c.updateSorting}"
+                                                 sortedBy="{!v.sortedBy}"
+                                                 sortedDirection="{!v.sortedDirection}"
+                                                 />
+                        </div>
+                        <div style="text-align: right;margin-top: 20px;">
+                            <lightning:button variant="brand" label="Close" title="Close" onclick="{! c.closePendingTasksModal }" />
+                        </div>
+                    </div>
+                </div>
+                
+            </section>
+            <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+        </aura:if>
+        <!--<div class="slds-col  slds-grid slds-size_1-of-1 slds-m-left_small slds-m-right_small">
+            <div class="slds-align_absolute-center">
+                <lightning:button variant="brand" label="Filter" title="filter" onclick="{! c.openFilterPopup }" />
+                <lightning:button variant="brand" label="Reset" title="reset" onclick="{! c.reset }" />
+            </div>
+        </div>-->
+    </div>
+    <!--Section 1 End-->
+    
+    <!--Section 2 Start-->
+    <div class="slds-box slds-theme_default slds-m-top_xxx-small" id="top">
+        <div style = "font-size:18px;margin-left: 14px;margin-top:4px;margin-bottom:10px;color:black;">
+            <b>Existing Delegations</b><span style="float: right;"><lightning:button class="buttonCSS" variant="brand" label="Reset" title="reset" onclick="{! c.resetFromOuterButton }" />&nbsp;&nbsp;<lightning:button variant="brand" label="Filter" class="buttonCSS" iconPosition="right" iconName="utility:filterList" title="filter" onclick="{! c.openFilterPopup }" /></span>
+        </div>
+        <div aura:id="mainDiv" style="overflow:auto;"
+             class=" slds-m-right_small slds-m-left_small slds-m-top_small">
+            <!--no records found code-->
+            <aura:if isTrue="{!v.excistingDeleList.length == 0}">
+                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info" role="alert" width="50px">
+                    <span class="slds-icon_container slds-m-right_x-small">
+                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                    </span>
+                    <h2>No records found.</h2>
+                </div>
+            </aura:if>
+            
+            <!--no records found code end -->
+            <aura:if isTrue="{!v.excistingDeleList.length != 0}">
+                <table class="customTable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px !important;"  >
+                    <thead> 
+                        <tr>
+                            <th scope="col" style="padding-left: 8px; width: 16%;" class="mainHeaderSticky" >Delegator</th>
+                            <th scope="col" class="mainHeaderSticky" style="width: 16%;">Delegated User</th>
+                            <th scope="col" class="mainHeaderSticky" style="width: 16%;">Start Time</th>
+                            <th scope="col" class="mainHeaderSticky" style="width: 16%;">End Time</th>
+                            <th scope="col" class="mainHeaderSticky" style="width: 16%;">Status</th>
+                            <th scope="col" class="mainHeaderSticky" style="width: 16%;">Pending Tasks</th>
+                            <!--<th scope="col" >Is Active delegator</th>-->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.excistingDeleList}" var="deleUser">   
+                            <tr>
+                                <td style="padding-left: 8px;">{!deleUser.Phoenix_User__r.Name}</td>
+                                <td style="padding-left: 8px;">{!deleUser.Phoenix_Delegated_Approver__r.Name}</td>        
+                                <td style="padding-left: 8px;"> <lightning:formattedDateTime aura:id="dt"
+                                                                                             value="{!deleUser.Phoenix_Delegation_Start_Time__c}"
+                                                                                             month="short"
+                                                                                             day="numeric"
+                                                                                             year="numeric"
+                                                                                             hour="2-digit"
+                                                                                             minute="2-digit"
+                                                                                             hour12="true"
+                                                                                             timeZone="{!$Locale.timezone}"/></td>
+                                
+                                <td style="padding-left: 8px;"> <lightning:formattedDateTime aura:id="dt"  value="{!deleUser.Phoenix_Delegation_End_Time__c}"
+                                                                                             month="short"
+                                                                                             day="numeric"
+                                                                                             year="numeric"
+                                                                                             hour="2-digit"
+                                                                                             minute="2-digit"
+                                                                                             hour12="true"
+                                                                                             timeZone="{!$Locale.timezone}"/></td>
+                                <aura:if isTrue="{!deleUser.Phoenix_Is_Active_delegator__c}" >
+                                    <td style="padding-left: 8px;">Active</td>
+                                    <aura:set attribute="else">
+                                        <td style="padding-left: 8px;">Expired</td>
+                                    </aura:set>
+                                </aura:if>
+                                <td style="text-align: center;">
+                                    <aura:if isTrue="{!deleUser.Phoenix_Is_Active_delegator__c}">
+                                        <lightning:buttonIcon iconName='utility:form' title="{!deleUser.Phoenix_User__r.Name}" name="{!deleUser.Phoenix_User__r.Id}" alternativeText='Pending Approval' iconClass="iconCSS" variant="bare" size='large' onclick="{! c.openPendingTasksPopup }" />
+                                    </aura:if>
+                                </td>
+                            </tr> 
+                        </aura:iteration>
+                    </tbody>
+                </table>
+            </aura:if>
+            <div class="slds-float_right" style="padding-top: 12px;">
+                <div style="display: inline-block;margin-right: 8px;">
+                    <b>Rows per page:</b>
+                </div>
+                <div style="display: inline-block;margin-right: 14px;">
+                    <b>
+                        <ui:inputSelect aura:id="pageSize" change="{!c.onSelectChange}">
+                            <ui:inputSelectOption text="50" label="50" value="true"/>
+                            <ui:inputSelectOption text="100" label="100"/>
+                            <ui:inputSelectOption text="150" label="150"/>
+                            <ui:inputSelectOption text="200" label="200"/>
+                        </ui:inputSelect>
+                    </b>
+                </div>
+                <div style="display: inline-block;margin-right: 14px;">
+                    <p style="font-siz: 18px; font-weight: bold;">{!v.RecordStart}-{!v.RecordEnd} of {!v.TotalRecords} | Page {!v.PageNumber} of {!v.TotalPages}</p>
+                </div>
+                <div style="display: inline-block;">
+                    <aura:if isTrue="{!v.PageNumber == 1}">
+                        <lightning:buttonIcon iconName="utility:jump_to_left" variant="bare" aura:id="prevPage" title="First Page" class="disabledClass" onclick="{!c.handleFirst}" />            
+                        <aura:set attribute="else">
+                            <lightning:buttonIcon iconName="utility:jump_to_left" disabled="{!v.PageNumber == 1}" variant="bare" aura:id="prevPage" title="First Page" onclick="{!c.handleFirst}" />            
+                        </aura:set>
+                    </aura:if>
+                    <aura:if isTrue="{!v.PageNumber == 1}">
+                        <lightning:buttonIcon iconName="utility:chevronleft" variant="bare" aura:id="prevPage" title="Prev" class="disabledClass" onclick="{!c.handlePrev}" />            
+                        <aura:set attribute="else">
+                            <lightning:buttonIcon iconName="utility:chevronleft" disabled="{!v.PageNumber == 1}" variant="bare" aura:id="prevPage" title="Prev" onclick="{!c.handlePrev}" />            
+                        </aura:set>
+                    </aura:if>     
+                    <aura:if isTrue="{!v.PageNumber == v.TotalPages}">
+                        <lightning:buttonIcon iconName="utility:chevronright" aura:id="nextPage" class="disabledClass" variant="bare" title="Next" onclick="{!c.handleNext}"/>
+                        <aura:set attribute="else">
+                            <lightning:buttonIcon iconName="utility:chevronright" disabled="{!v.PageNumber == v.TotalPages}" aura:id="nextPage" variant="bare" title="Next" onclick="{!c.handleNext}"/>
+                        </aura:set>
+                    </aura:if> 
+                    <aura:if isTrue="{!v.PageNumber == v.TotalPages}">
+                        <lightning:buttonIcon iconName="utility:jump_to_right" variant="bare" aura:id="lastPage" title="Last Page" class="disabledClass" onclick="{!c.handleLast}" />            
+                        <aura:set attribute="else">
+                            <lightning:buttonIcon iconName="utility:jump_to_right" variant="bare" aura:id="lastPage" title="Last Page" onclick="{!c.handleLast}" />            
+                        </aura:set>
+                    </aura:if>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    <!--Section 2 End-->
+    
+    
+</aura:component>

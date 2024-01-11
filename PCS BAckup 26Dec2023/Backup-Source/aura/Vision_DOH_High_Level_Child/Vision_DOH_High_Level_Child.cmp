@@ -1,0 +1,191 @@
+<aura:component controller= "Vision_DOH_High_Level_Cls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="tradeGroupList" type="Object"/>
+    <aura:registerEvent name="DoHEvent" type="c:Vision_DoH_Event"/>
+    <aura:attribute name="loaded" type="Boolean" />
+    <aura:attribute name="W4QtySold" type="Boolean" default="false" />
+    
+    <aura:attribute name="show" type="boolean" default="false" />
+    <aura:attribute name="qtySold" type="boolean" default="false" />
+    <aura:attribute name="minAvgSales" type="boolean" default="false" />
+    <aura:attribute name="showAvgSales" type="boolean" default="false" />
+    <aura:attribute name="showRecords" type="boolean" default="false" />
+    <aura:attribute name="showUserInputs" type="boolean" default="true"/> 
+    <aura:attribute name="productName" type="String" />
+    <aura:attribute name="minRxDoHValue" type="String" />
+    <aura:attribute name="maxRxDoHValue" type="String" />
+    <aura:attribute name="minSRxDoHValue" type="String" />
+    <aura:attribute name="maxSRxDoHValue" type="String" />
+    <aura:attribute name="minRxSales" type="Integer" />
+    <aura:attribute name="minSRxSales" type="Integer" /> 
+    <aura:attribute name="minRxDoH" type="Integer" />    
+    <aura:attribute name="minSRxDoH" type="Integer"  />
+    <aura:attribute name="maxRxDoH" type="Integer" />    
+    <aura:attribute name="maxSRxDoH" type="Integer"  />
+    <aura:attribute name="avgSales" type="Integer" />
+    <aura:attribute name="thresholdMtplr" type="Integer" default="5"/>
+    <aura:attribute name="accGroupList" type="Object"/>
+    <aura:attribute name="selectedId" type="String"/>  
+    <aura:attribute name="productFamilyDetails" type="List"/>
+    <aura:attribute name="indexValue" type="Integer" />
+    <aura:attribute name="isRxChecked" type="boolean" />
+    <aura:attribute name="isSRxChecked" type="boolean" />
+    <aura:attribute name="isOtcChecked" type="boolean" />
+    <aura:attribute name="minUserDoH" type="boolean"  />
+    <aura:attribute name="maxUserDoH" type="boolean" default="false" />
+    <aura:attribute name="minmaxUserDoH" type="boolean" default="false" />
+    <aura:attribute name="isAsc" type="boolean" default="true" description="boolean flag for pass sorting condition to apex class"/>
+    <aura:attribute name="hideIndicators" type="boolean" default="true" />  
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="ProdName" type="String" /> 
+    <aura:attribute name="Ndc" type="String" /> 
+    <aura:attribute name="awardedPosition" type="list" />
+    
+    
+    <aura:iteration items="{!v.accGroupList.dohRecords}" var="sdItem" indexVar="sNo">
+        <tr>
+            
+            
+            <td class="distributionColumnData distributionColumn backColumnStickyData"  style="text-align:left;">{!sdItem.vision_gcp_ndc__c}</td>
+            
+            
+            <aura:if isTrue="{!sdItem.Vision_Is_In_Open_Order__c}">          
+                <td class="  distributionColumnData distributionColumn DateStickyData"> <div class="slds-grid">
+                    <div >
+                        <aura:if isTrue="{!and(sdItem.GCP_Backorder_SRX__r.Vision_MoH__c lt 0, sdItem.GCP_Backorder_SRX__r.Vision_Product__r.Phoenix_Rx_SRx_OTC__c == 'Rx')}">
+                         <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                           
+                        </aura:if>
+                        <aura:if isTrue="{!and(sdItem.GCP_Backorder_SRX__r.Vision_On_Backorder__c == 'Yes' , sdItem.GCP_Backorder_SRX__r.Vision_Product__r.Phoenix_Rx_SRx_OTC__c == 'SRx')}">
+                           <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                              
+                        </aura:if>
+                        <aura:if isTrue="{!and(sdItem.GCP_Backorder_RX__r.Vision_Backorder_Qty__c gt 0, sdItem.GCP_Backorder_RX__r.Vision_Product__r.Phoenix_Rx_SRx_OTC__c == 'OTC')}">
+                          <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                               
+                        </aura:if>
+                      <img src="{!$Resource.Noopenorder}" class="imageclass" style="max-width: 20px;height: 20px;" title="Open Orders on this Product"  onclick="{!c.redirectOrder}"/>                              
+                    </div>
+                    <div data-id="{!sdItem.Id}" onclick="{!c.openModal}" >  
+                        <lightning:icon class="ribbonmIcon" iconName="utility:ribbon" size="x-small" title="View Product Positions"
+                                        style="cursor:pointer;"/>
+                    </div>{!sdItem.vision_gcp_package_description__c}
+                    </div></td>
+                <aura:set attribute="else"> 
+                    <td class=" distributionColumnData distributionColumn DateStickyData"> <div class="slds-grid">
+                        <div >
+                            <aura:if isTrue="{!and(sdItem.GCP_Backorder_SRX__r.Vision_MoH__c lt 0, sdItem.GCP_Backorder_SRX__r.Vision_Product__r.Phoenix_Rx_SRx_OTC__c == 'Rx')}">
+                             <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                                
+                            </aura:if>
+                            <aura:if isTrue="{!and(sdItem.GCP_Backorder_SRX__r.Vision_On_Backorder__c == 'Yes' , sdItem.GCP_Backorder_SRX__r.Vision_Product__r.Phoenix_Rx_SRx_OTC__c == 'SRx')}">
+                               <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                              
+                            </aura:if>
+                            <aura:if isTrue="{!and(sdItem.GCP_Backorder_RX__r.Vision_Backorder_Qty__c gt 0, sdItem.GCP_Backorder_RX__r.Vision_Product__r.Phoenix_Rx_SRx_OTC__c == 'OTC')}">
+                               <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                                
+                            </aura:if>
+                             <img src="{!$Resource.OpenorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="No Open Orders on this Product" />                            
+                        </div>
+                        <div data-id="{!sdItem.Id}" onclick="{!c.openModal}" >  
+                            <lightning:icon class="ribbonmIcon" iconName="utility:ribbon" size="x-small" title="View Product Positions"
+                                            style="cursor:pointer;"/>
+                        </div>{!sdItem.vision_gcp_package_description__c}
+                        </div></td>
+                    
+                </aura:set>
+            </aura:if>
+            
+            
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W1_DOH__c}" minimumFractionDigits="0" maximumFractionDigits="1"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W2_DOH__c}" minimumFractionDigits="0" maximumFractionDigits="1"/></td>    
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W3_DOH__c}" minimumFractionDigits="0" maximumFractionDigits="1"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W4_DOH__c}" minimumFractionDigits="0" maximumFractionDigits="1"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W5_DOH__c}" minimumFractionDigits="0" maximumFractionDigits="1"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W6_DOH__c}" minimumFractionDigits="0" maximumFractionDigits="1"/></td>    
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W7_DOH__c}" minimumFractionDigits="0" maximumFractionDigits="1"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W8_DOH__c}" minimumFractionDigits="0" maximumFractionDigits="1"/></td>
+            
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W1_QOH__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W2_QOH__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>  
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W3_QOH__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>             
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_Gcp_W4_QOH__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W5_QOH__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W6_QOH__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>  
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W7_QOH__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>             
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W8_QOH__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Value_W1__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Value_W2__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td> 
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Value_W3__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Value_W4__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Value_W5__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Value_W6__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td> 
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Value_W7__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.Value_W8__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.vision_gcp_w1_quantity_sold__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.vision_gcp_w2_quantity_sold__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>  
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.vision_gcp_w3_quantity_sold__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.vision_gcp_w4_quantity_sold__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.vision_gcp_w5_quantity_sold__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>  
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.vision_gcp_w6_quantity_sold__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.vision_gcp_w7_quantity_sold__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <aura:if isTrue="{!sdItem.Product__r.Phoenix_Rx_SRx_OTC__c == 'SRx'}">
+                <aura:if isTrue="{!sdItem.W4QtySold}">
+                    <td class="" title="{!'Ratio: '+sdItem.QoH_Qty_Sold__c+', '+sdItem.QoH_Qty_Sold_Pct__c+'%'}"  style="text-align:center;color:green !important;"><lightning:formattedNumber value="{!sdItem.vision_gcp_w8_quantity_sold__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                    <aura:set attribute="else">
+                        <td class="" title="{!'Ratio: '+sdItem.QoH_Qty_Sold__c+', '+sdItem.QoH_Qty_Sold_Pct__c+'%'}"  style="text-align:center;color:red !important;"><lightning:formattedNumber value="{!sdItem.vision_gcp_w8_quantity_sold__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        
+                    </aura:set> 
+                </aura:if>
+            </aura:if>
+            <aura:if isTrue="{!sdItem.Product__r.Phoenix_Rx_SRx_OTC__c != 'SRx'}">
+                <td class=""  style="text-align:center;"><lightning:formattedNumber value="{!sdItem.vision_gcp_w8_quantity_sold__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                
+                
+            </aura:if>             
+            
+        </tr>
+        
+    </aura:iteration>
+    <aura:if isTrue="{!v.isModalOpen}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    
+                    <div class="slds-text-align_center"> <b style="align:center;">{!v.ProdName}</b></div>  
+                    
+                    
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                    <div>
+                        <div style="padding-left:10px;padding-right:10px;">
+                            <div aura:id="mainDiv" style="overflow:auto;margin-top:10px;border-radius: 0.25rem;border: 1px solid #cfcfcf;">
+                                
+                                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                                    <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered slds-table--header-fixed">                            <thead>
+                                        <tr>
+                                            <th style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;padding:5px;">Contract Name</th>
+                                            <th style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;padding:5px;">Awarded Position</th> 
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                            <aura:iteration items="{!v.awardedPosition}" var="item" >
+                                                <tr>
+                                                    <td>{!item.Vision_Contract__r.Name}</td>
+                                                    <td>{!item.Vision_Current_Product_Position__c}</td>
+                                                </tr>
+                                            </aura:iteration>
+                                        </tbody>
+                                    </table>  
+                                </div>
+                            </div></div>
+                    </div>
+                </div>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if> 
+</aura:component>

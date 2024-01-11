@@ -1,0 +1,149 @@
+<aura:component controller = "Vision_Order_Status" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:availableForFlowScreens" access="global" >
+    <aura:attribute name="item" type="Object" />
+    <aura:attribute name="showComments" type="boolean" default="false" />
+    <aura:attribute name="contractRec" type="Object" />
+    <aura:attribute name="visionComment" type="String" />
+    <aura:attribute name="listOfCmnts" type="list" />
+    <aura:attribute name="isInitialOrder" type="boolean" />
+    
+    <tr>
+        <td class="slds-cell-wrap" style="min-width: 300px !important;max-width: 300px !important;">
+            <lightning:formattedUrl value="{!'/' + v.item.Vision_Product__r.Id}" label="{!v.item.Vision_Product__r.Name}" target="_blank" />
+        </td>
+        <td class="slds-cell-wrap" style="min-width: 100px !important;max-width: 100px !important;text-align:right;">
+            {!v.item.Vision_Product__r.Phoenix_NDC_11__c}
+        </td>
+        <aura:if isTrue="{!v.isInitialOrder}">
+            <td class="slds-cell-wrap" style="text-align:right;">
+                {!v.item.Vision_PO_Number__c}
+            </td>
+            <td class="slds-cell-wrap" style="min-width: 50px !important;max-width: 50px !important;text-align:right;">
+                {!v.item.Vision_Order_Quantity__c}
+            </td>
+        </aura:if>
+        <td class="slds-cell-wrap" style="min-width: 100px !important;max-width: 100px !important;text-align:right;">
+            <lightning:formattedNumber value="{!v.item.Vision_Awarded_Price__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"  minimumFractionDigits="0"/>
+        </td>
+        <td class="slds-cell-wrap" style="min-width: 100px !important;max-width: 100px !important;text-align:right;">
+            <lightning:formattedNumber value="{!v.item.Vision_Awarded_Volume__c}" maximumFractionDigits="0"  minimumFractionDigits="0"/>
+        </td>
+        <td class="slds-cell-wrap" style="min-width: 100px !important;max-width: 100px !important;text-align:right;">
+            <lightning:formattedNumber value="{!v.item.Bid_Line_Item__r.Phoenix_Initial_Stocking_Order_Volume__c}" maximumFractionDigits="0"  minimumFractionDigits="0"/>
+        </td>
+        <td class="slds-cell-wrap" style="min-width: 100px !important;max-width: 100px !important;text-align:right;">
+            {!v.item.Customer_Response_Line__r.Phoenix_Supply_Effective_Date__c}
+        </td>
+        <td class="slds-cell-wrap" style="min-width: 100px !important;max-width: 100px !important;text-align:right;">
+            <lightning:formattedNumber value="{!v.item.pastDays}"  maximumFractionDigits="0"  minimumFractionDigits="0"/>
+        </td>
+        <td class="slds-cell-wrap" style="min-width: 100px !important;max-width: 100px !important;text-align:right;">
+            {!v.item.Vision_NPR_Data__r.Phoenix_Price_Effective_Value_To__c}
+        </td>
+        <td class="slds-cell-wrap" style="min-width: 100px !important;max-width: 100px !important;text-align:right;">
+            <lightning:formattedNumber value="{!v.item.remainingDays}"  maximumFractionDigits="0"  minimumFractionDigits="0"/>
+        </td>
+        <td class="slds-cell-wrap slds-text-align--center">
+            <button onclick="{!c.inlineEditComments}" 
+                    class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                    tabindex="0" id="{!indx}">
+                <lightning:icon iconName="utility:comments" 
+                                size="x-small" />
+            </button>
+        </td>
+    </tr>
+    <aura:if isTrue="{!v.showComments}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                 aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_medium">
+            
+            <div class="slds-modal__container">
+                
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" onclick="{!c.closeCommentPopup}"
+                                          alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                    
+                    <h2 class="slds-text-heading_medium slds-hyphenate"><b>Initial Order Comments</b></h2>
+                    
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.showSpinnerInCommentPop}">
+                        <lightning:spinner size="medium" variant="brand" />
+                    </aura:if>
+                    <div>
+                        <div>
+                            <lightning:textarea label="Comment"
+                                                value="{!v.visionComment}"
+                                                placeholder="Enter Comment Here..."/>
+                        </div>
+                        <div style="text-align:right;">
+                            <lightning:button variant="brand" label="Save" title="Save"
+                                              onclick="{! c.onSaveCmnt }"/>
+                        </div>
+                    </div>
+                        <lightning:accordion allowMultipleSectionsOpen="true" aura:id="accordion">
+                            <lightning:accordionSection name="Initial Order Comments" label="Initial Order Comments">
+                                <aura:if isTrue="{!v.listOfCmnts.length != 0}">
+                                    <aura:iteration items="{!v.listOfCmnts}" var="visionCmnts">
+                                        <div class="slds-box" style="padding:10px;margin-bottom:3px;">
+                                            <article class="slds-post slds-card">
+                                                <header class="slds-post__header slds-media">
+                                                    <div class="slds-media__figure">
+                                                        <a href="#" class="slds-avatar slds-avatar_circle slds-avatar_large">
+                                                            <img alt="{!visionCmnts.CreatedBy.Name}" src="{!visionCmnts.CreatedBy.SmallPhotoUrl}" 
+                                                                 title="{!visionCmnts.CreatedBy.Name}"/>
+                                                        </a>
+                                                    </div>
+                                                    <div class="slds-media__body">
+                                                        <div class="slds-grid slds-grid_align-spread slds-has-flexi-truncate">
+                                                            <p class="slds-text-body_small">
+                                                                {!visionCmnts.CreatedBy.Name} 
+                                                            </p>
+                                                        </div>
+                                                        <p class="slds-text-body_small">
+                                                            <a href="#" title="" 
+                                                               class="slds-text-link_reset">{!visionCmnts.Comment_Date__c}
+                                                            </a>
+                                                        </p>
+                                                    </div>
+                                                </header>
+                                                <div class="slds-post__content">
+                                                    <p style="margin-left:5px;">{!visionCmnts.Comment__c}</p>
+                                                </div>
+                                            </article> 
+                                        </div>
+                                    </aura:iteration>
+                                    <aura:set attribute="else">
+                                        <center>
+                                            <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                                 role="alert" style="width:50%;">
+                                                <span class="slds-icon_container slds-m-right_x-small"
+                                                      title="Please add line items to view the table">
+                                                    <lightning:icon iconName="utility:info" alternativeText="info"
+                                                                    size="x-small" variant="inverse" />
+                                                </span>
+                                                <h2>No Comments Found</h2>
+                                            </div>
+                                        </center>
+                                    </aura:set>
+                                </aura:if>
+                            </lightning:accordionSection>                          
+                        </lightning:accordion>
+                </div>
+                <!--/div-->
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" label="Close" title="Close"
+                                      onclick="{! c.closeCommentPopup }" />
+                    <aura:if isTrue="{!v.showSaveComntButton}">
+                        <lightning:button variant="brand" label="Save" title="Save"
+                                          onclick="{! c.closeCommentPopup }" />
+                    </aura:if>
+                </footer>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>

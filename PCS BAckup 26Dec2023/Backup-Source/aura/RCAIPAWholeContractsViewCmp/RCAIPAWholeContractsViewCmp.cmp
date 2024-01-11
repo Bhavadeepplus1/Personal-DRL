@@ -1,0 +1,92 @@
+<aura:component controller="Phoenix_RCAWholesalerEditLineCls" implements="lightning:isUrlAddressable,force:hasRecordId,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithOutHeader" access="global" >
+    
+    <aura:attribute name="recordId" type="Id" />
+  
+    <lightning:navigation aura:id="navService"/> 
+    <aura:handler name="init" value="{!this}" action="{!c.initRecords}"/>
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.initRecords}"/>
+    <aura:attribute name="BidLineItemListAll" type="Phoenix_Bid_Line_Item__c[]"/>
+  
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="bidNumber" type="string"  />
+    <aura:attribute name="bidName" type="string"  />
+    <aura:attribute name="BidTypeVal" type="string"  />
+    
+    <aura:attribute name="showSaveCancelBtn" type="boolean" default="false" description="flag for rendered save and cancel buttons in aura:if "/>    
+  	<aura:handler name="lightningEvent" event="c:RefreshRCAEditLinesEvt" action="{!c.handleEvent}"/>
+    
+    <lightning:card iconName="custom:custom90" title="{!(v.bidNumber+'-'+v.bidName)}">
+                <aura:set attribute="actions">
+                    <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+                        <lightning:button label="Export" onclick="{!c.downloadCsv}"/>
+                    </aura:if>
+                    <lightning:button variant="neutral" label="Back" title="Back" onclick="{! c.backToBid }"/>
+                   
+                    
+                </aura:set>
+               <center>
+   
+                            <aura:if isTrue="{!v.showSaveCancelBtn}">
+                                <!--button for save and cancel Record after Inline Edit-->
+                                <lightning:button label="Cancel" onclick="{!c.cancel}"/>&nbsp;
+                               
+                                <lightning:button variant="brand" label="Save"  onclick="{!c.SaveAndNavigate}"/>
+                            </aura:if> 
+                        </center>
+             
+               
+                <aura:if isTrue="{!v.isSpinnerLoad}">
+                    <div class="backgroundInverse">
+                        <lightning:spinner alternativeText="Loading" variant="brand" />
+                    </div>
+                </aura:if>
+                <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+                    <div aura:id="mainDiv" style="height:450px;overflow:auto;margin-top:10px;" class=" slds-m-right_small slds-m-left_small">
+                        <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                            <table aura:id="LineTable"  class="customtable slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                                <thead>
+                                    <tr> 
+                                        <th></th>
+                                        <th class="slds-truncate slds-cell-wrap">Date</th>
+                                        <th class="slds-truncate slds-cell-wrap">RCA Agreement</th>
+                                         <th class="slds-truncate slds-cell-wrap">Customer</th>
+                                        <th class="slds-truncate slds-cell-wrap">New RCA/IPA Agreement</th>
+                                        <th class="slds-truncate slds-cell-wrap">Current GPO</th>
+                                        <th class="slds-truncate slds-cell-wrap">New GPO</th>
+                                        <th class="slds-truncate slds-cell-wrap">Current Wholesaler</th>
+                                          <th class="slds-truncate slds-cell-wrap">New Wholesaler Name</th>
+                                           <th class="slds-truncate slds-cell-wrap">New Wholesaler Location</th>
+                                        <th class="slds-truncate slds-cell-wrap">RAM</th>
+                                      <th class="slds-truncate slds-cell-wrap">Contract Approval</th>
+                                        <th class="slds-truncate slds-cell-wrap">Contract Comments</th>
+                                       
+                                       
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.BidLineItemListAll}" var="biltem" indexVar="sNo">
+                                        <!-- Child Lightning Component -->
+                                        <c:RCAIPAWholeContractsViewChildCmp BidTypeVal="{!v.BidTypeVal}" singleRec="{!biltem}" showSaveCancelBtn="{!v.showSaveCancelBtn}" sNo="{!sNo + 1}" lineItemId="{!biltem.Id}" />
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </div> 
+                    </div>
+                    <br/>
+                    <aura:set attribute="else">
+                        <lightning:card >
+                            <center>
+                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                    <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                    </span>
+                                    <h2>There are no rca lines for this bid</h2>
+                                </div>
+                            </center>
+                        </lightning:card>
+                    </aura:set>
+                </aura:if> 
+
+            </lightning:card>
+        
+</aura:component>

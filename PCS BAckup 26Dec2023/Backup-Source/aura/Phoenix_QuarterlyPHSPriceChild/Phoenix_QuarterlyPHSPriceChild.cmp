@@ -1,0 +1,150 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="lineInstance" type="Phoenix_PHS_Price_Change_Line__c" default="{
+                                                                                         'sobjectType' : 'Phoenix_PHS_Price_Change_Line__c',
+                                                                                         'Phoenix_Product_Name__c':'',
+                                                                                         'Phoenix_PHS_Price_Change__c': '',
+                                                                                         'ProductName__c': '',
+                                                                                         'ChangeInPrice' :'',
+                                                                                         'Phoenix_Material_Code__c' : '',
+                                                                                         'Phoenix_NDC_11__c': '',
+                                                                                         'Phoenix_Old_PHS_Price__c': '',
+                                                                                         'Phoenix_New_PHS_Price__c': '',
+                                                                                         'Phoenix_Change_in_Price__c': '',
+                                                                                         'Phoenix_Last_90_days_PHS_Units__c': '',
+                                                                                         'Phoenix_Sales_Difference__c': '',
+                                                                                         'Price_in_Apexus_Sub_Ceiling_Contract__c': '',
+                                                                                         'Phoenix_Diff_in_Apexus_Sub_Ceiling_Price__c': '',
+                                                                                         'Apexus_Sub_Ceiling_Price_Change_Required__c': '',
+                                                                                         'Phoenix_Provisional_PHS_Price__c' : '',
+                                                                                         'Phoenix_Price_Start_Date__c': '',
+                                                                                         'Phoenix_Price_End_Date__c' : '',
+                                                                                         'Phoenix_Remarks__c': '',
+                                                                                         }"/>
+    <aura:attribute name="rowIndex" type="String"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="enableEdit" type="boolean" default="true" />
+    <aura:attribute name="NewPHSPriceEditMode" type="Boolean" default="false" />
+    <aura:attribute name="RemarksEditMode" type="boolean" default="false" />
+    <aura:attribute name="ApprovalStatus" type="String" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:registerEvent name="WACChangeEvent" type="c:WACValueChangeEvent"/>
+    <aura:registerEvent name="DeleteRowEvt" type="c:DeleteRowEvt"/> 
+    <aura:registerEvent name="AddRowEvt" type="c:AddNewRowEvt"/>
+
+    <tr>
+        <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+            <td scope="row" style="text-align: center;">
+                <!--<lightning:button variant="neutral" iconName="utility:edit" iconPosition="left" onclick="{!c.editMode}"/>-->
+                <lightning:button variant="neutral" iconName="utility:delete" iconPosition="left" onclick="{!c.removeRow}"/>
+            </td>
+        </aura:if>
+        <td style="text-align: left;">
+            <a href="{!'/'+v.lineInstance.Phoenix_Product_Name__c}"
+               target="_blank">{!v.lineInstance.ProductName__c}</a>
+        </td>
+        <td style="text-align: right;">{!v.lineInstance.Phoenix_Material_Code__c}</td>
+        <td style="text-align: right;">{!v.lineInstance.Phoenix_NDC_11__c}</td>
+        <td style="text-align: right;">
+            <lightning:formattedNumber value="{!v.lineInstance.Phoenix_Old_PHS_Price__c}" style="currency" currencyCode="USD" />
+        </td>
+        <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+            <td ondblclick="{!c.inlineEditNewPHSPrice}" aura:id="inputNewPHSPriceId">
+                <span class="slds-grid slds-grid_align-spread customCss">
+                    <!-- show input and output section based on boolean flag -->
+                    <aura:if isTrue="{!v.NewPHSPriceEditMode == false}">
+                        <span>
+                            <lightning:formattedNumber value="{!v.lineInstance.Phoenix_New_PHS_Price__c}" style="currency" currencyCode="USD" />
+                        </span>
+                        <button onclick="{!c.inlineEditNewPHSPrice}"
+                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                tabindex="0">
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                     style="position: absolute; top: 0px;width:max-content;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputCurrency class="slds-input inputWidth"
+                                                              labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                              aura:id="inputNewPHSPrice" blur="{!c.closeNewPHSPriceBox}"
+                                                              change="{!c.onNewPHSPriceChange}"
+                                                              value="{!v.lineInstance.Phoenix_New_PHS_Price__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+            <aura:set attribute="else">
+                <td>
+                    <lightning:formattedNumber value="{!v.lineInstance.Phoenix_New_PHS_Price__c}" style="currency" currencyCode="USD" />
+                </td>
+            </aura:set>
+        </aura:if>
+        <!--<td style="text-align: right;">
+            <lightning:input class="customPadding" name="input1" value="{!v.lineInstance.Phoenix_New_PHS_Price__c}" onchange="{!c.handleChange}" disabled="{!v.enableEdit}"/>
+        </td>-->
+        <td style="text-align: right;">
+            <lightning:formattedNumber value="{!v.lineInstance.ChangeInPrice}" style="percent" maximumFractionDigits="2"/>
+        </td>
+        <td style="text-align: right;">{!v.lineInstance.Phoenix_Last_90_days_PHS_Units__c}</td>
+        <td style="text-align: right;">
+            <lightning:formattedNumber value="{!v.lineInstance.Phoenix_Sales_Difference__c}" style="currency" currencyCode="USD" />
+        </td>
+        <td style="text-align: right;">
+            <lightning:formattedNumber value="{!v.lineInstance.Price_in_Apexus_Sub_Ceiling_Contract__c}" style="currency" currencyCode="USD" />
+        </td>
+        <td style="text-align: right;">
+            <lightning:formattedNumber value="{!v.lineInstance.Phoenix_Diff_in_Apexus_Sub_Ceiling_Price__c}" style="currency" currencyCode="USD" />
+        </td>
+        <td style="text-align: right;">{!v.lineInstance.Apexus_Sub_Ceiling_Price_Change_Required__c}</td>
+        <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+            <td ondblclick="{!c.inlineEditRemarks}" aura:id="inputRemarksId">
+                <span class="slds-grid slds-grid_align-spread">
+                    <!-- show input and output section based on boolean flag -->
+                    <aura:if isTrue="{!v.RemarksEditMode == false}">
+                        <span>{!v.lineInstance.Phoenix_Remarks__c}</span>
+                        <button onclick="{!c.inlineEditRemarks}"
+                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                tabindex="0">
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                     style="position: absolute; top: 0px;width:100px;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputText class="slds-input inputWidth"
+                                                          labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                          aura:id="inputRemarks" blur="{!c.closeRemarksBox}"
+                                                          change="{!c.onRemarksChange}"
+                                                          value="{!v.lineInstance.Phoenix_Remarks__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+            <aura:set attribute="else">
+                <td>
+                    {!v.lineInstance.Phoenix_Remarks__c}
+                </td>
+            </aura:set>
+        </aura:if>
+        <!--<td>
+            <lightning:input class="customPadding" name="input1" value="{!v.lineInstance.Phoenix_Remarks__c}" disabled="{!v.enableEdit}" />
+        </td>-->
+    </tr>
+</aura:component>

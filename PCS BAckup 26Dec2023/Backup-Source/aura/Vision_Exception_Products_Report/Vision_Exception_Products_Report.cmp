@@ -1,0 +1,178 @@
+<aura:component controller="VisionExceptionProductsReportCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="data" type="object" />
+    <aura:attribute name="familyIds" type="object" />
+    <aura:attribute name="keyList" type="list" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" />
+    <aura:attribute name="dataLoaded" type="boolean" default="false" />
+    <aura:attribute name="startDate" type="string" />  <!-- YYYY-MM-DD -->
+    <aura:attribute name="endDate" type="string" />
+    <aura:attribute name="productsCount" type="Integer" />
+    <aura:attribute name="rxCount" type="Integer" default="0"/>
+    <aura:attribute name="srxCount" type="Integer" default="0" />
+    <aura:attribute name="otcCount" type="Integer" default="0" />
+    <aura:attribute name="selectionList" type="list" default="['Rx', 'SRx', 'OTC']" />
+    <aura:attribute name="isRxChecked" type="boolean" default="true" />
+    <aura:attribute name="isSRxChecked" type="boolean" default="true" />
+    <aura:attribute name="isOTCChecked" type="boolean" default="true" />
+    <aura:attribute name="expandCollapse" type="boolean" default="true" />
+    <aura:attribute name="expand" type="boolean" default="false" />
+    <aura:attribute name="isAsc" type="Boolean" default="true"/>
+    <aura:attribute name="sortBySalesASC" type="Boolean" default="false"/>
+    <aura:attribute name="filterName" type="String" />
+    
+    <aura:handler name = "init" value ="{!this}" action = "{!c.doInit}"/>
+    
+    <div class="slds-box" style="background-color:white;">
+        <div style="text-align: left;font-size: 20px;margin-bottom: 10px;">
+            <b>No Bid-Action Products</b>
+        </div>
+        <div class="slds-box slds-grid" style="padding: 4px;">
+            <div class="slds-col slds-size_2-of-4" style="margin-top: 38px;">
+                <div style="display: inline-block;margin: 0px 20px;">
+                    <b><lightning:input type="toggle" label="{!'Rx('+v.rxCount+')'}" checked="{!v.isRxChecked}" onchange="{!c.filterRxSRxOTC}" messageToggleActive="" messageToggleInactive=""/></b>
+                </div>
+                <div style="display: inline-block;margin: 0px 20px;">
+                    <b><lightning:input type="toggle" label="{!'SRx('+v.srxCount+')'}" checked="{!v.isSRxChecked}" onchange="{!c.filterRxSRxOTC}" messageToggleActive="" messageToggleInactive=""/></b>
+                </div>
+                <div style="display: inline-block;margin: 0px 20px;width: 150px !important;">
+                    <div class="slds-grid">
+                        <div class="slds-col slds-size_4-of-6">
+                            <b><lightning:input type="toggle" label="{!'OTC('+v.otcCount+')'}" checked="{!v.isOTCChecked}" onchange="{!c.filterRxSRxOTC}" messageToggleActive="" messageToggleInactive=""/></b>
+                        </div>
+                        <div class="slds-col slds-size_2-of-6" style="margin-left: 4px;">
+                          	<lightning:helptext content="Including Control Label Products only"/>  
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-col slds-size_2-of-4">
+                <div style="display: inline-block;float: right;">
+                    <div style="display: inline-block;padding: 4px;">
+                        <lightning:input type="date" name="date1" label="Start Date" value="{!v.startDate}" fieldLevelHelp="Sent to Customer Date"/>
+                    </div>
+                    <div style="display: inline-block;padding: 4px;">
+                        <lightning:input type="date" name="date2" label="End Date" value="{!v.endDate}" fieldLevelHelp="Sent to Customer Date"/>
+                    </div>
+                    <div style="display: inline-block;padding: 4px;">
+                        <lightning:button variant="brand" label="Run" title="Run" onclick="{!c.getProductData }"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <aura:if isTrue="{!v.isSpinnerLoad}">
+            <center>
+                <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                         aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                    <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                        <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                            <img src="{!$Resource.LoadingProgress}" />  
+                        </div>  
+                    </div>  
+                </section>   
+                <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+            </center>
+        </aura:if> 
+        <aura:if isTrue="{!v.dataLoaded}">
+            <div class="slds-grid">
+                <div class="slds-col slds-size_9-of-12">
+                    <p style="padding: 8px 0px;"><b>Products: </b>{!(v.productsCount)}</p>
+                </div>
+                <div class="slds-col slds-size_3-of-12" style="padding: 8px;">
+                    <aura:if isTrue="{!v.expandCollapse}">
+                        <div align="right">
+                            <lightning:button label="Expand All" title="Expand All" onclick="{!c.expandAll }"/>
+                        </div>
+                        <aura:set attribute="else"> 
+                            <div align="right">
+                                <lightning:button label="Collapse All" title="Collapse All" onclick="{!c.collapseAll }"/>
+                            </div>
+                        </aura:set>
+                    </aura:if>  
+                </div>
+            </div>
+            <div aura:id="mainDiv" style="max-height: 700px;height:auto;overflow:auto; border-radius: 8px;">
+                <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px; margin: auto;max-height: 700px;max-width: 100%;">
+                    <thead>
+                        <tr>
+                            <th colspan="5" class="mainHeaderSticky" style="background-color: #a3c2c2;"></th>
+                            <th colspan="5" class="mainHeaderSticky" style="text-align: center;background-color: #D2B4DE;">DRL Market Share Actuals</th>
+                        </tr>
+                        <tr class="slds-line-height_reset">
+                            <th class="headerSticky" scope="col" style="padding-left: 8px;width: 80px;background-color: #669999;color: white;">
+                                <div class="slds-truncate slds-cell-wrap" title="Product Family">Product Family</div>
+                            </th>
+                            <th class="headerSticky" scope="col" style="width: 300px;background-color: #669999;color: white;">
+                                <div class="slds-truncate slds-cell-wrap" title="Product Name">Product Name</div>
+                            </th>
+                            <th class="headerSticky" scope="col" style="width: 80px;background-color: #669999;color: white;">
+                                <div class="slds-truncate slds-cell-wrap" title="Product Code">Product Code</div>
+                            </th>
+                            <th class="headerSticky" scope="col" style="width: 80px;background-color: #669999;color: white;">
+                                <div class="slds-truncate slds-cell-wrap" title="Last Bid No.">Last Bid No.</div>
+                            </th>
+                            <th class="headerSticky" scope="col" style="width: 80px;background-color: #669999;color: white;">
+                                <span onclick="{!c.sortByDays}">
+                                    <aura:if isTrue="{!and(v.isAsc,v.filterName == 'Since Last Bid')}">
+                                        <div class="slds-icon_container" style="cursor: pointer;">  
+                                            Since Last Bid (Days)&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                      size="xx-small" 
+                                                                                      alternativeText="sort arrow up"/>  
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(!v.isAsc,v.filterName == 'Since Last Bid')}">
+                                        <div class="slds-icon_container" style="cursor: pointer;">  
+                                            Since Last Bid (Days)&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                     size="xx-small" 
+                                                                                     alternativeText="sort arrow up"/>  
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.filterName != 'Since Last Bid'}">
+                                        <div style="cursor: pointer;">Since Last Bid (Days)</div>
+                                    </aura:if>
+                                </span>
+                            </th>
+                            <th class="headerSticky" scope="col" style="width: 90px;background-color: #6c3483;color: white;">
+                                <div class="slds-truncate slds-cell-wrap" title="Vol (EU)">Vol (EU)</div>
+                            </th>
+                            <th class="headerSticky" scope="col" style="width: 90px;background-color: #6c3483;color: white;">
+                                <span onclick="{!c.sortBySales}">
+                                    <aura:if isTrue="{!and(v.sortBySalesASC,v.filterName == 'Sales')}">
+                                        <div class="slds-icon_container" style="cursor: pointer;">  
+                                            Sales&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                      size="xx-small" 
+                                                                                      alternativeText="sort arrow up"/>  
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(!v.sortBySalesASC,v.filterName == 'Sales')}">
+                                        <div class="slds-icon_container" style="cursor: pointer;">  
+                                            Sales&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                     size="xx-small" 
+                                                                                     alternativeText="sort arrow up"/>  
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.filterName != 'Sales'}">
+                                        <div style="cursor: pointer;">Sales</div>
+                                    </aura:if>
+                                </span>
+                            </th>
+                            <th class="headerSticky" scope="col" style="width: 90px;background-color: #6c3483;color: white;">
+                                <div class="slds-truncate slds-cell-wrap" title="Price">Price</div>
+                            </th>
+                            <th class="headerSticky" scope="col" style="width: 80px;background-color: #6c3483;color: white;">
+                                <div class="slds-truncate slds-cell-wrap" title="TPT ($)">TPT ($)</div>
+                            </th>
+                            <th class="headerSticky" scope="col" style="width: 80px;background-color: #6c3483;color: white;">
+                                <div class="slds-truncate slds-cell-wrap" title="TPT (%)">TPT (%)</div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.keyList}" var="item" indexVar="index">
+                            <c:VisionExceptionProductsReportChild data="{!v.data}" family="{!item}" familyIds = "{!v.familyIds}" expandAll="{!v.expand}" isAsc="{!v.isAsc}" />
+                        </aura:iteration>
+                    </tbody>
+                </table>
+            </div>
+        </aura:if>
+    </div>
+</aura:component>

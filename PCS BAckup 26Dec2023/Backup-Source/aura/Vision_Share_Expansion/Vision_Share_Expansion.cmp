@@ -1,0 +1,165 @@
+<aura:component implements="flexipage:availableForAllPageTypes,force:hasRecordId,force:appHostable,lightning:isUrlAddressable"
+                access="global" controller="Vision_ShareExpansion_cntl">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="accId" type="string"/>
+    <aura:attribute name="accObj" type="Account"/>
+    <aura:attribute name="isSpinner" type="boolean" default="false"/>
+    <aura:attribute name="shareExpansionList" type="list"/>
+    <aura:attribute name="dateOptions" type="List" default="[
+                                                            {'label': 'New', 'value': 'New'},
+                                                            {'label': 'Sent to OPPORTUNITY', 'value': 'Sent to OPPORTUNITY'},
+                                                            {'label': 'Sent to BRIGHT', 'value': 'Sent to BRIGHT'},
+                                                            ]"/>
+    <aura:attribute name="isSentToBrightChecked" type="boolean" default="true"/>
+    <aura:attribute name="isSentToOptyChecked" type="boolean" default="true"/>
+    <aura:attribute name="isNewChecked" type="boolean" default="true"/>
+    <aura:attribute name="TaskStatusList" type="list"/>
+    <aura:attribute name="isAsc" type="Boolean"/>
+    <aura:attribute name="filterName" type="String"/>
+    <aura:attribute name="sortField" type="String"/>
+    
+    
+    <aura:if isTrue="{!v.isSpinner}">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+    
+    <div class="slds-box">
+        
+        <!--<div class="slds-col slds-size_2-of-12" style="padding: 5px;">
+            <lightning:select aura:id="dateId" name="Task Status" label="Task Status" onchange="{! c.handleChange }">
+                <aura:iteration items="{!v.dateOptions}" var="option">
+                    <option  text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                </aura:iteration>
+            </lightning:select> &nbsp;&nbsp;
+        </div>-->
+        
+        <div class="slds-grid" style="margin-bottom:10px;background-color:white;">
+            <div class="slds-col slds-size_2-of-5" style="margin-right:3px;">
+                <div class="slds-grid">
+                    <div class="slds-col slds-size_1-of-5">
+                        <lightning:input aura:id="NEW" name="New" label="New" type="toggle"
+                                         messageToggleActive=""
+                                         messageToggleInactive="" checked="{!v.isNewChecked}" 
+                                         onchange="{!c.searchTaskStatus}" value="{!v.isNewChecked}"/>
+                    </div>
+                    <div class="slds-col slds-size_2-of-5">
+                        <lightning:input aura:id="SentToOpty" name="SentToOpty" label="Sent to OPPORTUNITY" type="toggle"
+                                         messageToggleActive=""
+                                         messageToggleInactive="" value="{!v.isSentToOptyChecked}"
+                                         checked="{!v.isSentToOptyChecked}" onchange="{!c.searchTaskStatus}"/>
+                    </div>
+                    <div class="slds-col slds-size_2-of-5">
+                        <lightning:input aura:id="SentToBright" name="SentToBright" label="Sent to BRIGHT" type="toggle"
+                                         messageToggleActive=""
+                                         messageToggleInactive="" value="{!v.isSentToBrightChecked}"
+                                         checked="{!v.isSentToBrightChecked}" onchange="{!c.searchTaskStatus}"/>
+                    </div>
+                </div>
+            </div>
+        </div> 
+        
+        <div aura:id="mainDiv" style="height:450px;overflow:auto;">
+            <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                <aura:if isTrue="{!(v.shareExpansionList.length > 0 )}">
+                    <table aura:id="LineTable" 
+                           class="maintable fixedtable slds-table slds-table_col-bordered 
+                                  slds-no-row-hover slds-table_cell-buffer slds-table_bordered
+                                  slds-table-bordered slds-border_left slds-border_right">
+                        <thead class="headerOfTable">
+                            <tr>
+                                <th class="headerClass">
+                                    <span>
+                                        <aura:if isTrue="{!and(v.isAsc,v.filterName == 'Task Status')}">
+                                            <lightning:icon style="cursor: pointer;" onclick="{!c.sortByProdPos}"
+                                                            iconName="utility:arrowup" 
+                                                            size="x-small" 
+                                                            alternativeText="sort arrow up"/>  
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(!v.isAsc,v.filterName == 'Task Status')}">
+                                            <lightning:icon style="cursor: pointer;" onclick="{!c.sortByProdPos}"
+                                                            iconName="utility:arrowdown" 
+                                                            size="x-small" 
+                                                            alternativeText="sort arrow up"/> 
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.filterName != 'Task Status'}">
+                                            <lightning:icon style="cursor: pointer;" onclick="{!c.sortByProdPos}"
+                                                            title="Sort By Task Status"
+                                                            iconName="utility:sort" 
+                                                            size="x-small"/> 
+                                        </aura:if>
+                                    </span>
+                                </th>
+                                <th class="headerClass">
+                                    Task Type
+                                </th>
+                                <th class="headerClass">
+                                    Product Family
+                                </th>
+                                <th class="headerClass">
+                                    Status
+                                </th>
+                                <th class="slds-text-align__right headerClass">
+                                    Opportunity
+                                </th>
+                                <th class="slds-text-align--right headerClass">
+                                    Baseline Volume
+                                </th>
+                                <th class="slds-text-align--right headerClass">
+                                    Baseline Dollar
+                                </th>
+                                <th class="slds-text-align--right headerClass">
+                                    Target Volume
+                                </th>
+                                <th class="slds-text-align--right headerClass">
+                                    Target Dollar
+                                </th>
+                                
+                                <th class="slds-text-align--right headerClass">
+                                    Task Comment
+                                </th>
+                                <th class="slds-text-align--right headerClass">
+                                    Task Date
+                                </th>
+                                <!-- <th class="slds-text-align__right headerClass">
+                                    Plan Start Date
+                                </th>
+                                <th class="slds-text-align__right headerClass">
+                                    Plan End Date
+                                </th> -->
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.shareExpansionList}" var="shareItem" indexVar="sNo">
+                                <c:Vision_Share_Expansion_Child shareItem="{!shareItem}" indexVal = "{!sNo}" accObj = "{!v.accObj}"/>
+                            </aura:iteration>
+                        </tbody>
+                        
+                    </table>
+                    <aura:set attribute="else">
+                        <lightning:card >
+                            <center>
+                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                    <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                    </span>
+                                    <h2>There are no line items for this Account.</h2>
+                                </div>
+                            </center>
+                        </lightning:card>
+                    </aura:set>
+                </aura:if>
+            </div> 
+        </div>
+        
+    </div>
+</aura:component>

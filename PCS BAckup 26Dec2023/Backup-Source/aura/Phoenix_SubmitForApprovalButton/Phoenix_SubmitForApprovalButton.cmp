@@ -1,0 +1,177 @@
+<aura:component controller="Phoenix_SubmitBidForApprovalCtrl" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithOutHeader,lightning:actionOverride" access="global">
+    <aura:attribute name="recId" type="Id"/>
+    <aura:attribute name="wrapList" type="List" />
+    <aura:attribute name="wrap" type="Object" description="To hold all objects" />
+    <aura:attribute name="isError" type="Boolean" default="false" />
+    <aura:attribute name="showSubmit" type="Boolean" default="false" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute access="public" name="formFactor" type="String" default="{!$Browser.formFactor}"/>
+    <aura:attribute access="public" name="isIpad" type="String" default="{!$Browser.isIPad}"/>
+    <aura:attribute access="public" name="isTablet" type="String" default="{!$Browser.isTablet}"/>
+    <lightning:navigation aura:id="navService"/> 
+    
+    <aura:html tag="style">
+        .slds-button slds-button_brand{
+        padding: initial; !important;
+        }
+        .slds-modal__container {
+        position: relative;
+        transform: none !important;
+        }
+        .slds-modal__content
+        {
+        background-color: white !important;
+        box-shadow: none !important;
+        }
+        .slds-modal__close {
+        display:none !important;
+        }
+        .slds-button__icon slds-button__icon_left{
+        margin-left: 6px; !important;
+        }
+        /* .slds-icon{
+        height: 20px; !important;
+        width: 30px; !important;
+        padding-right: 6px; !important;
+        }*/
+        .slds-modal__content slds-p-around_large{
+        width:100%; !important;
+        table thead {
+        position: fixed;
+        }
+        }
+        .slds-theme--warning {
+        margin: 0% 10%;
+        background-color: var(--lwc-colorBackgroundWarning,rgb(255, 183, 93));
+        color: var(--lwc-colorTextDefault,rgb(8, 7, 7));
+        }
+        
+    </aura:html>
+    <lightning:button label="Submit Bid" title="Submit Bid" class="btn2" onclick="{!c.showSubmitPanel}" variant="brand">
+    </lightning:button>
+    <aura:if isTrue="{!v.showSpinner}">
+        <lightning:spinner variant="brand" class="spinColor" size="large" />
+    </aura:if>
+    <aura:if isTrue="{!v.showSubmit}">
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        <section class="slds-modal slds-fade-in-open"  role="dialog"  aria-modal="true"  >
+            <aura:if isTrue="{!v.showSpinner}">
+                <lightning:spinner variant="brand" class="spinColor" size="large" />
+            </aura:if>
+            <div class="slds-modal__container" style="width:100%!important;max-width: 40rem!important;">
+                <header class="slds-modal__header" >
+                    <h2 class="slds-modal__title slds-hyphenate">Submit Bid For Approval</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <aura:if isTrue="{!v.isError}">
+                        <div style="color:rgb(194, 57, 52);text-align:center;padding-bottom:3%;position: relative; margin-top: 1%; margin-left: 0%;">
+                            <ui:outputText value="{!v.errorMessage}" />
+                        </div>
+                        <div class="modal-footer slds-modal__footer" role="banner" style="overflow-x:auto;">
+                            <div class="slds-grid">
+                                <div class="slds-col slds-has-flexi-truncate">
+                                    <div class="slds-media" >
+                                        <div class="slds-media__body" ></div>
+                                        <div class="slds-col slds-no-flex slds-align-bottom" style="float: right;padding-top:0%;">
+                                            <div class="slds-button-group" role="group" style="font-size:11px;">
+                                                <lightning:button label="Close" title="Close" class="btn2" onclick="{!c.closeQuickActionPanel}" variant="brand">
+                                                </lightning:button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <aura:set attribute="else">
+                            <aura:if isTrue="{!v.wrap.bidItemCount>0}">
+                                <aura:if isTrue="{!v.wrap.bid.Phoenix_Approval_Status__c != 'Draft1'}">
+                                    <div class="modal-body scrollable slds-modal__content slds-p-around--medium" id="top" style="background-color:white;">
+                                        
+                                        <div class="slds-align_absolute-left" style="padding-bottom:1%;padding-left:1%;">
+                                            <p class="slds-text-heading_small slds-hyphenate"><b>   
+                                                
+                                                </b></p>
+                                        </div>
+                                        
+                                        <div class="slds-scope">
+                                            <div class="slds-grid slds-wrap slds-text-align_left custom-container">
+                                                <div class="slds-size_1-of-1 slds-max-small-size_1-of-1 sapdata" style="padding:0% 0.5%;">
+                                                    
+                                                    <div style="text-align:center;padding-bottom:3px;">Are you sure you want  to submit this bid for approval?</div>
+                                                    
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer slds-modal__footer" role="banner" style="overflow-x:auto;">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-has-flexi-truncate">
+                                                <div class="slds-media" >
+                                                    <div class="slds-media__body" ></div>
+                                                    <div class="slds-col slds-no-flex slds-align-bottom" style="float: right;padding-top:0%;">
+                                                        <div class="slds-button-group" role="group" style="font-size:11px;">
+                                                            
+                                                            <lightning:button label="Yes" title="Yes" class="btn2" onclick="{!c.submitTheBid}" variant="brand">
+                                                            </lightning:button>
+                                                            
+                                                            <lightning:button label="No" title="No" class="btn2" onclick="{!c.closeQuickActionPanel}" variant="brand">
+                                                            </lightning:button>
+                                                            
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <aura:set attribute="else">
+                                        <div style="text-align:center;padding-bottom:3px;">Bid is already submitted for approval.</div> 
+                                        <div class="modal-footer slds-modal__footer" role="banner" style="overflow-x:auto;">
+                                            <div class="slds-grid">
+                                                <div class="slds-col slds-has-flexi-truncate">
+                                                    <div class="slds-media" >
+                                                        <div class="slds-media__body" ></div>
+                                                        <div class="slds-col slds-no-flex slds-align-bottom" style="float: right;padding-top:0%;">
+                                                            <div class="slds-button-group" role="group" style="font-size:11px;">
+                                                                <lightning:button label="Close" title="Close" class="btn2" onclick="{!c.closeQuickActionPanel}" variant="brand">
+                                                                </lightning:button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </aura:set>
+                                </aura:if> 
+                                <aura:set attribute="else">
+                                    
+                                    
+                                    <div style="color:rgb(194, 57, 52);text-align:center;padding-bottom:2%;position: relative; margin-top: -1%; margin-left: 0%;">
+                                        <ui:outputText value="{!v.wrap.error}" />
+                                    </div>
+                                    
+                                    <div class="modal-footer slds-modal__footer" role="banner" style="overflow-x:auto;">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-has-flexi-truncate">
+                                                <div class="slds-media" >
+                                                    <div class="slds-media__body" ></div>
+                                                    <div class="slds-col slds-no-flex slds-align-bottom" style="float: right;padding-top:0%;">
+                                                        <div class="slds-button-group" role="group" style="font-size:11px;">
+                                                            <lightning:button label="Close" title="Close" class="btn2" onclick="{!c.closeQuickActionPanel}" variant="brand">
+                                                            </lightning:button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </aura:set>    
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+                </div>
+            </div>
+        </section>
+    </aura:if>
+</aura:component>

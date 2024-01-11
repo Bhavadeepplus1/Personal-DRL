@@ -1,0 +1,136 @@
+<aura:component controller="Phoenix_OTCMDMViewCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="recordId" type="String" />
+     <aura:attribute name="admins" type="List" />
+    <aura:attribute name="SAPNumberEdit" type="boolean" default="false"/>
+    <aura:attribute name="statusEdit" type="boolean" default="false"/>
+    <aura:attribute name="NDCEdit" type="boolean" default="false"/>
+    <aura:attribute name="loggedInUserId" type="string" default="" />
+    <aura:attribute name="bidOwner" type="string" default="" />
+    <aura:attribute name="isCustomerStepDone" type="boolean" />
+    <aura:attribute name="mdmItem" type="Object" />
+        <aura:attribute name="IsHeAdmin" type="boolean" default="false" />
+    <aura:attribute name="productList" type="List" />
+    <aura:registerEvent name="mdmEvent" type="c:OTCMDMViewEvent"/>
+    
+    <tr>
+        <th style="padding-bottom: 1.7%;text-align: left;"><a href="{!'/'+v.mdmItem.Phoenix_Product__r.Id}" target="_blank">{!v.mdmItem.Phoenix_Product__r.Name}</a> </th>
+        <td>
+            <a href="{!'/'+v.mdmItem.Phoenix_Bid_Line_Item__r.Product_Family__c}" target="_blank">{!v.mdmItem.Phoenix_Bid_Line_Item__r.Product_Family_Name__c}</a>
+        </td>
+        <td>{!v.mdmItem.Phoenix_Account__r.Name} </td>
+        <td>{!v.mdmItem.Phoenix_Product_Director__c} </td>
+        <!-- <td>{!v.mdmItem.Status__c} </td> -->
+        <td>{!v.mdmItem.Phoenix_Pkg_Size__c} </td>
+        <td>{!v.mdmItem.Phoenix_Strength__c} </td>
+        <!--<td>{!v.mdmItem.Phoenix_NDC_11__c} </td>-->
+        <td>{!v.mdmItem.Phoenix_GCN_Generic_Code_Number__c} </td>
+        <td>{!v.mdmItem.Phoenix_GCN_Sequence_Number__c} </td>
+        <td>{!v.mdmItem.Phoenix_GPI_Generic_Product_Identifier__c} </td>
+        <aura:if isTrue="{!and(not(v.mdmItem.Phoenix_Is_Code_Submitted__c),and(v.isCustomerStepDone,v.IsHeAdmin))}">
+            <td class="slds-text-align--right" ondblclick="{!c.onNDCChange}">
+                <span class="slds-grid slds-grid_align-spread">
+                    <aura:if isTrue="{!v.NDCEdit == false}">
+                        <span  >{!v.mdmItem.Phoenix_NDC_11__c}</span>
+                        <button onclick="{!c.onNDCChange}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputText  class="slds-input inputWidth"
+                                                          labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                          aura:id="NDCNumber"
+                                                          blur="{!c.closeNDCNumber}"
+                                                          change="{!c.onRecordEdit}"                                                      
+                                                          value="{!v.mdmItem.Phoenix_NDC_11__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+            <aura:set attribute="else">
+                <td>{!v.mdmItem.Phoenix_NDC_11__c}</td>
+            </aura:set>
+        </aura:if>
+        <aura:if isTrue="{!and(not(v.mdmItem.Phoenix_Is_Code_Submitted__c),and(v.isCustomerStepDone,v.IsHeAdmin))}">
+            
+            <td class="slds-text-align--right" ondblclick="{!c.onSAPNumberChange}">
+                <span class="slds-grid slds-grid_align-spread">
+                    <aura:if isTrue="{!v.SAPNumberEdit == false}">
+                        <span  >{!v.mdmItem.Phoenix_SAP_Code__c}</span>
+                        <button onclick="{!c.onSAPNumberChange}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputText  class="slds-input inputWidth"
+                                                          labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                          aura:id="SAPNumber"
+                                                          blur="{!c.closeSAPNumber}"
+                                                          change="{!c.onRecordEdit}"                                                      
+                                                          value="{!v.mdmItem.Phoenix_SAP_Code__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+            <td ondblclick="{!c.inlineEditStatus}">
+                <span class="slds-grid slds-grid_align-spread">
+                    <aura:if isTrue="{!v.statusEdit == false}">
+                        <span class=""  >{!v.mdmItem.Status__c}</span>
+                        <button onclick="{!c.inlineEditStatus}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width:max-content;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <lightning:select name="Itemstatus"
+                                                              aura:id="itemStatus"
+                                                              onblur="{!c.closeStatusBox}"
+                                                              onchange="{!c.onRecordEdit}"
+                                                              class="slds-input inputWidth"
+                                                              >
+                                                <option value="{!v.mdmItem.Status__c}">{!v.mdmItem.Status__c}</option>
+                                                <aura:if isTrue="{!(v.mdmItem.Status__c != 'Open')}" >
+                                                    <option value="Open">Open</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!(v.mdmItem.Status__c != 'Closed')}" >
+                                                    <option value="Closed">Closed</option>
+                                                </aura:if>
+                                            </lightning:select>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+                
+            </td> 
+            <aura:set attribute="else">
+                <td>{!v.mdmItem.Phoenix_SAP_Code__c} </td>
+                <td>{!v.mdmItem.Status__c} </td>
+            </aura:set>
+        </aura:if>
+        
+        
+    </tr>
+</aura:component>

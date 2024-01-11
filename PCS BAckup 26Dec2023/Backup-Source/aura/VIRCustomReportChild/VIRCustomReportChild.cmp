@@ -1,0 +1,227 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    <aura:attribute name="item" type="Object" />
+    <aura:attribute name="index" type="string" />
+    <aura:attribute name="currentType" type="String" />
+    
+    <aura:registerevent name="componentEventFired" type="c:VIRCustomReportEvent"></aura:registerevent>
+    <aura:registerevent name="componentTierEventFired" type="c:VIRCustomReportTierEvt"></aura:registerevent>
+    <aura:handler name = "init" value ="{!this}" action = "{!c.doInit}"/>
+    
+    <tr class="slds-hint-parent">
+        <td scope="row" style="padding-left: 8px; text-align: center;">
+            <div class="slds-truncate">
+                {!v.index+1}
+            </div>
+        </td>
+        <td scope="row">
+            <div class="slds-truncate">
+                <lightning:button variant="base" label="{!v.item.Month}" title="{!v.item.Month}" onclick="{! c.highlightTier }"/>
+            </div>
+        </td>
+        <td>
+            <div class="slds-truncate slds-text-align_right">
+                <aura:if isTrue="{!v.currentType == 'Currency'}">
+                    <lightning:formattedNumber value="{!v.item.sales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    <aura:set attribute="else">
+                        <lightning:formattedNumber value="{!v.item.CurrentYearUnits}" maximumFractionDigits="0"/>
+                    </aura:set>
+                </aura:if>
+            </div>
+        </td>
+        <td>
+            <div class="slds-truncate slds-text-align_right">
+                <aura:if isTrue="{!v.currentType == 'Currency'}">
+                    <lightning:formattedNumber value="{!v.item.actualSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    <aura:set attribute="else">
+                        <lightning:formattedNumber value="{!v.item.actualUnits}" maximumFractionDigits="0"/>
+                    </aura:set>
+                </aura:if>
+            </div>
+        </td>
+        <td>
+            <div class="slds-truncate slds-text-align_right">
+                <aura:if isTrue="{!v.currentType == 'Currency'}">
+                    <lightning:formattedNumber value="{!v.item.projectedSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    <aura:set attribute="else">
+                        <lightning:formattedNumber value="{!v.item.projectedUnits}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </aura:set>
+                </aura:if>
+            </div>
+        </td>
+        <td>
+            <aura:if isTrue="{!v.item.isApplicableCurrent}">
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.item.projectedAttainment}" style="percent-fixed" maximumFractionDigits="2" />
+                </div>
+                <aura:set attribute="else">
+                    <div class="slds-truncate" style="text-align: right;">
+                        <!--<lightning:formattedNumber value="{!v.item.projectedAttainment}" style="percent-fixed" maximumFractionDigits="2" />-->
+                        {!v.item.projectedAttainment}
+                    </div>
+                </aura:set>
+            </aura:if>
+        </td>
+        <td style="padding-right: 8px;">
+            <div class="slds-truncate" style="text-align: right;">
+                {!v.item.tier}
+            </div>
+        </td>
+        <td>
+            <div class="slds-truncate" style="text-align: center;">
+                <aura:if isTrue="{!v.item.countOfPA != 0}">
+                    <lightning:button name="Product Addition" variant="base" label="{!v.item.countOfPA}" onclick="{! c.handleClick }" class="customHeight">
+                        <aura:if isTrue="{!greaterthan(v.item.countOfPA,0)}">
+                            <td style="text-align: right; color: green;">
+                                <ui:outputCurrency aura:id="curr" value="{!v.item.countOfPA}" format="$##,##,###,###"/><span title="Count of line items">&nbsp;({!v.item.noOfPA})</span>
+                            </td>
+                            <aura:set attribute="else">
+                                <td style="text-align: right; color: red;">
+                                    <ui:outputCurrency aura:id="curr" value="{!v.item.countOfPA}" format="$##,##,###,###"/><span title="Count of line items">&nbsp;({!v.item.noOfPA})</span>
+                                </td>
+                            </aura:set>
+                        </aura:if>
+                    </lightning:button>
+                </aura:if>
+            </div>
+        </td>
+        <td>
+            <div class="slds-truncate" style="text-align: center;">
+                <aura:if isTrue="{!v.item.countOfPC != 0}">
+                    <lightning:button name="Price Change" variant="base" label="{!v.item.countOfPC}" onclick="{! c.handleClick }" class="customHeight">
+                        <aura:if isTrue="{!greaterthan(v.item.countOfPC,0)}">
+                            <td style="text-align: right; color: green;">
+                                <ui:outputCurrency aura:id="curr" value="{!v.item.countOfPC}" format="$##,##,###,###"/><span title="Count of line items">&nbsp;({!v.item.noOfPC})</span>
+                            </td>
+                            <aura:set attribute="else">
+                                <td style="text-align: right; color: red;">
+                                    <ui:outputCurrency aura:id="curr" value="{!v.item.countOfPC}" format="$##,##,###,###"/><span title="Count of line items">&nbsp;({!v.item.noOfPC})</span>
+                                </td>
+                            </aura:set>
+                        </aura:if>
+                    </lightning:button>
+                </aura:if>
+            </div>
+        </td>
+        <td>
+            <div class="slds-truncate" style="text-align: center;">
+                <aura:if isTrue="{!v.item.countOfVRO != 0}">
+                    <lightning:button name="Volume Review Only" variant="base" label="{!v.item.countOfVRO}" onclick="{! c.handleClick }" class="customHeight">
+                        <aura:if isTrue="{!greaterthan(v.item.countOfVRO,0)}">
+                            <td style="text-align: right; color: green;">
+                                <ui:outputCurrency aura:id="curr" value="{!v.item.countOfVRO}" format="$##,##,###,###"/><span title="Count of line items">&nbsp;({!v.item.noOfVRO})</span>
+                            </td>
+                            <aura:set attribute="else">
+                                <td style="text-align: right; color: red;">
+                                    <ui:outputCurrency aura:id="curr" value="{!v.item.countOfVRO}" format="$##,##,###,###"/><span title="Count of line items">&nbsp;({!v.item.noOfVRO})</span>
+                                </td>
+                            </aura:set>
+                        </aura:if>
+                    </lightning:button>
+                </aura:if>
+            </div>
+        </td>
+        <td>
+            <div class="slds-truncate" style="text-align: center;">
+                <aura:if isTrue="{!v.item.noOfLoss != 0}">
+                    <lightning:button name="Product Removal / Loss" variant="base" label="{!v.item.countOfLoss}" onclick="{! c.handleClick }" class="customHeight">
+                        <aura:if isTrue="{!greaterthan(v.item.countOfLoss,0)}">
+                            <td style="text-align: right; color: green;">
+                                <lightning:formattedNumber value="{!v.item.countOfLoss}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/><span title="Count of line items">&nbsp;({!v.item.noOfLoss})</span>
+                            </td>
+                            <aura:set attribute="else">
+                                <td style="text-align: right; color: red;">
+                                    <lightning:formattedNumber value="{!v.item.countOfLoss}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/><span title="Count of line items">&nbsp;({!v.item.noOfLoss})</span>
+                                </td>
+                            </aura:set>
+                        </aura:if>
+                    </lightning:button>
+                </aura:if>
+            </div>
+        </td>
+        <td>
+            <div class="slds-truncate" style="text-align: center;">
+                <aura:if isTrue="{!v.item.countOfNPL != 0}">
+                    <lightning:button name="New Product Launch" variant="base" label="{!v.item.countOfNPL}" onclick="{! c.handleClick }" class="customHeight">
+                        <aura:if isTrue="{!greaterthan(v.item.countOfNPL,0)}">
+                            <td style="text-align: right; color: green;">
+                                <ui:outputCurrency aura:id="curr" value="{!v.item.countOfNPL}" format="$##,##,###,###"/><span title="Count of line items">&nbsp;({!v.item.noOfNPL})</span>
+                            </td>
+                            <aura:set attribute="else">
+                                <td style="text-align: right; color: red;">
+                                    <ui:outputCurrency aura:id="curr" value="{!v.item.countOfNPL}" format="$##,##,###,###"/><span title="Count of line items">&nbsp;({!v.item.noOfNPL})</span>
+                                </td>
+                            </aura:set>
+                        </aura:if>
+                    </lightning:button>
+                </aura:if>
+            </div>
+        </td>
+        <td>
+            <div class="slds-truncate slds-text-align_right">
+                <aura:if isTrue="{!v.currentType == 'Currency'}">
+                    <lightning:formattedNumber value="{!v.item.totalProjectedSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    <aura:set attribute="else">
+                        <lightning:formattedNumber value="{!v.item.projectedUnits}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </aura:set>
+                </aura:if>
+            </div>
+        </td>
+        <td style="padding-right: 8px;">
+            <div class="slds-truncate" style="text-align: right;">
+                {!v.item.tier2}
+            </div>
+        </td>
+        <!--<td scope="row">
+                                    <div class="slds-truncate">
+                                        {!v.item.lastYearMonth}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="slds-truncate slds-text-align_right">
+                                        <aura:if isTrue="{!v.currentType == 'Currency'}">
+                                            <lightning:formattedNumber value="{!v.item.LastYearSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            <aura:set attribute="else">
+                                                <lightning:formattedNumber value="{!v.item.LastYearUnits}" maximumFractionDigits="0"/>
+                                            </aura:set>
+                                        </aura:if>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="slds-truncate slds-text-align_right">
+                                        <aura:if isTrue="{!v.currentType == 'Currency'}">
+                                            <lightning:formattedNumber value="{!v.item.lastYearActualSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            <aura:set attribute="else">
+                                                <lightning:formattedNumber value="{!v.item.lastYearActualUnits}" maximumFractionDigits="0"/>
+                                            </aura:set>
+                                        </aura:if>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="slds-truncate slds-text-align_right">
+                                        <aura:if isTrue="{!v.currentType == 'Currency'}">
+                                            <lightning:formattedNumber value="{!v.item.lastYearProjectedSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            <aura:set attribute="else">
+                                                <lightning:formattedNumber value="{!v.item.lastYearProjectedUnits}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            </aura:set>
+                                        </aura:if>
+                                    </div>
+                                </td>
+                                <td>
+                                    <aura:if isTrue="{!v.item.isApplicableLast == 'true'}">
+                                        <div class="slds-truncate slds-text-align_right">
+                                            <lightning:formattedNumber value="{!v.item.projectedAttainmentLast}" style="percent" maximumFractionDigits="2" />
+                                        </div>
+                                        <aura:set attribute="else">
+                                            <div class="slds-truncate" style="text-align: center;">
+                                                {!v.item.projectedAttainmentLast}
+                                            </div>
+                                        </aura:set>
+                                    </aura:if>
+                                </td>
+                                <td style="padding-right: 8px;">
+                                    <div class="slds-truncate" style="text-align: center;">
+                                        {!v.item.tierLast}
+                                    </div>
+                                </td>-->
+    </tr>
+</aura:component>

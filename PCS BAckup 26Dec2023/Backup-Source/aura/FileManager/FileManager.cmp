@@ -1,0 +1,519 @@
+<aura:component controller="FileManagerCmpCtrl" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    
+    <aura:handler event="lightning:openFiles" action="{! c.handleOpenFiles }" />
+    
+    <aura:attribute name="spinner" type="boolean" default="FALSE"/>
+    <aura:attribute name="spinner2" type="boolean" default="FALSE"/>
+
+    <aura:attribute name="spinnerForSearch" type="boolean" default="TRUE"/>
+    <aura:attribute name="openReport" type="boolean" default="FALSE"/>
+    
+    <aura:attribute name="folderMessage" type="String" default="Please select any folder" />
+    <aura:attribute name="uploadFiles" type="Boolean" default="false" />    
+    <aura:attribute name="folWindow" type="Boolean" default="false" />
+    <aura:attribute name="renamefolWindow" type="Boolean" default="false" />
+    <aura:attribute name="openEmailWindow" type="Boolean" default="false" />
+    <aura:attribute name="selectedItem" type="String" />
+    <aura:attribute name="rootFolderId" type="String" />
+    <aura:attribute name="folderName" type="String" />  
+    <aura:attribute name="folderNameRename" type="String" />
+    <aura:attribute name="folderRenameId" type="String" />
+    <aura:attribute name="data" type="List" default="[]" />
+    <aura:attribute name="pathData" type="List" default="[]" />
+    
+    <aura:attribute name="searchKeyword" type="String" />
+    <aura:attribute name="contentFolItems" type="Object"  />
+    <aura:attribute name="image" type="String" default="doctype:image" />
+    <aura:attribute access="public" name="showUploadFile" type="boolean" default="false"/>
+    <aura:attribute access="public" name="accept" type="List" default="['.jpg', '.jpeg', '.docx', '.pdf', '.ppt', '.pptx', '.xls', '.xlsx', '.gif','.png', '.csv','.mp4','.avi','.mov']"/>
+    <aura:attribute access="public" name="multiple" type="Boolean" default="true"/>
+    <aura:attribute access="public" name="disabled" type="Boolean" default="false"/>
+    <aura:attribute access="public" name="uploadedFiles" type="List" default=""/>
+    <aura:attribute access="public" name="sObjectAttachedFiles" type="List" default="[]"/>
+    <aura:attribute access="public" name="sObjectName" type="String" default=""/>
+    <aura:attribute access="public" name="formFactor" type="String" default="{!$Browser.formFactor}"/>
+    <aura:attribute access="public" name="sObjectId" type="String" default=""/>
+    
+    
+    <aura:attribute name="emailRecordId" type="string"/>
+    <aura:attribute name="eventRecordId" type="string" />
+    <aura:attribute name="agendaId" type="string" />
+    <aura:attribute name="email" type="string"/>
+    <aura:attribute name="emailCC" type="string"/>
+    <aura:attribute name="subject" type="string"/>
+    <aura:attribute name="body" type="string"/>
+    <aura:attribute name="body1" type="string"/>
+    <aura:attribute name="eventRecord" type="Event" />
+    <aura:attribute name="mailStatus" type="boolean" default="false"/>
+    <aura:attribute name="isOpen" type="boolean" default="true"/>
+    <aura:attribute name="mailTimeHeader" type="boolean" default="false"/>    
+    <aura:attribute name="cv" type="ContentVersion" />
+    
+    
+    <aura:attribute name="lstSelectedRecords" type="sObject[]" default="[]" description="Use,for store SELECTED sObject Records"/>
+    <aura:attribute name="lstSelectedRecordsCC" type="sObject[]" default="[]" description="Use,for store SELECTED sObject Records"/>
+    <aura:attribute name="excludeRecords" type="sObject[]" default="[]" description="Use,for store SELECTED sObject Records"/>
+    <aura:attribute name="lstSelectedRecordsCon" type="sObject[]" default="[]" description="Use,for store SELECTED sObject Records"/>
+    <aura:attribute name="listOfSearchRecords" type="List" description="Use,for store the list of search records which returns from apex class"/>
+    <aura:attribute name="SearchContact" type="string"/>
+    <aura:attribute name="SearchContactCC" type="string"/>
+    <aura:attribute name="objectAPIName" type="string" default="contact"/>
+    <aura:attribute name="IconName" type="string" default="standard:contact"/>
+    <aura:attribute name="label" type="string" default="Meeting Attendees"/>
+    <aura:attribute name="conDisplay" type="Boolean" default="true" />
+    <aura:attribute name="eventIdFromLookup" type="string" default=""/>
+    <!-- aura:handler name="oSelectedRecordEvent" event="c:selectedsObjectRecordsEvent" action="{!c.handleComponentEvent}"/>
+    <aura:handler name="oSelectedCCRecordEvent" event="c:selectedContactCCRecord" action="{!c.handleComponentCCEvent}"/ -->
+    <aura:attribute name="Message" type="String" default=""/>	
+    
+    
+    <aura:html tag="style">
+        
+        .forceContentPreviewPlayerTopToolbar .file-preview-buttons {
+        min-width: 400px;
+        margin: 0;
+        display:none !important;
+        }
+        
+    </aura:html>
+    
+    <lightning:navigation aura:id="navLink"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    
+    <article class="slds-card slds-grid ctc-article ctcfeFile_Explorer" style="{!if(v.formFactor=='DESKTOP','min-height: 400px;height:100%;','min-height: 1000px;height:100%;')}">
+        <div class="slds-card__body slds-card__body_inner slds-grid slds-grid_vertical slds-has-flexi-truncate" onclick="{!c.closeDropDown}">
+             <aura:if isTrue="{!v.spinner2}">
+            <center>
+                <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                         aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                    <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                        <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                            <img src="{!$Resource.LoadingProgress}" />  
+                        </div>  
+                    </div>  
+                </section>   
+                <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+            </center>
+        </aura:if>
+            <div class="slds-grid slds-p-bottom_small slds-truncate" >
+                <div class="slds-has-flexi-truncate" >
+                    <span><!-- <lightning:icon class="folIcon" iconName="doctype:library_folder" size="medium" alternativeText="icon"/>--> <img src="{!$Resource.DRL_Logo}" style="width: 15%; float: left;margin-right:1%"/>  <h1 class="slds-page-header__title" style="font-size:1.3rem;margin-top:4px;font-weight: 200; font-family: initial;"> Vision File Manager</h1></span>
+                </div>
+                <div class="slds-button-group" role="group" >
+                    <div aura:id="lookupField" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right btn" >
+                        <span class="slds-icon_container  slds-combobox__input-entity-icon" title="Search Files">
+                            <lightning:icon class="{!if(v.selectedItem==undefined,'slds-icon slds-icon slds-icon_small slds-icon-text-default','slds-icon slds-icon slds-icon_small slds-icon-text-default icnFile')}" iconName="utility:file" size="x-small" alternativeText="icon"/> 
+                        </span>                        
+                        <lightning:input autocomplete="off" name="inline-search-input" value="{!v.searchKeyword}" aura:id="searchFile" label="Search Files" disabled="{!v.selectedItem==undefined}" placeholder="Search Files..." type="search" variant="label-hidden"    style="margin-right:2px;" onchange="{!c.searchFiles}" />
+                        <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right" >
+                            <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                        </span>
+                    </div>
+                    <lightning:button class="btn" disabled="{!v.selectedItem==undefined}" label="New Folder" title="New Folder" onclick="{!c.openFolderPopUp}"  >
+                        <lightning:icon class="slds-button__icon slds-button__icon_left icn" iconName="utility:open_folder" size="x-small"/>New Folder
+                    </lightning:button>
+                    <lightning:button class="btn" disabled="{!v.selectedItem==undefined}" label="Upload" title="Upload" onclick="{!c.uploadFiles}">
+                        <lightning:icon class="slds-button__icon slds-button__icon_left icn" size="x-small" iconName="utility:upload"/>Upload
+                    </lightning:button>
+                    <lightning:button class="btn" disabled="{!v.selectedItem==undefined}" label="Refresh" title="Refresh" onclick="{!c.handleRefresh}" >
+                        <lightning:icon class="slds-button__icon slds-button__icon_left icn" size="x-small" iconName="utility:refresh"/>Refresh
+                    </lightning:button>                                        
+                </div>
+            </div>
+            <div class="slds-grid slds-border_top slds-border_right slds-border_bottom slds-border_left slds-has-flexi-truncate ctc-overflow_hidden" onclick="{!c.closeDropDown}" >
+                <div class="slds-col slds-size_1-of-4 ctc-overflow_auto" onclick="{!c.closeDropDown}" >
+                    <lightning:tree selectedItem="{!v.selectedItem}" items="{!v.data}" onselect="{!c.handleSelect}" title="Expand/Collapse" />             
+                    <aura:if isTrue="{!v.openReport}" >
+                        <aura:if isTrue="{!v.formFactor=='DESKTOP'}">
+                            <div class="slds-tree__item" >
+                                <button type="button" tabindex="-1" aria-hidden="true" title="Expand Tree Branch" class="slds-button slds-button_icon slds-m-right_x-small slds-is-disabled">
+                                    &nbsp;&nbsp;&nbsp;&nbsp; <span class="slds-assistive-text">Expand Tree Branch</span>
+                                </button>
+                                <!-- lightning:icon class="reportIcon" size="xx-small" iconName="utility:retail_execution"/>
+                                <span class="slds-has-flexi-truncate">
+                                    <a href="/lightning/r/Report/00O3a000005Nq65EAC/view" target="_blank" tabindex="-1" role="presentation">
+                                        <span title="Analytics Report" class="slds-tree__item-label slds-truncate">&nbsp;Analytics Report</span>
+                                </a>
+                                </span -->
+                            </div>
+                        </aura:if>
+                        <aura:if isTrue="{!v.formFactor!='DESKTOP'}">
+                            <div class="slds-tree__item" onclick="{!c.openReport}">
+                                <button type="button" tabindex="-1" aria-hidden="true" title="Expand Tree Branch" class="slds-button slds-button_icon slds-m-right_x-small slds-is-disabled">
+                                    &nbsp;&nbsp;&nbsp;&nbsp; <span class="slds-assistive-text">Expand Tree Branch</span>
+                                </button><lightning:icon class="reportIcon" size="xx-small" iconName="utility:retail_execution"/><span class="slds-has-flexi-truncate"><span title="Analytics Report" class="slds-tree__item-label slds-truncate">&nbsp;Analytics Report</span>
+                                
+                                </span>
+                            </div>
+                        </aura:if>
+                    </aura:if>
+                </div>
+                <div class="slds-col slds-border_left slds-has-flexi-truncate slds-grid slds-grid_vertical ctc-overflow_hidden" onclick="{!c.closeDropDown}" >
+                    <div class="slds-p-around_x-small slds-border_bottom" style="flex-shrink:0" >
+                        <nav role="navigation" aria-label="Breadcrumbs" >
+                            <ol class="slds-breadcrumb slds-list_horizontal slds-wrap" >
+                                <li class="slds-breadcrumb__item" >
+                                    <a href="javascript:void(0);" >
+                                        <lightning:icon class="slds-icon-utility-opened-folder slds-icon_container slds-icon slds-icon-text-default slds-icon_x-small" iconName="utility:opened_folder" size="x-small"  />    
+                                    </a>
+                                </li>
+                                <aura:iteration  items="{!v.pathData}" var="p" >
+                                    <li class="slds-breadcrumb__item" onclick="{!c.handleSelectFromPath}" data-name="{!p.Id}">
+                                        <a href="javascript:void(0);" data-ix="0" style="color:black">
+                                            <lightning:badge label="{!p.fileName}"/>
+                                        </a>
+                                    </li>
+                                </aura:iteration>    
+                                <!--  <li class="slds-breadcrumb__item" ><a href="javascript:void(0);" data-ix="1" >S1</a></li>-->
+                            </ol>
+                        </nav>
+                    </div>
+                    <aura:if isTrue="{!and(v.contentFolItems!='',v.contentFolItems!=null)}">    
+                        <div class="slds-grid slds-wrap slds-has-flexi-truncate slds-is-relative ctc-overflow_auto ctc-details" data-aura-rendered-by="1197:0">
+                            <aura:if isTrue="{!v.spinner}">
+                                <div aura:id="spinnerId" class="slds-spinner_container">
+                                    <div class="slds-spinner--brand  slds-spinner slds-spinner--large slds-is-relative" role="alert">
+                                        <span class="slds-assistive-text">Loading...</span>
+                                        <div class="slds-spinner__dot-a"></div>
+                                        <div class="slds-spinner__dot-b"></div>
+                                    </div>
+                                </div>
+                            </aura:if>
+                            <table class="ctc-table ctcfeDetail_icon" style="table-layout:fixed">
+                                <thead>
+                                    <tr>
+                                        <th class="slds-truncate" style="width:2.9%;padding-left:36px;"></th>
+                                        <th class="slds-truncate" style="width:30%;">Title</th>
+                                       <th class="slds-truncate" style="width:13%;">Type</th>
+                                        <th  style="width:13%;" class="ctc-date slds-truncate" >Last Modified On</th>
+                                      <!--th class="slds-truncate" style="width:6%;" >Views</th -->
+                                        <th class="slds-truncate" style="width:11%;" >Size</th>
+               
+                                         <th class="slds-truncate" style="width:5%;" ></th><!-- Email -->
+                                        <th class="slds-truncate"  style="width:5%;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.contentFolItems}" var="file" indexVar="index">        
+                                        <tr>
+                                            <td class="ctc-icon slds-truncate" >
+                                                <lightning:icon class="slds-icon-doctype-image slds-icon_container slds-icon slds-icon_x-small" size="x-small" iconName="{!file.iconName}"  />                                         
+                                            </td>
+                                            <aura:if isTrue="{!file.fileType=='Folder'}">
+                                                <td class="slds-truncate"  title="Open Folder" onclick="{!c.openFile}" data-type="{!file.cfi.FileType}" data-name="{!file.cfi.Id}" style="cursor: pointer;" data-folder="false" >{!file.cfi.Title}</td>
+                                            </aura:if>
+                                            <aura:if isTrue="{!file.fileType!='Folder'}">
+                                                <td class="slds-truncate"  title="Preview" onclick="{!c.openFile}" data-type="{!file.cfi.FileType}" data-name="{!file.cfi.Id}" style="cursor: pointer;" data-folder="false" >{!file.cfi.Title}</td>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.formFactor=='DESKTOP'}">  <td class="slds-truncate">{!file.fileType}</td></aura:if>
+                                            <!--  <aura:if istrue="{!file.fileType!='Folder'}"> <td >{!file.cfi.FileType}</td></aura:if>-->
+                                            <aura:if isTrue="{!v.formFactor=='DESKTOP'}"><td class="ctc-number slds-truncate" >
+                                                <lightning:formattedDateTime value="{!file.cfi.LastModifiedDate}" /> 
+                                                </td></aura:if>
+                                            <!--<aura:if isTrue="{!v.formFactor=='DESKTOP'}">--><aura:if isTrue="{!v.pathData[0].fileName=='External'}"><td class="slds-truncate">
+                                            {!file.totalViews}
+                                            </td></aura:if>
+                                            <aura:if isTrue="{!v.formFactor=='DESKTOP'}"><td class="ctc-number slds-truncate" >{!file.fileSize}</td></aura:if>
+                                            <aura:if isTrue="{!file.fileType!='Folder'}">
+                                                <td class="slds-truncate"> 
+                                                    <!--<lightning:buttonIcon iconClass="customColor" iconName="utility:email" value="{!file.cfi.Id}" variant="bare" alternativeText="Send Email" onclick="{!c.openMailPopUp}" title="Send Email"/>-->
+                                                </td></aura:if>
+                                            
+                                            <aura:if isTrue="{!file.fileType=='Folder'}"><td class="slds-truncate">
+                                                </td>
+                                            </aura:if>
+                                            <td class="ctc-icon" >
+                                                <div data-index="{!index}" data-id="{!file.cfi.Id}" aura:id="hwDiv" class="slds-dropdown-trigger slds-dropdown-trigger_click" >
+                                                    <button class="slds-button slds-button_icon-border-filled slds-button_icon-x-small" aria-haspopup="true" aria-expanded="false" onclick="{!c.expandDropDown}">
+                                                        <lightning:buttonIcon iconName="utility:down"  alternativeText="Display" title="" size="x-small"  />  
+                                                    </button>                                         
+                                                    <div  class="slds-dropdown slds-dropdown_left" style="left:-92px" >
+                                                        <ul class="dropdown__list" role="menu" >
+                                                            <aura:if isTrue="{!file.fileType!='Folder'}">
+                                                                <li class="slds-dropdown__item" role="presentation" >
+                                                                    <aura:if isTrue="{!v.formFactor=='DESKTOP'}">
+                                                                        <a href="{!'/one/one.app?#/sObject/'+file.cfi.Id+'/view'}" target="_blank" role="menuitem"  >
+                                                                            <span class="slds-truncate"  >View File Details</span>
+                                                                        </a>
+                                                                    </aura:if>
+                                                                    <aura:if isTrue="{!v.formFactor!='DESKTOP'}">
+                                                                        <a href="javascript:void(0)" onclick="{!c.openFile}"  role="menuitem" data-type="{!file.cfi.FileType}" data-name="{!file.cfi.Id}" >
+                                                                            <span class="slds-truncate"  >View File Details</span>
+                                                                        </a>
+                                                                    </aura:if>
+                                                                </li>
+                                                                <li data-id="{!file.cfi.Id}" class="slds-dropdown__item" role="presentation" onclick="{!c.editSFDoc}" >
+                                                                    <a href="javascript:void(0)" role="menuitem"  >
+                                                                        <span class="slds-truncate"  >Edit File Details</span>
+                                                                    </a>
+                                                                </li>    
+                                                                <li data-id="{!file.cfi.Id}" class="slds-dropdown__item" role="presentation" onclick="{!c.deleteSFDocItem}" >
+                                                                    <a href="javascript:void(0)" role="menuitem"  >
+                                                                        <span class="slds-truncate" >Delete</span>
+                                                                    </a>
+                                                                </li>
+                                                                <!--<li data-id="{!file.cfi.Id}" class="slds-dropdown__item" role="presentation" onclick="{!c.openE}" >
+                                                                    <a href="javascript:void(0)" role="menuitem"  >
+                                                                        <span class="slds-truncate" >Email</span>
+                                                                    </a>
+                                                                </li>-->
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!file.fileType=='Folder'}">
+                                                                <li class="slds-dropdown__item" role="presentation" data-name="{!file.cfi.Id}" data-title="{!file.cfi.Title}" onclick="{!c.cancelRenameFolder}">
+                                                                    <a href="javascript:void(0)" role="menuitem"  >
+                                                                        <span class="slds-truncate" >Rename</span>
+                                                                    </a>
+                                                                </li>
+                                                                <li class="slds-dropdown__item" role="presentation" data-name="{!file.cfi.Id}" data-title="{!file.cfi.Title}" onclick="{!c.deleteSFDoc}">
+                                                                    <a href="javascript:void(0)" role="menuitem"  >
+                                                                        <span class="slds-truncate" >Delete</span>
+                                                                    </a>
+                                                                </li>
+                                                            </aura:if>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{!or(v.contentFolItems=='',v.contentFolItems==null)}">
+                        <div class="slds-p-around_medium slds-has-flexi-truncate slds-text-align_center slds-text-color_weak slds-full-size" ><lightning:icon class="{!if(v.folderMessage=='Please select any folder','warningIcon','emptyIcon')}" iconName="{!if(v.folderMessage=='Please select any folder','utility:warning','utility:sentiment_negative')}" size="small" alternativeText="icon"/><b>{!v.folderMessage}</b></div>
+                    </aura:if>
+                </div>
+            </div>
+        </div>
+    </article>
+    <aura:if isTrue="{!v.uploadFiles}" >
+        <section class="slds-modal slds-fade-in-open ctcfeUpload_File ctcfeFile_Explorer"  role="dialog" tabindex="-1" aria-modal="true" >
+            <div class="slds-modal__container" >                
+                <div class="modal-header slds-modal__header slds-size_1-of-1">
+                    <h4 class="slds-text-heading--medium">Upload Files</h4>
+                </div>
+                <div class="slds-modal__content" id="create-folder-content" style="padding:1px;"> 
+                    <lightning:fileUpload name="fileUploader" multiple="{!v.multiple}" accept="{!v.accept}" disabled="{!v.disabled}" recordId="{!v.rootFolderId}" onuploadfinished="{!c.handleUploadFinished}"/>
+                    <lightning:layout multipleRows="true">
+                        <aura:iteration items="{!v.sObjectAttachedFiles}" var="file">
+                            <lightning:layoutItem padding="around-small">
+                                <lightning:fileCard fileId="{!file.Id}" description="{!file.Title}"/>
+                            </lightning:layoutItem>
+                        </aura:iteration>
+                    </lightning:layout>
+                </div>
+                <div class="modal-footer slds-modal__footer">
+                    <lightning:button label="Save" variant="brand" onclick="{!c.handleSaveClick}"/>
+                    <lightning:button label="Cancel File Upload" variant="neutral" onclick="{!c.handleCancelUpload}"/>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open ctcfeUpload_File ctcfeFile_Explorer" ></div>
+    </aura:if>
+    <aura:if isTrue="{!v.folWindow}">
+        <section class="slds-modal slds-fade-in-open"  role="dialog"  aria-modal="true"  >
+            <div class="slds-modal__container" >
+                <header class="slds-modal__header" >
+                    <h2 class="slds-modal__title slds-hyphenate"  >New Folder</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium"  >
+                    <lightning:input name="input6" required="true" value="{!v.folderName}" placeholder="Enter a folder Name..." label="New Folder" maxlength="255"/>
+                </div>
+                <footer class="slds-modal__footer" >
+                    <lightning:button label="Cancel" title="Cancel" onclick="{!c.closeFolder}" />
+                    <lightning:button label="Create" title="Create" variant="brand" onclick="{!c.createNewFolder}" />
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    <aura:if isTrue="{!v.renamefolWindow}">
+        <section class="slds-modal slds-fade-in-open"  role="dialog"  aria-modal="true"  >
+            <div class="slds-modal__container" >
+                <header class="slds-modal__header" >
+                    <h2 class="slds-modal__title slds-hyphenate"  >Rename Folder</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium"  >
+                    <lightning:input name="input6" required="true" value="{!v.folderNameRename}" placeholder="Enter a folder Name..." label="Folder Name" maxlength="20"/>
+                </div>
+                <footer class="slds-modal__footer" >
+                    <lightning:button label="Cancel" title="Cancel" onclick="{!c.cancelRenameFolder}" />
+                    <lightning:button label="Update" title="Update" variant="brand" onclick="{!c.updateFolderName}" />
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+   <aura:if isTrue="{!v.openEmailWindow}">
+        <section class="slds-modal slds-fade-in-open"  role="dialog"  aria-modal="true"  >
+            <div class="slds-modal__container" style="width:100% !important;padding:0px;max-width: 43rem;">
+                <header class="slds-modal__header"  >
+                    <div class="slds-media">
+                        <div class="slds-media__figure">
+                            <span class="slds-icon_container slds-icon-utility-email" title="Email Composer">
+                                <lightning:icon class="customSvgEmail" iconName="utility:email" alternativeText="Email" size="medium" />
+                                <span class="slds-assistive-text">Email</span>
+                            </span>
+                        </div>
+                        <div class="slds-media__body">
+                            <div class="slds-page-header__name">
+                                <div class="slds-page-header__name-title">
+                                    <h2 class="slds-modal__title slds-hyphenate"  >Email Composer</h2>
+                                    <aura:if isTrue="{!v.mailTimeHeader}" ><h1 class="slds-modal__title slds-hyphenate" style="text-align: center; font-size: 14px;padding-top:4px">Last time Mail Sent on: <lightning:formattedDateTime value="{!v.cv.Last_Time_Public_Link_Sent_on_Email__c}" year="numeric" month="numeric" day="numeric" hour="2-digit" minute="2-digit"  hour12="true"/></h1></aura:if>
+                                </div>
+                            </div>
+                            <span class="slds-icon_container slds-icon-utillity-close slds-float_right" title="Close" style="padding:0.1rem;" onclick="{!c.closeMailPopUp}" >
+                                <lightning:icon class="customSvg" iconName="utility:close" alternativeText="Cancel" size="small" />
+                                <span class="slds-assistive-text">Close</span>
+                            </span>
+                        </div>
+                    </div>
+                </header>
+                <div class="slds-modal__content"  >
+                    <div class="c-container">
+                        <aura:if isTrue="{!v.isOpen}">
+                            <aura:if isTrue="{!v.mailStatus}">
+                                <div role="alertdialog" tabindex="-1" aria-labelledby="prompt-heading-id" aria-describedby="prompt-message-wrapper" class="slds-modal slds-fade-in-open slds-modal--prompt">
+                                    <div class="slds-modal__container">
+                                        <div class="slds-modal__header slds-theme--success slds-theme--alert-texture">
+                                            <h2 class="slds-text-heading--medium" id="prompt-heading-id">Mail Status</h2>
+                                        </div>
+                                        <div class="slds-modal__content slds-p-around--medium">
+                                            <div>
+                                                <p>Email Sent successfully</p>
+                                            </div>
+                                        </div>
+                                        <div class="slds-modal__footer slds-theme--default">
+                                            <button class="slds-button slds-button--brand" onclick="{!c.closeMessage}">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-backdrop slds-backdrop--open"></div>
+                            </aura:if>
+                            <div class="slds-m-around--medium slds-align_absolute-center">
+                                <div class="slds-container--medium">
+                                    <div class="slds-form--stacked">  
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label" for="CC">To</label> 
+                                            <!-- <lightning:helptext content="Please add semicolon ( ; ) at end of email address" class="customIcon"/> -->
+                                            <div class="slds-form-element__control">
+                                                <!-- <ui:inputText class="slds-input" aura:id="email"  value="{!v.email}" required="true" placeholder="abc@email.com;"/>-->
+                                                <div onmouseleave="{!c.onblur}" aura:id="searchRes" class="slds-form-element slds-lookup slds-is-close">
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right" >
+                                                            <!-- This markup is for when an record is selected --> 
+                                                            <div aura:id="lookup-pill" class="slds-pill-container" style="border: 0px;">
+                                                                <div aura:id="lookupField" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" >
+                                                                    <span class="slds-icon_container  slds-combobox__input-entity-icon" title="record">
+                                                                        <lightning:icon class="slds-icon slds-icon slds-icon_small slds-icon-text-default" iconName="{!v.IconName}" size="x-small" alternativeText="icon"/> 
+                                                                        <span class="slds-assistive-text"></span>
+                                                                    </span>
+                                                                    <lightning:input name="inline-search-input" label="This is a search input with a hidden label. The label is still required for accessibility reasons" type="search" variant="label-hidden" onchange="{!c.keyPressController}" value="{!v.SearchContact}" autocomplete="off" placeholder="Search by Person Name or Email.." />
+                                                                    <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right" >
+                                                                        <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                                    </span>
+                                                                </div>
+                                                                <aura:iteration items="{!v.lstSelectedRecords}" var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small" label="{!if(sr.Name==undefined,sr.Email,sr.Name)}" name="{!sr.Id}" onremove="{! c.clear }" title="{!sr.Email}">
+                                                                        <aura:set attribute="media">
+                                                                            <lightning:icon iconName="{!if(sr.Name==undefined,'utility:block_visitor',v.IconName)}" size="x-small" alternativeText="icon"/>
+                                                                        </aura:set>
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                                <aura:iteration items="{!v.lstSelectedRecordsCon}" var="sr">
+                                                                    <aura:if isTrue="{!not(v.conDisplay)}">
+                                                                        <lightning:pill class="slds-m-around_xx-small" label="{!sr.Name}" name="{!sr.Id}" onremove="{! c.clear }"   >
+                                                                            <aura:set attribute="media">
+                                                                                <lightning:icon iconName="{!v.IconName}" size="x-small" alternativeText="icon"/>
+                                                                            </aura:set>
+                                                                        </lightning:pill>
+                                                                    </aura:if>
+                                                                </aura:iteration>      
+                                                            </div>
+                                                        </div>
+                                                        <ul style="min-height:40px;margin-top:0px !important;width:100%;" class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds" role="listbox">
+                                                            <lightning:spinner class="slds-hide" variant="brand" size="small" aura:id="mySpinner"/>
+                                                            <center> {!v.Message}</center>
+                                                            <aura:iteration items="{!v.listOfSearchRecords}" var="singleRec">
+                                                                <!-- c:reUsableMultiSelectLookupResult oRecord="{!singleRec}" IconName="{!v.IconName}"/ -->
+                                                            </aura:iteration>
+                                                        </ul> 
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label" for="CC">Cc</label>
+                                            <!-- <lightning:helptext content="Please add semicolon ( ; ) at end of email address" class="customIcon"/> -->
+                                            <div class="slds-form-element__control">
+                                                <!--<ui:inputText class="slds-input" aura:id="emailCC"  value="{!v.emailCC}" required="false" placeholder="abc@email.com;"/>-->
+                                                <div onmouseleave="{!c.onblurCC}" aura:id="searchResCC" class="slds-form-element slds-lookup slds-is-close">
+                                                    <div class="slds-form-element__control">
+                                                        <div class="slds-input-has-icon slds-input-has-icon--right" >
+                                                            <!-- This markup is for when an record is selected --> 
+                                                            <div aura:id="lookup-pillCC" class="slds-pill-container" style="border: 0px;">
+                                                                <div aura:id="lookupField" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" >
+                                                                    <span class="slds-icon_container  slds-combobox__input-entity-icon" title="record">
+                                                                        <lightning:icon class="slds-icon slds-icon slds-icon_small slds-icon-text-default" iconName="{!v.IconName}" size="x-small" alternativeText="icon"/> 
+                                                                        <span class="slds-assistive-text"></span>
+                                                                    </span>
+                                                                    <lightning:input name="inline-search-input" label="This is a search input with a hidden label. The label is still required for accessibility reasons" type="search" variant="label-hidden" onchange="{!c.keyPressControllerCC}" value="{!v.SearchContactCC}" placeholder="Search by Person Name or Email.." autocomplete="off" />
+                                                                    <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right" >
+                                                                        <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                                    </span>
+                                                                </div>
+                                                                <aura:iteration items="{!v.lstSelectedRecordsCC}" var="sr">
+                                                                    <lightning:pill class="slds-m-around_xx-small" label="{!if(sr.Name==undefined,sr.Email,sr.Name)}" name="{!sr.Id}" onremove="{! c.clearCC }" title="{!sr.Email}" >
+                                                                        <aura:set attribute="media">
+                                                                            <lightning:icon iconName="{!if(sr.Name==undefined,'utility:block_visitor',v.IconName)}" size="x-small" alternativeText="icon"/>
+                                                                        </aura:set>
+                                                                    </lightning:pill>
+                                                                </aura:iteration>
+                                                            </div>
+                                                        </div>
+                                                        <ul style="min-height:40px;margin-top:0px !important;width:100%;" class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds" role="listbox">
+                                                            <lightning:spinner class="slds-hide" variant="brand" size="small" aura:id="mySpinnerCC"/>
+                                                            <center> {!v.Message}</center>
+                                                            <aura:iteration items="{!v.listOfSearchRecords}" var="singleRec">
+                                                                <!-- c:reUsableMultiSelectLookupResultCC oRecord="{!singleRec}" IconName="{!v.IconName}"/ -->
+                                                            </aura:iteration>
+                                                        </ul> 
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label" for="CC">Subject</label>
+                                            <div class="slds-form-element__control">
+                                                <ui:inputText class="slds-input" aura:id="subject"  value="{!v.subject}" placeholder="Subject"/>
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label" for="textareaSample2">Mail Body</label>
+                                            <div class="slds-form-element__control" style="width:590px">
+                                                <lightning:inputRichText aura:id="body" value="{!v.body}" />
+                                            </div>
+                                        </div>
+                                        <div class="slds-form-element" style="display:none">
+                                            <label class="slds-form-element__label" for="CC" style="float: left;">CC</label>
+                                            <div class="slds-form-element__control">
+                                                <ui:inputEmail class="slds-input" aura:id="emailCCtest"  value="test@test.com;" required="false" placeholder="abc@email.com;"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </aura:if>
+                    </div>
+                </div>
+                <footer class="slds-modal__footer" style="background-color: white;">
+                    <lightning:button label="Cancel" title="Cancel" onclick="{!c.closeMailPopUp}" />
+                    <lightning:button label="Send" title="Send" variant="brand" onclick="{!c.sendMailWithPL}"  />
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>

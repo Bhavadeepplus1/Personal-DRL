@@ -1,0 +1,674 @@
+<aura:component controller="Phoenix_RejectedStatusCls" access="global">     
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>    
+    <aura:attribute name="objInfoForPicklistValues" type="account" default="{sobjectType : 'Phoenix_Bid_Line_Item__c'}" description="object information to fetch picklist values"/>
+    <aura:attribute name="ratingPicklistOpts" type="string[]" description="store picklist options values"/>
+    <aura:attribute name="showSaveCancelBtn" type="boolean"/>
+    <aura:attribute name="showErrorClass" type="boolean" default="false"/>
+    <aura:attribute name="sNo" type="string" />
+    <aura:attribute name="lineItemId" type="String" />
+    <aura:attribute name="ItemsLength" type="Decimal"/> 
+    <!-- totals -->
+    <aura:attribute name="RMPercent" type="Decimal" />
+    <aura:attribute name="CDSUTotal" type="Decimal" />
+    <aura:attribute name="currentSalesFinance" type="Decimal" />
+    <aura:attribute name="currentTPMargin" type="Decimal" />
+    <aura:attribute name="OpeningOrderNetSalesTotal" type="Decimal" />
+    <aura:attribute name="TotalSellingUnits" type="Decimal" />
+    <aura:attribute name="OpeningOrderTotal" type="Decimal" />
+    <aura:attribute name="OpeningOrderTPTPercTotal" type="Decimal" />
+    
+    <aura:attribute name="CISUTotal" type="Decimal" />
+    <aura:attribute name="OpeningOrderTPTTotal" type="Decimal" />
+    <aura:attribute name="currentMonthly" type="Decimal" />
+    <aura:attribute name="current52week" type="Decimal" />
+    <aura:attribute name="proposed52wk" type="Decimal" />
+    <aura:attribute name="proposedMonthly" type="Decimal" />
+    <aura:attribute name="PISUTotal" type="Decimal" />
+    <aura:attribute name="PDSUTotal" type="Decimal" />
+    <aura:attribute name="netSalesIntTotal" type="Decimal" />
+    <aura:attribute name="grossSalesTotal" type="Decimal" />
+    <aura:attribute name="LCostTotal" type="Decimal" />
+    <aura:attribute name="ThptMrgnDTotal" type="Decimal" />
+    <aura:attribute name="intDeadNetTotal" type="Decimal" />
+    <aura:attribute name="scmAPQTY" type="Decimal" />
+    <aura:attribute name="overRideDirectUnits" type="Decimal" />
+    <aura:attribute name="overRideIndirectUnits" type="Decimal" />
+    <aura:attribute name="actSaDir12Months" type="Decimal" />
+    <aura:attribute name="actSalInd12months" type="Decimal" />
+    <aura:attribute name="iodAmountTotal" type="Decimal" />
+    <aura:attribute name="salesoutAmountTotal" type="Decimal" />
+    <aura:attribute name="TPTPercent" type="Decimal" />
+    <aura:attribute name="direNetSales" type="Decimal" />
+    <aura:attribute name="IndirNetSales" type="Decimal" />
+    <aura:attribute name="totalNetSaes" type="Decimal" />
+    <aura:attribute name="direTPTDollar" type="Decimal" />
+    <aura:attribute name="indirTPTDollar" type="Decimal" />
+    <aura:attribute name="totalTPTDollar" type="Decimal" />
+    <aura:attribute name="totalProfit" type="Decimal" />
+    <aura:attribute name="finalUnitsTotal" type="Decimal" />
+    <aura:attribute name="finaAnnuallUnits" type="Decimal" />
+    <aura:attribute name="finalMontlyUnits" type="Decimal" />
+    <!-- -->
+    <aura:attribute name="CISUEditMode" type="boolean" default="false" />
+    <aura:attribute name="CDSUEditMode" type="boolean" default="false" />
+    <aura:attribute name="PISUditMode" type="boolean" default="false" />
+    <aura:attribute name="PDSUEditMode" type="boolean" default="false" />
+    <aura:attribute name="WDPIEditMode" type="boolean" default="false" />
+    <aura:attribute name="GDPEditMode" type="boolean" default="false" />
+    <aura:attribute name="PCBPSEditMode" type="boolean" default="false" />
+    <aura:attribute name="FAPCEditMode" type="boolean" default="false" />
+    <aura:attribute name="PCREditMode" type="boolean" default="false" />
+    <aura:attribute name="PPUREditMode" type="boolean" default="false" />
+    <aura:attribute name="ISOVEditMode" type="boolean" default="false" /> 
+    <aura:attribute name="ISOCEditMode" type="boolean" default="false" /> 
+    <aura:attribute name="BudASPEditMode" type="boolean" default="false" />
+    <aura:attribute name="SalesNotesEditMode" type="boolean" default="false" />
+    <aura:attribute name="SCMNotesEditMode" type="boolean" default="false" />
+    <aura:attribute name="PriNotesEditMode" type="boolean" default="false" />
+    <aura:attribute name="MarkNotesEditMode" type="boolean" default="false" />
+    <aura:attribute name="PCBPEditMode" type="boolean" default="false" />
+    <aura:attribute name="isSpinner" type="boolean" default="false" />
+    <aura:attribute name="rebateTypeEdit" type="boolean" default="false" />
+    <aura:attribute name="feeTypeEdit" type="boolean" default="false" />
+    <aura:attribute name="MarketApprovalEditMode" type="boolean" default="false" />
+    <aura:attribute name="ContractApprovalEditMode" type="boolean" default="false" />
+    <aura:attribute name="ContractCommentsEditMode" type="boolean" default="false" />
+    <aura:attribute name="singleRec" type="sobject"/>
+    <aura:attribute name="isSpecificCust" type="boolean" default="false"/>
+    <aura:attribute name="templateType" type="string" default=""/>
+    <aura:attribute name="bidType" type="string" default=""/>
+    <aura:attribute name="ReBidListAll" type="List" />
+    <aura:attribute name="togglehover" type="boolean" default="false"/>
+    <aura:attribute name="isModalOpen" type="Boolean" default="false" />
+    <aura:attribute name="tableRef" type="String"/> 
+    <aura:attribute name="isReBid" type="boolean"  />
+    <aura:registerEvent name="lightningEvent" type="c:RefreshBidLineItemCmpEvt"/>
+    
+    <aura:if isTrue="{!v.isSpinner}">
+        <div class="">
+            <lightning:spinner alternativeText="Loading" variant="brand" />
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.isModalOpen}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            
+            <div class="slds-modal__container" style="width:50% ! important;">
+                
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closePopup}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <aura:if isTrue="{! not(empty(v.ReBidListAll))}">
+                        <h2 class="slds-text-heading_medium slds-hyphenate"><b>Previous Prices</b></h2>
+                    </aura:if>
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                <div class="slds-modal__content slds-p-around_medium" >
+                    
+                    <aura:if isTrue="{! not(empty(v.ReBidListAll))}">
+                        <table class="slds-table slds-table_cell_buffered slds-max-medium-table_stacked-horizontal slds-table_bordered" style="border:1px solid #eaeaea;">
+                            <thead>
+                                
+                                <tr class="slds-text-title">
+                                    
+                                    <th scope="col" class="slds-cell-wrap "> <div class="slds-truncate" title="Bid"> Bid </div>  </th>
+                                    <th scope="col" class="slds-cell-wrap "> <div class="slds-truncate" title="Created Date">Created Date</div>  </th>
+                                    <th scope="col" class="slds-cell-wrap "> <div class="slds-truncate" title="Bid Status"> Bid Status</div>  </th>
+                                    <th scope="col" class="slds-cell-wrap "><div class="slds-truncate" title="Customer Guided Price">Customer Guided Price</div>  </th>
+                                    <th scope="col" class="slds-cell-wrap "> <div class="slds-truncate" title="Contract Price">Contract Price</div> </th>      
+                                </tr>
+                            </thead> 
+                            <tbody>
+                                <aura:iteration items="{!v.ReBidListAll}" var="prodItem" indexVar="itemIndex">
+                                    <tr>
+                                        <td class="slds-cell-wrap" scope="col"> <a href="{!'/'+prodItem.Phoenix_Bid__c}" target="_blank">{!prodItem.Phoenix_Bid__r.Name}</a></td> 
+                                        <td class="slds-cell-wrap" scope="col"><lightning:formattedDateTime value="{!prodItem.Phoenix_Bid__r.CreatedDate}"/></td>
+                                        <td class="slds-cell-wrap" scope="col">{!prodItem.Phoenix_Bid__r.Phoenix_Approval_Status__c}</td>
+                                        <td class="slds-cell-wrap slds-text-align_right" scope="col"><lightning:formattedNumber value="{!prodItem.Phoenix_Guidance_Price__c}" style="currency" currencyCode="USD"></lightning:formattedNumber></td>
+                                        <td class="slds-cell-wrap slds-text-align_right" scope="col"><lightning:formattedNumber value="{!prodItem.Phoenix_Final_Approvd_Pricing_Contracts__c}" style="currency" currencyCode="USD"></lightning:formattedNumber> </td>
+                                        
+                                    </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                        <aura:set attribute="else">
+                            <p style="text-align:center">No previous prices found.</p>  
+                        </aura:set>
+                    </aura:if>
+                </div>
+                <!--/div-->
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closePopup }"/>
+                    
+                </footer>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        
+    </aura:if > 
+    
+    <tr>
+        <th scope="row" class="{! v.showErrorClass == true ? 'slds-cell-edit slds-has-error' : 'slds-cell-edit'}">
+            
+        </th>
+        <th scope="row" class="{! v.showErrorClass == true ? 'slds-cell-edit slds-has-error' : 'slds-cell-edit'}">
+            <span class="slds-grid slds-grid_align-spread">
+                <span class="" title="NDC">{!v.singleRec.Phoenix_NDC__c}</span>
+            </span>
+        </th>
+        <th class="slds-text-align--right">{!v.singleRec.Phoenix_Product_Code1__c}</th>
+        <th scope="row">
+            <!--Added by Naseer to replace Product Family with Lookup-->
+            <lightning:formattedUrl value="{!'/' + v.singleRec.Product_Family__c}"
+                                    label="{!v.singleRec.Product_Family_Name__c}" target="_self" />
+            <!--End-->
+            <!--{!v.singleRec.Phoenix_Product_Family__c}-->
+        </th>
+        <th scope="row">{!v.singleRec.Phoenix_Pkg_Size__c}</th>
+        <th scope="row" >
+            <span class="slds-grid slds-grid_align-spread">
+                <span class="" title="Product">
+                    <lightning:formattedUrl value="{!'/' + v.singleRec.Phoenix_Product__r.Id}"  label="{!v.singleRec.Phoenix_Product__r.Name}" target="_self" />  
+                </span>
+            </span>
+        </th>
+        
+        <aura:if isTrue="{!v.isReBid}">
+            <td>  <a href="{!'/'+v.singleRec.Phoenix_Previous_Bid__c}" target="_blank">{!v.singleRec.Phoenix_Previous_Bid__r.Name}</a></td>
+            <td> <a onclick="{!c.showSelectedproducts}">{!v.singleRec.Phoenix_Previous_LineItem__r.Name}</a></td>
+        </aura:if>
+        
+        
+        <td class="slds-text-align_right">{!v.singleRec.Phoenix_Current_Supplier__c}</td>
+        <td class="slds-text-align_right">{!v.singleRec.Phoenix_Case_Pack__c}</td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_MOQ1__c}" maximumFractionDigits="2" />
+        </td>
+        <td>{!v.singleRec.Phoenix_Compare_To_Brand_Name1__c}</td>
+        <td>{!v.singleRec.Phoenix_Product_Director__c}</td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Throughput_Cost1__c}" style="currency"
+                                       currencyCode="USD" maximumFractionDigits="2" />
+        </td>
+        <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',and(v.bidType !='OTC OTB Short Dated',v.bidType !='OTC New Product'))}">
+            <td>	
+                <div class="slds-grid" style="width:200px">	
+                    <div class="slds-grid slds-has-flexi-truncate">	
+                        <p class="slds-truncate" title="{!v.singleRec.Phoenix_Current_Position__c}">{!v.singleRec.Phoenix_Current_Position__c}</p>
+                    </div>	
+                </div>
+            </td>
+        </aura:if>
+        <td>
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Position__c}" style="percent-fixed" maximumFractionDigits="2" />
+        </td>
+        <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',and(v.bidType !='OTC OTB Short Dated',v.bidType !='OTC New Product'))}">
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_12_Months_Actual_Sales__c}"  maximumFractionDigits="0"/>
+            </td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Direct_Selling_Unit__c}"  maximumFractionDigits="0"/>
+            </td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Override_Current_Direct_Units__c}"  maximumFractionDigits="0"/>
+            </td>
+            
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Retail_Direct_Units__c}"  maximumFractionDigits="0"/>
+            </td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_12_Months_TotalSaleUnits__c}"  maximumFractionDigits="0"/>
+            </td>
+        </aura:if>
+        <aura:if isTrue="{!and(v.bidType!='OTC Price Change',v.bidType!='OTC Rebate Change')}">
+            <td class="slds-text-align_right"> <lightning:formattedNumber value="{!v.singleRec.Phoenix_12_Months_IndirectSaleUnit__c}"  maximumFractionDigits="0"/>
+            </td>
+            <!-- proposed share % as Phoenix_Date_Fee__c-->
+            <td class="slds-text-align_right">
+                <lightning:formattedNumber value="{!v.singleRec.Phoenix_Date_Fee__c}"
+                                           style="percent-fixed" maximumFractionDigits="2" />
+            </td>
+            
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Direct_Selling_Unit__c}"  maximumFractionDigits="0"/>
+            </td> 
+            
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Anda_Units__c}"  maximumFractionDigits="0"/>
+            </td> 
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_OS_Units__c}"  maximumFractionDigits="0"/>
+            </td> 
+            <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',v.bidType !='OTC OTB Short Dated')}">
+                
+                <aura:if isTrue="{!v.singleRec.Phoenix_SCM_Final_Approval__c}">
+                    <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Final_Direct_Selling_Units_Calc__c}"  maximumFractionDigits="0"/>
+                    </td> 
+                    <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Others_Direct__c}"  maximumFractionDigits="0"/>
+                    </td> 
+                    <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Others_Indirect__c}"  maximumFractionDigits="0"/>
+                    </td> 
+                    <aura:set attribute="else">
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </aura:set>
+                </aura:if>
+            </aura:if>
+        </aura:if>
+        <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',and(v.bidType !='OTC OTB Short Dated',v.bidType !='OTC New Product'))}">
+            
+            <td class="slds-text-align_right">
+                <lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Direct_Price__c}" style="currency"
+                                           currencyCode="USD" maximumFractionDigits="2" />
+            </td>
+        </aura:if>
+        <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',and(v.bidType !='OTC OTB Short Dated',v.bidType !='OTC New Product'))}">
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_DeadNet_TrckGR__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Sales_Finance__c}"  style="currency" minimumFractionDigits="0" maximumFractionDigits="0" currencyCode="USD"/> </td>
+            <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_TP_Margin__c}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD"/> </td>
+            <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_TP_MarginPercent__c}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+        </aura:if>
+        
+        <aura:if  isTrue="{!and(v.bidType !='OTC Volume Review',v.bidType !='OTC Rebate Change')}">
+            <td class="slds-text-align_right">
+                <lightning:formattedNumber value="{!v.singleRec.Phoenix_Guidance_Price__c}" style="currency"
+                                           currencyCode="USD" />
+            </td>
+            <td class="slds-text-align_right">
+                <lightning:formattedNumber value="{!v.singleRec.Phoenix_ProposedContract_Bid_Price_Sales__c}" style="currency"
+                                           currencyCode="USD" />
+            </td>
+        </aura:if>
+        <aura:if  isTrue="{!v.bidType !='OTC Rebate Change'}">
+            <td> {!v.singleRec.Phoenix_Supply_Type__c}</td>
+        </aura:if>
+        <aura:if  isTrue="{!v.bidType !='OTC Volume Review'}">
+            <aura:if  isTrue="{!v.bidType !='OTC Rebate Change'}">
+                <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',and(v.bidType !='OTC OTB Short Dated',v.bidType !='OTC New Product'))}">
+                    <td class="slds-text-align_right">
+                        <lightning:formattedNumber value="{!v.singleRec.Phoenix_Reduc_in_NCP_McK_And_RAD__c}" style="percent-fixed"  maximumFractionDigits="2"  />
+                    </td>
+                </aura:if>
+                
+                <td class="slds-text-align_right">
+                    <lightning:formattedNumber
+                                               value="{!v.singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" maximumFractionDigits="2"
+                                               currencyCode="USD" />
+                </td>
+                <td class="slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Per_Unit_Rebate__c}"
+                                               style="currency" currencyCode="USD" maximumFractionDigits="2"/>
+                </td>
+            </aura:if>
+        </aura:if>
+        <aura:if  isTrue="{!v.bidType =='OTC Rebate Change'}">
+            <td class="slds-text-align_right">
+                <lightning:formattedNumber value="{!v.singleRec.Phoenix_Reduction_in_NCP_WMT__c}" style="currency"
+                                           currencyCode="USD" maximumFractionDigits="2" />
+            </td> 
+        </aura:if>
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Admin_Fee__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+        <td class="slds-text-align_right">
+            {!v.singleRec.Phoenix_Fee_G_N__c}
+        </td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Admin_Fee_in__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" />
+        </td>
+        <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',and(v.bidType !='OTC OTB Short Dated',v.bidType !='OTC New Product'))}">
+            
+            <td class="slds-text-align_right">
+                <lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Rebate__c}" style="percent-fixed"
+                                           maximumFractionDigits="2" />
+            </td>
+        </aura:if>
+        
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Current_Rebate__c}" style="percent-fixed"
+                                       maximumFractionDigits="2" />
+        </td>
+        <td class="slds-text-align_right">
+            {!v.singleRec.Phoenix_Rebate_G_N__c}
+        </td>
+        
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Rebate_Perc_In__c}"
+                                       style="currency" currencyCode="USD" maximumFractionDigits="2" />
+        </td>
+        
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Reduction__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Anda_CP_Price__c}"
+                                       style="currency" currencyCode="USD" maximumFractionDigits="2" />
+        </td>
+        
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Est_VIP__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+        
+        
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_VIP_per_unit_in__c}"
+                                       style="currency" currencyCode="USD" maximumFractionDigits="2" />
+        </td>
+        
+        
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Cash_Terms__c	}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+        
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Direct_CD_Per_Unit__c}"
+                                       style="currency" currencyCode="USD" maximumFractionDigits="2" />
+        </td>
+        <td class="slds-text-align--right">
+            <lightning:formattedNumber
+                                       value="{!v.singleRec.Phoenix_Internal_Dead_Net_Price__c}"
+                                       
+                                       style="currency" currencyCode="USD" />
+        </td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Proposed_TPT_Direct__c}"
+                                       style="currency" currencyCode="USD" maximumFractionDigits="2" />
+        </td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Proposed_TPT_Per_Direct__c}"
+                                       style="percent-fixed"  maximumFractionDigits="2" />
+        </td>
+        
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Net_Sales_External__c}" style="currency"
+                                       currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0" />
+        </td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Net_Sales_Internal__c}" style="currency"
+                                       currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0" />
+        </td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Th_Put_Margin__c}" style="currency"
+                                       currencyCode="USD" minimumFractionDigits="0" />
+        </td>
+        
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Net_Indirect_Price__c}" style="currency"
+                                       minimumFractionDigits="0" maximumFractionDigits="0" />
+        </td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Sales_Proposed_NCP_McK_And_RAD__c}" style="currency"
+                                       maximumFractionDigits="2" />
+        </td>
+        
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Retail_Direct_Price__c}" style="currency"
+                                       maximumFractionDigits="2" />
+        </td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Retail_Indirect_Price__c}" style="currency"
+                                       maximumFractionDigits="2" />
+        </td>
+        
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Opening_Order_Net_sales__c}" style="currency"
+                                       currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0" />
+        </td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Opening_Order_TPT__c}" style="currency"
+                                       currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0" />
+        </td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Opening_Order_TPT_Per__c}" style="percent-fixed"
+                                       maximumFractionDigits="2" />
+        </td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Budgeted_ASP1__c}" style="currency"
+                                       currencyCode="USD" maximumFractionDigits="2" />
+        </td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_to_Budget__c}" style="percent-fixed"
+                                       maximumFractionDigits="2" />
+        </td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Latest_Estimate__c}" style="currency"
+                                       currencyCode="USD" maximumFractionDigits="2" />
+        </td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_as_of_Latest_Estimate__c}"
+                                       style="percent-fixed" maximumFractionDigits="2" />
+        </td>
+        <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Lowest_Price_SKU__c}" style="currency"
+                                       currencyCode="USD" maximumFractionDigits="2" />
+        </td>
+        <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',and(v.bidType !='OTC OTB Short Dated',and(v.bidType !='OTC Price Change',v.bidType !='OTC Rebate Change')))}">
+            
+            <td class="slds-text-align_right">{!v.singleRec.Phoenix_Initial_Stocking_Order_Volume__c}</td>
+            <td>{!v.singleRec.Phoenix_Initial_Stocking_Order_Comments__c}</td>
+            <td class="slds-text-align_right">
+                <div style="{!lessthan(v.singleRec.Phoenix_Total_SCM_Approved_Qty__c,v.singleRec.Phoenix_Final_Total_Selling_Unit__c)?'color:red':''}"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Total_SCM_Approved_Qty__c}" maximumFractionDigits="0" minimumFractionDigits="0"/></div>
+            </td>
+            <td class="slds-text-align_right">{!v.singleRec.Phoenix_Estimated_Lead_Time_Days__c}</td>
+            <td class="slds-text-align_right">{!v.singleRec.Phoenix_SCM_Approval_Y_N__c}</td>
+            <td class="slds-text-align_right">{!v.singleRec.Phoenix_SCM_Notes__c}</td>
+            <td>{!v.singleRec.Phoenix_SCM_Rejection_Reason1__c}</td>
+            <td>
+                <span><lightning:formattedDateTime value="{!v.singleRec.Phoenix_Revisited_Date__c}" year="numeric" month="numeric" day="numeric" timeZone="UTC"></lightning:formattedDateTime></span>
+            </td>
+        </aura:if>
+        <td class="slds-text-align_right">{!v.singleRec.Phoenix_Sales_Notes__c}</td>
+        <td> {!v.singleRec.Phoenix_Marketing_Approval__c}</td>
+        <td>{!v.singleRec.Phoenix_Marketing_Notes__c}</td>
+        
+        <aura:if  isTrue="{!or(v.bidType =='OTC Volume Review',v.bidType =='OTC OTB Short Dated')}">
+            <td > {!v.singleRec.Phoenix_Marketing_Lead_OTC__c}</td>
+            <td > {!v.singleRec.Phoenix_Pricing_Notes__c}</td>
+        </aura:if>
+        <!--customer -->
+        <td> {!v.singleRec.Phoenix_Customer_Approval_OTC__c}</td>
+        <td> {!v.singleRec.Phoenix_Customer_Service_Comments__c}</td>
+        <aura:if  isTrue="{!v.bidType !='OTC Rebate Change'}">
+            <td><lightning:formattedDateTime value="{!v.singleRec.Phoenix_Supply_Effective_Date__c}" year="numeric" month="numeric" day="numeric" timeZone="UTC"></lightning:formattedDateTime></td>
+        </aura:if>
+        <aura:if  isTrue="{!v.bidType !='OTC Volume Review'}">
+            <td><lightning:formattedDateTime value="{!v.singleRec.Phoenix_Price_Effective_Date__c}" year="numeric" month="numeric" day="numeric" timeZone="UTC"></lightning:formattedDateTime></td>
+            
+            <aura:if  isTrue="{!and(v.bidType !='OTC Volume Review',v.bidType !='OTC OTB Short Dated')}">
+                
+                <td >{!v.singleRec.Phoenix_Marketing_Lead_OTC__c}</td>
+                <td >{!v.singleRec.Phoenix_Business_Head_Comments__c}</td>
+                <td>{!v.singleRec.Phoenix_Approval__c}</td>
+                <td>{!v.singleRec.Phoenix_Comments__c}</td>
+            </aura:if>
+            <td >{!v.singleRec.Phoenix_Finance_Approval__c}</td>
+            <td>{!v.singleRec.Phoenix_Finance_Comments__c}</td>
+            <aura:if  isTrue="{!and(v.bidType !='OTC Volume Review',v.bidType !='OTC OTB Short Dated')}">
+                
+                <td>{!v.singleRec.Phoenix_Sr_Director_VP_Finance_Approval__c}</td>
+                <td>{!v.singleRec.Phoenix_Sr_Director_VP_Finance_Comments__c}</td>
+            </aura:if>
+            <td > {!v.singleRec.Phoenix_Contract_Approval__c}</td>
+            <td >{!v.singleRec.Phoenix_Contract_Comments__c}</td>
+        </aura:if>
+        <td>{!v.singleRec.Phoenix_Bid_Status__c}</td>
+        <td>{!v.singleRec.Phoenix_Customer_Decline_Reasons__c}</td>
+        
+    </tr>    
+    <aura:if isTrue="{!v.sNo==v.ItemsLength}">
+        <tr>
+            <th scope="row"><!--Delete --></th>
+            <th scope="row"><!--NDC --></th>
+            <th scope="row"><!--SAP --></th>
+            <th scope="row"><!--Product name --></th>
+            <th></th>
+            <th scope="row">Totals</th>
+            <aura:if isTrue="{!v.isReBid}">
+                <td class="slds-text-align_right"></td>
+                <td class="slds-text-align_right"></td>
+            </aura:if>
+            <!-- <td></td>-->
+            <td></td>
+            <td></td>
+            <td></td>	
+            <td></td>
+            <td></td>
+            <td></td>
+            <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',and(v.bidType !='OTC OTB Short Dated',v.bidType !='OTC New Product'))}">
+                <td></td>
+            </aura:if>
+            <td></td>
+            <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',and(v.bidType !='OTC OTB Short Dated',v.bidType !='OTC New Product'))}">
+                <td class="slds-text-align_right"> <lightning:formattedNumber value="{!v.actSaDir12Months}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                <td class="slds-text-align_right"> <lightning:formattedNumber value="{!v.CDSUTotal}" minimumFractionDigits="0" maximumFractionDigits="0"/><!--3M mon Anul Indir Units --></td>
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.overRideDirectUnits}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>            
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.current52week}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>   
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.currentMonthly}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>   
+            </aura:if>
+            <aura:if isTrue="{!and(v.bidType!='OTC Price Change',v.bidType!='OTC Rebate Change')}">
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.actSalInd12months}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                <td></td>
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.PDSUTotal}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.proposed52wk}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.proposedMonthly}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',v.bidType !='OTC OTB Short Dated')}">
+                    <aura:if isTrue="{!v.singleRec.Phoenix_SCM_Final_Approval__c}">
+                        <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.finalUnitsTotal}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.finaAnnuallUnits}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.finalMontlyUnits}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                        <aura:set attribute="else">
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </aura:set>
+                    </aura:if>
+                </aura:if>
+            </aura:if>
+            <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',and(v.bidType !='OTC OTB Short Dated',v.bidType !='OTC New Product'))}">
+                <td><!--Current Sell Price --> </td>
+            </aura:if>
+            <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',and(v.bidType !='OTC OTB Short Dated',v.bidType !='OTC New Product'))}">
+                <td><!--Current Net Price --> </td>
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.currentSalesFinance}" style="currency" currencyCode="USD"
+                                                                             minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.currentTPMargin}" style="currency" currencyCode="USD"
+                                                                             minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!(and(v.currentTPMargin != null,and(v.currentSalesFinance !=0 ,v.currentSalesFinance!=null)) ? (v.currentTPMargin/v.currentSalesFinance):0)}" style="percent" 
+                                                                             minimumFractionDigits="2" maximumFractionDigits="2"/></td>
+            </aura:if>
+            
+            <aura:if  isTrue="{!v.bidType =='OTC Rebate Change'}">
+                <td><!-- Current Asp--></td>
+            </aura:if>
+            <aura:if  isTrue="{!and(v.bidType !='OTC Volume Review',v.bidType !='OTC Rebate Change')}">
+                <td><!--Guidance Price --></td>
+                <td><!--Sales Price --></td>
+            </aura:if>
+            <aura:if  isTrue="{!v.bidType !='OTC Rebate Change'}">
+                <td><!-- Supply Tpe --></td>
+            </aura:if>
+            <aura:if  isTrue="{!v.bidType !='OTC Rebate Change'}">
+                <aura:if  isTrue="{!v.bidType !='OTC Volume Review'}">
+                    <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',and(v.bidType !='OTC OTB Short Dated',v.bidType !='OTC New Product'))}">
+                        <td><!-- Sell Price % Change--></td>
+                    </aura:if>
+                </aura:if>
+                <aura:if  isTrue="{!v.bidType !='OTC Volume Review'}">
+                    <td></td>
+                    <td></td>
+                </aura:if>
+            </aura:if>
+            <aura:if  isTrue="{!v.bidType =='OTC Rebate Change'}">
+                <td><!-- Net Price % Change--></td>
+            </aura:if>
+            <td></td>
+            <td></td>
+            <td></td>
+            <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',and(v.bidType !='OTC OTB Short Dated',v.bidType !='OTC New Product'))}">
+                <td></td>
+            </aura:if>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!(and(v.ThptMrgnDTotal != null,and(v.netSalesIntTotal !=0 ,v.netSalesIntTotal!=null)) ? (v.ThptMrgnDTotal/v.netSalesIntTotal):0)}" style="percent" 
+                                                                         minimumFractionDigits="2" maximumFractionDigits="2"/></td>
+            
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.grossSalesTotal}" style="currency" currencyCode="USD"
+                                                                         minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.netSalesIntTotal}" style="currency" currencyCode="USD"
+                                                                         minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.ThptMrgnDTotal}" style="currency" currencyCode="USD"
+                                                                         minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.totalProfit}" style="currency" currencyCode="USD"
+                                                                         minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.OpeningOrderNetSalesTotal}" style="currency" currencyCode="USD"
+                                                                         minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.OpeningOrderTPTTotal}" style="currency" currencyCode="USD"
+                                                                         minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!(and(v.OpeningOrderTPTTotal != null,and(v.OpeningOrderNetSalesTotal !=0 ,v.OpeningOrderNetSalesTotal!=null)) ? (v.OpeningOrderTPTTotal/v.OpeningOrderNetSalesTotal):0)}" style="percent" 
+                                                                         minimumFractionDigits="2" maximumFractionDigits="2"/></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <aura:if  isTrue="{!and(v.bidType !='OTC OTB Good Dated',and(v.bidType !='OTC OTB Short Dated',and(v.bidType !='OTC Price Change',v.bidType !='OTC Rebate Change')))}">
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </aura:if>
+            <td></td>
+            <td></td>
+            <td></td>
+            <aura:if  isTrue="{!or(v.bidType =='OTC Volume Review',v.bidType =='OTC OTB Short Dated')}">
+                <td></td>
+                <td></td>
+            </aura:if>
+            <td></td>
+            <td></td>
+            <aura:if  isTrue="{!v.bidType !='OTC Rebate Change'}">
+                <td></td>
+            </aura:if>
+            <aura:if  isTrue="{!v.bidType !='OTC Volume Review'}">
+                <td></td>
+                <aura:if  isTrue="{!and(v.bidType !='OTC Volume Review',v.bidType !='OTC OTB Short Dated')}">
+                    
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </aura:if>
+                <td></td>
+                <td></td>
+                <aura:if  isTrue="{!and(v.bidType !='OTC Volume Review',v.bidType !='OTC OTB Short Dated')}">
+                    <td></td>
+                    <td></td>
+                </aura:if>       
+                <td></td>
+                <td></td>
+            </aura:if>
+            <td></td>
+            <td></td>
+            
+        </tr>
+    </aura:if>
+    
+</aura:component>

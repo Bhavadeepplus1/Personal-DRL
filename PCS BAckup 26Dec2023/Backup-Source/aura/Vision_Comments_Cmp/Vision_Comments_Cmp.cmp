@@ -1,0 +1,250 @@
+<aura:component controller="Vision_CommentsCtrl" access="global"
+                implements="force:hasRecordId,force:appHostable,lightning:isUrlAddressable">     
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    
+    <aura:attribute name="accObj" type="Account"/>
+    <aura:attribute name="visionComment" type="string"/>
+    <aura:attribute name="showComments" type="boolean" default="false"/>
+    <aura:attribute name="showSpinnerInCommentPop" type="boolean" default="false"/>
+    <aura:attribute name="listOfCmnts" type="List"/>
+    <aura:attribute name="brightCmnts" type="list"/>
+    <aura:attribute name="showSaveComntButton" type="boolean" default="false"/>   
+    <aura:attribute name="doesCmntsExist" type="boolean"/>
+    <aura:attribute name="prodId" type="String"/>
+    
+    <aura:attribute name="showSpinner" type="boolean" default="false"/>
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+        </center>
+        <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        
+        <aura:set attribute="else">
+            <lightning:card>
+                
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                         aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_medium">
+                    
+                    <div class="slds-modal__container">
+                        
+                        <header class="slds-modal__header">
+                            <lightning:buttonIcon iconName="utility:close" onclick="{!c.closeCommentPopup}"
+                                                  alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                            
+                            <h2 class="slds-text-heading_medium slds-hyphenate"><b>{!v.gcpLineItem.Phoenix_Product_Family__c} Comments/Insights</b></h2>
+                            
+                        </header>
+                        <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                        <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                            <aura:if isTrue="{!v.showSpinnerInCommentPop}">
+                                <lightning:spinner size="medium" variant="brand" />
+                            </aura:if>
+                            <div>
+                                <div>
+                                    <lightning:textarea label="Vision Comment"
+                                                        value="{!v.visionComment}"
+                                                        placeholder="Enter Comment Here..."/>
+                                </div>
+                                <div style="text-align:right;">
+                                    <lightning:button variant="brand" label="Save" title="Save"
+                                                      onclick="{! c.onSaveCmnt }"/>
+                                </div>
+                            </div>
+                            <!-- <aura:if isTrue="{!v.doesCmntsExist}">
+                        <div style="text-align:right;margin-top:5px;">
+                            <lightning:button aura:id="allCmnts" onclick="{!c.downloadCmnts}">
+                                <span>
+                                    Export All Comments&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                </span>
+                            </lightning:button>
+                        </div>
+                    </aura:if> -->
+                            <aura:iteration items="{!v.listOfCmnts}" var="cmntLineList" indexVar="sNo">
+                                <lightning:accordion allowMultipleSectionsOpen="true" aura:id="accordion" activeSectionName="CmntSection">
+                                    <aura:if isTrue="{!cmntLineList.cmntCat=='Vision Comments'}">
+                                        <lightning:accordionSection name="Vision Comments" label="Vision Comments">
+                                            <aura:if isTrue="{!not(empty(cmntLineList.cmntWrapList))}">
+                                                <!-- <div style="text-align:right;margin-bottom:5px;">
+                                            <lightning:button aura:id="visionCmnts" onclick="{!c.downloadCmnts}">
+                                                <span>
+                                                    Export&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                                </span>
+                                            </lightning:button>
+                                        </div> -->
+                                                <aura:iteration items="{!cmntLineList.cmntWrapList}" var="visionCmnts">
+                                                    <div class="slds-box" style="padding:10px;margin-bottom:3px;">
+                                                        <article class="slds-post slds-card">
+                                                            <header class="slds-post__header slds-media">
+                                                                <div class="slds-media__figure">
+                                                                    <a href="#" class="slds-avatar slds-avatar_circle slds-avatar_large">
+                                                                        <img alt="{!visionCmnts.userName}" src="{!visionCmnts.profilePicUrl}" 
+                                                                             title="{!visionCmnts.userName}"/>
+                                                                    </a>
+                                                                </div>
+                                                                <div class="slds-media__body">
+                                                                    <div class="slds-grid slds-grid_align-spread slds-has-flexi-truncate">
+                                                                        <p class="slds-text-body_small">
+                                                                            {!visionCmnts.userName} 
+                                                                        </p>
+                                                                    </div>
+                                                                    <p class="slds-text-body_small">
+                                                                        <a href="#" title="" 
+                                                                           class="slds-text-link_reset">{!visionCmnts.cmntDate}
+                                                                        </a>
+                                                                    </p>
+                                                                </div>
+                                                            </header>
+                                                            <div class="slds-post__content">
+                                                                <p style="margin-left:5px;">{!visionCmnts.cmntString}</p>
+                                                            </div>
+                                                        </article> 
+                                                    </div>
+                                                </aura:iteration>
+                                                <aura:set attribute="else">
+                                                    <center>
+                                                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                                             role="alert" style="width:50%;">
+                                                            <span class="slds-icon_container slds-m-right_x-small"
+                                                                  title="Please add line items to view the table">
+                                                                <lightning:icon iconName="utility:info" alternativeText="info"
+                                                                                size="x-small" variant="inverse" />
+                                                            </span>
+                                                            <h2>No Vision Comments Found</h2>
+                                                        </div>
+                                                    </center>
+                                                </aura:set>
+                                            </aura:if>
+                                        </lightning:accordionSection>
+                                    </aura:if>
+                                    
+                                    <aura:if isTrue="{!cmntLineList.cmntCat=='Panorama Comments'}">
+                                        <lightning:accordionSection name="Panorama Comments" label="Panorama Comments">
+                                            <aura:if isTrue="{!not(empty(cmntLineList.cmntWrapList))}">
+                                                <!-- <div style="text-align:right;margin-bottom:5px;">
+                                            <lightning:button aura:id="panoramaCmnts" onclick="{!c.downloadCmnts}">
+                                                <span>
+                                                    Export&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                                </span>
+                                            </lightning:button>
+                                        </div> -->
+                                                <aura:iteration items="{!cmntLineList.cmntWrapList}" var="visionCmnts">
+                                                    <div class="slds-box" style="padding:10px;margin-bottom:3px;">
+                                                        <article class="slds-post slds-card">
+                                                            <header class="slds-post__header slds-media">
+                                                                <div class="slds-media__figure">
+                                                                    <img alt="{!visionCmnts.userName}" src="/docs/component-library/app/images/examples/avatar1.jpg" 
+                                                                         title="{!visionCmnts.userName}"/>
+                                                                </div>
+                                                                <div class="slds-media__body">
+                                                                    <div class="slds-grid slds-grid_align-spread slds-has-flexi-truncate">
+                                                                        <p class="slds-text-body_small">
+                                                                            {!visionCmnts.userName}
+                                                                        </p>
+                                                                    </div>
+                                                                    <p class="slds-text-body_small">
+                                                                        <a href="#" title="" 
+                                                                           class="slds-text-link_reset">
+                                                                            {!visionCmnts.cmntDate}
+                                                                        </a>
+                                                                    </p>
+                                                                </div>
+                                                            </header>
+                                                            <div class="slds-post__content">
+                                                                <aura:if isTrue="{!visionCmnts.gcpCmntObj.long_term_strategy__c != ''}">
+                                                                    <div class="slds-label" style="font-weight:bold;">Long Term Strategy</div>
+                                                                    <div><p style="margin-left:5px;">{!visionCmnts.gcpCmntObj.long_term_strategy__c}</p></div>
+                                                                </aura:if>
+                                                                <aura:if isTrue="{!visionCmnts.gcpCmntObj.short_term_strategy__c != ''}">
+                                                                    <div class="slds-label" style="font-weight:bold;">Short Term Strategy</div>
+                                                                    <div><p style="margin-left:5px;">{!visionCmnts.gcpCmntObj.short_term_strategy__c}</p></div>
+                                                                </aura:if>
+                                                            </div>
+                                                        </article> 
+                                                    </div>
+                                                </aura:iteration>
+                                                <aura:set attribute="else">
+                                                    <center>
+                                                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                                             role="alert" style="width:50%;">
+                                                            <span class="slds-icon_container slds-m-right_x-small"
+                                                                  title="Please add line items to view the table">
+                                                                <lightning:icon iconName="utility:info" alternativeText="info"
+                                                                                size="x-small" variant="inverse" />
+                                                            </span>
+                                                            <h2>No Vision Comments Found</h2>
+                                                        </div>
+                                                    </center>
+                                                </aura:set>
+                                            </aura:if>
+                                        </lightning:accordionSection>
+                                    </aura:if>
+                                    
+                                </lightning:accordion>
+                            </aura:iteration>
+                            
+                            <aura:if isTrue="{!not(empty(v.brightCmnts))}">
+                                <lightning:accordion allowMultipleSectionsOpen="true" aura:id="accordion">
+                                    <lightning:accordionSection name="Bright Comments" label="Bright Comments">
+                                        
+                                        <aura:iteration items="{!v.brightCmnts}" var="brightCmnts">
+                                            <div class="slds-box" style="padding:10px;margin-bottom:3px;">
+                                                <div><b>Bid # <a href="{!'/'+brightCmnts.bidId}" target="_blank">{!brightCmnts.key}</a></b></div>
+                                                <br/>
+                                                <div>
+                                                    <aura:iteration items="{!brightCmnts.value}" var="brightCmntLines">
+                                                        <article class="slds-post slds-card">
+                                                            <header class="slds-post__header slds-media">
+                                                                <div class="slds-media__figure">
+                                                                    <a href="#" class="slds-avatar slds-avatar_circle slds-avatar_large">
+                                                                        <img alt="{!brightCmntLines.userName}" src="{!brightCmntLines.profilePicUrl}" 
+                                                                             title="{!brightCmntLines.userName}"/>
+                                                                    </a>
+                                                                </div>
+                                                                <div class="slds-media__body">
+                                                                    <div class="slds-grid slds-grid_align-spread slds-has-flexi-truncate">
+                                                                        <p class="slds-text-body_small">
+                                                                            {!brightCmntLines.userName} - {!brightCmntLines.cmntAprvlStage}
+                                                                        </p>
+                                                                    </div>
+                                                                    <p class="slds-text-body_small">
+                                                                        {!brightCmntLines.cmntDate}
+                                                                    </p>
+                                                                </div>
+                                                            </header>
+                                                            <div class="slds-post__content">
+                                                                <p>{!brightCmntLines.cmntString}</p>
+                                                            </div>
+                                                        </article> 
+                                                    </aura:iteration>
+                                                </div>
+                                            </div>
+                                        </aura:iteration>
+                                    </lightning:accordionSection>
+                                </lightning:accordion>
+                            </aura:if>
+                        </div>
+                        <!--/div-->
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral" label="Close" title="Close"
+                                              onclick="{! c.closeCommentPopup }" />
+                            <aura:if isTrue="{!v.showSaveComntButton}">
+                                <lightning:button variant="brand" label="Save" title="Save"
+                                                  onclick="{! c.onRecChange }" />
+                            </aura:if>
+                        </footer>
+                    </div>
+                    
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </lightning:card> 
+        </aura:set>
+    </aura:if>
+</aura:component>

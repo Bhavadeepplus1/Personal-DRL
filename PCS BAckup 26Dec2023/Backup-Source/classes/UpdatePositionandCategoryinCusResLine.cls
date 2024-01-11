@@ -1,0 +1,1819 @@
+public class UpdatePositionandCategoryinCusResLine implements Database.Batchable < sObject >,Schedulable {
+    public void execute(SchedulableContext sc) {
+        Database.executeBatch(new UpdatePositionandCategoryinCusResLine());
+    }
+    public Database.QueryLocator start(Database.BatchableContext BC) {
+        string query='';
+        string temp='ClarusOne';
+        string rfp='RFP Bids';
+        string otcrfp='OTC RFP';
+        query='select Phoenix_Bid__r.Phoenix_Customer_Type__c,Phoenix_Bid_Line_Item__r.Phoenix_Current_Position__c,Phoenix_Bid_Line_Item__r.Phoenix_Current_MCK_Position__c,Phoenix_Bid_Line_Item__r.Phoenix_Current_WMT_Position__c,'+Phoenix_Util.getsObjectFieds('Phoenix_Customer_Response_Line__c')+' from Phoenix_Customer_Response_Line__c where Phoenix_Bid__r.Phoenix_Bid_Type__c=:rfp or Phoenix_Bid__r.Phoenix_Bid_Type__c =:otcrfp';
+        return Database.getQueryLocator(query);
+    }  
+ public void execute(Database.BatchableContext BC, List < Phoenix_Customer_Response_Line__c > cusReslinelist) {
+        try{
+            if(cusReslinelist.size()>0){
+               
+                map<string,string> prodpositionmap=new map<string,string>();
+                for(Phoenix_Product_Position__c prodposition:[select Name,Phoenix_General_Category__c from Phoenix_Product_Position__c]){
+                    if(prodposition.Phoenix_General_Category__c!=null){
+                        //system.debug('prodposition...'+prodposition.name.tolowercase().trim());
+                        prodpositionmap.put(prodposition.name.tolowercase().trim(),prodposition.Phoenix_General_Category__c);
+                    }
+                } 
+                
+                for(Phoenix_Customer_Response_Line__c crl:cusReslinelist){
+                    if(crl.Phoenix_Bid__r.Phoenix_Customer_Type__c=='ClarusOne'){
+                        crl.Product_Position__c=crl.Phoenix_Bid_Line_Item__r.Phoenix_Current_MCK_Position__c!=null?crl.Phoenix_Bid_Line_Item__r.Phoenix_Current_MCK_Position__c:null;
+                        if(crl.Phoenix_Bid_Line_Item__r.Phoenix_Current_WMT_Position__c!=null){
+                            crl.Product_Position__c=crl.Product_Position__c!=null?crl.Product_Position__c+'WMTMCK'+crl.Phoenix_Bid_Line_Item__r.Phoenix_Current_WMT_Position__c:crl.Phoenix_Bid_Line_Item__r.Phoenix_Current_WMT_Position__c;
+                        }
+                    }
+                    else if(crl.Phoenix_Bid_Line_Item__r.Phoenix_Current_Position__c!=null){
+                        crl.Product_Position__c=crl.Phoenix_Bid_Line_Item__r.Phoenix_Current_Position__c;
+                    }
+                    
+                    if(crl.Product_Position__c!=null){
+                        if(crl.Product_Position__c.contains('WMTMCK')){
+                            list<string> polist= new list<string>();
+                            //system.debug('polist.....'+polist);
+                            polist=crl.Product_Position__c.split('WMTMCK');
+                            crl.Product_Position__c=crl.Product_Position__c.replace('WMTMCK',',');
+                            //system.debug('prodposition...'+crl.Product_Position__c);
+                            //system.debug('value1...'+polist[0]);
+                            //system.debug('value1...'+polist[1]);
+                            string p1;
+                            string p2;
+                            if(polist[0].contains(',')){
+                              p1 =  polist[0].remove(',');
+                            }
+                            else{
+                                p1 = polist[0];
+                            }
+                            if(polist[1].contains(',')){
+                              p2   =  polist[1].remove(',');
+                            }
+                            else{
+                                p2= polist[1];
+                            }
+                            if(prodpositionmap.containskey(p1.tolowercase().trim())){
+                                //system.debug('enteered...'+prodpositionmap.get(p1.tolowercase().trim()));
+                                
+                                crl.General_Category__c=prodpositionmap.get(p1.tolowercase().trim());
+                                
+                            }
+                           else if(p1.tolowercase().trim().contains('secondary')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('secondary');
+                                
+                            }
+                            else if(p1.tolowercase().trim().contains('primary')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('primary');
+                                
+                            }
+                            else if(p1.tolowercase().trim().contains('multi')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('secondary');
+                                
+                            }
+                             else if(p1.tolowercase().trim().contains('backup')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('secondary');
+                                
+                            }
+                             else if(p1.tolowercase().trim().contains('sole')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('primary');
+                                
+                            }
+                            if(prodpositionmap.containskey(p2.tolowercase().trim())){
+                                //system.debug('enteered...'+prodpositionmap.get(p2.tolowercase().trim()));
+                                
+                                crl.General_Category__c=prodpositionmap.get(p2.tolowercase().trim());
+                                
+                            }
+                            else if(p2.tolowercase().trim().contains('secondary')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('secondary');
+                                
+                            }
+                            else if(p2.tolowercase().trim().contains('primary')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('primary');
+                                
+                            }
+                            else if(p2.tolowercase().trim().contains('multi')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('secondary');
+                                
+                            }
+                             else if(p2.tolowercase().trim().contains('backup')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('secondary');
+                                
+                            }
+                            else if(p2.tolowercase().trim().contains('sole')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('primary');
+                                
+                            }
+                            }
+                            
+                            
+                        
+                        else { 
+                            if(crl.Product_Position__c!=null){
+                            if(crl.Product_Position__c.startswith(',')){
+                                crl.Product_Position__c=crl.Product_Position__c.removestart(',');
+                                
+                            }
+                            else{
+                                crl.Product_Position__c=crl.Product_Position__c;
+                            }
+                                string k=crl.Product_Position__c.substringafter(',');
+                            
+                            if(k!=null){
+                                string pp1;
+                                list<string> plist=crl.Product_Position__c.split(',');
+                                for(integer i=0;i<plist.size();i++){
+                                    if(plist[i].contains(',')){
+                                pp1=plist[i].remove(',');
+                                     }
+                                else{
+                                    pp1=plist[i];
+                                }
+                                   
+                                 if(prodpositionmap.containskey(plist[i].tolowercase().trim())){
+                                //system.debug('enteered...'+prodpositionmap.get(plist[i].tolowercase().trim()));
+                                     if(crl.General_Category__c!=null){
+                                         if(crl.General_Category__c==prodpositionmap.get(plist[i].tolowercase().trim())){
+                                             crl.General_Category__c= crl.General_Category__c;
+                                         }
+                                         else{
+                                             crl.General_Category__c=crl.General_Category__c+','+prodpositionmap.get(plist[i].tolowercase().trim());
+                                         }
+                                     }
+                                     else{
+                                         crl.General_Category__c= prodpositionmap.get(plist[i].tolowercase().trim());
+                                     }
+                               // crl.General_Category__c=crl.General_Category__c!=null?crl.General_Category__c+','+prodpositionmap.get(plist[i].tolowercase().trim()):prodpositionmap.get(plist[i].tolowercase().trim());
+                                
+                            }
+                            else if(plist[i].tolowercase().trim().contains('secondary')){
+                                if(crl.General_Category__c!=null){
+                                if(crl.General_Category__c==prodpositionmap.get('secondary')){
+                                    crl.General_Category__c=crl.General_Category__c;
+                                }
+                                    else{
+                                          crl.General_Category__c=crl.General_Category__c!=null?crl.General_Category__c+','+prodpositionmap.get('secondary'):prodpositionmap.get('secondary');
+                                    }
+                                }
+                                else{
+                                    crl.General_Category__c=prodpositionmap.get('secondary');
+                                }
+                                
+                                
+                                                               
+                            }
+                            else if(plist[i].tolowercase().trim().contains('primary')){
+                                
+                                 if(crl.General_Category__c!=null){
+                                if(crl.General_Category__c==prodpositionmap.get('primary')){
+                                    crl.General_Category__c=crl.General_Category__c;
+                                }
+                                    else{
+                                          crl.General_Category__c=crl.General_Category__c!=null?crl.General_Category__c+','+prodpositionmap.get('primary'):prodpositionmap.get('primary');
+                                    }
+                                }
+                                else{
+                                    crl.General_Category__c=prodpositionmap.get('primary');
+                                }
+                                
+                                
+                                
+                                
+                              // crl.General_Category__c=crl.General_Category__c!=null?crl.General_Category__c+','+prodpositionmap.get('primary'):prodpositionmap.get('primary');
+                                
+                            }
+                            else if(plist[i].tolowercase().trim().contains('multi')){
+                                 if(crl.General_Category__c!=null){
+                                if(crl.General_Category__c==prodpositionmap.get('secondary')){
+                                    crl.General_Category__c=crl.General_Category__c;
+                                }
+                                    else{
+                                          crl.General_Category__c=crl.General_Category__c!=null?crl.General_Category__c+','+prodpositionmap.get('secondary'):prodpositionmap.get('secondary');
+                                    }
+                                }
+                                else{
+                                    crl.General_Category__c=prodpositionmap.get('secondary');
+                                }
+                                //crl.General_Category__c=crl.General_Category__c!=null?crl.General_Category__c+','+prodpositionmap.get('secondary'):prodpositionmap.get('secondary');
+                                
+                            }
+                             else if(plist[i].tolowercase().trim().contains('backup')){
+                                if(crl.General_Category__c!=null){
+                                if(crl.General_Category__c==prodpositionmap.get('secondary')){
+                                    crl.General_Category__c=crl.General_Category__c;
+                                }
+                                    else{
+                                          crl.General_Category__c=crl.General_Category__c!=null?crl.General_Category__c+','+prodpositionmap.get('secondary'):prodpositionmap.get('secondary');
+                                    }
+                                }
+                                else{
+                                    crl.General_Category__c=prodpositionmap.get('secondary');
+                                }
+                              // crl.General_Category__c=crl.General_Category__c!=null?crl.General_Category__c+','+prodpositionmap.get('secondary'):prodpositionmap.get('secondary');
+                                
+                            }    
+                              else if(plist[i].tolowercase().trim().contains('sole')){
+                                
+                              if(crl.General_Category__c!=null){
+                                if(crl.General_Category__c==prodpositionmap.get('primary')){
+                                    crl.General_Category__c=crl.General_Category__c;
+                                }
+                                    else{
+                                          crl.General_Category__c=crl.General_Category__c!=null?crl.General_Category__c+','+prodpositionmap.get('primary'):prodpositionmap.get('primary');
+                                    }
+                                }
+                                else{
+                                    crl.General_Category__c=prodpositionmap.get('primary');
+                                }
+                                
+                            } 
+                                      
+                                    
+                                }
+                                
+                                
+                            }
+                                else
+                                {
+                                   if(crl.Product_Position__c!=null){
+                                string pp;
+                            if(crl.Product_Position__c.contains(',')){
+                                pp=crl.Product_Position__c.remove(',');
+                            }
+                                else{
+                                    pp=crl.Product_Position__c;
+                                }
+                            
+                             system.debug('cptposition.......'+pp.tolowercase().trim());
+                            if(prodpositionmap.containskey(pp.tolowercase().trim())){
+                                //system.debug('enteered...'+prodpositionmap.get(pp.tolowercase().trim()));
+                                
+                                crl.General_Category__c=prodpositionmap.get(pp.tolowercase().trim());
+                                
+                            }
+                           else if(pp.tolowercase().trim().contains('secondary')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('secondary');
+                                
+                            }
+                            else if(pp.tolowercase().trim().contains('primary')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('primary');
+                                
+                            }
+                            else if(pp.tolowercase().trim().contains('multi')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('secondary');
+                                
+                            }
+                            else if(pp.tolowercase().trim().contains('backup')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('secondary');
+                                
+                            }
+                            else if(pp.tolowercase().trim().contains('sole')){
+                                
+                                crl.General_Category__c=prodpositionmap.get('primary');
+                                
+                            }
+                            }
+                                    
+                                    
+                                    
+                                }
+                            }
+                        } 
+                            
+                        }   
+                    
+                    if(crl.Phoenix_Award_Position__c!=null){
+                        if(crl.Phoenix_Award_Position__c.startswith(',')){
+                                crl.Phoenix_Award_Position__c=crl.Phoenix_Award_Position__c.removestart(',');
+                                
+                            }
+                            else{
+                                crl.Phoenix_Award_Position__c=crl.Phoenix_Award_Position__c;
+                            }
+                                string k=crl.Phoenix_Award_Position__c.substringafter(',');
+                            
+                            if(k!=null){
+                                string pp1;
+                                list<string> plist=crl.Phoenix_Award_Position__c.split(',');
+                                for(integer i=0;i<plist.size();i++){
+                                    if(plist[i].contains(',')){
+                                pp1=plist[i].remove(',');
+                                     }
+                                else{
+                                    pp1=plist[i];
+                                }
+                                 if(prodpositionmap.containskey(plist[i].tolowercase().trim())){
+                                //system.debug('enteered...'+prodpositionmap.get(plist[i].tolowercase().trim()));
+                                if(crl.Awarded_General_Category__c!=null){
+                                         if(crl.Awarded_General_Category__c==prodpositionmap.get(plist[i].tolowercase().trim())){
+                                             crl.Awarded_General_Category__c= crl.Awarded_General_Category__c;
+                                         }
+                                         else{
+                                             crl.Awarded_General_Category__c=crl.Awarded_General_Category__c+','+prodpositionmap.get(plist[i].tolowercase().trim());
+                                         }
+                                     }
+                                     else{
+                                         crl.Awarded_General_Category__c= prodpositionmap.get(plist[i].tolowercase().trim());
+                                     }
+                               // crl.Awarded_General_Category__c=crl.Awarded_General_Category__c!=null?crl.Awarded_General_Category__c+','+prodpositionmap.get(plist[i].tolowercase().trim()):prodpositionmap.get(plist[i].tolowercase().trim());
+                                
+                            }
+                            else if(plist[i].tolowercase().trim().contains('secondary')){
+                                 if(crl.Awarded_General_Category__c!=null){
+                                if(crl.Awarded_General_Category__c==prodpositionmap.get('secondary')){
+                                    crl.Awarded_General_Category__c=crl.Awarded_General_Category__c;
+                                }
+                                    else{
+                                          crl.Awarded_General_Category__c=crl.Awarded_General_Category__c!=null?crl.Awarded_General_Category__c+','+prodpositionmap.get('secondary'):prodpositionmap.get('secondary');
+                                    }
+                                }
+                                else{
+                                    crl.Awarded_General_Category__c=prodpositionmap.get('secondary');
+                                }
+                                //crl.Awarded_General_Category__c=crl.Awarded_General_Category__c!=null?crl.Awarded_General_Category__c+','+prodpositionmap.get('secondary'):prodpositionmap.get('secondary');
+                                
+                            }
+                            else if(plist[i].tolowercase().trim().contains('primary')){
+                                if(crl.Awarded_General_Category__c!=null){
+                                if(crl.Awarded_General_Category__c==prodpositionmap.get('primary')){
+                                    crl.Awarded_General_Category__c=crl.Awarded_General_Category__c;
+                                }
+                                    else{
+                                          crl.Awarded_General_Category__c=crl.Awarded_General_Category__c!=null?crl.Awarded_General_Category__c+','+prodpositionmap.get('primary'):prodpositionmap.get('primary');
+                                    }
+                                }
+                                else{
+                                    crl.Awarded_General_Category__c=prodpositionmap.get('primary');
+                                }
+                              // crl.Awarded_General_Category__c=crl.Awarded_General_Category__c!=null?crl.Awarded_General_Category__c+','+prodpositionmap.get('primary'):prodpositionmap.get('primary');
+                                
+                            }
+                            else if(plist[i].tolowercase().trim().contains('multi')){
+                                  if(crl.Awarded_General_Category__c!=null){
+                                if(crl.Awarded_General_Category__c==prodpositionmap.get('secondary')){
+                                    crl.Awarded_General_Category__c=crl.Awarded_General_Category__c;
+                                }
+                                    else{
+                                          crl.Awarded_General_Category__c=crl.Awarded_General_Category__c!=null?crl.Awarded_General_Category__c+','+prodpositionmap.get('secondary'):prodpositionmap.get('secondary');
+                                    }
+                                }
+                                else{
+                                    crl.Awarded_General_Category__c=prodpositionmap.get('secondary');
+                                }
+                                //crl.Awarded_General_Category__c=crl.Awarded_General_Category__c!=null?crl.Awarded_General_Category__c+','+prodpositionmap.get('secondary'):prodpositionmap.get('secondary');
+                                
+                            }
+                             else if(plist[i].tolowercase().trim().contains('backup')){
+                                  if(crl.Awarded_General_Category__c!=null){
+                                if(crl.Awarded_General_Category__c==prodpositionmap.get('secondary')){
+                                    crl.Awarded_General_Category__c=crl.Awarded_General_Category__c;
+                                }
+                                    else{
+                                          crl.Awarded_General_Category__c=crl.Awarded_General_Category__c!=null?crl.Awarded_General_Category__c+','+prodpositionmap.get('secondary'):prodpositionmap.get('secondary');
+                                    }
+                                }
+                                else{
+                                    crl.Awarded_General_Category__c=prodpositionmap.get('secondary');
+                                }
+                               //crl.Awarded_General_Category__c=crl.Awarded_General_Category__c!=null?crl.Awarded_General_Category__c+','+prodpositionmap.get('secondary'):prodpositionmap.get('secondary');
+                                
+                            }    
+                              else if(plist[i].tolowercase().trim().contains('sole')){
+                                if(crl.Awarded_General_Category__c!=null){
+                                if(crl.Awarded_General_Category__c==prodpositionmap.get('primary')){
+                                    crl.Awarded_General_Category__c=crl.Awarded_General_Category__c;
+                                }
+                                    else{
+                                          crl.Awarded_General_Category__c=crl.Awarded_General_Category__c!=null?crl.Awarded_General_Category__c+','+prodpositionmap.get('primary'):prodpositionmap.get('primary');
+                                    }
+                                }
+                                else{
+                                    crl.Awarded_General_Category__c=prodpositionmap.get('primary');
+                                }
+                              // crl.Awarded_General_Category__c=crl.Awarded_General_Category__c!=null?crl.Awarded_General_Category__c+','+prodpositionmap.get('primary'):prodpositionmap.get('primary');
+                                
+                            }   
+                                      
+                                    
+                                }
+                                
+                                
+                            } 
+                        
+                        
+                        
+                        else{
+                        string yy;
+                        if(crl.Phoenix_Award_Position__c.contains(',')){
+                               yy=crl.Phoenix_Award_Position__c.remove(',');
+                            }
+                        else{
+                            yy=crl.Phoenix_Award_Position__c;
+                        }
+                        // system.debug('cptposition.......'+crl.Phoenix_Award_Position__c.tolowercase().trim());
+                       if(prodpositionmap.containskey(yy.tolowercase().trim())){
+                            //system.debug('enteered...'+prodpositionmap.get(crl.Phoenix_Award_Position__c.tolowercase().trim()));
+                            
+                            crl.Awarded_General_Category__c=prodpositionmap.get(crl.Phoenix_Award_Position__c.tolowercase().trim());
+                            
+                        }
+                       else if(crl.Phoenix_Award_Position__c.tolowercase().trim().contains('secondary')){
+                            
+                            crl.Awarded_General_Category__c=prodpositionmap.get('secondary');
+                            
+                        }
+                        else if(crl.Phoenix_Award_Position__c.tolowercase().trim().contains('primary')){
+                            
+                            crl.Awarded_General_Category__c=prodpositionmap.get('primary');
+                            
+                        }
+                        else if(crl.Phoenix_Award_Position__c.tolowercase().trim().contains('multi')){
+                            
+                            crl.Awarded_General_Category__c=prodpositionmap.get('secondary');
+                            
+                        }
+                         else if(crl.Phoenix_Award_Position__c.tolowercase().trim().contains('backup')){
+                            
+                            crl.Awarded_General_Category__c=prodpositionmap.get('secondary');
+                            
+                        }
+                        
+                    }
+            
+                  
+                
+                
+               
+                    }}
+    
+            update cusReslinelist;
+        }
+        }
+        catch(exception e){
+            Phoenix_Bright_Exceptions__c exp = new Phoenix_Bright_Exceptions__c(Phoenix_Class__c = 'UpdatePositionandCategoryinCusResLine', Phoenix_Error_Message__c = e.getMessage(), Phoenix_Issue_Status__c = 'Pending', Phoenix_Method_Name__c = 'execute', Phoenix_Occurrence_Time__c = System.now(), Phoenix_Stack_Trace__c = e.getStackTraceString(), Phoenix_Current_User__c = UserInfo.getName() + '(' + UserInfo.getUserId() + ')');
+            insert exp;
+        }
+    }
+    public void finish(Database.BatchableContext BC) {}
+     public static void justIncrement() {
+        Integer i = 0;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+           i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+              i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+           i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+           i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+           i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+           i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+           i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+           i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+           i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+           i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+           i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+           i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+          i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+         i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+        i++;
+    }
+}

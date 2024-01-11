@@ -1,0 +1,218 @@
+<aura:component controller = "VisionBidAnalysisCls" implements="force:lightningQuickAction,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:availableForFlowScreens" access="global" >
+    <aura:attribute name="recordId" type = "Id"/>
+    <aura:attribute name="bidData" type="list"/>
+    <aura:attribute name="ndcList" type="list"/>
+    <aura:attribute name="show" type="boolean" default="true" />
+    <aura:attribute name="onLoad" type="boolean" default="true" />
+    <aura:attribute name="loaded" type="boolean"/>
+    <aura:attribute name="searchText" type="String" />
+    <aura:attribute name="selectedProduct" type="String" />
+    <aura:attribute name="searchRelatedData" type="list" />
+    <aura:attribute name="noSearchData" type="boolean" />
+    
+    <lightning:navigation aura:id="navService"/>
+    <aura:attribute name="pageReference" type="Object"/>
+    
+    <aura:if isTrue="{! v.loaded }">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+    <aura:if isTrue="{!v.searchText == null}">
+        <div style="margin: 8px 4px 4px 4px;">
+            <span onkeypress="{}" >
+                <lightning:input value="{!v.searchText}" type="search" title="Search by Bid No."
+                                 variant="label-hidden" placeholder="Search by Bid No."
+                                 aura:id="SearchBox"
+                                 oncommit="{!c.onSearchTextChange}"
+                                 /></span>
+        </div>
+        <aura:set attribute="else">
+            <div style="margin: 8px 4px 4px 4px; width: 70% !important; float: left;">
+                <span onkeypress="{}" >
+                    <lightning:input value="{!v.searchText}" type="search" title="Search by Bid No."
+                                     variant="label-hidden" placeholder="Search by Bid No."
+                                     aura:id="SearchBox"
+                                     oncommit="{!c.onSearchTextChange}"
+                                     /></span>
+            </div>
+            <div style="margin: 8px 4px 12px 4px;float: right;">
+                <lightning:button class="btnCSS" variant="brand" label="Search" title="Search" onclick="{! c.getSearchData }" disabled="{!v.searchText == null}" />
+            </div>
+        </aura:set>
+    </aura:if>
+    <br/><br/>
+    <aura:if isTrue="{!and(v.searchRelatedData.length != 0, v.searchText != null)}">
+        <div style="max-height: 300px !important; overflow: auto; width: 100%;">
+            <table class="customtable slds-table_header-hidden slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered" style="table-layout: fixed; width: 98%;padding: 0px;margin: auto;height: 100%;">
+                <tbody>
+                    <aura:iteration items="{!v.searchRelatedData}" var="rec" indexVar="sNo">
+                        <tr style="font-size:12px;cursor: pointer;" data-myid="{!rec.Id}" onclick="{!c.filterData}">
+                            <td style="padding: 4px !important;overflow: hidden; text-overflow: ellipsis;" title="{!rec.Name}">{!rec.Name}</td>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+        </div>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.onLoad}">
+        <aura:set attribute="else">
+            <aura:if isTrue="{!v.bidData!= null}">
+                <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="table-layout: fixed; width: 100%;padding: 0px;">
+                    <tbody>
+                        <tr style="font-size:12px;">
+                            <td style="background-color: #3f2585; color: white;font-weight: bold; width: 54%;padding: 2px 4px !important;" title="Bid No.">Bid No.</td>
+                            <td style="background-color: #a4dbb6; text-align: left;padding: 2px 4px !important;" title="{!v.bidData[0].Name}">
+                                <span onclick="{!c.gotoBid}"><a>{!v.bidData[0].Name}</a></span>
+                            </td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="background-color: #3f2585; color: white;font-weight: bold; width: 54%;padding: 2px 4px !important;" title="Previous Total">Previous Total</td>
+                            <td style="background-color: #a4dbb6; text-align: left;padding: 2px 4px !important;" title="{!v.bidData[0].Vision_Previous_Total__c}">
+                                <aura:if isTrue="{!and(v.bidData[0].Vision_Previous_Total__c != null, v.bidData[0].Vision_Previous_Total__c != 0)}">
+                                    <ui:outputCurrency aura:id="curr" value="{!v.bidData[0].Vision_Previous_Total__c}" format="$##,##,###,###"/>
+                                    <aura:set attribute="else">
+                                        $0
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="background-color: #3f2585; color: white;font-weight: bold; width: 54%;padding: 2px 4px !important;" title="Current Total">Current Total</td>
+                            <td style="background-color: #a4dbb6; text-align: left;padding: 2px 4px !important;" title="{!v.bidData[0].Vision_Current_Total__c}">
+                                <aura:if isTrue="{!and(v.bidData[0].Vision_Current_Total__c != null, v.bidData[0].Vision_Current_Total__c != 0)}">
+                                    <ui:outputCurrency aura:id="curr" value="{!v.bidData[0].Vision_Current_Total__c}" format="$##,##,###,###"/>
+                                    <aura:set attribute="else">
+                                        $0
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="background-color: #3f2585; color: white;font-weight: bold; width: 54%;padding: 2px 4px !important;" title="Total Annual Impact">Total Annual Impact</td>
+                            <td style="background-color: #a4dbb6; text-align: left;padding: 2px 4px !important;" title="{!v.bidData[0].Vision_Total_Annual_Impact__c}">
+                                <aura:if isTrue="{!and(v.bidData[0].Vision_Total_Annual_Impact__c != null, v.bidData[0].Vision_Total_Annual_Impact__c != 0)}">
+                                    <ui:outputCurrency aura:id="curr" value="{!v.bidData[0].Vision_Total_Annual_Impact__c}" format="$##,##,###,###"/>
+                                    <aura:set attribute="else">
+                                        $0
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="background-color: #3f2585; color: white;font-weight: bold; width: 54%;padding: 2px 4px !important;" title="Total FY Impact">Total FY Impact</td>
+                            <td style="background-color: #a4dbb6; text-align: left;padding: 2px 4px !important;" title="{!v.bidData[0].Vision_Total_FY_Business_Impact__c}">
+                                <aura:if isTrue="{!and(v.bidData[0].Vision_Total_FY_Business_Impact__c != null, v.bidData[0].Vision_Total_FY_Business_Impact__c != 0)}">
+                                    <ui:outputCurrency aura:id="curr" value="{!v.bidData[0].Vision_Total_FY_Business_Impact__c}" format="$##,##,###,###"/>
+                                    <aura:set attribute="else">
+                                        $0
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="background-color: #3f2585; color: white;font-weight: bold; width: 54%;padding: 2px 4px !important;" title="Change">Change</td>
+                            <td style="background-color: #a4dbb6; text-align: left;padding: 2px 4px !important;" title="{!v.bidData[0].Vision_Total_FY_Business_Impact__c}">
+                                <aura:if isTrue="{!and(v.bidData[0].Vision_Total_FY_Business_Impact__c != null, v.bidData[0].Vision_Total_FY_Business_Impact__c != 0)}">
+                                    <ui:outputCurrency aura:id="curr" value="{!v.bidData[0].Vision_Total_FY_Business_Impact__c}" format="$##,##,###,###"/>
+                                    <aura:set attribute="else">
+                                        $0
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="background-color: #3f2585; color: white;font-weight: bold; width: 54%;padding: 2px 4px !important;" title="% Change">% Change</td>
+                            <td style="background-color: #a4dbb6; text-align: left;padding: 2px 4px !important;" title="{!v.bidData[0].Vision_Per_Change__c}">
+                                <lightning:formattedNumber value="{!v.bidData[0].Vision_Per_Change__c}" style="percent-fixed" minimumFractionDigits="2" maximumFractionDigits="2"/>
+                            </td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="background-color: #3f2585; color: white;font-weight: bold; width: 54%;padding: 2px 4px !important;" title="# Bid Line Item(s)"># Bid Line Item(s)</td>
+                            <td style="background-color: #a4dbb6; text-align: left;padding: 2px 4px !important;" title="{!v.bidData[0].Vision_Total_Bid_Line_Items__c}">{!v.bidData[0].Vision_Total_Bid_Line_Items__c}</td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="background-color: #3f2585; color: white;font-weight: bold; width: 54%;padding: 2px 4px !important;" title="# New Award(s)"># New Award(s)</td>
+                            <td style="background-color: #a4dbb6; text-align: left;padding: 2px 4px !important;" title="{!v.bidData[0].Vision_Total_New_Award_s__c}">{!v.bidData[0].Vision_Total_New_Award_s__c}</td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="background-color: #3f2585; color: white;font-weight: bold; width: 54%;padding: 2px 4px !important;" title="# Price Change(s)"># Price Change(s)</td>
+                            <td style="background-color: #a4dbb6; text-align: left;padding: 2px 4px !important;" title="{!v.bidData[0].Vision_Total_Price_Change_s__c}">{!v.bidData[0].Vision_Total_Price_Change_s__c}</td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="background-color: #3f2585; color: white;font-weight: bold; width: 54%;padding: 2px 4px !important;" title="# Volume Change(s)"># Volume Change(s)</td>
+                            <td style="background-color: #a4dbb6; text-align: left;padding: 2px 4px !important;" title="{!v.bidData[0].Vision_Total_Volume_Change_s__c}">{!v.bidData[0].Vision_Total_Volume_Change_s__c}</td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="background-color: #3f2585; color: white;font-weight: bold; width: 54%;padding: 2px 4px !important;" title="# Price &amp; Volume Change(s)"># Price &amp; Volume Change(s)</td>
+                            <td style="background-color: #a4dbb6; text-align: left;padding: 2px 4px !important;" title="{!v.bidData[0].Vision_Total_Price_Volume_Change_s__c}">{!v.bidData[0].Vision_Total_Price_Volume_Change_s__c}</td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="background-color: #3f2585; color: white;font-weight: bold; width: 54%;padding: 2px 4px !important;" title="# Product Lost(s)"># Product Lost(s)</td>
+                            <td style="background-color: #a4dbb6; text-align: left;padding: 2px 4px !important;" title="{!v.bidData[0].Vision_Total_Product_Lost_s__c}">{!v.bidData[0].Vision_Total_Product_Lost_s__c}</td>
+                        </tr>
+                        <tr style="font-size:12px;">
+                            <td style="background-color: #3f2585; color: white;font-weight: bold; width: 54%;padding: 2px 4px !important;" title="# No Effect(s)"># No Effect(s)</td>
+                            <td style="background-color: #a4dbb6; text-align: left;padding: 2px 4px !important;" title="{!v.bidData[0].Vision_Total_No_Effect_s__c}">{!v.bidData[0].Vision_Total_No_Effect_s__c}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <aura:set attribute="else">
+                    <lightning:card >
+                        <center>
+                            <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:70%; margin-top: 8px;">
+                                <span class="slds-icon_container slds-m-right_x-small" title="No records matched.">
+                                    <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                </span>
+                                <h2>No records matched.</h2>
+                            </div>
+                        </center>
+                    </lightning:card>
+                </aura:set>
+            </aura:if>
+        </aura:set>
+    </aura:if>
+
+    <aura:if isTrue="{!and(v.noSearchData, v.searchText != null)}">
+        <lightning:card >
+            <center>
+                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:70%; margin-top: 8px;">
+                    <span class="slds-icon_container slds-m-right_x-small" title="No records matched.">
+                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                    </span>
+                    <h2>No search results found.</h2>
+                </div>
+            </center>
+        </lightning:card>
+    </aura:if>    
+    
+    <aura:if isTrue="{!v.isModalOpen}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__content_headless" style="text-align: right;">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModal }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;">
+                    <div style="padding:5px;">
+                    </div> 
+                </div>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if> 
+</aura:component>

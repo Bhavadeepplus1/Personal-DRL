@@ -1,0 +1,393 @@
+<aura:component controller = "VisionFormularyPositionsCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:availableForFlowScreens" access="global" >
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="selectedContract" type="String"/>
+    <aura:attribute name="productData" type="list" />
+    <aura:attribute name="isAsc" type="Boolean" default="true"/>
+    <aura:attribute name="filterName" type="String" default="Product Description" />
+    <aura:attribute name="sortField" type="string" default="Vision_Product__r.Name"/>
+    <aura:attribute name="loaded" type="boolean"/>
+    <aura:attribute name="noData" type="boolean" />
+    <aura:attribute name="contracts" type="List" />
+    <aura:attribute name="contractRec" type="object" />
+    <aura:attribute name="positionsCount" type="Object" />
+    <aura:attribute name="awardedCounts" type="Object" />
+    <aura:attribute name="missingCounts" type="Object" />
+    <aura:attribute name="noContractCount" type="Integer" />
+    <aura:attribute name="selectedContractPositionsCount" type="Object" />
+    <aura:attribute name="randomBgColors" type="list" />
+    <aura:attribute name="contractPositionCount" type="Object" />
+    <aura:attribute name="showChart" type="boolean" default="false" />
+    <aura:attribute name="counts" type="list" />
+    <aura:attribute name="isRxChecked" type="boolean" />
+    <aura:attribute name="isSRxChecked" type="boolean" />
+    <aura:attribute name="isOtcChecked" type="boolean" />
+    <aura:attribute name="selections" type="list" />
+    <aura:attribute name="productTypeCount" type="Object" />
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="vfHost" type="String" default="drreddysnag--uat--c.visualforce.com" />
+    <aura:attribute name="chartType" type="String" />
+    <aura:attribute name="isOTCCustomer" type="boolean" />
+    <aura:attribute name="isROSCustomer" type="boolean" />
+    <aura:attribute name="finalFormularyList" type="list" />
+    
+    <aura:handler name="init" value="{!this}" action = "{!c.doInit}"/>
+    
+    <!--<aura:handler name="onchange" 
+                  event="l_lookup:OnChange" 
+                  action="{!c.handleChange}"/>-->
+    
+    <aura:if isTrue="{! v.loaded }">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+    <div class="slds-grid">
+        <div class="slds-col slds-size_1-of-4" style="padding-bottom: 12px;">
+            <aura:if isTrue="{!v.isOTCCustomer}">
+                <aura:set attribute="else">
+                    <div class="slds-grid" >
+                        <div class="slds-col slds-size_1-of-3">
+                            <b><lightning:input aura:id="RX" type="toggle" label="{!('Rx ('+ v.productTypeCount.RxCount)+')'}" onchange="{!c.searchSrxRxOttc}" checked="{!v.isRxChecked}" messageToggleActive="" messageToggleInactive=""/></b>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <b><lightning:input aura:id="SRX" type="toggle" label="{!('SRx ('+ v.productTypeCount.SRxCount)+')'}" onchange="{!c.searchSrxRxOttc}" checked="{!v.isSRxChecked}" messageToggleActive="" messageToggleInactive="" /></b>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <b><lightning:input aura:id="OTC" type="toggle" label="{!('OTC ('+ v.productTypeCount.OTCCount)+')'}" onchange="{!c.searchSrxRxOttc}" checked="{!v.isOtcChecked}" messageToggleActive="" messageToggleInactive="" /></b>
+                        </div>
+                    </div>
+                </aura:set>
+            </aura:if>
+        </div>
+        <div class="slds-col slds-size_1-of-4">
+        </div>
+        <div class="slds-col slds-size_1-of-4">
+        </div>
+        <div class="slds-col slds-size_1-of-4" style="margin-bottom: 8px;">
+            <aura:if isTrue="{!v.isOTCCustomer}">
+                <b>Total SKUs:</b>&nbsp; {!v.productData.length}
+                <aura:set attribute="else">
+                    <b>Total NDCs:</b>&nbsp; {!v.productData.length}
+                </aura:set>
+            </aura:if>
+            <lightning:buttonIcon class ="slds-icon_small export" iconName="utility:download" 
+                                  onclick="{!c.downloadCsv}"/>
+        </div>
+    </div>
+    <aura:if isTrue="{!v.productData.length != 0}">
+        <div style="overflow: auto; max-height: 800px;">
+            <table class="customtable slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px;">
+                <thead>
+                    <tr>
+                        <th style="background-color:#FEB343; color: white;">
+                            <span onclick="{!c.sortByProduct}">
+                                <aura:if isTrue="{!and(v.isAsc,v.filterName == 'Product Description')}">
+                                    <div class="slds-icon_container" style="cursor: pointer;">  
+                                        Product Description &nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                  size="xx-small" 
+                                                                                  alternativeText="sort arrow up"/>  
+                                    </div>
+                                </aura:if>
+                                <aura:if isTrue="{!and(!v.isAsc,v.filterName == 'Product Description')}">
+                                    <div class="slds-icon_container" style="cursor: pointer;">  
+                                        Product Description&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                 size="xx-small" 
+                                                                                 alternativeText="sort arrow up"/>  
+                                    </div>
+                                </aura:if>
+                                <aura:if isTrue="{!v.filterName != 'Product Description'}">
+                                    <div style="cursor: pointer;">Product Description</div>
+                                </aura:if>
+                            </span>
+                        </th>
+                        <th style="background-color:#FEB343; color: white;">NDC / SKU</th>
+                        <aura:if isTrue="{!v.isROSCustomer}">
+                            <th style="background-color: #257CFF; color: white;">
+                                FORMULARY A
+                            </th>
+                            <th style="background-color: #257CFF; color: white;">
+                                FORMULARY B
+                            </th>
+                            <th style="background-color: #257CFF; color: white;">
+                                FORMULARY C
+                            </th>
+                            <th style="background-color: #257CFF; color: white;">
+                                FORMULARY D
+                            </th>
+                        </aura:if>
+                        <aura:iteration items="{!v.productData[0]}" var="product">
+                            <aura:if isTrue="{!and(v.isROSCustomer, product.Vision_Account__r.Name == 'CVS/Caremark')}">
+                                <aura:set attribute="else">
+                                    <th style="background-color: #257CFF; color: white;" aura:id ="{!product}" title="{!product.Vision_Contract__r.Phoenix_Contract_External_Description__c}">
+                                        {!product.Vision_Contract__r.Phoenix_Contract_External_Description__c} &nbsp;
+                                        <lightning:buttonIcon class="chartIcon" value="{!product.Vision_Contract__r.Phoenix_Contract_External_Description__c}" variant="bare-inverse" iconName="utility:graph" size="small" alternativeText="Generate Bar Chart" title="{!'Generate Bar Chart for ' + product.Vision_Contract__r.Phoenix_Contract_External_Description__c}" onclick="{!c.displayChart}" />&nbsp;
+                                        <lightning:buttonIcon class="chartIcon" value="{!product.Vision_Contract__r.Phoenix_Contract_External_Description__c}" variant="bare-inverse" iconName="utility:chart" size="small" alternativeText="Generate Pie Chart" title="{!'Generate Pie Chart for ' + product.Vision_Contract__r.Phoenix_Contract_External_Description__c}" onclick="{!c.displayPieChart}" />
+                                    </th>
+                                </aura:set>
+                            </aura:if>
+                        </aura:iteration>
+                    </tr>
+                    <tr class="totalCols">
+                        <th colspan="2">
+                            <span style="font-size: 18px; float: right;">On Contract</span>
+                        </th>
+                        <aura:if isTrue="{!v.isROSCustomer}">
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                        </aura:if>
+                        <aura:iteration items="{!v.counts}" var="count">
+                            <th style="font-size: 18px;"><span title="On Contract">{!count.totalCount}</span><span title="Awarded Positions" style="color: blue;">({!count.awardedCount})</span><span title="Information Missing" style="color: red;">({!count.missingCount})</span></th>
+                        </aura:iteration>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.productData}" var="product">
+                        <tr>
+                            <td>
+                                {!product[0].Vision_Product__r.Name}
+                            </td>
+                            <td>
+                                <aura:if isTrue="{!and(product[0].Vision_Product__r.Phoenix_NDC_11__c != null, product[0].Vision_Product_Code__c != null)}">
+                                 	{!product[0].Vision_Product__r.Phoenix_NDC_11__c} / {!product[0].Vision_Product_Code__c}
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!product[0].Vision_Product__r.Phoenix_NDC_11__c == null}">
+                                            {!product[0].Vision_Product_Code__c}
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!product[0].Vision_Product_Code__c == null}">
+                                                    {!product[0].Vision_Product__r.Phoenix_NDC_11__c}
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <aura:if isTrue="{!v.isROSCustomer}">
+                                <td>
+                                    <aura:iteration items="{!product[0].formularyObj.formularyA}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>&nbsp;
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <!--<aura:iteration items="{!product[1].formularyObj.formularyA}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>,
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <aura:iteration items="{!product[2].formularyObj.formularyA}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>,
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <aura:iteration items="{!product[3].formularyObj.formularyA}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>,
+                                        </aura:if>
+                                    </aura:iteration>-->
+                                </td>
+                                <td>
+                                    <aura:iteration items="{!product[0].formularyObj.formularyB}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>&nbsp;
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <!--<aura:iteration items="{!product[1].formularyObj.formularyB}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>,
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <aura:iteration items="{!product[2].formularyObj.formularyB}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>,
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <aura:iteration items="{!product[3].formularyObj.formularyB}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>,
+                                        </aura:if>
+                                    </aura:iteration>-->
+                                </td>
+                                <td>
+                                    <aura:iteration items="{!product[0].formularyObj.formularyC}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>&nbsp;
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <!--<aura:iteration items="{!product[1].formularyObj.formularyC}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>,
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <aura:iteration items="{!product[2].formularyObj.formularyC}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>,
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <aura:iteration items="{!product[3].formularyObj.formularyC}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>,
+                                        </aura:if>
+                                    </aura:iteration>-->
+                                </td>
+                                <td>
+                                    <aura:iteration items="{!product[0].formularyObj.formularyD}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>&nbsp;
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <!--<aura:iteration items="{!product[1].formularyObj.formularyD}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>,
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <aura:iteration items="{!product[2].formularyObj.formularyD}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>,
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <aura:iteration items="{!product[3].formularyObj.formularyD}" var="item">
+                                        <aura:if isTrue="{!and(item != null, item != '')}">
+                                            <lightning:icon class="blueIcon" 
+                                                            iconName="utility:ribbon"
+                                                            size="x-small"/>
+                                            <span style="color: blue;">{!item}</span>,
+                                        </aura:if>
+                                    </aura:iteration>--> 
+                                </td>
+                            </aura:if>
+                            <aura:iteration items="{!product}" var="prod">
+                                <aura:if isTrue="{!and(v.isROSCustomer, prod.Vision_Account__r.Name == 'CVS/Caremark')}">
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!prod.Vision_Current_Contract_Position_Status__c == 'Information Missing'}">
+                                            <td style="color: red;">
+                                                <lightning:icon class="redIcon" 
+                                                                iconName="utility:ribbon" 
+                                                                title="{!prod.Vision_Current_Contract_Position_Status__c}"
+                                                                size="x-small"/>&nbsp;
+                                                {!prod.Vision_Current_Contract_Position_Status__c}
+                                            </td>
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!prod.Vision_Current_Contract_Position_Status__c == 'Not on Contract'}">
+                                                    <td style="color: black;" title="{!prod.Vision_Current_Contract_Position_Status__c}">
+                                                        {!prod.Vision_Current_Contract_Position_Status__c}
+                                                    </td>
+                                                    <aura:set attribute="else">
+                                                        <aura:if isTrue="{!prod.showSED}">
+                                                            <td style="color: black;" title="{!prod.Vision_Current_Contract_Position_Status__c}">
+                                                                <lightning:icon class="orangeIcon"
+                                                                                iconName="utility:ribbon" 
+                                                                                title="Future Supply Effective Date"
+                                                                                size="x-small"/>&nbsp;
+                                                                {!prod.Vision_Current_Contract_Position_Status__c} ({!prod.formattedDate})
+                                                            </td>
+                                                            <aura:set attribute="else">
+                                                                <td style="color: blue;" title="{!prod.Vision_Current_Contract_Position_Status__c}">
+                                                                    <lightning:icon class="blueIcon" 
+                                                                                    iconName="utility:ribbon" 
+                                                                                    title="{!prod.Vision_Current_Contract_Position_Status__c}"
+                                                                                    size="x-small"/>&nbsp;
+                                                                    {!prod.Vision_Current_Contract_Position_Status__c}
+                                                                </td>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                            </aura:iteration>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+        </div>        
+    </aura:if>
+    <aura:if isTrue="{!v.noData}">
+        <lightning:card >
+            <center>
+                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                    <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                    </span>
+                    <h2>No data found.</h2>
+                </div>
+            </center>
+        </lightning:card>
+    </aura:if>
+    <aura:if isTrue="{!v.isModalOpen}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container" style="width: 1500; height: 800px;">
+                <header class="slds-modal__content_headless" style="text-align: right;">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModal }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;">
+                    <div style="padding:5px;">
+                        <c:Vision_FormularyPositionPieChart chartType="{!v.chartType}" showChart="{!v.showChart}" contracts="{!v.contracts}" isOTCCustomer="{!v.isOTCCustomer}" totalCount="{!v.noContractCount}" awardedCounts="{!v.awardedCounts}" missingCounts="{!v.missingCounts}" selectedContractPositionsCount="{!v.selectedContractPositionsCount}" selectedContract="{!v.selectedContract}" randomBgColors="{!v.randomBgColors}" />
+                    </div> 
+                </div>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if> 
+</aura:component>

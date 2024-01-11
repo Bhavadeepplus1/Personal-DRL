@@ -1,0 +1,676 @@
+<aura:component controller = "Vision_Order_Compliance_Report_Class" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="responseObj" type="object" />
+    <aura:attribute name="orderComplianceList" type="Object" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="Month1" type="String" />
+    <aura:attribute name="Month2" type="String" />
+    <aura:attribute name="Month3" type="String" />
+    <aura:attribute name="Month4" type="String" />
+    <aura:attribute name="Month5" type="String" />
+    <aura:attribute name="Month6" type="String" />
+    <aura:attribute name="Mon1" type="String" />
+    <aura:attribute name="Mon2" type="String" />
+    <aura:attribute name="Mon3" type="String" />
+    <aura:attribute name="Mon4" type="String" />
+    <aura:attribute name="Mon5" type="String" />
+    <aura:attribute name="Mon6" type="String" />
+    <aura:attribute name="searchText" type="String"/>
+    
+    <aura:attribute name="isDirectIndirect" type="boolean" default="false" />
+    <aura:attribute name="showPrimary" type="boolean" default="false" />
+    <aura:attribute name="showAll" type="boolean" default="false" />
+    <aura:attribute name="show6Months" type="boolean" default="false" />
+    <aura:attribute name="isDirect" type="boolean" default="true" />
+    <aura:attribute name="isIndirect" type="boolean" default="false" />   
+    <aura:attribute name="isTotal" type="boolean" default="false" />
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="loaded" type="Boolean" />
+    <aura:attribute name="isAsc" type="Boolean" default="false"/>
+    <aura:attribute name="noOfRecords" type="Integer" />
+    <aura:attribute name="showNonCompliance" type="String" />
+    <aura:attribute name="pageNumbers" type="List"/>
+    <aura:attribute name="selectedPageNumber" type="String" default="1"/>
+    <aura:attribute name="pagedLineItems" type="Phoenix_WAC_Change_Line_Item__c[]"/>
+    <aura:attribute name="expandCollapse" type="Boolean"  default="true" />
+    <aura:handler name="change" value="{!v.userId}" action="{!c.selectedVal}"/>
+    <aura:attribute name="userId" type="string"/>
+    <aura:attribute name="isProcessed" type="Boolean"  default="false" />
+    
+    <aura:attribute name="drover" type="Boolean" />
+    <aura:attribute name="itemDescDrover" type="Boolean"  default="false" />
+    <aura:attribute name="month7drover" type="Boolean"  default="false" />
+    <aura:attribute name="month6drover" type="Boolean"  default="false" />
+    <aura:attribute name="month5drover" type="Boolean"  default="false" />
+    <aura:attribute name="month4drover" type="Boolean"  default="false" />
+    <aura:attribute name="month3drover" type="Boolean"  default="false" />
+    <aura:attribute name="month2drover" type="Boolean"  default="false" />
+    
+    <div class="slds-card">
+        <aura:if isTrue="{! v.loaded }">
+            
+            <center>
+                <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                         aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                    <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                        <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                            <img src="{!$Resource.LoadingProgress}" />  
+                        </div>  
+                    </div>  
+                </section>   
+                <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+            </center>
+        </aura:if>
+        
+        <div class="slds-grid ">
+            <div class="slds-col slds-size_2-of-12">
+                <h2  class="slds-m-top_small" style="color:#675e5e;padding-left: 10px;">
+                    <p style="font-size:16px;text-align:left;color:black;"><b>COMPLIANCE REPORT</b></p> 
+                </h2>
+            </div>
+            <div class="slds-col slds-size_9-of-12"></div>
+            
+            
+            
+            <div class="slds-col slds-size_1-of-12  slds-m-top_small" align="right">
+                
+            </div>
+        </div>
+        
+        <div class="slds-box slds-grid" style="padding: 4px;">
+            <div class="slds-box slds-col slds-size_4-of-12">
+                <div style="display: inline-block; padding: 4px 2px 4px 4px; width: 75%;">
+                    <span onkeypress="{}" >
+                        <lightning:input value="{!v.searchText}" type="search"
+                                         variant="label-hidden" title="Search by Product Name, NDC, SKU Number" placeholder="Search by Product Name, NDC, SKU Number" size=""
+                                         aura:id="SearchBox" label="Product Name"
+                                         />
+                    </span>
+                </div>
+                <div style="display: inline-block; padding: 4px 4px 2px 4px;">
+                    <lightning:button label="Search" title="Neutral action" onclick="{! c.onsearch }"/>
+                </div>
+            </div>
+            <div class="slds-box slds-col slds-size_2-of-12" style="padding: 4px;margin: 0px 4px;">
+                <l_lookup:Lookup aura:id="accountDirectorLookup" 
+                                 label="Product Director"
+                                 objectType="User"
+                                 placeHolder="Product Director"
+                                 selectedRecordId="{!v.userId}" 
+                                 dropDownLimit="3"
+                                 orderBy="Name"  />
+            </div>
+            <div class="componentWrapper slds-wrap slds-col slds-size_3-of-12 slds-m-left_xx-small " align="left">
+                <div class="slds-box slds-box_xx-small slds-p-bottom_xx-small">
+                    <div class="slds-grid slds-p-bottom_x-small">
+                        <div class="slds-col slds-size_9-of-12 ">
+                            <div class="Header ">Select Non Compliance:</div>
+                            
+                            <div style="display: inline-block;text-align:center;width: 16.6%;">
+                                <span aura:id="downArrow1" data-value="1" class="slds-button" onclick="{!c.numSelected1}">                                    
+                                    <img style="cursor: pointer;" src="{!$Resource.ComplianceImages + '/ComplianceImages/M1.png'}"/>
+                                </span>
+                            </div>
+                            <div style="display: inline-block;text-align:center;width: 16.6%;">
+                                <span aura:id="downArrow2" data-value="2" class="slds-button" onclick="{!c.numSelected2}">
+                                    <img style="cursor: pointer;" src="{!$Resource.ComplianceImages + '/ComplianceImages/M2.png'}"/>
+                                </span>
+                            </div>
+                            <div style="display: inline-block;text-align:center;width: 16.6%;">
+                                <span aura:id="downArrow3" data-value="3" class="slds-button" onclick="{!c.numSelected3}">
+                                    <img style="cursor: pointer;" src="{!$Resource.ComplianceImages + '/ComplianceImages/M3.png'}"/>
+                                </span>
+                            </div>
+                            <div style="display: inline-block;text-align:center;width: 16.6%;">
+                                <span aura:id="downArrow4" data-value="4" class="slds-button" onclick="{!c.numSelected4}">
+                                    <img style="cursor: pointer;" src="{!$Resource.ComplianceImages + '/ComplianceImages/M4.png'}"/>
+                                </span>
+                            </div>
+                            <div style="display: inline-block;text-align:center;width: 16.6%;">
+                                <span aura:id="downArrow5" data-value="5" class="slds-button" onclick="{!c.numSelected5}">
+                                    <img style="cursor: pointer;" src="{!$Resource.ComplianceImages + '/ComplianceImages/M5.png'}"/>
+                                </span>
+                            </div>
+                            <div style="display: inline-block;text-align:center;width: 16.6%;">
+                                <span aura:id="downArrow6" data-value="6" class="slds-button" onclick="{!c.numSelected6}">
+                                    <img style="cursor: pointer;" src="{!$Resource.ComplianceImages + '/ComplianceImages/M6.png'}"/>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="slds-col slds-size_3-of-12 slds-p-top_medium">
+                            <span aura:id="showAll" data-value="7" class="slds-button firstArrow slds-p-bottom_xx-small" onclick="{!c.numSelected7}">
+                                <b style="cursor: pointer;font-color:Black !important;font-size:13px !important;padding-left:5px;padding-right:5px;">Show All</b>
+                                
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-col slds-size_3-of-12 slds-m-left_xx-small" style="text-align:center;" align="center" > 
+                <div class="slds-box slds-m-right_medium">                            
+                    <div class="slds-grid slds-m-top_small" >
+                        <span>
+                            <b><p style ="padding-left: 20px;" >Primary Position</p></b> 
+                        </span>
+                        <div class="slds-grid" >
+                            <div class="slds-col slds-size_1-of-4" style="margin-left:-5px;"> 
+                                <span><b><lightning:input aura:id="" class="toggleColor" type="toggle" onchange="{!c.showPrimary}" checked="{!v.showPrimary}" messageToggleActive="" messageToggleInactive=""/></b>
+                                </span>
+                            </div>
+                        </div>
+                        <span>
+                            <b><p style ="" >&nbsp;Show All</p></b> 
+                        </span>
+                    </div>
+                </div>
+            </div> 
+        </div>
+        <div class="slds-grid" >
+            <div class="slds-col slds-size_2-of-12  slds-m-top_large" > 
+                <div><b style="font-size:13px;padding-top:10px;padding-left:10px;">No of SKU's:&nbsp;{!v.noOfRecords}</b></div>
+                
+            </div>          
+            <div class="slds-grid slds-col slds-size_4-of-12" align="left" style="padding-left:10px;">
+                
+            </div>
+            <div class="slds-col slds-size_3-of-12" > 
+                <b style="padding-left:10px;"></b>
+                
+            </div>
+            <div class="slds-col slds-size_3-of-12" style="padding-right: 10px;">
+                
+                <div class="slds-grid" >
+                    <div class="slds-col slds-size_2-of-6 slds-text-align_right slds-m-top_small">
+                        <aura:if isTrue="{!v.expandCollapse}">
+                            <div align="right">
+                                <lightning:button label="Expand All" title="Neutral action" onclick="{!c.expandAll }"/>
+                            </div>
+                            <aura:set attribute="else"> 
+                                <div align="right">
+                                    <lightning:button label="Collapse All" title="Neutral action" onclick="{!c.collapseAll }"/>
+                                </div>
+                            </aura:set>
+                        </aura:if>   
+                    </div>
+                     <div class="slds-col slds-size_1-of-6 slds-text-align_right slds-m-top_medium" > 
+                        <aura:if isTrue="{!v.drover}">
+                            <lightning:buttonIcon class ="slds-icon_small" iconName="utility:chevronleft" 
+                                                  onclick="{!c.collapseAllDrover}"
+                                                  />   
+                            <aura:set attribute="else"> 
+                                <lightning:buttonIcon class ="slds-icon_small" iconName="utility:chevronright" 
+                                                      onclick="{!c.expandAllDrover}"
+                                                      />  
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                    <div class="slds-col slds-size_1-of-6 slds-text-align_right slds-m-top_medium" > 
+                        <lightning:buttonIcon class ="slds-icon_small" iconName="utility:download" 
+                                              onclick="{!c.downloadCsv}"
+                                              />                             </div>
+                    <div class="slds-col slds-size_2-of-6" style="padding-top: 18px;text-align:right;padding-right: 10px;">
+                        <div align="right">
+                            Legends&nbsp;<span style="color:#5224B2;cursor: pointer;"><lightning:icon class="purpleIcon" iconName="utility:in_app_assistant" size="small" onclick="{!c.openModal}"/></span>
+                        </div>  
+                        
+                        <div align="right" >
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>    
+        
+        <aura:if isTrue="{!(v.pageNumbers.length > 0 )}">
+            <center>
+                <aura:iteration items="{!v.pageNumbers}" var="pageNum">
+                    <lightning:button variant="{!and(pageNum == 1, pageNum == v.selectedPageNumber) ? 'brand' : (v.selectedPageNumber == pageNum ? 'brand' : 'neutral') }" 
+                                      label="{!pageNum}" 
+                                      onclick="{!c.openPage}"/>
+                </aura:iteration>
+            </center>
+        </aura:if>  
+        <aura:if  isTrue="{!v.noOfRecords >0}">
+            
+            
+            <div style="padding-left:10px;padding-right:10px;">
+                
+                <div aura:id="mainDiv" style="height:430px;overflow:auto;margin-top:10px;border-radius: 1rem;border: 1px solid #cfcfcf;">
+                    
+                    <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                        <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered slds-table--header-fixed">
+                            
+                            
+                            <tbody>
+                                
+                                <tr>
+                                    <th colspan="6" class="headerSticky IndicatorsColumn"   style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;">Indicators</th>
+                                    <aura:if isTrue="{!v.itemDescDrover}">
+                                        <th colspan="3" class="headerSticky SKUColumn"   style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;">SKU's</th> 
+                                        <aura:set attribute="else">
+                                            <th colspan="1" class="headerSticky SKUColumn"   style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;">SKU's</th> 
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.month7drover}">
+                                        <th colspan="3" class="headerSticky"   style="font-weight:Bold;text-align:center;background-color:#F7F3FF;color:#3A0085;">{!v.Month6}</th>                              
+                                        <aura:set attribute="else">
+                                            <th class="headerSticky"   style="font-weight:Bold;text-align:center;background-color:#F7F3FF;color:#3A0085;">{!v.Month6}</th>                               
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.month6drover}">
+                                        <th colspan="3" class="headerSticky"   style="font-weight:Bold;text-align:center;background-color:#F7F3FF;color:#3A0085;">{!v.Month5}</th>                              
+                                        <aura:set attribute="else">
+                                            <th class="headerSticky"   style="font-weight:Bold;text-align:center;background-color:#F7F3FF;color:#3A0085;">{!v.Month5}</th>                               
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.month5drover}">
+                                        <th colspan="3" class="headerSticky"   style="font-weight:Bold;text-align:center;background-color:#F7F3FF;color:#3A0085;">{!v.Month4}</th>                              
+                                        <aura:set attribute="else">
+                                            <th class="headerSticky"   style="font-weight:Bold;text-align:center;background-color:#F7F3FF;color:#3A0085;">{!v.Month4}</th>                               
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.month4drover}">
+                                        <th colspan="3" class="headerSticky"   style="font-weight:Bold;text-align:center;background-color:#F7F3FF;color:#3A0085;">{!v.Month3}</th>                              
+                                        <aura:set attribute="else">
+                                            <th class="headerSticky"   style="font-weight:Bold;text-align:center;background-color:#F7F3FF;color:#3A0085;">{!v.Month3}</th>                               
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.month3drover}">
+                                        <th colspan="3" class="headerSticky"   style="font-weight:Bold;text-align:center;background-color:#F7F3FF;color:#3A0085;">{!v.Month2}</th>                              
+                                        <aura:set attribute="else">
+                                            <th class="headerSticky"   style="font-weight:Bold;text-align:center;background-color:#F7F3FF;color:#3A0085;">{!v.Month2}</th>                               
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.month2drover}">
+                                        <th colspan="3" class="headerSticky"   style="font-weight:Bold;text-align:center;background-color:#F7F3FF;color:#3A0085;">{!v.Month1}</th>                              
+                                        <aura:set attribute="else">
+                                            <th class="headerSticky"   style="font-weight:Bold;text-align:center;background-color:#F7F3FF;color:#3A0085;">{!v.Month1}</th>                               
+                                        </aura:set>
+                                    </aura:if>
+                                    
+                                    <th rowspan="3" class="headerSticky"   style="font-weight:Bold;text-align:center;background-color:#F7F3FF;color:#3A0085;">Comments</th>
+                                    
+                                </tr>
+                                
+                                <tr>
+                                    <th class="subHeaderSticky month1Column"   style="font-weight:Bold;text-align:center;background-color:#FEB343;color:white;">{!v.Mon6}</th>
+                                    <th class="subHeaderSticky month2Column"   style="font-weight:Bold;text-align:center;background-color:#FEB343;color:white;">{!v.Mon5}</th>
+                                    <th class="subHeaderSticky month3Column"   style="font-weight:Bold;text-align:center;background-color:#FEB343;color:white;">{!v.Mon4}</th>
+                                    <th class="subHeaderSticky month4Column"   style="font-weight:Bold;text-align:center;background-color:#FEB343;color:white;">{!v.Mon3}</th>
+                                    <th class="subHeaderSticky month5Column"   style="font-weight:Bold;text-align:center;background-color:#FEB343;color:white;">{!v.Mon2}</th>
+                                    <th class="subHeaderSticky month6Column"   style="font-weight:Bold;text-align:center;background-color:#FEB343;color:white;">{!v.Mon1}</th>
+                                    <th class="subHeaderSticky itemDesColumn"   style="font-weight:Bold;text-align:center;background-color:#FEB343;color:white;">
+                                        <div class="slds-truncate ">
+                                            <aura:if isTrue="{!v.isAsc}">
+                                                <div class="slds-icon_container" style="width:500px;">  
+                                                    <b style="color:white">Item Description</b>&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                                                     size="xx-small" 
+                                                                                                                     alternativeText="sort arrow up"
+                                                                                                                     onclick="{!c.sortByprodDescription}"
+                                                                                                                     style="cursor: pointer"                    
+                                                                                                                     />  
+                                                    <aura:if isTrue="{!v.itemDescDrover}">
+                                                        <lightning:icon class="whiteIcon" style="cursor: pointer;text-align:right;" aura:id="itemDescDrover" alternativeText="itemDescDrover" iconName="utility:chevronleft" size="x-small" onclick="{!c.itemDescDroverMethod}"/>
+                                                        <aura:set attribute="else"> 
+                                                            <lightning:icon class="whiteIcon" style="cursor: pointer;text-align:right;" aura:id="itemDescDrover" alternativeText="itemDescDrover" iconName="utility:chevronright" size="x-small" onclick="{!c.itemDescDroverMethod}"/>                            
+                                                        </aura:set> 
+                                                    </aura:if>
+                                                    
+                                                </div>
+                                                
+                                                <aura:set attribute="else">                               
+                                                    <div class="slds-icon_container" style="width:500px;">  
+                                                        <b style="color:white;">Item Description</b>&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                                                          size="xx-small" 
+                                                                                                                          alternativeText="sort arrow up"
+                                                                                                                          onclick="{!c.sortByprodDescription}"
+                                                                                                                          style="cursor: pointer"                    
+                                                                                                                          />  
+                                                        <aura:if isTrue="{!v.itemDescDrover}">
+                                                            <lightning:icon class="whiteIcon" style="cursor: pointer;text-align:right;" aura:id="itemDescDrover" alternativeText="itemDescDrover" iconName="utility:chevronleft" size="x-small" onclick="{!c.itemDescDroverMethod}"/>
+                                                            <aura:set attribute="else"> 
+                                                                <lightning:icon class="whiteIcon" style="cursor: pointer;text-align:right;" aura:id="itemDescDrover" alternativeText="itemDescDrover" iconName="utility:chevronright" size="x-small" onclick="{!c.itemDescDroverMethod}"/>                            
+                                                            </aura:set> 
+                                                        </aura:if>
+                                                        
+                                                    </div>
+                                                </aura:set>
+                                            </aura:if>
+                                            
+                                            
+                                            
+                                        </div>  
+                                    </th>
+                                    <aura:if isTrue="{!v.itemDescDrover}">
+                                        <th class="subHeaderSticky ndcColumn"   style="font-weight:Bold;text-align:center;background-color:#FEB343;color:white;"><div style="width:111.07px;">NDC</div></th>
+                                        <th class="subHeaderSticky packColumn"   style="font-weight:Bold;text-align:center;background-color:#FEB343;color:white;">Pack Size</th>                                    
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.month7drover}">
+                                        <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">Act</th>
+                                        <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">Avg</th>
+                                    </aura:if>
+                                    <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">C&nbsp;<lightning:icon class="percentIcon" iconName="utility:percent" size="xx-small"/>
+                                        <aura:if isTrue="{!v.month7drover}">
+                                            <lightning:icon class="whiteIcon" aura:id="month7drover" alternativeText="month7drover" iconName="utility:chevronleft" size="x-small" onclick="{!c.month7droverMethod}"/>
+                                            <aura:set attribute="else"> 
+                                                <lightning:icon class="whiteIcon" aura:id="month7drover" alternativeText="month7drover" iconName="utility:chevronright" size="x-small" onclick="{!c.month7droverMethod}"/>                            
+                                            </aura:set> 
+                                        </aura:if>
+                                    </th>
+                                    <aura:if isTrue="{!v.month6drover}">
+                                        <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">Act</th>
+                                        <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">Avg</th>
+                                    </aura:if>
+                                    <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">C&nbsp;<lightning:icon class="percentIcon" iconName="utility:percent" size="xx-small"/>
+                                        <aura:if isTrue="{!v.month6drover}">
+                                            <lightning:icon class="whiteIcon" aura:id="month6drover" alternativeText="month6drover" iconName="utility:chevronleft" size="x-small" onclick="{!c.month6droverMethod}"/>
+                                            <aura:set attribute="else"> 
+                                                <lightning:icon class="whiteIcon" aura:id="month6drover" alternativeText="month6drover" iconName="utility:chevronright" size="x-small" onclick="{!c.month6droverMethod}"/>                            
+                                            </aura:set> 
+                                        </aura:if>
+                                    </th>
+                                    <aura:if isTrue="{!v.month5drover}">
+                                        <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">Act</th>
+                                        <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">Avg</th>
+                                    </aura:if>
+                                    <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">C&nbsp;<lightning:icon class="percentIcon" iconName="utility:percent" size="xx-small"/>
+                                        <aura:if isTrue="{!v.month5drover}">
+                                            <lightning:icon class="whiteIcon" aura:id="month5drover" alternativeText="month5drover" iconName="utility:chevronleft" size="x-small" onclick="{!c.month5droverMethod}"/>
+                                            <aura:set attribute="else"> 
+                                                <lightning:icon class="whiteIcon" aura:id="month5drover" alternativeText="month5drover" iconName="utility:chevronright" size="x-small" onclick="{!c.month5droverMethod}"/>                            
+                                            </aura:set> 
+                                        </aura:if>
+                                    </th>
+                                    <aura:if isTrue="{!v.month4drover}">
+                                        <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">Act</th>
+                                        <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">Avg</th>
+                                    </aura:if>
+                                    <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">C&nbsp;<lightning:icon class="percentIcon" iconName="utility:percent" size="xx-small"/>
+                                        <aura:if isTrue="{!v.month4drover}">
+                                            <lightning:icon class="whiteIcon" aura:id="month4drover" alternativeText="month4drover" iconName="utility:chevronleft" size="x-small" onclick="{!c.month4droverMethod}"/>
+                                            <aura:set attribute="else"> 
+                                                <lightning:icon class="whiteIcon" aura:id="month4drover" alternativeText="month4drover" iconName="utility:chevronright" size="x-small" onclick="{!c.month4droverMethod}"/>                            
+                                            </aura:set> 
+                                        </aura:if>
+                                    </th>
+                                    <aura:if isTrue="{!v.month3drover}">
+                                        <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">Act</th>
+                                        <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">Avg</th>
+                                    </aura:if>
+                                    <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">C&nbsp;<lightning:icon class="percentIcon" iconName="utility:percent" size="xx-small"/>
+                                        <aura:if isTrue="{!v.month3drover}">
+                                            <lightning:icon class="whiteIcon" aura:id="month3drover" alternativeText="month3drover" iconName="utility:chevronleft" size="x-small" onclick="{!c.month3droverMethod}"/>
+                                            <aura:set attribute="else"> 
+                                                <lightning:icon class="whiteIcon" aura:id="month3drover" alternativeText="month3drover" iconName="utility:chevronright" size="x-small" onclick="{!c.month3droverMethod}"/>                            
+                                            </aura:set> 
+                                        </aura:if>
+                                    </th>
+                                    <aura:if isTrue="{!v.month2drover}">
+                                        <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">Act</th> 
+                                        <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">Avg</th>
+                                    </aura:if>
+                                    <th class="subHeaderSticky"   style="font-weight:Bold;text-align:center;background-color:#6900EF;color:white;">C&nbsp;<lightning:icon class="percentIcon" iconName="utility:percent" size="xx-small"/>
+                                        <aura:if isTrue="{!v.month2drover}">
+                                            <lightning:icon class="whiteIcon" aura:id="month2drover" alternativeText="month2drover" iconName="utility:chevronleft" size="x-small" onclick="{!c.month2droverMethod}"/>
+                                            <aura:set attribute="else"> 
+                                                <lightning:icon class="whiteIcon" aura:id="month2drover" alternativeText="month2drover" iconName="utility:chevronright" size="x-small" onclick="{!c.month2droverMethod}"/>                            
+                                            </aura:set> 
+                                        </aura:if>
+                                    </th>
+                                    
+                                </tr>
+                                <tr>
+                                    <aura:if isTrue="{!v.itemDescDrover}">
+                                        <td colspan="9" class="summarySticky" style="text-align:left;"><b>Summary</b></td>
+                                        <aura:set attribute="else">
+                                            <td colspan="7" class="summarySticky" style="text-align:left;"><b>Summary</b></td>
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.month7drover}">
+                                        <td style="font-weight: bold;text-align:center;"><lightning:formattedNumber value="{!v.responseObj.M7DirectAct}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                        <td style="font-weight: bold;text-align:center;"><lightning:formattedNumber value="{!v.responseObj.M7DirectAvg}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                    </aura:if>
+                                    <td style="{!(((v.responseObj.M7DirectAct/v.responseObj.M7DirectAvg)*100) ge 90 ? 'color:purple;text-align:center;font-weight:bold;' : AND(((v.responseObj.M7DirectAct/v.responseObj.M7DirectAvg)*100) le 90, ((v.responseObj.M7DirectAct/v.responseObj.M7DirectAvg)*100) ge 75) ? 'color:green;text-align:center;font-weight:bold;' : 'color:red;text-align:center;font-weight:bold;')}">
+                                        <lightning:formattedNumber value="{!((v.responseObj.M7DirectAct)/(v.responseObj.M7DirectAvg))}" style="percent"  minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                    <aura:if isTrue="{!v.month6drover}">
+                                        <td style="font-weight: bold;text-align:center;"><lightning:formattedNumber value="{!v.responseObj.M6DirectAct}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                        <td style="font-weight: bold;text-align:center;"><lightning:formattedNumber value="{!v.responseObj.M6DirectAvg}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                    </aura:if>
+                                    <td style="{!(((v.responseObj.M6DirectAct/v.responseObj.M6DirectAvg)*100) ge 90 ? 'color:purple;text-align:center;font-weight:bold;' : AND(((v.responseObj.M6DirectAct/v.responseObj.M6DirectAvg)*100) le 90, ((v.responseObj.M6DirectAct/v.responseObj.M6DirectAvg)*100) ge 75) ? 'color:green;text-align:center;font-weight:bold;' : 'color:red;text-align:center;font-weight:bold;')}">
+                                        <lightning:formattedNumber value="{!((v.responseObj.M6DirectAct)/(v.responseObj.M6DirectAvg))}" style="percent"  minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                    <aura:if isTrue="{!v.month5drover}">
+                                        <td style="font-weight: bold;text-align:center;"><lightning:formattedNumber value="{!v.responseObj.M5DirectAct}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                        <td style="font-weight: bold;text-align:center;"><lightning:formattedNumber value="{!v.responseObj.M5DirectAvg}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                    </aura:if>
+                                    <td style="{!(((v.responseObj.M5DirectAct/v.responseObj.M5DirectAvg)*100) ge 90 ? 'color:purple;text-align:center;font-weight:bold;' : AND(((v.responseObj.M5DirectAct/v.responseObj.M5DirectAvg)*100) le 90, ((v.responseObj.M5DirectAct/v.responseObj.M5DirectAvg)*100) ge 75) ? 'color:green;text-align:center;font-weight:bold;' : 'color:red;text-align:center;font-weight:bold;')}">
+                                        <lightning:formattedNumber value="{!((v.responseObj.M5DirectAct)/(v.responseObj.M5DirectAvg))}" style="percent"  minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                    <aura:if isTrue="{!v.month4drover}">
+                                        <td style="font-weight: bold;text-align:center;"><lightning:formattedNumber value="{!v.responseObj.M4DirectAct}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                        <td style="font-weight: bold;text-align:center;"><lightning:formattedNumber value="{!v.responseObj.M4DirectAvg}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                    </aura:if>
+                                    <td style="{!(((v.responseObj.M4DirectAct/v.responseObj.M4DirectAvg)*100) ge 90 ? 'color:purple;text-align:center;font-weight:bold;' : AND(((v.responseObj.M4DirectAct/v.responseObj.M4DirectAvg)*100) le 90, ((v.responseObj.M4DirectAct/v.responseObj.M4DirectAvg)*100) ge 75) ? 'color:green;text-align:center;font-weight:bold;' : 'color:red;text-align:center;font-weight:bold;')}">
+                                        <lightning:formattedNumber value="{!((v.responseObj.M4DirectAct)/(v.responseObj.M4DirectAvg))}" style="percent"  minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                    <aura:if isTrue="{!v.month3drover}">
+                                        <td style="font-weight: bold;text-align:center;"><lightning:formattedNumber value="{!v.responseObj.M3DirectAct}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                        <td style="font-weight: bold;text-align:center;"><lightning:formattedNumber value="{!v.responseObj.M3DirectAvg}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                    </aura:if>
+                                    <td style="{!(((v.responseObj.M3DirectAct/v.responseObj.M3DirectAvg)*100) ge 90 ? 'color:purple;text-align:center;font-weight:bold;' : AND(((v.responseObj.M3DirectAct/v.responseObj.M3DirectAvg)*100) le 90, ((v.responseObj.M3DirectAct/v.responseObj.M3DirectAvg)*100) ge 75) ? 'color:green;text-align:center;font-weight:bold;' : 'color:red;text-align:center;font-weight:bold;')}">
+                                        <lightning:formattedNumber value="{!((v.responseObj.M3DirectAct)/(v.responseObj.M3DirectAvg))}" style="percent"  minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                    <aura:if isTrue="{!v.month2drover}">
+                                        <td style="font-weight: bold;text-align:center;"><lightning:formattedNumber value="{!v.responseObj.M2DirectAct}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                        <td style="font-weight: bold;text-align:center;"><lightning:formattedNumber value="{!v.responseObj.M2DirectAvg}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                    </aura:if>
+                                    <td style="{!(((v.responseObj.M2DirectAct/v.responseObj.M2DirectAvg)*100) ge 90 ? 'color:purple;text-align:center;font-weight:bold;' : AND(((v.responseObj.M2DirectAct/v.responseObj.M2DirectAvg)*100) le 90, ((v.responseObj.M2DirectAct/v.responseObj.M2DirectAvg)*100) ge 75) ? 'color:green;text-align:center;font-weight:bold;' : 'color:red;text-align:center;font-weight:bold;')}">
+                                        <lightning:formattedNumber value="{!((v.responseObj.M2DirectAct)/(v.responseObj.M2DirectAvg))}" style="percent"  minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                                </tr> 
+                                
+                                <aura:iteration items="{!v.orderComplianceList}" var="singlerec" >
+                                    
+                                    <tr> 
+                                        <aura:if isTrue="{!or(((singlerec.M7DirectAct/singlerec.M7DirectAvg)*100) ge 75,((singlerec.M7DirectAct/singlerec.M7DirectAvg)*100) == undefined )}">          
+                                            <td class="{!(AND(((singlerec.M7DirectAct/singlerec.M7DirectAvg)*100) lt 90, ((singlerec.M7DirectAct/singlerec.M7DirectAvg)*100) ge 75) ? 'greenIcon slds-text-align_center month1ColumnData' : 'purplelikeIcon slds-text-align_center month1ColumnData')}">
+                                                <lightning:icon title="{!(singlerec.M7DirectCompliance)}" iconName="utility:like" size="small"/></td>
+                                            <aura:set attribute="else"> 
+                                                <td class="redIcon month1ColumnData" ><lightning:icon iconName="utility:dislike" title="{!(singlerec.M7DirectCompliance)}" size="small"/></td>
+                                                
+                                            </aura:set>
+                                        </aura:if>
+                                        <aura:if isTrue="{!or(((singlerec.M6DirectAct/singlerec.M6DirectAvg)*100) ge 75,((singlerec.M6DirectAct/singlerec.M6DirectAvg)*100) == undefined )}">          
+                                            <td class="{!(AND(((singlerec.M6DirectAct/singlerec.M6DirectAvg)*100) lt 90, ((singlerec.M6DirectAct/singlerec.M6DirectAvg)*100) ge 75) ? 'greenIcon slds-text-align_center month2ColumnData' : 'purplelikeIcon slds-text-align_center month2ColumnData')}">
+                                                <lightning:icon title="{!(singlerec.M6DirectCompliance)}" iconName="utility:like" size="small"/></td>
+                                            <aura:set attribute="else"> 
+                                                <td class="redIcon month2ColumnData" ><lightning:icon iconName="utility:dislike" title="{!(singlerec.M6DirectCompliance)}" size="small"/></td>
+                                                
+                                            </aura:set>
+                                        </aura:if>
+                                        <aura:if isTrue="{!or(((singlerec.M5DirectAct/singlerec.M5DirectAvg)*100) ge 75,((singlerec.M5DirectAct/singlerec.M5DirectAvg)*100) == undefined )}">          
+                                            <td class="{!(AND(((singlerec.M5DirectAct/singlerec.M5DirectAvg)*100) lt 90, ((singlerec.M5DirectAct/singlerec.M5DirectAvg)*100) ge 75) ? 'greenIcon slds-text-align_center month3ColumnData' : 'purplelikeIcon slds-text-align_center month3ColumnData')}">
+                                                <lightning:icon title="{!(singlerec.M5DirectCompliance)}" iconName="utility:like" size="small"/></td>
+                                            <aura:set attribute="else"> 
+                                                <td class="redIcon month3ColumnData" ><lightning:icon iconName="utility:dislike" title="{!(singlerec.M5DirectCompliance)}" size="small"/></td>
+                                                
+                                            </aura:set>
+                                        </aura:if>
+                                        <aura:if isTrue="{!or(((singlerec.M4DirectAct/singlerec.M4DirectAvg)*100) ge 75,((singlerec.M4DirectAct/singlerec.M4DirectAvg)*100) == undefined )}">          
+                                            <td class="{!(AND(((singlerec.M4DirectAct/singlerec.M4DirectAvg)*100) lt 90, ((singlerec.M4DirectAct/singlerec.M4DirectAvg)*100) ge 75) ? 'greenIcon slds-text-align_center month4ColumnData' : 'purplelikeIcon slds-text-align_center month4ColumnData')}">
+                                                <lightning:icon title="{!(singlerec.M4DirectCompliance)}" iconName="utility:like" size="small"/></td>
+                                            <aura:set attribute="else"> 
+                                                <td class="redIcon month4ColumnData" ><lightning:icon iconName="utility:dislike" title="{!(singlerec.M4DirectCompliance)}" size="small"/></td>
+                                                
+                                            </aura:set>
+                                        </aura:if>
+                                        <aura:if isTrue="{!or(((singlerec.M3DirectAct/singlerec.M3DirectAvg)*100) ge 75,((singlerec.M3DirectAct/singlerec.M3DirectAvg)*100) == undefined )}">          
+                                            <td class="{!(AND(((singlerec.M3DirectAct/singlerec.M3DirectAvg)*100) lt 90, ((singlerec.M3DirectAct/singlerec.M3DirectAvg)*100) ge 75) ? 'greenIcon slds-text-align_center month5ColumnData' : 'purplelikeIcon slds-text-align_center month5ColumnData')}">
+                                                <lightning:icon title="{!(singlerec.M3DirectCompliance)}" iconName="utility:like" size="small"/></td>
+                                            <aura:set attribute="else"> 
+                                                <td class="redIcon month5ColumnData" ><lightning:icon iconName="utility:dislike" title="{!(singlerec.M3DirectCompliance)}" size="small"/></td>
+                                                
+                                            </aura:set>
+                                        </aura:if>
+                                        <aura:if isTrue="{!or(((singlerec.M2DirectAct/singlerec.M2DirectAvg)*100) ge 75,((singlerec.M2DirectAct/singlerec.M2DirectAvg)*100) == undefined )}">          
+                                            <td class="{!(AND(((singlerec.M2DirectAct/singlerec.M2DirectAvg)*100) lt 90, ((singlerec.M2DirectAct/singlerec.M2DirectAvg)*100) ge 75) ? 'greenIcon slds-text-align_center month6ColumnData' : 'purplelikeIcon slds-text-align_center month6ColumnData')}">
+                                                <lightning:icon title="{!(singlerec.M2DirectCompliance)}" iconName="utility:like" size="small"/></td>
+                                            <aura:set attribute="else"> 
+                                                <td class="redIcon month6ColumnData" ><lightning:icon iconName="utility:dislike" title="{!(singlerec.M2DirectCompliance)}" size="small"/></td>
+                                                
+                                            </aura:set>
+                                        </aura:if>
+                                        <td class="itemDesColumnData"><b>
+                                            <lightning:formattedUrl value="{!'/' + singlerec.prodFamId}"
+                                                                    label="{!singlerec.prodFamName}" target="_self" />
+                                            </b>
+                                            
+                                            <aura:if isTrue="{!singlerec.expandCollapse}">
+                                                (<lightning:buttonIcon iconName="utility:minimize_window" class="iconCSS IconColor" variant="bare" onclick="{! c.handleClick1 }" name="{!singlerec.prodFamName}" alternativeText="Hide Products" title="Hide Products" />)
+                                                
+                                                <aura:set attribute="else">
+                                                    (<lightning:buttonIcon class ="IconColor" iconName="utility:add" variant="bare" onclick="{! c.handleClick2 }" name="{!singlerec.prodFamName}" alternativeText="Show Products" title="Show Products" />)
+                                                    
+                                                </aura:set>
+                                            </aura:if></td>
+                                        <aura:if isTrue="{!v.itemDescDrover}">
+                                            <td class="ndcColumnData"></td><td class="packColumnData"></td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.month7drover}">
+                                            <td class="" style="text-align:center;font-weight:bold;"><lightning:formattedNumber value="{!singlerec.M7DirectAct}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                            <td class="" style="text-align:center;font-weight:bold;"><lightning:formattedNumber value="{!singlerec.M7DirectAvg}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        </aura:if>
+                                        <td style="{!(((singlerec.M7DirectAct/singlerec.M7DirectAvg)*100) ge 90 ? 'color:purple;text-align:center;font-weight:bold;' : AND(((singlerec.M7DirectAct/singlerec.M7DirectAvg)*100) le 90, ((singlerec.M7DirectAct/singlerec.M7DirectAvg)*100) ge 75) ? 'color:green;text-align:center;font-weight:bold;' : 'color:red;text-align:center;font-weight:bold;')}">
+                                            <lightning:formattedNumber value="{!(and(singlerec.M7DirectAct,singlerec.M7DirectAvg) ? singlerec.M7DirectAct/singlerec.M7DirectAvg : 0)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>  
+                                        <aura:if isTrue="{!v.month6drover}">
+                                            <td class="" style="text-align:center;font-weight:bold;"><lightning:formattedNumber value="{!singlerec.M6DirectAct}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                            <td class="" style="text-align:center;font-weight:bold;"><lightning:formattedNumber value="{!singlerec.M6DirectAvg}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        </aura:if>
+                                        <td style="{!(((singlerec.M6DirectAct/singlerec.M6DirectAvg)*100) ge 90 ? 'color:purple;text-align:center;font-weight:bold;' : AND(((singlerec.M6DirectAct/singlerec.M6DirectAvg)*100) le 90, ((singlerec.M6DirectAct/singlerec.M6DirectAvg)*100) ge 75) ? 'color:green;text-align:center;font-weight:bold;' : 'color:red;text-align:center;font-weight:bold;')}">
+                                            <lightning:formattedNumber value="{!(and(singlerec.M6DirectAct,singlerec.M6DirectAvg) ? singlerec.M6DirectAct/singlerec.M6DirectAvg : 0)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>  
+                                        <aura:if isTrue="{!v.month5drover}">
+                                            <td class="" style="text-align:center;font-weight:bold;"><lightning:formattedNumber value="{!singlerec.M5DirectAct}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                            <td class="" style="text-align:center;font-weight:bold;"><lightning:formattedNumber value="{!singlerec.M5DirectAvg}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        </aura:if>
+                                        <td style="{!(((singlerec.M5DirectAct/singlerec.M5DirectAvg)*100) ge 90 ? 'color:purple;text-align:center;font-weight:bold;' : AND(((singlerec.M5DirectAct/singlerec.M5DirectAvg)*100) le 90, ((singlerec.M5DirectAct/singlerec.M5DirectAvg)*100) ge 75) ? 'color:green;text-align:center;font-weight:bold;' : 'color:red;text-align:center;font-weight:bold;')}">
+                                            <lightning:formattedNumber value="{!(and(singlerec.M5DirectAct,singlerec.M5DirectAvg) ? singlerec.M5DirectAct/singlerec.M5DirectAvg : 0)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>  
+                                        <aura:if isTrue="{!v.month4drover}">
+                                            <td class="" style="text-align:center;font-weight:bold;"><lightning:formattedNumber value="{!singlerec.M4DirectAct}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                            <td class="" style="text-align:center;font-weight:bold;"><lightning:formattedNumber value="{!singlerec.M4DirectAvg}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        </aura:if>
+                                        <td style="{!(((singlerec.M4DirectAct/singlerec.M4DirectAvg)*100) ge 90 ? 'color:purple;text-align:center;font-weight:bold;' : AND(((singlerec.M4DirectAct/singlerec.M4DirectAvg)*100) le 90, ((singlerec.M4DirectAct/singlerec.M4DirectAvg)*100) ge 75) ? 'color:green;text-align:center;font-weight:bold;' : 'color:red;text-align:center;font-weight:bold;')}">
+                                            <lightning:formattedNumber value="{!(and(singlerec.M4DirectAct,singlerec.M4DirectAvg) ? singlerec.M4DirectAct/singlerec.M4DirectAvg : 0)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>  
+                                        <aura:if isTrue="{!v.month3drover}">
+                                            <td class="" style="text-align:center;font-weight:bold;"><lightning:formattedNumber value="{!singlerec.M3DirectAct}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                            <td class="" style="text-align:center;font-weight:bold;"><lightning:formattedNumber value="{!singlerec.M3DirectAvg}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        </aura:if>
+                                        <td style="{!(((singlerec.M3DirectAct/singlerec.M3DirectAvg)*100) ge 90 ? 'color:purple;text-align:center;font-weight:bold;' : AND(((singlerec.M3DirectAct/singlerec.M3DirectAvg)*100) le 90, ((singlerec.M3DirectAct/singlerec.M3DirectAvg)*100) ge 75) ? 'color:green;text-align:center;font-weight:bold;' : 'color:red;text-align:center;font-weight:bold;')}">
+                                            <lightning:formattedNumber value="{!(and(singlerec.M3DirectAct,singlerec.M3DirectAvg) ? singlerec.M3DirectAct/singlerec.M3DirectAvg : 0)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>  
+                                        <aura:if isTrue="{!v.month2drover}">
+                                            <td class="" style="text-align:center;font-weight:bold;"><lightning:formattedNumber value="{!singlerec.M2DirectAct}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                            <td class="" style="text-align:center;font-weight:bold;"><lightning:formattedNumber value="{!singlerec.M2DirectAvg}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        </aura:if>
+                                        <td style="{!(((singlerec.M2DirectAct/singlerec.M2DirectAvg)*100) ge 90 ? 'color:purple;text-align:center;font-weight:bold;' : AND(((singlerec.M2DirectAct/singlerec.M2DirectAvg)*100) le 90, ((singlerec.M2DirectAct/singlerec.M2DirectAvg)*100) ge 75) ? 'color:green;text-align:center;font-weight:bold;' : 'color:red;text-align:center;font-weight:bold;')}">
+                                            <lightning:formattedNumber value="{!(and(singlerec.M2DirectAct,singlerec.M2DirectAvg) ? singlerec.M2DirectAct/singlerec.M2DirectAvg : 0)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>  
+                                        <td></td>  </tr>
+                                    
+                                    <c:Historical_Order_Compliance_Report_Child singlerec="{!singlerec}" recordId="{!v.recordId}" month2drover="{!v.month2drover}" month3drover="{!v.month3drover}" month4drover="{!v.month4drover}" month5drover="{!v.month5drover}" month6drover="{!v.month6drover}" month7drover="{!v.month7drover}" itemDescDrover="{!v.itemDescDrover}"/>  
+                                    
+                                </aura:iteration>
+                            </tbody>
+                            
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <aura:set attribute="else"> 
+                <lightning:card >
+                    <center>
+                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;background-color:#257CFF;">
+                            <span class="slds-icon_container slds-m-right_x-small">
+                                <lightning:icon iconName="utility:info" alternativeText="info" size="xx-small" variant="inverse"/>
+                            </span>
+                            <h2>No Direct Contracts found on this Account.</h2>
+                        </div>
+                    </center>
+                </lightning:card> 
+            </aura:set>
+        </aura:if>
+        
+        
+        <aura:if isTrue="{!v.isModalOpen}">
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        
+                        <div> 
+                            
+                        </div>  
+                        
+                        
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close buttonCSS"/>
+                    </header>
+                    
+                    <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;">
+                        <div style="padding:5px;">Avg - It is calculated based on last 3 months average.</div>
+                         <div style="padding:5px;"><img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />  
+                                Indicates - Backorder on this NDC for one or more customers based on the latest SCM Backorder Report. <br></br> </div> 
+                            <div style="padding:5px;"> <img src="{!$Resource.OpenorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="No Open Orders on this Product" />
+                                Indicates - No Open Orders on this NDC for any customer. (Order Status Data) <br></br> </div> 
+                            
+                            <div style="padding:5px;">  <img src="{!$Resource.Noopenorder}" class="imageclass" style="max-width: 20px;height: 20px;" title="Open Orders on this Product" />
+                                Indicates -  Open Orders on this NDC for one or more customers. (Order Status Data)
+                                
+                                <br></br>  </div>                            
+                        <div style="padding:5px;">
+                            <lightning:icon iconName="utility:fulfillment_order" class="purpleIcon lessThanCss"  size="x-small" variant="bare"/>&nbsp;
+                            Click on the icon to view the orders related to the product.
+                            
+                        </div> 
+                        <div style="padding:5px;">
+                            <lightning:icon iconName="utility:metrics" size="x-small" class="purpleIcon lessThanCss" variant="bare"/>&nbsp;
+                            Click on the icon to view the graph related to the product.
+                            
+                        </div> 
+                        <div style="padding:5px;"><b>For Compliance % </b> color coding and "<b>Indicators</b>" section.
+                            
+                            <div>
+                                <div aura:id="mainDiv" style="overflow:auto;margin-top:10px;border-radius: 0.25rem;border: 1px solid #cfcfcf;">
+                                    
+                                    <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                                        <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered slds-table--header-fixed">                            
+                                            <thead>
+                                                <tr>
+                                                    <th style="font-weight:Bold;text-align:left;background-color:#257CFF;color:white;padding:5px;">Range</th>
+                                                    <th style="font-weight:Bold;text-align:left;background-color:#257CFF;color:white;padding:5px;">Color</th> 
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>90% &#62; Compliance %</td>
+                                                    <td class="purplelikeIcon ">Purple&nbsp;<lightning:icon iconName="utility:like" size="small"/></td>
+                                                    
+                                                </tr>
+                                                <tr>
+                                                    <td>75% =&#62; Compliance =&#60; 90%</td>
+                                                    <td class="greenIcon ">Green&nbsp;<lightning:icon iconName="utility:like" size="small"/></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Compliance &#60; 75%</td>
+                                                    <td class="redIcon ">Red&nbsp;<lightning:icon iconName="utility:dislike" size="small"/></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>  
+                                    </div>
+                                </div></div>
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral" label="Close" title="Close"
+                                          onclick="{! c.closeModel }" />
+                    </footer>
+                </div>
+                
+            </section>
+            <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+        </aura:if> 
+    </div>
+</aura:component>

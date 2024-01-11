@@ -1,0 +1,525 @@
+<!--
+  @description       : 
+  @author            : Surender Patel (Dhruvsoft)
+  @group             : 
+  @last modified on  : 09-07-2021
+  @last modified by  : Surender Patel (Dhruvsoft)
+  Modifications Log 
+  Ver   Date         Author                       Modification
+  1.0   09-07-2021   Surender Patel (Dhruvsoft)   Initial Version
+-->
+<aura:component controller="Phoenix_BidCreator"
+    implements="lightning:isUrlAddressable,force:hasRecordId,lightning:actionOverride" access="global">
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="recordId1" type="String" />
+    <aura:attribute name="pageReference" type="Object" />
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.pageReferenceChangeHandler}" />
+    <aura:attribute name="loading" type="Boolean" default="false" />
+    <aura:attribute name="showNext" type="Boolean" default="false" />
+    <lightning:navigation aura:id="navigationService" />
+    <aura:attribute name="WrapperObect" type="Object" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute access="public" name="formFactor" type="String" default="{!$Browser.formFactor}" />
+    <aura:attribute name="isModalOpen" type="boolean" default="true" />
+    <aura:attribute name="isCreate" type="boolean" />
+    <aura:attribute name="hasLines" type="boolean" />
+      <aura:attribute name="bidCreated" type="boolean" />
+    <aura:attribute name="custReadonly" type="boolean" default="false" />
+    <aura:attribute name="isABCCustomer" type="boolean" default="false" />
+    <aura:attribute name="isBothTemplate" type="boolean" default="false" />
+    <aura:attribute name="isROSTemplate" type="boolean" default="false" />
+	<aura:attribute name="isHumanaTemplate" type="boolean" default="false" />
+    <!--attrubutes for bid temlate flow-->
+    <aura:attribute name="BidType" type="string" />
+    <aura:attribute name="delayType" type="boolean" />
+    <aura:attribute name="NoCustContact" type="boolean" default="true" />
+    <aura:attribute name="deadLineValue" type="boolean" default="true" />
+    <aura:attribute name="hasInternalDate" type="boolean" default="true" />
+    <aura:attribute name="recordTypesValues" type="list" />
+    <aura:attribute name="activeSections" type="List" default="['Bid Information','Bid Deadline Info','Comments']" />
+    <!--attrubutes for bid temlate flow-->
+    <aura:attribute name="RcaAgreement" type="string" />
+    <aura:attribute name="customerLkp" type="string" default=""/>
+    <aura:attribute name="cntcLkp" type="string" />
+    <aura:attribute name="customerRecord" type="string" />
+    <aura:attribute name="bidSubmitted" type="boolean" />
+    <aura:attribute name="BidTemplate" type="string" />
+    <aura:attribute name="customerHireachyListString" type="string" />
+    <aura:attribute name="filetype" type="List"
+        default="['.eml','.PST','.EDB','.MBOX','.OST','.odt','.wps','.rtf','.msg','.pps','.png','.war','.pjp','.apng','.gif','.pjp','.pjpeg','.jfif','.webp','.avif','.jpg','.jpeg','.pdf','.xlsm','.xlsx','.xlsb','.CSV','.xltx','.html', '.htt', '.mht',' .svg', '.swf', '.thtml','.xhtml','.txt','.odp','.pptx','.ppt','.docx','.doc','.docm','.dotx','.dot','.zip','.zipx','.tar','.xls']" />
+    <aura:attribute name="fileList" type="List" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:handler name="onchange" event="l_lookup:OnChange" action="{!c.handleChange}" />
+    
+    <aura:attribute name="isOTCBid" type="Boolean" />
+
+    <div class="slds-box slds-theme_default slds-m-top_small" id="top">
+        <aura:if isTrue="{!v.isCreate}">
+            <div class="slds-p-around_medium slds-align_absolute-center" role="banner">
+                <h1 class="slds-modal__title slds-hyphenate slds-text-heading--medium">
+                    New Bid
+                </h1>
+            </div>
+            <aura:set attribute="else">
+                <div class="slds-p-around_medium slds-align_absolute-center" role="banner">
+                    <h1 class="slds-modal__title slds-hyphenate slds-text-heading--medium">
+                        Edit {!v.WrapperObect.bid.Name}
+                    </h1>
+                </div>
+            </aura:set>
+        </aura:if>
+        <aura:if isTrue="{!v.isSpinnerLoad}">
+            <div class="backgroundInverse">
+                <lightning:spinner alternativeText="Loading" variant="brand" />
+            </div>
+        </aura:if>
+        <lightning:recordEditForm density="comfy" aura:id="recordEditFormForNewBid" recordId="{!v.recordId}"
+            objectApiName="Phoenix_Bid__c" onload="{!c.handleOnload}" onsubmit="{!c.handleSubmit}"
+            onsuccess="{!c.redirectToDetailPage}">
+            <lightning:messages aura:id="BidMessage" />
+            <div
+                class="slds-media__body slds-m-top-medium slds-border_top slds-border_bottom slds-border_right slds-border_left">
+                <div
+                    class="slds-media__body slds-m-top-medium slds-border_top slds-border_bottom slds-border_right slds-border_left">
+                    <!-- start of new logic for bid type recordtype sake-->
+                    <div class="slds-grid slds-m-left_small slds-m-right_small">
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning:inputField fieldName="Phoenix_Bid_Type__c" aura:id="bidType"
+                                onchange="{!c.bidTypeChange}" disabled="{!or(v.hasLines,v.isCreate==false)}" />
+                             
+                        </div>
+
+                    </div>
+                    <aura:if isTrue="{!!empty(v.BidType)}">
+                        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{!v.activeSections}">
+                            <lightning:accordionSection name="Bid Information" label="Bid Information">
+                                <div class="slds-grid">
+                                    <aura:if isTrue="false">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField fieldName="Phoenix_is_OTC_Bid__c" 
+                                                                  disabled="{!v.bidSubmitted}" />
+                                        </div>
+                                    </aura:if>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="Phoenix_Bid_Name__c" required="true"
+                                            disabled="{!v.bidSubmitted}" />
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <aura:if isTrue="{!and(v.BidType!='IPA Floor Pricing Update',v.BidType!='Direct Order Form Pricing Update')}">
+                                        <lightning:inputField fieldName="Phoenix_Bid_Created_Behalf_of__c"
+                                            disabled="{!v.bidSubmitted}" />
+                                        </aura:if>
+                                    </div>
+                                </div>
+                                <aura:if isTrue="{!v.NoCustContact}">
+                                    <div class="slds-grid">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <!--  <lightning:inputField fieldName="Phoenix_Customer__c"  onchange="{!c.customerChange}" aura:id="customerVal" required="true" disabled="{!or(and(v.hasLines,v.NoCustContact),and(v.isCreate==false,v.BidType=='VIP Rebate'))}"/>-->
+
+                                            <l_lookup:Lookup label="Customer" aura:id="customerLookup"
+                                                objectType="Account" isRequired="true" readOnly="{!v.custReadonly}"
+                                                styleClass="marginLkp" additionalField="Phoenix_Name2__c"
+                                                selectedRecordId="{!v.customerLkp}"
+                                                queryCondition="{!(v.isOTCBid ? 'Phoenix_Is_OTC_Customer__c = true' : 'Phoenix_Is_Bid_Account__c=true')}"
+                                                 />
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <!--<lightning:inputField fieldName="Phoenix_Contact__c" />-->
+                                            <l_lookup:Lookup label="Contact" aura:id="contactLookup"
+                                                objectType="Contact" 
+                                                selectedRecordId="{!v.cntcLkp}"
+                                                queryCondition="{! v.customerHireachyListString }" />
+                                        </div>
+                                    </div>
+                                </aura:if>
+
+                                <aura:if isTrue="{!v.BidType=='Contracts Only'}">
+                                    <div class="slds-grid">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField fieldName="Phoenix_Current_Contract__c"
+                                                disabled="{!v.bidSubmitted}" />
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField fieldName="Phoenix_Contract_Workflow_Type__c"
+                                                disabled="{!v.bidSubmitted}" />
+                                        </div>
+                                    </div>
+                                </aura:if>
+								 <aura:if isTrue="{!v.BidType=='Contracts Only'}">
+                                     <div class="slds-grid">
+                                        <div class="slds-col slds-size_1-of-2">
+                                             <lightning:inputField aura:id='delayType' fieldName="Delay_Type__c"
+                                                                   onchange="{!c.delayTypeChange}" disabled="{!v.bidSubmitted}" required="true"/>
+                                         </div>
+                                         <aura:if isTrue = "{!v.delayType}">
+                                             <div class="slds-col slds-size_1-of-2">
+                                                 <lightning:inputField  fieldName="Ratification_Comment__c" disabled="{!v.bidSubmitted}"
+                                                                       />
+                                             </div>
+                                         </aura:if>
+                                     </div>
+                                </aura:if>
+
+                                <aura:if
+                                    isTrue="{!or(or(v.BidType=='RCA/IPA Member GPO or Wholesaler Change',v.BidType=='RCA Member Addition'),v.BidType=='IPA Member Addition')}">
+                                    <div class="slds-grid">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField fieldName="Phoenix_RCA_Change_Date__c" required="true"
+                                                disabled="{!v.bidSubmitted}" />
+                                        </div>
+                                        <aura:if isTrue="{!or(v.BidType=='RCA/IPA Member GPO or Wholesaler Change')}">
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <l_lookup:Lookup label="RCA/IPA Contract" aura:id="contractLookup"
+                                                    objectType="Phoenix_Contract__c" isRequired="true"
+                                                    readOnly="{!or(v.bidSubmitted,v.hasLines)}" additionalField="Phoenix_Customer__c"
+                                                    selectedRecordId="{!v.RcaAgreement}"
+                                                    queryCondition="(Phoenix_Is_RCA_Contract__c =true or Phoenix_Is_IPA_Contract__c=true) and Phoenix_Contract_Status__c='Active' " />
+                                                <!--<lightning:inputField fieldName="Phoenix_RCA_Agreement__c" required="true"/>-->
+                                            </div>
+                                        </aura:if>
+
+                                    </div>
+                                </aura:if>
+
+                                <aura:if isTrue="{!v.hasInternalDate}">
+                                    <div class="slds-grid">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField aura:id="internaDate2"
+                                                fieldName="Phoenix_Internal_Target_Date__c" required="true"
+                                                disabled="{!v.bidSubmitted}" />
+                                        </div>
+                                        <!-- <div class="slds-col slds-size_1-of-2">
+                                              <lightning:inputField fieldName="Phoenix_Sales_Person_2__c"/>
+                                        </div>-->
+                                    </div>
+                                </aura:if>
+                                <div class="slds-grid">
+
+                                    <aura:if isTrue="{!v.BidType=='RFP Bids'}">
+                                        <!-- <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField fieldName="Phoenix_Proposed_Position__c"/>
+                                        </div>-->
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(v.NoCustContact==true,v.BidType!='Contracts Only')}">
+
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField aura:id='salesperson' disabled="{!v.bidSubmitted}" required="true"
+                                                fieldName="Phoenix_Salesperson__c" />
+                                        </div>
+                                        <!--      <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField fieldName="Phoenix_Sales_Person_2__c"
+                                                disabled="{!v.bidSubmitted}" />
+                                        </div>
+-->
+
+
+                                    </aura:if>
+                                    <!-- <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="Phoenix_Comments__c"/>
+                                    </div>  
+                                    <aura:if isTrue="{!or(v.BidType=='Allocation Review',v.BidType=='Customer Requested Pricing Confirmations')}">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField fieldName="Phoenix_Review_Details__c" />
+                                        </div>
+                                    </aura:if>-->
+
+                                </div>
+                                
+                                <div class="slds-grid">
+                                    <aura:if isTrue="{!and(v.BidType !='OTC OTB Good Dated',and(v.BidType !='OTC OTB Short Dated',and(v.BidType !='OTC New Product',and(v.BidType !='OTC RFP',and(v.BidType !='OTC Price Change',and(v.BidType !='OTC Rebate Change',and(v.BidType !='OTC Volume Review',v.BidType !='OTC Product Addition')))))))}">
+                                    <aura:if isTrue="{!v.isABCCustomer}">
+
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField fieldName="Phoenix_Template_Type__c"
+                                                required="true" />
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.isBothTemplate}">
+
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField fieldName="Phoenix_Template_Type_GSMS__c"
+                                                required="true" />
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.isROSTemplate}">
+
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField fieldName="Phoenix_Template_Type_ROS__c"
+                                                required="true" />
+                                        </div>
+                                    </aura:if>
+                                   <aura:if isTrue="{!v.isHumanaTemplate}">
+
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField fieldName="Phoenix_Template_Type_Humana__c"
+                                                required="true" />
+                                        </div>
+                                    </aura:if>
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(v.BidType !='OTC OTB Good Dated',and(v.BidType !='OTC OTB Short Dated',and(v.BidType !='OTC New Product',and(v.BidType !='OTC RFP',and(v.BidType !='OTC Price Change',and(v.BidType !='OTC Rebate Change',and(v.BidType !='OTC Volume Review',v.BidType !='OTC Product Addition')))))))}">
+                                        <aura:if isTrue="{!and(v.NoCustContact==true,v.BidType!='Contracts Only')}">
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Phoenix_Formal_Offer_Needed__c"
+                                                                      disabled="{!v.bidSubmitted}" />
+                                            </div>
+                                        </aura:if>
+                                    </aura:if>
+                                </div>
+
+                                <!--      <div class="slds-grid">
+                                  <aura:if isTrue="{!!v.isCreate}">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <lightning:inputField fieldName="Phoenix_Customer_Type__c" />
+                                </div>
+                                </aura:if>                                                            
+                            </div>-->
+                            </lightning:accordionSection>
+                            <aura:if isTrue="{!v.deadLineValue==true}">
+                                <lightning:accordionSection name="Bid Deadline Info" label="Bid Deadline Info">
+                                    <div class="slds-grid">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <div class="slds-grid">
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <lightning:inputField aura:id="intTargetDate"
+                                                        fieldName="Phoenix_Internal_Target_Date__c" required="true"
+                                                        disabled="{!v.bidSubmitted}" />
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <lightning:inputField aura:id="deadLineDate"
+                                                        fieldName="Phoenix_Bid_Deadline_Date__c"
+                                                        disabled="{!v.bidSubmitted}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <div class="slds-grid">
+
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <lightning:inputField
+                                                        fieldName="Phoenix_Customer_Bid_Deadline_Time_zone__c"
+                                                        disabled="{!v.bidSubmitted}" />
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <lightning:inputField
+                                                        fieldName="Phoenix_Customer_Bid_Deadline_Time__c"
+                                                        disabled="{!v.bidSubmitted}" />
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </lightning:accordionSection>
+                            </aura:if>
+                            <lightning:accordionSection name="Comments" label="Comments">
+                                <div class="slds-grid">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:inputField fieldName="Phoenix_Comments__c"
+                                            disabled="{!v.bidSubmitted}" />
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <div class="slds-p-around_small">
+                                            <div style="width:50%">
+                                                <lightning:fileUpload label="" name="fileUploader"
+                                                    disabled="{!v.bidSubmitted}" variant="label-hidden"
+                                                    accept="{!v.filetype}" multiple="true"
+                                                    onuploadfinished="{!c.handleUploadFinished}" class="hideSpan" />
+                                            </div>
+
+                                            <div style="margin-top:5px">
+                                                <b>
+                                                    <p>List of Attachments ({!v.fileList.length})</p>
+                                                </b><br></br>
+                                                <aura:iteration items="{!v.fileList}" var="file" indexVar="itemIndex">
+                                                    <p class="slds-m-bottom_small" data-name="{!file.documentId}"
+                                                        style="cursor:pointer;">
+                                                        <lightning:buttonIcon iconName="utility:delete" size="small"
+                                                            name="{!file.documentId}" onclick="{!c.deleteAttachment }"
+                                                            variant="border-filled" alternativeText="Delete Document"
+                                                            title="Delete Document" />
+                                                        <a class="slds-m-left_small" href="{!'/'+file.documentId}"
+                                                            target="_blank">{!itemIndex+1}.&nbsp;{!file.name} </a>
+                                                    </p>
+                                                </aura:iteration>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!--  <aura:if isTrue="{!or(v.BidType=='Allocation Review',v.BidType=='Customer Requested Pricing Confirmations')}">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:inputField fieldName="Phoenix_Review_Details__c" required="true"/>
+                                        </div>
+                                    </aura:if>-->
+                                </div>
+                            </lightning:accordionSection>
+                        </lightning:accordion>
+                        <!-- end of new logic for bid type recordtype sake -->
+                    </aura:if>
+                </div>
+
+                <aura:if isTrue="{!!empty(v.BidType)}">
+                    <div class="modal-footer slds-modal__footer slds-align_absolute-center" role="banner">
+                        <lightning:button class="slds-m-top_medium" variant="neutral" label="Cancel"
+                            onclick="{!c.closeQuickActionPanel}" />
+                        <lightning:button class="slds-m-top_medium" variant="brand" type="submit" label="Save"
+                             />
+                        <!--lightning:button class="slds-m-top_medium" variant="brand" type="submit" label="SaveNext" onclick="{!c.onSaveNext}"/-->
+                    </div>
+                </aura:if>
+            </div>
+            <aura:if isTrue="{!v.loading}">
+                <lightning:spinner alternativeText="Loading" />
+            </aura:if>
+        </lightning:recordEditForm>
+    </div>
+
+    <!-- <div class="">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" aura:id="model" class=" slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <aura:if isTrue="{!v.isCreate}">
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">New Bid</h2>
+                        <aura:set attribute="else">
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Edit {!v.WrapperObect.bid.Name}</h2>
+                        </aura:set>
+                    </aura:if>
+                </header>
+                <div aura:id="mdCont" class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p>
+                        <lightning:recordEditForm   aura:id="recordEditFormForNewBid"
+                                                  recordId="{!v.recordId}" 
+                                                  objectApiName="Phoenix_Bid__c" 
+                                                  onload="{!c.handleOnload}"
+                                                  onerror="{!c.handleOnError}"
+                                                  onsubmit="{!c.handleSubmit}"
+                                                  onsuccess="{!c.redirectToDetailPage}" >
+                            <lightning:messages aura:id="BidMessage" />
+                          
+                              
+                                  
+                                  <div class="slds-p-horizontal_medium">
+                                       <span>
+                                            <lightning:inputField fieldName="Phoenix_Bid_Type__c" onchange="{!c.bidTypeChange}" disabled="{!v.hasLines}"/>
+                                      </span>
+                                      </div>
+                                   
+                                    <aura:if isTrue="{!!empty(v.BidType)}">
+                                        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{!v.activeSections}">
+                                            <lightning:accordionSection name="Bid Information" label="Bid Information">                               
+                                              
+                                                <div class="slds-grid">
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <lightning:inputField fieldName="Phoenix_Bid_Name__c"/>
+                                                    </div>
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <lightning:inputField fieldName="Phoenix_Bid_Created_Behalf_of__c"/>
+                                                    </div>
+                                                  
+                                                </div>
+                                                <aura:if isTrue="{!v.NoCustContact}">
+                                                    <div class="slds-grid">
+                                                        <div class="slds-col slds-size_1-of-2">
+                                                            <lightning:inputField fieldName="Phoenix_Customer__c"   aura:id="customerVal" required="true" disabled="{!and(v.hasLines,v.NoCustContact)}"/>
+                                                        </div>
+                                                        <div class="slds-col slds-size_1-of-2">
+                                                            <lightning:inputField fieldName="Phoenix_Contact__c" />
+                                                        </div>
+                                                    </div>
+                                                </aura:if>                           
+                                                <div class="slds-grid">
+                                                    
+                                                    
+                                                    
+                                                </div>
+                                                <aura:if isTrue="{!or(v.BidType=='RCA/IPA Member GPO or Wholesaler Change',v.BidType=='RCA/IPA Member Addition')}">
+                                                    <div class="slds-grid">
+                                                        <div class="slds-col slds-size_1-of-2">
+                                                            <lightning:inputField fieldName="Phoenix_RCA_Agreement__c"/>
+                                                        </div>
+                                                        <div class="slds-col slds-size_1-of-2">
+                                                            <lightning:inputField fieldName="Phoenix_RCA_Change_Date__c"/>
+                                                        </div>
+                                                    </div>
+                                                </aura:if>
+                                              
+                                                <div class="slds-grid">
+                                                    
+                                                    <aura:if isTrue="{!v.BidType=='RFP Bids'}">
+                                                        <div class="slds-col slds-size_1-of-2">
+                                                            <lightning:inputField fieldName="Phoenix_Proposed_Position__c"/>
+                                                        </div>
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!v.NoCustContact}">
+                                                        <div class="slds-col slds-size_1-of-2">
+                                                            <lightning:inputField fieldName="Phoenix_Formal_Offer_Needed__c"/>
+                                                        </div>  
+                                                    </aura:if>
+                                                 
+                                                    
+                                                </div>
+                                                
+                                             
+                                            </lightning:accordionSection>
+                                            <aura:if isTrue="{!v.deadLineValue}">
+                                                <lightning:accordionSection name="Customer Bid Deadline Info" label="Customer Bid Deadline Info">
+                                                    <div class="slds-grid">
+                                                        <div class="slds-col slds-size_1-of-2">
+                                                            <div class="slds-grid">
+                                                                <div class="slds-col slds-size_1-of-2">
+                                                                    <lightning:inputField fieldName="Phoenix_Internal_Target_Date__c"/>
+                                                                </div>
+                                                                <div class="slds-col slds-size_1-of-2">
+                                                                    <lightning:inputField aura:id="deadLineDate" fieldName="Phoenix_Bid_Deadline_Date__c"  />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="slds-col slds-size_1-of-2">
+                                                            <div class="slds-grid">
+                                                                
+                                                                <div class="slds-col slds-size_1-of-2">
+                                                                    <lightning:inputField fieldName="Phoenix_Customer_Bid_Deadline_Time_zone__c"  />
+                                                                </div> 
+                                                                <div class="slds-col slds-size_1-of-2">
+                                                                    <lightning:inputField fieldName="Phoenix_Customer_Bid_Deadline_Time__c"/>
+                                                                </div> 
+                                                            </div>
+                                                            
+                                                        </div>
+                                                    </div>                                    
+                                                </lightning:accordionSection>
+                                            </aura:if>
+                                            <lightning:accordionSection name="Comments" label="Comments">
+                                                <div class="slds-grid">
+                                                    <div class="slds-col slds-size_1-of-2">
+                                                        <lightning:inputField fieldName="Phoenix_Comments__c"/>
+                                                    </div>  
+                                                    <aura:if isTrue="{!or(v.BidType=='Allocation Review',v.BidType=='Customer Requested Pricing Confirmations')}">
+                                                        <div class="slds-col slds-size_1-of-2">
+                                                            <lightning:inputField fieldName="Phoenix_Review_Details__c" />
+                                                        </div>
+                                                    </aura:if>
+                                                </div>
+                                            </lightning:accordionSection>
+                                        </lightning:accordion> 
+                                      
+                                    </aura:if>
+
+                                <aura:if isTrue="{!!empty(v.BidType)}">
+                                    <div class="modal-footer slds-modal__footer slds-align_absolute-center" role="banner">
+                                        <lightning:button class="slds-m-top_medium" variant="neutral" label="Cancel" onclick="{!c.closeQuickActionPanel}" />
+                                        <lightning:button class="slds-m-top_medium" variant="brand" type="submit" label="Save" />
+                                     
+                                    </div>
+                                </aura:if>
+                           
+                            <aura:if isTrue="{!v.loading}">
+                                <lightning:spinner alternativeText="Loading" />
+                            </aura:if>
+                        </lightning:recordEditForm>
+                        
+                    </p>
+                </div>
+            </div>
+        </section>
+    </div>-->
+
+</aura:component>

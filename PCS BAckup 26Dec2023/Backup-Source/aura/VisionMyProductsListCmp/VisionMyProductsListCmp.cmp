@@ -1,0 +1,347 @@
+<aura:component controller="VisionBidBusinessAnalysisCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="dateOptions" type="list" default="[
+                                                            {'label': 'Bid Submitted Date', 'value': 'Bid Submitted Date'},
+                                                            {'label': 'Bid Closed Date', 'value': 'Bid Closed Date'},
+                                                            {'label': 'Customer Response Date', 'value': 'Customer Response Date'},
+                                                            {'label': 'Submitted/Closed Date', 'value': 'Submitted/Closed'},
+                                                            ]" />
+    
+    <aura:attribute name="startDate" type="string" />  <!-- YYYY-MM-DD -->
+    <aura:attribute name="endDate" type="string" />
+    <aura:attribute name="FromDate" type="Date" />
+    <aura:attribute name="ToDate" type="Date" />
+    <aura:attribute name="selectedDate" type="string" default="Bid Closed Date" />
+    <aura:attribute name="totalMap" type="Object" />
+    <aura:attribute name="totalFamilySummaryMap" type="Object" />
+    <aura:attribute name="categoryTotals" type="Object" />
+    <aura:attribute name="scmDataList" type="list" />
+    <aura:attribute name="currentTabId" type="String" default="tabThree" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" />
+    
+    <aura:handler name = "init" value ="{!this}" action = "{!c.doInit}"/>
+    
+    <aura:if isTrue="{!v.isSpinnerLoad}">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+    <div class="slds-grid">
+        <div class="slds-grid slds-col slds-size_4-of-12" style="border: 1px solid #cdcdcd;border-radius: 6px;margin: 0px 4px;padding-bottom: 4px;">
+            <div class="slds-col slds-size_1-of-3" style="padding: 4px 4px 4px 4px;">
+                <lightning:combobox name="date" label="Based on" value="Bid Closed Date" placeholder="Date Based on" options="{! v.dateOptions }" onchange="{! c.dateBasedOn }"/>
+            </div>
+            <div class="slds-col slds-size_1-of-3" style="padding: 4px 4px 4px 0px;">
+                <lightning:input aura:id="date1" type="date" name="date1" label="Start Date" dateStyle="medium" value="{!v.startDate}" fieldLevelHelp="{!v.selectedDate}"/>
+            </div>
+            <div class="slds-col slds-size_1-of-3" style="padding: 4px 4px 4px 0px;">
+                <lightning:input aura:id="date2" type="date" name="date2" label="End Date" dateStyle="medium" value="{!v.endDate}" fieldLevelHelp="{!v.selectedDate}"/>
+            </div>
+            <div style="text-align: center; margin: auto; margin-left: 8px;">
+                <lightning:button variant="brand" label="Calculate" title="Calculate" onclick="{!c.collectData }"/>
+            </div>
+        </div>
+    </div>
+    <aura:if isTrue="{!v.scmDataList.length != 0}">
+        <div class="slds-box" style="height:auto;padding: 4px 4px 0px 4px;margin-top: 10px;">
+            <div aura:id="mainDiv" style="min-height: 175px; max-height: 600px;height:auto;overflow:auto;margin-top:6px; border-radius: 8px;">
+                <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px; margin: auto;">
+                    <thead class="headerOfTable">
+                        <tr>
+                            <th class="mainHeaderSticky"></th>
+                            <th class="mainHeaderSticky"></th>
+                            <th class="mainHeaderSticky"></th>
+                            <th class="mainHeaderSticky"></th>
+                            <th class="mainHeaderSticky"></th>
+                            <th colspan="4" style="text-align: center;" class="mainHeaderSticky">
+                                Dead Net Sales
+                            </th>
+                            <th colspan="2" style="text-align: center;" class="mainHeaderSticky">
+                                Quantity
+                            </th>
+                            <th colspan="2" style="text-align: center;" class="mainHeaderSticky">
+                                Deadnet Price
+                            </th>
+                            <th colspan="4" style="text-align: center;" class="mainHeaderSticky">
+                                TPT
+                            </th>
+                            <th colspan="4" style="text-align: center;" class="mainHeaderSticky">
+                                Variance
+                            </th>
+                        </tr>
+                        <tr id="styleids">
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;padding: 4px 8px;"></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;padding: 4px 8px;"><b><p>Product Name</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;padding: 4px 8px;"><b><p>Customer</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Bid Status</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Impacted Months</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Previous</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Current</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Annual Impact</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>FY Business Impact</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Previous</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Awarded</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Previous</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;padding: 4px 8px;"><b><p>Current</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Previous($)</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Current($)</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Previous(%)</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Current(%)</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Price($)</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Volume($)</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Total($)</p></b></th>
+                            <th class="slds-truncate headerSticky"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>TPT($)</p></b></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:if isTrue="{!v.scmDataList.length != 0}">
+                            <aura:iteration items="{!v.totalMap}" var="data" indexVar="index">
+                                <c:VisionBidBusinessAnalysisChild currentTabId="{!v.currentTabId}" familySummaryMap="{!v.totalFamilySummaryMap}" record="{!data}" index="{!index}"/>
+                            </aura:iteration>
+                            <tr style="font-weight: bold;background-color: #F3F3F3;">
+                                <td colspan="5" style="text-align: center;"><b>Total</b></td>
+                                <aura:if isTrue="{!and(v.categoryTotals.totalPreviousTotal != null, v.categoryTotals.totalPreviousTotal != 0)}">
+                                    <td style="text-align: center;color: green;">
+                                        <ui:outputCurrency aura:id="curr" value="{!v.categoryTotals.totalPreviousTotal}" format="$##,##,###,###"/>
+                                    </td>
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!v.categoryTotals.totalPreviousTotal == 0}">
+                                            <td style="text-align: center;color: green;" title="{!v.categoryTotals.totalPreviousTotal}">
+                                                $0
+                                            </td>
+                                            <aura:set attribute="else">
+                                                <td style="text-align: center;">
+                                                    N/A
+                                                </td>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                                <aura:if isTrue="{!and(v.categoryTotals.totalCurrentTotal != null, v.categoryTotals.totalCurrentTotal != 0)}">
+                                    <td style="text-align: center;color: green;">
+                                        <ui:outputCurrency aura:id="curr" value="{!v.categoryTotals.totalCurrentTotal}" format="$##,##,###,###"/>
+                                    </td>
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!v.categoryTotals.totalCurrentTotal == 0}">
+                                            <td style="text-align: center;color: green;" title="{!v.categoryTotals.totalCurrentTotal}">
+                                                $0
+                                            </td>
+                                            <aura:set attribute="else">
+                                                <td style="text-align: center;">
+                                                    N/A
+                                                </td>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                                <aura:if isTrue="{!and(v.categoryTotals.totalAnnualImpact != null, v.categoryTotals.totalAnnualImpact != 0)}">
+                                    <aura:if isTrue="{!greaterthan(v.categoryTotals.totalAnnualImpact, 0)}">
+                                        <td style="text-align: center;color: green;">
+                                            <ui:outputCurrency aura:id="curr" value="{!v.categoryTotals.totalAnnualImpact}" format="$##,##,###,###"/>
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <td style="text-align: center;color: red;">
+                                                <ui:outputCurrency aura:id="curr" value="{!v.categoryTotals.totalAnnualImpact}" format="$##,##,###,###"/>
+                                            </td>                    
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!v.categoryTotals.totalAnnualImpact == 0}">
+                                            <td style="text-align: center;color: green;" title="{!v.categoryTotals.totalAnnualImpact}">
+                                                $0
+                                            </td>
+                                            <aura:set attribute="else">
+                                                <td style="text-align: center;">
+                                                    N/A
+                                                </td>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                                <aura:if isTrue="{!and(v.categoryTotals.totalBusinessImpact != null, v.categoryTotals.totalBusinessImpact != 0)}">
+                                    <aura:if isTrue="{!greaterthan(v.categoryTotals.totalBusinessImpact, 0)}">
+                                        <td style="text-align: center;color: green;">
+                                            <ui:outputCurrency aura:id="curr" value="{!v.categoryTotals.totalBusinessImpact}" format="$##,##,###,###"/>
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <td style="text-align: center;color: red;">
+                                                <ui:outputCurrency aura:id="curr" value="{!v.categoryTotals.totalBusinessImpact}" format="$##,##,###,###"/>
+                                            </td>                    
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!v.categoryTotals.totalBusinessImpact == 0}">
+                                            <td style="text-align: center;color: green;" title="{!v.categoryTotals.totalBusinessImpact}">
+                                                $0
+                                            </td>
+                                            <aura:set attribute="else">
+                                                <td style="text-align: center;">
+                                                    N/A
+                                                </td>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                                <td style="text-align: center;">
+                                    <lightning:formattedNumber value="{!v.categoryTotals.totalPreviousQty}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: center;">
+                                    <lightning:formattedNumber value="{!v.categoryTotals.totalAwardedQty}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td style="text-align: center;">
+                                    <aura:if isTrue="{!greaterthan(v.categoryTotals.totalPreviousTPT, 0)}">
+                                        <span style="margin-left: 4px;color: green;">
+                                            <lightning:formattedNumber value="{!v.categoryTotals.totalPreviousTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                    <aura:if isTrue="{!lessthan(v.categoryTotals.totalPreviousTPT, 0)}">
+                                        <span style="margin-left: 4px;color: red;">
+                                            <lightning:formattedNumber value="{!v.categoryTotals.totalPreviousTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                    <aura:if isTrue="{!equals(v.categoryTotals.totalPreviousTPT, 0)}">
+                                        <span style="margin-left: 4px;color: green;">
+                                            <lightning:formattedNumber value="{!v.categoryTotals.totalPreviousTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                </td>
+                                <td style="text-align: center;">
+                                    <aura:if isTrue="{!greaterthan(v.categoryTotals.totalCurrentTPT, 0)}">
+                                        <span style="margin-left: 4px;color: green;">
+                                            <lightning:formattedNumber value="{!v.categoryTotals.totalCurrentTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                    <aura:if isTrue="{!lessthan(v.categoryTotals.totalCurrentTPT, 0)}">
+                                        <span style="margin-left: 4px;color: red;">
+                                            <lightning:formattedNumber value="{!v.categoryTotals.totalCurrentTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                    <aura:if isTrue="{!equals(v.categoryTotals.totalCurrentTPT, 0)}">
+                                        <span style="margin-left: 4px;color: green;">
+                                            <lightning:formattedNumber value="{!v.categoryTotals.totalCurrentTPT}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                </td>
+                                <td style="text-align: center;">
+                                    <lightning:formattedNumber value="{!v.categoryTotals.previousTPTPer}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: center;">
+                                    <lightning:formattedNumber value="{!v.categoryTotals.currentTPTPer}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </td>
+                                <td style="text-align: center;">
+                                    <aura:if isTrue="{!greaterthan(v.categoryTotals.totalPriceVariance, 0)}">
+                                        <span style="margin-left: 4px;color: green;">
+                                            <lightning:formattedNumber value="{!v.categoryTotals.totalPriceVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                    <aura:if isTrue="{!lessthan(v.categoryTotals.totalPriceVariance, 0)}">
+                                        <span style="margin-left: 4px;color: red;">
+                                            <lightning:formattedNumber value="{!v.categoryTotals.totalPriceVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                    <aura:if isTrue="{!equals(v.categoryTotals.totalPriceVariance, 0)}">
+                                        <span style="margin-left: 4px;color: green;">
+                                            <lightning:formattedNumber value="{!v.categoryTotals.totalPriceVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                </td>
+                                <td style="text-align: center;">
+                                    <aura:if isTrue="{!greaterthan(v.categoryTotals.totalVolumeVariance, 0)}">
+                                        <span style="margin-left: 4px;color: green;">
+                                            <lightning:formattedNumber value="{!v.categoryTotals.totalVolumeVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                    <aura:if isTrue="{!lessthan(v.categoryTotals.totalVolumeVariance, 0)}">
+                                        <span style="margin-left: 4px;color: red;">
+                                            <lightning:formattedNumber value="{!v.categoryTotals.totalVolumeVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                    <aura:if isTrue="{!equals(v.categoryTotals.totalVolumeVariance, 0)}">
+                                        <span style="margin-left: 4px;color: green;">
+                                            <lightning:formattedNumber value="{!v.categoryTotals.totalVolumeVariance}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                </td>
+                                <aura:if isTrue="{!and(v.categoryTotals.totalAnnualImpact != null, v.categoryTotals.totalAnnualImpact != 0)}">
+                                    <aura:if isTrue="{!greaterthan(v.categoryTotals.totalAnnualImpact, 0)}">
+                                        <td style="text-align: center;color: green;">
+                                            <lightning:formattedNumber value="{!v.categoryTotals.totalAnnualImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <td style="text-align: center;color: red;">
+                                                <lightning:formattedNumber value="{!v.categoryTotals.totalAnnualImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            </td>                    
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!v.categoryTotals.totalAnnualImpact == 0}">
+                                            <td style="text-align: center;" title="{!v.categoryTotals.totalAnnualImpact}">
+                                                $0
+                                            </td>
+                                            <aura:set attribute="else">
+                                                <td style="text-align: center;">
+                                                    N/A
+                                                </td>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                                <td style="text-align: center;">
+                                    <aura:if isTrue="{!greaterthan((v.categoryTotals.totalCurrentTPT-v.categoryTotals.totalPreviousTPT), 0)}">
+                                        <span style="margin-left: 4px;color: green;">
+                                            <lightning:formattedNumber value="{!(v.categoryTotals.totalCurrentTPT-v.categoryTotals.totalPreviousTPT)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                    <aura:if isTrue="{!lessthan((v.categoryTotals.totalCurrentTPT-v.categoryTotals.previousTPTBG), 0)}">
+                                        <span style="margin-left: 4px;color: red;">
+                                            <lightning:formattedNumber value="{!(v.categoryTotals.totalCurrentTPT-v.categoryTotals.totalPreviousTPT)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                    <aura:if isTrue="{!equals((v.categoryTotals.totalCurrentTPT-v.categoryTotals.previousTPTBG), 0)}">
+                                        <span style="margin-left: 4px;color: green;">
+                                            <lightning:formattedNumber value="{!(v.categoryTotals.totalCurrentTPT-v.categoryTotals.totalPreviousTPT)}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </aura:if>
+                                </td>
+                            </tr>
+                            <aura:set attribute="else">
+                                <tr>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td style="text-align: center;"></td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                    <td style="text-align: center;">-</td>
+                                </tr>
+                            </aura:set>
+                        </aura:if>
+                    </tbody>
+                </table><br/>
+            </div>
+        </div><br/>
+    </aura:if>
+</aura:component>

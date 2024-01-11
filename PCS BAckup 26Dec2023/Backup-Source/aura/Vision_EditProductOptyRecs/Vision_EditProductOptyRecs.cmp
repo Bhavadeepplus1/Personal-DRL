@@ -1,0 +1,247 @@
+<aura:component  controller="Vision_OpportunityCreator" implements="lightning:isUrlAddressable,force:hasRecordId,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithOutHeader" access="global" >
+    <aura:attribute name="recordId" type="String"  />
+    <aura:attribute name="pageReference" type="Object"/>
+    
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.pageReferenceChangeHandler}"/>
+    <aura:attribute name="optyObj" type="Object" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:attribute name="wrap" type="Object" description="To hold all objects" />
+    <aura:attribute name="selectedProductsIds" type="list" description="Selected Product details" default="[]"/>
+    
+    <aura:attribute name="QLlist" type="list" description="All Product details" default="[]" />
+    <aura:attribute name="QLlist1" type="list" description="All Product details" default="[]" />
+    <aura:attribute name="modalProductList" type="Object[]" description="used to store the selected products to display in Modal popup"/>
+    <aura:attribute name="ProductList" type="Object[]" description="used to store the product list to display in table"/>
+    <aura:attribute name="ProductCopyList" type="Object[]" description="used to store the product list to display in table"/>
+    
+    <aura:attribute name="Allproduct" type="Object[]" description="used to store the product list to display in table"/>
+    <aura:attribute name="allData" type="List" description="used to store the product list"/>
+    <aura:attribute name="searchText" type="String"/>
+    <aura:attribute name="templateType" type="String"/>
+    <aura:attribute name="bidType" type="String"/>
+    <aura:attribute name="goToProducts" type="boolean" default="false" />
+    <aura:attribute name="currencyCode" type="String" default="$"/>
+    <aura:attribute name="searchFamily" type="String"/>
+    <aura:attribute name="selectedCount" type="integer" default="0" description="selected Records Count"/>
+    <aura:attribute name="showbutton" type="Boolean" default="true" description="disable the button when no records selected"/>
+    <aura:attribute name="search" type="Boolean" default="true" description="use for display search records"/>
+    <aura:attribute name="currentPageNumber" type="Integer" default="1"/>
+    <aura:attribute name="pageSize" type="Integer" default="100"/>
+    <aura:attribute name="totalPages" type="Integer" default="0"/>
+    <aura:attribute name="pageList" type="List"/>
+    <aura:attribute name="totalRecordsCount" type="Integer" default="0" description="display the total number of records"/>
+    <aura:attribute name="showProducts" type="Boolean" default="false" />
+    <aura:attribute name="isQLlistempty" type="Boolean" default="false" />
+    <aura:attribute name="noProducts" type="Boolean" default="false" />
+    <aura:attribute name="noData" type="Boolean" default="false" />
+    <aura:attribute name="isModalOpen" type="Boolean" default="false" />
+    <aura:attribute name="showSelectedProducts" type="Boolean" default="false" />
+    <aura:attribute name="showSpinnerSelProds" type="Boolean" default="false" />
+    <aura:attribute name="showImportSpinner" type="Boolean" default="false" />
+    <aura:attribute name="selectAll" type="Boolean" default="false" />
+    <aura:attribute name="arrowDirection" type="string" default="arrowup" description="Use for change arrow sign direction on header based on click"/>
+    <aura:attribute name="isAsc" type="boolean" default="true" description="boolean flag for pass sorting condition to apex class"/>
+    <aura:attribute name="selectedTabsoft" type="string" default="ProductName" description="Use for show/hide arraow sign on header based on conditions"/>
+    <aura:attribute name="RxSrxList" type="List"  />
+    <aura:attribute name="isRxChecked" type="boolean" default="false" />
+    <aura:attribute name="isSRxChecked" type="boolean" default="false" />
+    <aura:attribute name="isOtcChecked" type="boolean" default="false" />
+    <aura:attribute name="lstSelectedPDRecords" type="sObject[]" default="[]" description="Use,for store SELECTED sObject Records"/>
+    <aura:attribute name="listOfSearchPDRecords" type="List" description="Use,for store the list of search records which returns from apex class" />
+    <aura:attribute name="defaultlistOfProductDirectors" type="List" />
+    <aura:attribute name="MessagePD" type="String" default=""/>
+    <aura:attribute name="selectedProductsCount" type="integer" default="0" description="Already selected Product Records Count"/>
+    <aura:attribute name="lstDisablePDRecords" type="sObject[]" default="[]" description="Use,for store SELECTED sObject Records to avoid duplicates"/>
+    
+    
+    
+    <aura:attribute name="SearchKeyWordPD" type="string"/>
+    <aura:attribute name="showImportModal" type="Boolean" default="false" />
+    
+    <aura:handler name="PDSelectedRecordEvent" event="c:Phoenix_AddProductDirectorSearchEvt" action="{!c.handleComponentEventProdDir}"/>
+    
+    <lightning:navigation aura:id="navigationService" />
+    
+    <!-- Attributes for Contract view  Starts-->
+    
+    <aura:attribute name="showContracts" type="Boolean" default="false" />
+    <aura:attribute name="isContractSelectionNeeded" type="Boolean" default="false" />
+    <aura:attribute name="bidCustomerId" type="String" />
+    
+    <aura:attribute name="contratcsList" type="Phoenix_Contract__c[]"/>
+    <aura:attribute name="selectedContratcsIdList" type="List"/>
+    <aura:attribute name="productsList" type="Product2[]"/>
+    <aura:attribute name="isSpinnerLoad" type="Boolean" default="false"/>
+    <aura:attribute name="navigateToComponent" type="Boolean" default="false"/>
+    
+    <aura:attribute name="selectedRowsCount" type="Integer" default="0"/>
+    <aura:attribute name="selectedCntrcts" type="List"/>
+    
+    <aura:attribute name="listOfAllAccounts" type="list"/> 
+    <aura:attribute name="PaginationList" type="list"/> 
+    <aura:attribute name="startPage" type="Integer" />
+    <aura:attribute name="endPage" type="Integer"/>
+    <aura:attribute name="totalRecordsCountCV" type="Integer"/>
+    <aura:attribute name="pageSizeCV" type="Integer" default="100" description="number of records to be display on per page"/>
+    <aura:attribute name="currentPage" type="integer" default="1"/>
+    <aura:attribute name="totalPagesCount" type="integer"/>
+    <aura:attribute name="bNoRecordsFound" type="boolean"/>
+    <aura:attribute name="searchValue" type="string" default=''/>
+    <aura:attribute name="allContractsChecked" type="boolean" default='false'/>
+    <aura:attribute name="selectedContId" type="list" />
+    
+    <aura:attribute name="isFirstPage" type="boolean" default="false"/>
+    <aura:attribute name="isLastPage" type="boolean" default="false"/>
+    <aura:attribute name="isSelectedNo" type="integer" default="1"/>
+    
+    
+    <aura:attribute name="allDataCV" type="List" />
+    <aura:attribute name="filteredData" type="List" />
+    
+    <aura:attribute name="showDraftView" type="boolean" default='true'/>
+    
+    <!-- Attributes for Contract view Ends -->
+    <!-- Import attributes start  -->
+    <aura:attribute name="ShowModule" type="boolean" default="false"/>
+    
+    <aura:attribute name="hasFile" type="boolean" default="false"/>
+    <aura:attribute name="TotalRecords" type="string" default="0"/>
+    <aura:attribute name="SuccessRecords" type="string" default="0"/>
+    <aura:attribute name="ndcCount" type="string" default="0"/>
+    <aura:attribute name="upcCount" type="string" default="0"/>
+    <aura:attribute name="FailureRecords" type="string" default="0"/>
+    <aura:attribute name="duplicateRecords" type="string" default="0"/>
+    <aura:attribute name="responceobject" type="Object"/>
+    <aura:attribute name="listOfCompetitors" type="List" default="[]" />
+    <aura:attribute name="showSavedSelectedProducts" type="boolean"/>
+    <aura:attribute name="QLlistSaved" type="list" description="All Product details" default="[]" />
+    <aura:attribute name="isRecordSaved" type="boolean" default="true"/>
+    <aura:attribute name="optyId" type="string" />
+    <aura:registerEvent name="DeleteRowEvt" type="c:DeleteRowEvt"/>
+    <aura:handler name="DeleteRowEvt" event="c:DeleteRowEvt" action="{!c.removeDeletedRow}"/> 
+    
+    <aura:attribute name="errormsg" type="String" />
+    <aura:attribute name="isError" type="Boolean" default="false" />
+    <aura:attribute name="bidId" type="String" />
+    <aura:if isTrue="{!v.showSavedSelectedProducts}">
+        <aura:if isTrue="{!v.showSpinnerSelProds}">
+            <lightning:spinner variant="brand" class="spinColor" size="large" />
+        </aura:if>
+        <div class="slds-box" style="background: white;">
+            <aura:if isTrue="{!not(empty(v.QLlistSaved))}">
+                <!-- <h2  class="slds-modal__title slds-hyphenate" style="color:#675e5e; text-align:center;">
+                    <p style="font-size:21px;"><b>Edit Products</b></p>   
+                </h2> -->
+                <table class="customtable slds-table slds-table_cell_buffered slds-max-medium-table_stacked-horizontal slds-table_bordered" style="border:1px solid #eaeaea;">
+                    <thead>
+                        
+                        <tr class="slds-text-title">
+                            <!-- <th style="height: 29px;width: 57px;padding-left: 0px">
+                                <lightning:input type="checkbox"
+                                                 class="slds-checkbox"
+                                                 checked="{!v.selectAll}"
+                                                 aura:id="checkbox"
+                                                 onchange="{!c.selectAllCheckbox}" />
+                            </th> -->
+                            <!-- <th scope="col" class="slds-text-align_left" style="padding: 4px;">
+                                <div>
+                                </div>
+                            </th> -->
+                            <th scope="col" class="slds-text-align_left">
+                                <div title="Product Name">
+                                    Product Name
+                                </div>
+                            </th>
+                            <th scope="col" class="slds-text-align_left">
+                                <div title="Product Code">
+                                    Product Code
+                                </div>
+                            </th>
+                            
+                            <!--<th scope="col" class="slds-text-align_left">
+                                    <div title="NDC - 11">
+                                        NDC - 11
+                                    </div>
+                                </th>
+                            <th scope="col" class="slds-text-align_right">
+                                <div class="slds-truncate" title="Lowest Price">
+                                    Lowest Price/ SKU
+                                </div>
+                            </th>-->
+                            <th scope="col" class="slds-text-align_right">
+                                <div class="slds-truncate" title="Pack Size">
+                                    Pack Size
+                                </div>
+                            </th>
+                            
+                            <!--<th scope="col" class="slds-text-align_right">
+                                <div title="WAC">
+                                    WAC
+                                </div>
+                            </th>-->
+                            <th scope="col" class="slds-text-align_right">
+                                <div class="slds-truncate" title="Proposed Units">
+                                    <abbr class="slds-required" title="required">*</abbr>
+                                    Proposed Units
+                                </div>
+                            </th>
+                            <!--<th scope="col" class="slds-text-align_right">
+                                <div class="slds-truncate" title="Sales Price">
+                                    Sales Proposed Price
+                                </div>
+                            </th>-->
+                            <th scope="col" class="slds-text-align_right">
+                                <div class="slds-truncate" title="Guidance Price">
+                                    Guidance Price
+                                </div>
+                            </th>
+                            <th scope="col" class="slds-text-align_right">
+                                <div class="slds-truncate" title="Guidance Price">
+                                    Lowest Price ($)
+                                </div>
+                            </th>
+                            <th scope="col" class="slds-text-align_right">
+                                <div class="slds-truncate" title="Opportunity Value">
+                                    Opportunity Value
+                                </div>
+                            </th>
+                            <!--<th scope="col" class="slds-text-align_left">
+                                        <div class="slds-truncate" title="Incumbent Competitor">
+                                            Incumbent Competitor
+                                        </div>
+                                    </th>
+                                    <th scope="col" class="slds-text-align_left">
+                                        <div class="slds-cell-wrap slds-truncate" title="Price Range">
+                                            Price Range
+                                        </div>
+                                    </th>-->
+                            
+                            <th scope="col" class="">
+                                <div title="delete">
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <aura:iteration items="{!v.QLlistSaved}" var="prodItem" indexVar="index">
+                            <c:Vision_AddOpportunityLines_Child singleSavedRec="{!prodItem}" optyId="{!v.optyId}" rowIndex="{!index}" listOfCompetitors ="{!v.listOfCompetitors}" isRecordSaved="{!v.isRecordSaved}"/>
+                        </aura:iteration>
+                    </tbody>
+                </table>
+            </aura:if>
+            <aura:if isTrue="{!v.isQLlistempty}">
+                <div style="text-align:center;">Please Add Products and Edit.</div>
+            </aura:if>
+            <div class="modal-footer slds-modal__footer slds-align_absolute-center" role="banner">
+                <lightning:button variant="neutral" label="Back" onclick="{!c.ShowProdList}" disabled="{!v.isRecordSaved}"/>
+                <lightning:button variant="neutral" label="Cancel" onclick="{!c.closeModal}" />
+                <lightning:button variant="brand" label="Save" disabled="{!v.QLlistSaved.length==0}"
+                                  onclick="{!c.saveProducts}" />
+                <lightning:button variant="brand" label="Save &amp; Close" disabled="{!v.QLlistSaved.length==0}"
+                                  onclick="{!c.insertProducts}" />
+            </div>
+        </div>
+        
+    </aura:if>
+</aura:component>

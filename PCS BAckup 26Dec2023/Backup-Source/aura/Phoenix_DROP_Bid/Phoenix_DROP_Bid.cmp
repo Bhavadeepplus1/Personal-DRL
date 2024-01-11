@@ -1,0 +1,75 @@
+<aura:component controller="Phoenix_BidDropCls" implements="force:lightningQuickActionWithoutHeader,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >  
+    
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="bidRecord" type="Object"/>
+    <aura:attribute name="recordLoadError" type="String"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="readyToDrop" type="Boolean" default="false" />
+    <aura:attribute name="dropBidComment" type="String" />
+    
+    
+    <force:recordData aura:id="recordLoader"
+                      recordId="{!v.recordId}"
+                      fields="Name,Phoenix_Approval_Status__c"
+                      targetFields="{!v.bidRecord}"
+                      targetError="{!v.recordLoadError}"
+                      />
+    
+    <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">  
+        <aura:if isTrue="{!v.showSpinner}">
+            <lightning:spinner variant="brand" class="spinColor" size="large" />
+        </aura:if>
+        
+        <div class="slds-modal__container">   
+            
+            <header class="slds-modal__header">
+                <h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Drop The Bid </h1>
+            </header>
+            <aura:if isTrue="{!(v.bidRecord.Phoenix_Approval_Status__c == 'Customer\'s Update')}" >
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.readyToDrop}">
+                        <lightning:textarea name="bidDropComments" placeholder="Please add commnet" value="{!v.dropBidComment}" label="Drop Bid Comment" required="true" />
+                        <!--<lightning:inputRichText value="{!v.dropBidComment}"  label="Comment" required="true"/>-->
+                        <aura:set attribute="else">
+                            <center><p>Are you sure you want to Drop this Bid?</p></center>
+                        </aura:set>
+                    </aura:if>
+                </div>
+                <aura:set attribute="else">
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <center><h1>You can't drop the bid as it is not in Customer's Update stage!!</h1></center>
+                    </div>
+                </aura:set>
+            </aura:if>
+            <footer class="slds-modal__footer"> 
+                <aura:if isTrue="{!v.readyToDrop}">
+                    <lightning:button variant="brand" name='Drop Bid' label='Drop Bid' onclick = "{!c.dropTheBid}" />
+                    <lightning:button  name='Cancel' label='Cancel' onclick = "{!c.closeQuickActionPanel}" />
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.bidRecord.Phoenix_Approval_Status__c == 'Customer\'s Update'}" >
+                            <lightning:button name='No' label='No' onclick = "{!c.closeQuickActionPanel}" />
+                            <lightning:button variant="brand" name='Yes' label='Yes' onclick = "{!c.readyforDrop}" />
+                            <aura:set attribute="else">
+                                <lightning:button variant="brand" name='Close' label='Close' onclick = "{!c.closeQuickActionPanel}" />
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </footer>
+            
+            
+        </div>
+    </section>
+    <!--
+   <aura:if isTrue="{!(v.bidRecord.Phoenix_Approval_Status__c == 'Draft')}" >
+       <lightning:recordEditForm recordId="{!v.recordId}" objectApiName="Phoenix_Bid__c" onsuccess="{!c.handleSuccess}">
+           <lightning:inputField fieldName="Phoenix_Approval_status_at_Hold__c" /> 
+           <lightning:button class="slds-m-top_small" variant="brand" type="submit" name="Save" label="Save" />
+       </lightning:recordEditForm>
+       <aura:set attribute="else">
+           <h1>You can't drop the Bid as it not in Draft Stage</h1>
+       </aura:set>
+   </aura:if>-->
+    
+    
+</aura:component>

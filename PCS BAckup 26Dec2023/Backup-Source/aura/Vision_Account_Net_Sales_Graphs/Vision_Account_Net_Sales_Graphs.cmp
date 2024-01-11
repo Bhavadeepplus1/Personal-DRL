@@ -1,0 +1,200 @@
+<aura:component controller = "Vision_Account_NetSales_Ctrl" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >    
+    <aura:attribute name="chartobj1" type="Object" access="public"/>
+    <aura:attribute name="chartobj2" type="Object" access="public"/>
+    <aura:attribute name="chartobj3" type="Object" access="public"/>
+    <aura:attribute name="chartobj4" type="Object" access="public"/>
+    <aura:attribute name="data" type="list" />    
+    <aura:attribute name="recentData" type="list" />    
+    <aura:attribute name="previousData" type="list" />    
+    <aura:attribute name="xAxisLabelsSummary" type="list" /> 
+    <aura:attribute name="headers" type="object" />
+    <aura:attribute name="customerId" type="string" />
+    <aura:attribute name="comparison" type="String" />
+    <aura:attribute name="selections" type="list" />
+    <aura:attribute name="index" type="integer" />
+    <aura:attribute name="isEXTChecked" type="boolean"/>
+    <aura:attribute name="keySet" type="list" />
+    <aura:attribute name="keySetPrev" type="list" />
+    <aura:attribute name="salesdl" type="list" />
+    <aura:attribute name="salesdlPrev" type="list" />
+    <aura:attribute name="unitsPrev" type="list" />
+    <aura:attribute name="units" type="list" /> 
+    <aura:attribute name="summaryObject" type="object" />
+    <aura:attribute name="summarysalesdl" type="Integer" />
+    <aura:attribute name="summarysalesdlPrev" type="Integer" />
+    <aura:attribute name="summaryunits" type="Integer" />
+    <aura:attribute name="summaryunitsPrev" type="Integer" />
+    <aura:attribute name="Q1sumSales" type="Integer" />
+    <aura:attribute name="Q1sumUnits" type="Integer" />
+    <aura:attribute name="prevQuadrant" type="Object" />
+    <aura:attribute name="Quadrant" type="Object" />
+    <aura:attribute name="QuadrantHeader" type="List" /> 
+    <aura:attribute name="QuadrantHeader2" type="List" />
+    <aura:attribute name="salesMonthlyrec" type="Integer" />
+    <aura:attribute name="salesMonthlyPrevrec" type="Integer" />
+    <aura:attribute name="unitsMonthlyPrevrec" type="Integer" />
+    <aura:attribute name="unitsMonthlyrec" type="Integer" />
+    <ltng:require scripts="{!$Resource.ChartJS}"/>
+    <ltng:require scripts="{!$Resource.ChartJQuery}" afterScriptsLoaded="{!c.doInit}"/>
+    <!--<aura:handler name="init" value ="{!this}" action="{!c.doInit}"/>-->
+    
+    
+    <div class="slds-box slds-m-bottom_x-small" id="{!v.index}" aura:id="name-input" style="border: 2px solid #cfcfcf;">
+        <div class="slds-box slds-align_absolute-center" style="padding:15px; margin: 0px 10px;background-color:#f0f0f0; font-size: 20px;">
+            <aura:if isTrue="{!v.data.customerName != null}">
+                <b>{!v.data.customerName}</b>
+                <aura:set attribute="else">
+                    <b>{!v.data.PFamilyName}</b>
+                </aura:set>
+            </aura:if>
+            <div class="slds-col_bump-left">
+                
+                
+                <a onclick="{!c.scrollToTop}">
+                    <lightning:icon  iconName="utility:home" alternativeText="Go to Home" size="x-small" title="Go To Home"/>
+                </a> &nbsp;
+                
+            </div>
+            
+        </div>
+        <div class="slds-grid" aura:id="individualCharts">
+            <div class="slds-col slds-size_1-of-2" style="padding: 8px;">
+                
+                <canvas aura:id="chart5" id="chart52" height="15" width="28"/>
+            </div>
+            <div class="slds-col slds-size_1-of-2" style="padding: 8px;">
+                <canvas aura:id="chart6" id="chart62" height="15" width="28"/>
+            </div>
+            
+        </div>
+        <aura:if isTrue="{!v.comparison != 'lastquartervspreviousquarter'}">
+            <div aura:id="mainDiv" style="max-height:430px;overflow:auto;margin-top:10px;border-radius: 0.25rem;border: 2px solid #cfcfcf;">
+                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                    <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered">
+                        <thead class="">
+                            <tr>
+                                <th></th>
+                                <aura:iteration items="{!v.keySet}" var="item" indexVar="index">
+                                    <th>   {!item} </th>
+                                </aura:iteration>
+                                <th>Total</th>
+                            </tr>
+                            <tr>
+                                <th>Sales</th>
+                                <aura:iteration items="{!v.salesdl}" var="item" indexVar="index">
+                                    <th> <lightning:formattedNumber value="{!item}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber></th>
+                                </aura:iteration>
+                                <th> <lightning:formattedNumber value="{!v.summarysalesdl}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber></th>
+                                
+                            </tr>
+                            <tr>
+                                <th>Quatity</th>
+                                <aura:iteration items="{!v.units}" var="item" indexVar="index">
+                                    <th><lightning:formattedNumber value="{!item}" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber></th>
+                                </aura:iteration>
+                                <th><lightning:formattedNumber value="{!v.summaryunits}" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber></th>
+                                
+                            </tr>
+                            <tr><th colspan="14"></th></tr>
+                            <tr>
+                                <th></th>
+                                <aura:iteration items="{!v.keySetPrev}" var="item" indexVar="index">
+                                    <th>   {!item} </th>
+                                </aura:iteration>
+                                <th>Total</th>
+                            </tr>
+                            <tr>
+                                <th>Sales</th>
+                                <aura:iteration items="{!v.salesdlPrev}" var="item" indexVar="index">
+                                    <th><lightning:formattedNumber value="{!item}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber> </th>
+                                </aura:iteration>
+                                <th><lightning:formattedNumber value="{!v.summarysalesdlPrev}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber> </th>
+                                
+                            </tr>
+                            <tr>
+                                <th>Quatity</th>
+                                <aura:iteration items="{!v.unitsPrev}" var="item" indexVar="index">
+                                    <th> <lightning:formattedNumber value="{!item}" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber> </th>
+                                </aura:iteration>
+                                <th> <lightning:formattedNumber value="{!v.summaryunitsPrev}" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber> </th>
+                                
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+  
+            <aura:set attribute="else">
+                
+                <div aura:id="mainDiv" style="max-height:430px;overflow:auto;margin-top:10px;border-radius: 0.25rem;border: 2px solid #cfcfcf;">
+                    <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                        <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered">
+                            <thead class="">
+                                <tr>
+                                    <th rowspan="2"></th>
+                                      <aura:if isTrue="{!v.QuadrantHeader2.length > 0}">
+                                    <th colspan="{!(v.QuadrantHeader2.length) + 1}" style="text-align:center">   {!v.headers.two} </th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.QuadrantHeader.length > 0}">
+                                    <th colspan="{!(v.QuadrantHeader.length) + 1}" style="text-align:center">   {!v.headers.one} </th>
+                                    </aura:if>  
+                                </tr>
+                                <tr>
+                                     <aura:if isTrue="{!v.QuadrantHeader2.length > 0}">
+                                    <aura:iteration items="{!v.QuadrantHeader2}" var="item" indexVar="index">
+                                        <th> {!item}</th>
+                                    </aura:iteration>
+                                    <th>Total</th>
+                                    </aura:if>
+                                     <aura:if isTrue="{!v.QuadrantHeader.length > 0}">
+                                    <aura:iteration items="{!v.QuadrantHeader}" var="item" indexVar="index">
+                                        <th> {!item}</th>
+                                    </aura:iteration>
+                                       <th>Total</th>
+                                    </aura:if>
+                                   
+                                </tr>
+                                <tr>
+                                    <th>Sales</th>
+                                    <aura:iteration items="{!v.salesMonthlyPrevrec}" var="item" indexVar="index">
+                                        <aura:if isTrue="{!item gt 0}">
+                                        <th> <lightning:formattedNumber value="{!item}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber></th>
+                                        </aura:if>
+                                        </aura:iteration>	
+                                     <aura:if isTrue="{!v.summarysalesdlPrev gt 0}">
+                                    <th> <lightning:formattedNumber value="{!v.summarysalesdlPrev}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber></th>
+                                    </aura:if>    <aura:iteration items="{!v.salesMonthlyrec}" var="item" indexVar="index">
+                                        <aura:if isTrue="{!item gt 0}">
+                                            <th> <lightning:formattedNumber value="{!item}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber></th>
+                                        </aura:if> </aura:iteration>
+                                    <aura:if isTrue="{!v.summarysalesdl gt 0}">
+                                    <th> <lightning:formattedNumber value="{!v.summarysalesdl}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber></th>
+                                    </aura:if> </tr>
+                                <tr>
+                                    <th>Quatity</th>
+                                    <aura:iteration items="{!v.unitsMonthlyPrevrec}" var="item" indexVar="index">
+                                    <aura:if isTrue="{!item gt 0}">
+                                        <th><lightning:formattedNumber value="{!item}" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber></th>
+                                        </aura:if>
+                                    </aura:iteration>
+                                      <aura:if isTrue="{!v.summaryunitsPrev gt 0}">
+                                    <th><lightning:formattedNumber value="{!v.summaryunitsPrev}" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber></th>
+                                    </aura:if>
+                                    <aura:iteration items="{!v.unitsMonthlyrec}" var="item" indexVar="index">
+                                   <aura:if isTrue="{!item gt 0}">
+                                       <th><lightning:formattedNumber value="{!item}" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber></th>
+                                        </aura:if>  </aura:iteration>
+                                     <aura:if isTrue="{!v.summaryunits gt 0}">
+                                    <th><lightning:formattedNumber value="{!v.summaryunits}" minimumFractionDigits="0" maximumFractionDigits="0"></lightning:formattedNumber></th>
+                                    </aura:if>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+                
+                
+            </aura:set> 
+        </aura:if>
+    </div>
+</aura:component>

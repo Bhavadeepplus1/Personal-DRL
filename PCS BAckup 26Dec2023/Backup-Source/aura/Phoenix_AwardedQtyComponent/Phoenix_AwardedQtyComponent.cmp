@@ -1,0 +1,165 @@
+<aura:component controller="Phoenix_AwardedQtycontroller" implements="flexipage:availableForAllPageTypes,force:hasRecordId,force:appHostable,lightning:isUrlAddressable" access="global">     
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>  
+    <!-- id's a0X0m000003OxUxEAK - no position data a0X0m000003MOcDEAW - 5 a0X0m000003Wrf9EAC-3 a0X0m000003Wrf7EAC - 3 a0X0m000003P0GvEAK - 1 a0X0m000003Wr8NEAS - 1  bid rec - a070m000004vip2AAA-->
+    <!-- plz pass customer response line id to this attribute "CustResLineId" -->
+    <aura:attribute name="CustResLineId" type="String"/>
+    <aura:attribute name="prodName" type="String" />
+    <aura:attribute name="selectedPosition" type="string" />
+    <aura:attribute name="responseList" type="List" />
+    <aura:attribute name="getPicklistValues" type="List" />
+    <aura:attribute name="ConNo" type="String" />
+    <aura:attribute name="awardPosition" type="String" />
+    <aura:attribute name="totallineAwaQty" type="Decimal" />
+    <aura:attribute name="remQtyToAward" type="Decimal" />
+    <aura:attribute name="awardQty" type="String" />
+    <aura:attribute name="CustomerName" type="String" /> 
+    <aura:attribute name="ProdId" type="string" />
+    <aura:attribute name="CustomerId" type="String" />
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="OverrideUnitsEditMode" type="boolean" default="false" />
+    <aura:attribute name="noOfcontractsEditMode" type="boolean" default="false"/>
+    <aura:attribute name="responseLen" type="Integer" />
+    <aura:attribute name="TotalQty" type="Integer" />
+    <aura:attribute name="sumofAllAwardedQty" type="Integer" />
+    <aura:attribute name="bindBoolean" type="boolean"/>
+    <aura:attribute name="positionsPicklistOptions" type="list" />
+    <aura:handler name="change" value="{!v.bindBoolean}" action="{!c.onChildAttrChange}"/>
+    <aura:html tag="style">
+        
+        .slds-modal__container{ 
+        height : auto; width: 80%; max-width: 300vh;
+        padding-left:200px;
+        padding-right:200px;
+        padding-top:100px;
+        padding-bottom:100px;
+        
+        
+        <!-- 
+   overflow: scroll;
+        padding-left:200px;
+        padding-right:200px;-->
+        }
+        .modal-body{ 
+        height : 400vh !important; 
+        max-height: 400vh !important; 
+        <!--overflow-y: scroll;-->
+        } 
+        .slds-modal__footer{ 
+        display: inline !important; 
+        }
+        
+        .header {
+        display: inline-block; 
+        width: 100%;
+        }
+        .playerOne {
+        float: right;
+        padding-right: 30px; 
+        }
+        .playerTwo {
+        float: left;
+        padding-left: 30px; 
+        }
+    </aura:html>
+    <lightning:recordEditForm objectApiName="Phoenix_Awarded_Quantity__c"  recordId="{!v.recordId}" aura:id="bidForm" onload="{!c.handleOnload}" onsubmit="{!c.onRecordSubmit}" onsuccess="{!c.onRecordSuccess}">
+        <!--<lightning:button variant="Neutral" 
+                      label="Awarded Quantity" 
+                      onclick="{!c.showSelectedproducts}" 
+                      class="slds-m-left_x-small">
+       </lightning:button>
+        <a id="{!v.id}" class="slds-m-left_x-small" href="javascript:void(0)" onclick="{!c.showSelectedproducts}">
+            Awarded Quantity</a>
+        <aura:if isTrue="{!v.isModalOpen}"> -->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container customModal" style="padding:0;margin-top:120px;min-width: 90% !important;">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{!c.closePopup}"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <aura:if isTrue="{! not(empty(v.responseList))}">
+                            <h2 class="slds-text-heading_medium slds-hyphenate" style="color:black"><b>Awarded Quantity</b></h2>
+                            <!--  <p style="text-align:left" class="slds-text-body_regular">No previous awarded quantity records found.</p>
+                <p style="text-align:right" class="slds-text-body_regular">No previous awarded quantity records found.</p>
+                        <p style="text-align:left;" class="slds-text-body_regular">
+                            Product: 
+                            <span style="float:right;">
+                                Quantity Awarded:
+                            </span>
+                        </p>-->
+                            <div class="header">
+                                <div class="playerOne">
+                                    
+                                    <b><span style="color:black">Quantity Awarded:</span></b>&nbsp;<span style="color:black"><lightning:formattedNumber value="{!v.totallineAwaQty}"/></span>
+                                </div>
+                                <div class="playerTwo">
+                                    <b><span style="color:black">Product:</span></b>&nbsp;<a href="{!'/'+v.ProdId}" target="_blank">{!v.prodName}</a>
+                                </div>
+                            </div>
+                            <aura:if isTrue="{!or(v.responseList[0].Phoenix_Contract_Number__c == null, v.responseList[0].Phoenix_Contract_Number__c == '')}">
+                                <div>
+                                    <ui:message title="No Contracts Found." severity="info">
+                                        This is a OTB or IOD WAC Customer or New Customer bid type so an Awarded Quantity is created with below values without contracts.
+                                    </ui:message>
+                                </div>
+                            </aura:if>
+                        </aura:if>
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <!--div class="slds-scrollable" style="height: 100rem; width: 46rem" height: 9.5rem;-->
+                    <!--<div class="slds-scrollable_y" style="height:100px;max-height:400px">
+                        -->
+                    <div class="" style="max-height:350px;"> <!--class="slds-scrollable_y" -->
+                        <aura:if isTrue="{! not(empty(v.responseList))}">
+                            <table class="slds-table slds-table_cell_buffered slds-max-medium-table_stacked-horizontal slds-table_bordered" style="border:1px solid #eaeaea;" >
+                                <thead>
+                                    <tr class="slds-text-title">
+                                        <th scope="col" class="slds-truncate slds-cell-wrap" style="color:black; width: 6%;" ><div class="slds-truncate" title="Contract #">Contract #</div></th>
+                                        <th scope="col" class="slds-truncate slds-cell-wrap" style="color:black; width: 14%;" > <div class="slds-truncate" title="Customer Name">Customer Name</div>  </th>
+                                        <th scope="col" class="slds-truncate slds-cell-wrap" style="color:black; width: 14%;" ><div class="slds-truncate" title="Contract Name">Contract Name</div></th>
+                                        <th scope="col" class="slds-truncate slds-cell-wrap" style="color:black; width: 4%;" > <div class="slds-truncate" title="Awarded Qty">Awarded Qty</div>  </th>
+                                        <th scope="col" class="slds-truncate slds-cell-wrap slds-text-align--center" style="color:black; width: 10%;" >
+                                            <div class="slds-truncate" title="Select Position(s)">Select Position(s)</div>
+                                        </th>
+                                        <th scope="col" class="slds-truncate slds-cell-wrap slds-text-align--center" style="color:black; width: 20%;" >
+                                            <div class="slds-truncate" title="Selected Position(s)">Selected Position(s)</div>
+                                        </th>
+                                    </tr>
+                                </thead> 
+                                <tbody>
+                                    <aura:iteration items="{!v.responseList}" var="prodItem" indexVar="sNo" >
+                                        <c:Phoenix_AwardedQtyComponentchild options="{!v.positionsPicklistOptions}" remQtyToAward="{!v.remQtyToAward}" totallineAwaQty="{!v.totallineAwaQty}" responseList="{!v.responseList}" sumofAllAwardedQty="{!v.sumofAllAwardedQty}" prodItem="{!prodItem}" responseLen="{!v.responseLen}" sNo="{!sNo + 1}"/>
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                            <aura:set attribute="else">
+                                <div class="slds-modal__header">
+                                    <p style="text-align:center;color:black;">No contracts found for this customer response record.</p>  
+                                </div>
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                    <!--/div-->
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.closePopup }"/>
+                        <aura:if isTrue="{! not(empty(v.responseList))}">
+                            <lightning:button variant="brand"
+                                              label="Save"
+                                              title="Save"
+                                              disabled = "{!v.remQtyToAward != 0 ? 'true':'false'}"
+                                              onclick="{! c.handleSaveEdition }"/>
+                        </aura:if>
+                        
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        <!-- </aura:if > -->
+    </lightning:recordEditForm>
+</aura:component>

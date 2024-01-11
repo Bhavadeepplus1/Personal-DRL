@@ -1,0 +1,107 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" 
+                controller="Vision_CxAnalysisController">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="accObj" type="Account"/>
+    <aura:attribute name="responseObj" type="Object"/>
+    <aura:attribute name="customerLkp" type="String"/>
+    <aura:attribute name="currentOwner" type="string"/>
+    
+    <aura:attribute name="totalCxOpty" type="string"/>
+    <aura:attribute name="drlCurrentSales" type="string"/>
+    <aura:attribute name="drlOpptySales" type="string"/>
+    <aura:attribute name="drlTotEstActSales" type="string"/>
+    <aura:attribute name="drlShareOfWallet" type="string"/>
+    <aura:attribute name="drlShareOfWalletVol" type="string"/>
+    <aura:attribute name="loaded" type="boolean" default="false"/>
+    <aura:attribute name="loadingMessage" type="string" default="Please wait..."/>
+    <aura:attribute name="showSaveCancelBtn" type="boolean" default="false"/>
+    
+    <aura:handler name="onchange" event="l_lookup:OnChange" action="{!c.handleChange}"/>
+    
+    <aura:if isTrue="{!v.loaded}">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium" style="background-Color: white; border: 0;">  
+                        <div>
+                            <img src="{!$Resource.LoadingProgress}" />  <!-- modalShadowRemove -->
+                        </div><br/>
+                        <aura:if isTrue="{!v.loadingMessage}">
+                            <div style="font-size:18px;color:black;">
+                                {!v.loadingMessage}
+                            </div>
+                        </aura:if>
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open backgroudChange" aura:id="customModal-Back"></div>
+        </center>
+        
+    </aura:if>
+    
+    <div class="" style="background-color:white;padding:5px;">
+        <div>
+            <l_lookup:Lookup aura:id="customerLookup" label="Account" additionalField="AccountNumber"
+                             objectType="Account" selectedRecordId="{!v.customerLkp}"
+                             queryCondition="{! 'ownerId=\'' + v.currentOwner + '\'' }"
+                             placeHolder = "Search Account"/>
+        </div>
+        <div style="font-style:italic;font-size:12px;line-height: 100%;padding:3px;">
+            This module is to update the Accounts with the mandatory details to start the 100% analysis.
+        </div>
+        <div>
+            <b onclick="{!c.directToAccount}" styloe="color:blue;">Account Name : {!v.accObj.Name}</b>
+        </div>
+        <div class="slds-box slds-wrap" 
+             style="background-color:#8c00ff;color: white;padding:5px;">
+            <div class="" style="font-weight:bold;padding-left:10px;">
+                <div class="" title="SUM(Est Acct Sales)"
+                     style="">
+                    Total Customer Opportunity : <b>$ {!v.totalCxOpty}</b>
+                </div>
+                <div class="" title="SUM(DRL Customer Actual Sales)"
+                     style="">
+                    DRL Current Sales :  $ {!v.drlCurrentSales}
+                </div>
+                <div class="" title="SUM(DRL Opportunity Sales)"
+                     style="">
+                    DRL Opportunity Sales : $ {!v.drlOpptySales}
+                </div>
+                <div title="SUM(Customer Actual Sales)/SUM(Est Acct  Sales)"
+                     style="">
+                    DRL Share Of Wallet (Sales) : <b class="{!v.accObj.Phoenix_Customer_Est_Market_Share__c lt v.drlShareOfWallet ? 'green' : 'red'}">{!v.drlShareOfWallet} % </b>
+                </div>
+                <div title="SUM(Customer Actual Vol)/SUM(Est Acct Total Vol)"
+                     style="">
+                    DRL Share Of Wallet (Volume) : <b class="{!v.accObj.Phoenix_Customer_Est_Market_Share__c lt v.drlShareOfWalletVol ? 'green' : 'red'}">{!v.drlShareOfWalletVol} %</b>
+                </div>
+            </div>
+        </div>
+        <div>
+            <lightning:recordEditForm objectApiName="Account" recordId="{!v.accObj.Id}" 
+                                      density="comfy" aura:id="customerForm" 
+                                      onsubmit="{!c.onRecordSubmit}" onsuccess="{!c.onRecordSuccess}">
+                <div class="">
+                    <lightning:inputField aura:id="moveHere" fieldName="Phoenix_Customer_Est_Market_Share__c"
+                                          onchange="{!c.showSaveButton}" required="true"/>
+                </div>
+                <div class="">
+                    <lightning:inputField fieldName="Phoenix_Customer_Max_Est_Share_of_Wallet__c"
+                                          onchange="{!c.showSaveButton}" required="true"/>
+                </div>
+                <div class="">
+                    <lightning:inputField fieldName="Phoenix_Account_Cooling_Period__c"
+                                          onchange="{!c.showSaveButton}" required="true"/>
+                </div>
+                <center>
+                    <div style="margin-top:5px;">
+                        <lightning:button label="Save" type="submit" variant="brand" disabled="{!!v.showSaveCancelBtn}"/>&nbsp; 
+                        <lightning:button label="Next Account Update" onclick="{!c.onNext}"/>
+                    </div>
+                </center>
+            </lightning:recordEditForm>
+        </div>
+    </div>
+    
+</aura:component>

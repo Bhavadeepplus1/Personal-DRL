@@ -1,0 +1,307 @@
+<aura:component controller="Phoenix_BidVIPRebateChangeReqCtrl" access="global">     
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>    
+    <aura:attribute name="objInfoForPicklistValues" type="account" default="{sobjectType : 'Phoenix_VIP_Rebate_Line__c'}" description="object information to fetch picklist values"/>
+    <aura:attribute name="showSaveCancelBtn" type="boolean"/>
+    <aura:attribute name="showErrorClass" type="boolean" default="false"/>
+    <aura:attribute name="sNo" type="string" />
+    <aura:attribute name="type" type="string" />
+    <aura:attribute name="lineItemId" type="String" />
+    <aura:attribute name="DVFEditMode" type="boolean" default="false" />
+    <aura:attribute name="DVTEditMode" type="boolean" default="false" />
+    <aura:attribute name="UVFEditMode" type="boolean" default="false" />
+    <aura:attribute name="UVTEditMode" type="boolean" default="false" />
+    <aura:attribute name="DREditMode" type="boolean" default="false" />
+    <aura:attribute name="RemEditMode" type="boolean" default="false" />
+    <aura:attribute name="isSpinner" type="boolean" default="false" />
+    <aura:attribute name="singleRec" type="sobject"/>
+    <aura:attribute name="bidLineList" type="sobject"/>
+    <aura:attribute name="validFromProposed" type="string"/>
+    <aura:attribute name="inputDiscRebate" type="string"/>
+    <aura:attribute name="typeChanged" type="string"/>
+    <aura:attribute name="typeChangedPopup" type="string"/>
+    <aura:attribute name="doNotEdit" type="string"/>
+    <aura:attribute name="showSaveCancelBtn1" type="boolean" default="false"/>
+    <aura:attribute name="customerIdList" type="List" />
+    <aura:attribute name="fromWhichCmp" type="String"/>
+    <aura:method name="callChild" action="{!c.doInit}" />
+    <aura:registerEvent name="lightningEvent" type="c:Phoenix_BidVIPRebateChangeEvt"/>
+    
+    <aura:if isTrue="{!v.isSpinner}">
+        <div class="">
+            <lightning:spinner alternativeText="Loading" variant="brand" />
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.typeChangedPopup==true}">
+        <div class="slds-m-around--x-medium">
+            <!--Use aura:if tag to display Model Box, on the bese of conditions. [isOpen boolean attribute] -->   
+            
+            <!--###### MODAL BOX Start From Here ######--> 
+            <div role="dialog" tabindex="-1" aria-labelledby="header99" class="slds-modal slds-fade-in-open ">
+                <div class="slds-modal__container">
+                    <!-- ###### MODAL BOX HEADER Part Start From Here ######-->
+                    <div class="slds-modal__header ">
+                        <h2 class="title slds-text-heading--medium slds-hyphenate" >Type Change</h2>
+                        <button class="slds-button slds-modal__close slds-button--icon-inverse" title="Close" onclick="{!c.closeModel}">
+                            <lightning:icon iconName="utility:close"/>
+                            <span class="slds-assistive-text">x</span>
+                        </button>
+                    </div>
+                    <!-- MODAL BOX BODY Part Start From Here -->
+                    <div class="slds-modal__content slds-p-around--large">
+                        <div class="slds-container--center slds-container--x-large">
+                            <div class="slds-text-align_center ">
+                                Please note that changing the Type will clear the irrelevant fields in Proposed Rebate
+                            </div>
+                        </div>
+                    </div>
+                    <!--###### MODAL FOOTER Part Start From Here ######-->
+                    <div class="slds-modal__footer ">
+                        <!-- <button class="slds-button slds-button_brand" onclick="{!c.deleteRecord}" >YES</button>-->
+                        <button class="slds-button slds-button--neutral" onclick="{!c.closeModel}" >OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aura:if>
+    
+    
+    <aura:if isTrue="{!v.doNotEdit==false}">
+        
+        <tr>
+            <th scope="row" class="{! v.showErrorClass == true ? 'slds-cell-edit slds-has-error' : 'slds-cell-edit'}">
+                <a name="{!v.sNo}" onclick="{!c.deleteLineItem}">
+                    <lightning:icon iconName="utility:delete" alternativeText="delete" size="x-small" />
+                </a>
+            </th>
+            <td aura:id="frequencyEdit">
+                <!--  {!v.singleRec.Phoenix_Tier__c}-->
+                Tier {!v.sNo}
+            </td>
+            
+            <aura:if isTrue="{!v.type == 'Currency'}">  
+                <td ondblclick="{!c.inlineEditDVF}" 
+                    class="{!v.validFromProposed==true?'colorClass':'noColorClass'}"
+                    style="{!v.DVFEditMode == false ? 'text-align:right !important;' : 'text-align:left !important;'}">
+                    <aura:if isTrue="{!v.DVFEditMode == false}">
+                       <!-- <aura:if isTrue= "{!v.singleRec.Phoenix_Dollar_Value_From__c==null}">
+                           <td class="slds-text-align_right"> <span class = "">
+                                <lightning:formattedNumber value="{!v.singleRec.Phoenix_Dollar_Value_From__c}" 
+                                                           style="currency" currencyCode="USD" 
+                                                           minimumFractionDigits="0"
+                                                           class="rightAignInsideInput"/>
+                            </span></td>
+                        </aura:if>-->
+                        <aura:if isTrue= "{!v.singleRec.Phoenix_Dollar_Value_From__c!=null}">
+                             <span class = "">
+                                <lightning:formattedNumber value="{!v.singleRec.Phoenix_Dollar_Value_From__c}" 
+                                                           style="currency" currencyCode="USD" 
+                                                           minimumFractionDigits="0"
+                                                           class="rightAignInsideInput"/>
+                            </span>
+                        </aura:if>
+                        <button onclick="{!c.inlineEditDVF}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" class="edit-icon-custom"/>
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputCurrency class="slds-input inputWidth rightAignInsideInput inputDimen"
+                                                              aura:id="inputDVFId"
+                                                              blur="{!c.closeDVFBox}"
+                                                              required="true"
+                                                              value="{!v.singleRec.Phoenix_Dollar_Value_From__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>    
+                        </aura:set>
+                    </aura:if>
+                </td>
+            </aura:if>
+            <aura:if isTrue="{!v.type == 'Quantity'}">
+                <td>
+                </td>
+            </aura:if> 
+            <aura:if isTrue="{!v.type == 'Currency'}">
+                <td>
+                    <!--  {!v.singleRec.Phoenix_Tier__c}-->
+                    <aura:if isTrue= "{!v.singleRec.Phoenix_Dollar_Value_To__c==null}">
+                        <lightning:formattedNumber value="{!v.singleRec.Phoenix_Dollar_Value_To__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" />
+                    </aura:if>
+                    <aura:if isTrue= "{!v.singleRec.Phoenix_Dollar_Value_To__c!=null}">
+                        <div class="slds-text-align_right">
+                            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Dollar_Value_To__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" />
+                            
+                        </div> 
+                    </aura:if>
+                    
+                    
+                </td>
+            </aura:if>
+            <aura:if isTrue="{!v.type == 'Quantity'}">
+                <td>
+                </td>
+            </aura:if>
+            
+            <aura:if isTrue="{!v.type == 'Quantity'}">
+                <td ondblclick="{!c.inlineEditUVF}" class="{!v.validFromProposed==true?'colorClass':'noColorClass'}" 
+                    style="{!v.UVFEditMode == false ? 'text-align:right !important;' : 'text-align:left !important;'}">
+                    <aura:if isTrue="{!v.UVFEditMode == false}">
+                   <!--  <aura:if isTrue= "{!v.singleRec.Phoenix_Unit_Volume_From__c==null}">
+                             <td class="slds-text-align_right"><span class = "">
+                                <lightning:formattedNumber value="{!v.singleRec.Phoenix_Unit_Volume_From__c}"  minimumFractionDigits="0" class="rightAignInsideInput"/>
+                            </span></td> 
+                        </aura:if>-->
+                        <aura:if isTrue= "{!v.singleRec.Phoenix_Unit_Volume_From__c!=null}">
+                           <span class = "">
+                                <lightning:formattedNumber value="{!v.singleRec.Phoenix_Unit_Volume_From__c}"  minimumFractionDigits="0" class="rightAignInsideInput"/>
+                            </span>
+                        </aura:if>
+                        <button onclick="{!c.inlineEditUVF}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" class="edit-icon-custom"/>
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputCurrency class = "slds-input inputWidth rightAignInsideInput inputDimen"
+                                                              aura:id="inputUVFId"
+                                                              blur="{!c.closeUVFBox}"
+                                                              required="true"
+                                                              value="{!v.singleRec.Phoenix_Unit_Volume_From__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </td>  
+            </aura:if>
+            <aura:if isTrue="{!v.type == 'Currency'}">
+                <td>
+                </td>
+            </aura:if>
+            <aura:if isTrue="{!v.type == 'Quantity'}">
+                <td class="slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Unit_Volume_To__c}"   minimumFractionDigits="0" />
+                </td>
+            </aura:if>
+            <aura:if isTrue="{!v.type == 'Currency'}">
+                <td>
+                </td>
+            </aura:if>
+            
+            <td ondblclick="{!c.inlineEditDR}" class="{!v.singleRec.Phoenix_Discount_Rebate__c==null?'colorClass1':'noColorClass1'}"
+                style="{!v.DREditMode == false ? 'text-align:right !important;' : 'text-align:left !important;'}">
+                <aura:if isTrue="{!v.DREditMode == false}">
+                   <!-- <aura:if isTrue= "{!v.singleRec.Phoenix_Discount_Rebate__c==null}">
+                       <td class="slds-text-align_right"> <span class=""  >
+                            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Discount_Rebate__c}"  minimumFractionDigits="2" />
+                            
+                        </span></td>
+                    </aura:if>-->
+                    <aura:if isTrue= "{!v.singleRec.Phoenix_Discount_Rebate__c!=null}">
+                        <span class="">
+                            <lightning:formattedNumber value="{!v.singleRec.Phoenix_Discount_Rebate__c}"  style="percent-fixed" minimumFractionDigits="2"  class="rightAignInsideInput"/>
+                        </span>
+                    </aura:if>
+                    <button onclick="{!c.inlineEditDR}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                        <lightning:icon iconName="utility:edit" size="xx-small" class="edit-icon-custom" />
+                    </button>
+                    <!-- Inline Edit Section in else case-->
+                    <aura:set attribute="else">
+                        <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content;">
+                            <div class="slds-popover__body">
+                                <div class="slds-form-element slds-grid slds-wrap">
+                                    <div class="slds-form-element__control slds-grow">
+                                        <ui:inputCurrency class = "slds-input inputWidth rightAignInsideInput inputDimen"
+                                                          aura:id="inputDRId"
+                                                          blur="{!c.closeDRBox}"
+                                                          required="true"
+                                                          value="{!v.singleRec.Phoenix_Discount_Rebate__c}" />
+                                    </div>
+                                </div>
+                            </div>
+                            <span id="form-end" tabindex="0"></span>
+                        </section>
+                    </aura:set>
+                </aura:if>
+            </td>  
+            <td ondblclick="{!c.inlineEditRem}" >
+                <span class="slds-grid slds-grid_align-spread"> 
+                    <aura:if isTrue="{!v.RemEditMode == false}">
+                        <span class=""  >{!v.singleRec.Phoenix_Remarks__c}</span>
+                        <button onclick="{!c.inlineEditRem}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                            <lightning:icon iconName="utility:edit" size="xx-small" class="edit-icon-custom"/>
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputText class="slds-input inputWidth"
+                                                          labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                          aura:id="inputRemId"
+                                                          blur="{!c.closeRemBox}"
+                                                          required="true"
+                                                          value="{!v.singleRec.Phoenix_Remarks__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>  
+        </tr>  
+    </aura:if>
+    
+    
+    <aura:if isTrue="{!v.doNotEdit==true}"> 
+        <tr>
+            
+            <td aura:id="frequencyEdit">
+                <!--  {!v.singleRec.Phoenix_Tier__c}-->
+                Tier {!v.sNo}
+            </td>
+            <td style="text-align:right !important;">
+                <span class="">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Dollar_Value_From__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" />
+                </span>
+            </td>
+            
+            <!--  {!v.singleRec.Phoenix_Tier__c}-->
+            <td style="text-align:right !important;">
+                <span class="">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Dollar_Value_To__c}" style="currency" currencyCode="USD" minimumFractionDigits="0"/>
+                </span>
+            </td>
+            
+            <td style="text-align:right !important;">
+                <span class="">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Unit_Volume_From__c}"   minimumFractionDigits="0" />
+                </span>
+            </td>
+            <td class="slds-text-align_right">
+                <lightning:formattedNumber value="{!v.singleRec.Phoenix_Unit_Volume_To__c}"   minimumFractionDigits="0" />
+            </td>
+            <td class="slds-text-align_right">
+                <aura:if isTrue= "{!v.singleRec.Phoenix_Discount_Rebate__c==null}">
+                    0.00%
+                    <aura:set attribute="else">
+                        <lightning:formattedNumber value="{!v.singleRec.Phoenix_Discount_Rebate__c}" style="percent-fixed"  minimumFractionDigits="2"/>
+                    </aura:set>
+                </aura:if>
+            </td>
+            <td>{!v.singleRec.Phoenix_Remarks__c}</td>
+        </tr>    
+    </aura:if>
+</aura:component>

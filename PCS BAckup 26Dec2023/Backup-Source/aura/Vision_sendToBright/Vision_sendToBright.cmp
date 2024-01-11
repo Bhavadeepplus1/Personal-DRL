@@ -1,0 +1,1209 @@
+<aura:component controller="Vision_SendToBrightCtrl" 
+                implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" 
+                access="global" >
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="errormsg" type="String" />
+    <aura:attribute name="isError" type="Boolean" default="false" />
+    <aura:attribute name="bidId" type="String" />
+    <aura:attribute name="optyVal" type="String" />
+    <aura:attribute name="optyObj" type="object"/>
+    <aura:attribute name="optyBidType" type="String" />
+    <aura:attribute name="templateType" type="string"/>
+    <aura:attribute name="showProductsloading" type="Boolean" default="false" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="wrapperList" type="list"/>
+    <aura:attribute name="selectedProdList" type="list"/>
+    <aura:attribute name="selectAll" type="boolean" default="false"/>
+    <aura:attribute name="isSelectAllNonAwarded" type="boolean" default="false"/>
+    <aura:attribute name="isSelectAllAwarded" type="boolean" default="false"/>
+    <aura:attribute name="showAddToBidButton" type="boolean" default="false"/>
+    <aura:attribute name="doesOptyProdsExists" type="boolean" default="true"/>
+    
+    <aura:attribute name="showSendButton" type="boolean" default="false"/>
+    <aura:attribute name="noOfSelectedProd" type="Integer" default="0"/>
+    <aura:attribute name="noOfProdSentToBright" type="Integer" default="0"/>
+    <aura:handler name="DeleteRowEvt" event="c:DeleteRowEvt" action="{!c.deleteLineItem}"/>
+    <aura:attribute name="showStatus" type="boolean" default="false"/>
+    <aura:attribute name="statusMessage" type="String" />
+    <aura:attribute name="showOpenBids" type="boolean" default="false"/>
+    <aura:attribute name="openBidList" type="List"/>
+    <aura:attribute name="selectedBidId" type="String" />
+    <aura:attribute name="pagedListdata" type="list"/>
+    
+    <aura:attribute name="awardedPagedListdata" type="list"/>
+    <aura:attribute name="nonAwardedPagedListdata" type="list"/>
+    
+    <aura:attribute name="awardedListdata" type="list"/>
+    <aura:attribute name="nonAwardedListdata" type="list"/>
+    
+    <!-- pagination attirbutes -->
+    <aura:attribute name="totalNumberOfRecords" type="Integer"/>
+    <aura:attribute name="pageNumberList" type="List"/>
+    <aura:attribute name="selectedPageNumber" type="Integer" default="1"/>
+    <aura:attribute name="pageNumberListAwarded" type="List"/>
+    <aura:attribute name="selectedAwardedPageNumber" type="Integer" default="1"/>
+    <aura:attribute name="pageNumberListNonAwarded" type="List"/>
+    <aura:attribute name="selectedNonAwardedPageNumber" type="Integer" default="1"/>
+    
+    <aura:attribute name="showSectionName" type="String"/>    
+    <aura:attribute name="optyProdsCount" type="Integer"/>
+    <aura:attribute name="isShowingTabName" type="string"/>
+    
+    <aura:attribute name="showConfirmation" type="boolean" default="false"/>
+    <aura:attribute name="confirmationMessage" type="string"/>
+    <aura:attribute name="sendToBrightType" type="string" default="newBid"/>
+    <aura:attribute name="loadingMessage" type="string" default=""/>
+    <aura:attribute name="selectedBidType" type="string" default=""/>
+    <aura:attribute name="showBidTypeSelection" type="boolean" default="false"/>
+    <aura:attribute name="isOtcProdFam" type="boolean" default="false"/>
+    
+    <!--Contract Model section-->
+    <aura:attribute name="showModal" type="boolean" default="false"/>
+    <aura:attribute type="List" name="contratcsList"/>
+    <aura:attribute name="mycolumns" type="List"/>
+    <aura:attribute name="selectedCntrcts" type="list"/>    
+    <aura:attribute name="editOptyComment" type="boolean" default="false"/> 
+    <aura:attribute name="dataListWithNpr" type="list"/>
+    <aura:attribute name="optyProdList" type="list"/>
+    <aura:attribute name="conList" type="list"/>
+    <aura:attribute name="showZeroProds" type="boolean" default="false"/>
+    <aura:attribute name="isPanMove" type="boolean" default="false"/>
+    <aura:attribute name="pullNPRdata" type="boolean" default="true"/>
+    <aura:attribute name="isViewPartialMatched" type="boolean" default="true"/>
+    <aura:attribute name="isViewAllMatched" type="boolean" default="true"/>
+    
+    
+    
+    <!-- added by Srimayee-->
+    <aura:attribute name="AccountNumber" type="string"/>
+    <aura:if isTrue="{!v.showModal}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" 
+                 aria-modal="true" aria-describedby="modal-content-id-1" 
+                 class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.hideModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                        Contracts</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <p>
+                        <aura:if isTrue="{!not(empty(v.contratcsList))}">                            
+                            <lightning:datatable aura:id="linesTable"
+                                                 data="{! v.contratcsList }" 
+                                                 columns="{! v.mycolumns }"
+                                                 keyField="id"/>
+                            <aura:set attribute="else">
+                                <center>
+                                    <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                        <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                            <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                        </span>
+                                        <h2> No Records Found</h2>
+                                    </div>
+                                </center>
+                            </aura:set>
+                        </aura:if>
+                    </p>
+                </div>
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Cancel" title="Cancel"
+                                      onclick="{! c.hideModel }"/>
+                    <lightning:button variant="brand"
+                                      label="Save" title="Save"
+                                      disabled= "{!empty(v.contratcsList)}"
+                                      onclick="{!c.saveDetails}"/>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showConfirmation}">
+        <div role="dialog" class="slds-modal slds-fade-in-open ">
+            <div class="slds-modal__container" style="max-width:1000px;width:800px;height:100vh;">
+                <!-- Modal/Popup Box Header Starts here
+                <header class="slds-modal__header"> -->
+                <lightning:buttonIcon iconName="utility:close"
+                                      onclick="{! c.closeConfirmation }"
+                                      alternativeText="close"
+                                      variant="bare-inverse"
+                                      class="slds-modal__close"/>
+                <!--Modal/Popup Box Body Starts here-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <center>
+                        <div>
+                            <b style="font-size:16px;">{!v.confirmationMessage}</b><br/>
+                            <span style="font-style:italic;">Remaining {!v.optyProdsCount - v.noOfSelectedProd - v.noOfProdSentToBright} Products will not be sent to Bright.</span><br/>
+                            <span style="font-style:italic;">You can choose to send the Remaning Products to the same bid or all together a new bid when you are ready.</span>
+                        </div>
+                    </center>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Cancel" title="Cancel"
+                                      onclick="{! c.closeConfirmation }"/>
+                    <lightning:button variant="brand"
+                                      label="Proceed" title="Proceed"
+                                      onclick="{!c.sendToBright}"/>
+                </footer>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open" aura:id="customModal-Back"></div>
+    </aura:if>
+    <aura:if isTrue="{!v.showOpenBids}">
+        <div role="dialog" class="slds-modal slds-fade-in-open ">
+            <div class="slds-modal__container" style="max-width:2000px;width:1300px;height:100vh;">
+                <!-- Modal/Popup Box Header Starts here
+                <header class="slds-modal__header"> -->
+                <lightning:buttonIcon iconName="utility:close"
+                                      onclick="{! c.closeBidSelectionPopup }"
+                                      alternativeText="close"
+                                      variant="bare-inverse"
+                                      class="slds-modal__close"/>
+                <!--Modal/Popup Box Body Starts here-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.openBidList.length > 0}">
+                        <div class="slds-box slds-grid" style="background-color:rgb(243, 243, 243);padding:5px;padding-left:15px;margin-bottom:10px;font-weight:bold;">
+                            <div class="slds-col slds-size_3-of-4">
+                                <aura:if isTrue="{!v.sendToBrightType == 'toBid'}">
+                                    <h2 id="modal-heading-01" class="slds-text-heading_small slds-hyphenate">Draft Bid List:</h2>
+                                </aura:if>
+                            </div>
+                            <div class="slds-col slds-size_1-of-4" style="text-align:right;">
+                               
+                            </div>
+                        </div>
+                        <aura:if isTrue="{!v.sendToBrightType == 'toBid'}">
+                            <div aura:id="mainDiv" style="{!v.openBidList.length > 12 ? 'height:450px;overflow:auto;' : 'overflow:auto;'}">
+                                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                                    <table class="maintable fixedtable slds-table slds-table_col-bordered 
+                                                  slds-no-row-hover slds-table_bordered slds-table-bordered 
+                                                  slds-border_left slds-border_right"
+                                           style="table-layout: fixed;">
+                                        <thead>
+                                            <tr>
+                                                <th class="headerClass" style="width:30px;">
+                                                    &nbsp;
+                                                </th>
+                                                <th class="headerClass" style="width:120px;">
+                                                    Bid #
+                                                </th>
+                                                <th class="headerClass" style="width:450px;">
+                                                    Bid Name
+                                                </th>
+                                                <th class="headerClass" style="width:300px;">
+                                                    Bid Type
+                                                </th>
+                                                <th class="headerClass" style="width:120px;">
+                                                    Created Date
+                                                </th>
+                                                <th class="headerClass">
+                                                    Created By
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <aura:iteration items="{!v.openBidList}" var="wrapObj">
+                                                <tr>
+                                                    <td class="slds-cell-wrap">
+                                                        <ui:inputCheckbox name="{!wrapObj.bidRec.Id}" value="{!wrapObj.isSelected}" 
+                                                                          click="{!c.bidSelected}" class=""/>
+                                                    </td>
+                                                    <td class="slds-cell-wrap" style="width:30px;">
+                                                        {!wrapObj.bidRec.Name}
+                                                    </td>
+                                                    <td class="slds-cell-wrap">
+                                                        {!wrapObj.bidRec.Phoenix_Bid_Name__c}
+                                                    </td>
+                                                    <td class="slds-cell-wrap">
+                                                        {!wrapObj.bidRec.Phoenix_Bid_Type__c}
+                                                    </td>
+                                                    <td class="slds-cell-wrap">
+                                                        <ui:outputDate value="{!wrapObj.bidRec.CreatedDate}"/>
+                                                    </td>
+                                                    <td class="slds-cell-wrap">
+                                                        {!wrapObj.bidRec.CreatedBy.Name}
+                                                    </td>
+                                                </tr>
+                                            </aura:iteration>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </aura:if>
+                        <aura:set attribute="else">
+                            <center>
+                                <div style="width:50%">
+                                    <ui:message title="No Draft Bids Found" severity="info" closable="false">
+                                        <div>There are No Draft bids for {!v.optyObj.Account.Name} of Bid Type - {!v.selectedBidType} in BRIGHT.</div>
+                                        <div>You can create a new bid for selected products.</div>
+                                    </ui:message>
+                                </div>
+                            </center>
+                        </aura:set>
+                    </aura:if>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Close"
+                                      title="Close"
+                                      onclick="{! c.closeBidSelectionPopup }"/>
+                    <aura:if isTrue="{!v.openBidList.length == 0}">
+                        <lightning:button variant="brand"
+                                          label="Create A New Bid" title="Create A New Bid"
+                                          onclick="{!c.confirmCreateNewBid}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!and(v.openBidList.length > 0,v.sendToBrightType == 'toBid')}">
+                        <lightning:button variant="brand"
+                                          label="Add To Selected Bid"
+                                          title="Add To Selected Bid"
+                                          onclick="{!c.confirmAddToBid}"
+                                          disabled="{!v.selectedBidId == null ? true : false}"/>
+                    </aura:if>
+                    <!--<aura:if isTrue="{!v.sendToBrightType == 'newBid'}">
+                        <lightning:button variant="brand"
+                                          label="Create A New Bid"
+                                          title="Create A New Bid"
+                                          onclick="{!c.confirmCreateNewBid}"/>
+                    </aura:if>-->
+                </footer>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open" aura:id="customModal-Back"></div>
+    </aura:if>
+    <aura:if isTrue="{!v.showBidTypeSelection}">
+        <div role="dialog" class="slds-modal slds-fade-in-open ">
+            <div class="slds-modal__container" style="max-width:600px;width:600px;height:100vh;">
+                <lightning:buttonIcon iconName="utility:close"
+                                      onclick="{! c.closeBidTypeSelection }"
+                                      alternativeText="close"
+                                      variant="bare-inverse"
+                                      class="slds-modal__close"/>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <aura:if isTrue="{!($Label.c.PharmaBidLabel != v.AccountNumber)}">
+                        
+                        <div style="font-size:14px;font-weight:bold;">
+                            <aura:if isTrue="{!v.sendToBrightType == 'toBid'}">
+                                Select The Bid Type to view the Draft Bids to add the selected products in BRIGHT.
+                                <aura:set attribute="else">
+                                    Select the Bid Type for new Bid.
+                                </aura:set>
+                            </aura:if>
+                        </div>
+                        <div>
+                            <lightning:select name="bidTypeChange"
+                                              aura:id="bidTypeChangeId"
+                                              onchange="{!c.onBidTypeUpdate}"
+                                          label="Bid Type">
+                            <option value="{!v.selectedBidType}">
+                                {!v.selectedBidType}
+                            </option>
+                            <aura:if isTrue="{!v.isOtcProdFam}">
+                                <aura:if isTrue="{!(v.selectedBidType != 'OTC Product Addition')}" >
+                                    <option value="OTC Product Addition">OTC Product Addition</option>
+                                </aura:if>
+                                <aura:if isTrue="{!(v.selectedBidType != 'OTC New Product')}" >
+                                    <option value="OTC New Product">OTC New Product</option>
+                                </aura:if>
+                                <aura:if isTrue="{!(v.selectedBidType != 'OTC Volume Review')}" >
+                                    <option value="OTC Volume Review">OTC Volume Review</option>
+                                </aura:if>
+                                <aura:if isTrue="{!(v.selectedBidType != 'OTC Price Change')}" >
+                                    <option value="OTC Price Change">OTC Price Change</option>
+                                </aura:if>
+                                <aura:if isTrue="{!(v.selectedBidType != 'OTC RFP')}" >
+                                    <option value="OTC RFP">OTC RFP</option>
+                                </aura:if>
+                                <aura:set attribute="else">
+                                    <aura:if isTrue="{!(v.selectedBidType != 'Product Addition')}" >
+                                        <option value="Product Addition">Product Addition</option>
+                                    </aura:if>
+                                    <aura:if isTrue="{!(v.selectedBidType != 'New Product Launch')}" >
+                                        <option value="New Product Launch">New Product Launch</option>
+                                    </aura:if>
+                                    <aura:if isTrue="{!(v.selectedBidType != 'Volume Review')}" >
+                                        <option value="Volume Review">Volume Review</option>
+                                    </aura:if>
+                                    <aura:if isTrue="{!(v.selectedBidType != 'Price Change')}" >
+                                        <option value="Price Change">Price Change</option>
+                                    </aura:if>
+                                    <aura:if isTrue="{!(v.selectedBidType != 'RFP Bids')}" >
+                                        <option value="RFP Bids">RFP Bids</option>
+                                    </aura:if>
+                                    <aura:if isTrue="{!or(v.templateType=='Direct',or(v.templateType == 'BASE/DSH',v.templateType == 'Indirect'))}">
+                                        <aura:if isTrue="{!(v.selectedBidType != 'New Customer')}" >
+                                            <option value="New Customer">New Customer</option>
+                                        </aura:if>
+                                    </aura:if>
+                                </aura:set>
+                            </aura:if>
+                        </lightning:select>
+                    </div>
+                            <aura:set attribute="else">
+                          <i>A bid is going to be created for "Pharmabid" bid type.</i>  
+                            </aura:set>
+                    </aura:if>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Cancel" title="Cancel"
+                                      onclick="{! c.closeBidTypeSelection }"/>
+                    <aura:if isTrue="{!v.sendToBrightType == 'toBid'}">
+                        <lightning:button variant="brand"
+                                          label="Show Draft Bids" title="Show Draft Bids"
+                                          onclick="{!c.getBidTypeList}"/>
+                        <aura:set attribute="else">
+                            <lightning:button variant="brand"
+                                              label="Send To Bright" title="Send To Bright"
+                                              onclick="{!c.confirmCreateNewBid}"/>
+                        </aura:set>
+                    </aura:if>
+                </footer>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open" aura:id="customModal-Back"></div>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showProductsloading}">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: White; border: 0;"> 
+                        <div>
+                            <img src="{!$Resource.LoadingProgress}" />  
+                        </div><br/>
+                        <aura:if isTrue="{!v.loadingMessage}">
+                            <div style="font-size:18px;color:black;">
+                                {!v.loadingMessage}
+                            </div>
+                        </aura:if>
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+    <div class="slds-box" style="background: white;padding:0;">
+        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+            
+            <aura:if isTrue="{!v.isError}">
+                <center>
+                    <p>{!v.errormsg}</p>
+                </center>
+                <aura:set attribute="else">
+                    <div class="slds-grid slds-wrap">
+                        <div class="slds-col slds-size_1-of-2">
+                            <div role="Status">
+                                <span class="item-description" style="font-size:14px;">
+                                    <p>•&nbsp;&nbsp;Products Sent to Bright# : <b>{!v.noOfProdSentToBright}</b> &nbsp;&nbsp;•&nbsp;&nbsp; 
+                                        Opportunity Value :&nbsp;<b><lightning:formattedNumber value="{!v.optyVal}" style="currency" currencyCode="USD" 
+                                                                                               minimumFractionDigits= "0" maximumFractionDigits ="0"/></b> &nbsp;&nbsp; 
+                                        <!-- Opportunity Bid Type :&nbsp;<b><ui:outputText value="{!v.optyBidType}"/></b> -->
+                                        <aura:if isTrue="{!v.wrapperList[0].refContractList}">
+                                            •&nbsp;&nbsp;Contracts :&nbsp;
+                                            <aura:iteration items="{!v.wrapperList[0].refContractList}" var="contractItem" indexVar="itemIndex">
+                                                <aura:if isTrue="{!v.wrapperList[0].refContractList.length != itemIndex+1}">
+                                                    <a href="{!'/'+contractItem.Id}" target="_blank">{!contractItem.Phoenix_Contract_Number__c} , </a>
+                                                    <aura:set attribute="else">
+                                                        <a href="{!'/'+contractItem.Id}" target="_blank">{!contractItem.Phoenix_Contract_Number__c}</a>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:iteration>
+                                        </aura:if>
+                                    </p>
+                                </span>
+                            </div>
+                            
+                            <aura:if isTrue="{!v.editOptyComment}">
+                                <div style="margin-top:5px;">
+                                    <lightning:inputRichText variant="bottom-toolbar" value="{!v.optyObj.Vision_Comments__c}" 
+                                                             placeholder="Enter the Vision Comments here..."
+                                                             title="Vision Comments"/>
+                                    <div style="margin-top:5px;">
+                                        <lightning:button variant="brand" title="Save" label="Save" onclick="{!c.saveCmnt}"/>
+                                        <lightning:button title="Cancel" label="Cancel" onclick="{!c.showOptyCmntInput}"/>
+                                    </div>
+                                </div>
+                                <aura:set attribute="else">
+                                    <div style="margin-top:5px;" class="slds-grid">
+                                        <div class="slds-col slds-size_2-of-12" style="margin-top:3px;">
+                                            •&nbsp;&nbsp;Comments:
+                                        </div>
+                                        <div class="slds-col slds-size_10-of-12 slds-box" style="padding-top:3px;padding-bottom:3px;" onclick="{!c.showOptyCmntInput}">
+                                            <div class="slds-grid">
+                                                <div class="slds-col slds-size_10-of-12 slds-truncate" style="overflow: hidden;">
+                                                    <lightning:formattedRichText class="slds-truncate" value="{!v.optyObj.Vision_Comments__c}"/>
+                                                </div>
+                                                <div class="slds-col slds-size_2-of-12 slds-text-align_right">
+                                                    <button onclick="{!c.showOptyCmntInput}"
+                                                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small">
+                                                        <lightning:icon iconName="utility:edit" size="xx-small" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- •&nbsp;&nbsp;Comments :&nbsp;<lightning:formattedRichText value="{!v.optyObj.Vision_Comments__c}"/>&nbsp;&nbsp;
+                                            <button onclick="{!c.showOptyCmntInput}"
+                                                    class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                    tabindex="0">
+                                                <lightning:icon iconName="utility:edit" size="xx-small" />
+                                            </button> -->
+                                    </div>
+                                </aura:set>
+                            </aura:if>
+                            
+                        </div>
+                        
+                        <div class="slds-col slds-size_1-of-2">
+                            <span>
+                                <!-- <center><p>	Are you sure you want to send the products to Bright?</p></center> -->
+                                <div style="text-align:right;">
+                                    <span>
+                                        <b>Total Items : {!v.optyProdsCount}</b>&nbsp;&nbsp;
+                                        <aura:if isTrue="{!v.showSendButton}">
+                                            <div class="slds-badge">
+                                                Selected Products #&nbsp;<span style="font-size:18px;">{!v.noOfSelectedProd}</span>
+                                            </div>
+                                            &nbsp;&nbsp;&nbsp;
+                                            <aura:if isTrue="{!v.optyObj.Vision_Previous_Bid__c}">
+                                                <lightning:button variant="brand" label="Create A Bid"
+                                                                  title="Create A Bid" onclick="{!c.showBidTypeSelection}"
+                                                                  disabled="{!v.noOfSelectedProd == 0}"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!($Label.c.PharmaBidLabel != v.AccountNumber)}">
+                                                    <aura:if isTrue="{!v.showAddToBidButton == true}">
+                                                        <lightning:button variant="brand" label="Add To Draft Bid"
+                                                                          title="Add To Draft Bid" onclick="{!c.openBidSelectionPopUp}"
+                                                                          disabled="{!v.noOfSelectedProd == 0}"/>
+                                                    </aura:if>
+                                                        </aura:if>
+                                                    <lightning:button variant="brand" label="Create A New Bid"
+                                                                      title="Create A New Bid" onclick="{!c.showBidTypeSelection}"
+                                                                      disabled="{!v.noOfSelectedProd == 0}"/>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:if>
+                                    </span>
+                                </div>
+                            </span>
+                            <br/>
+                            <div style="text-align:right;font-style:italic;"><b>&nbsp;</b></div>
+                        </div>
+                    </div>
+                    <div class="slds-grid" style="margin-top:10px;">
+                        <div class="slds-col slds-size_1-of-5" style="width:220px;">
+                            <lightning:input type="toggle" checked="{!v.isViewAllMatched}"
+                                             messageToggleActive="" messageToggleInactive="" 
+                                             value="{!v.isViewAllMatched}"
+                                             label="View Perfectly Matched Items"/>
+                        </div>
+                        <div class="slds-col slds-size_1-of-5" style="width:220px;">
+                            <lightning:input type="toggle" checked="{!v.isViewPartialMatched}"
+                                             messageToggleActive="" messageToggleInactive=""
+                                             value="{!v.isViewPartialMatched}"
+                                             label="View Partially Matched Items"/>
+                        </div>
+                        <div class="slds-col slds-size_2-of-5">
+                            <div class="slds-grid">
+                                <div class="slds-col slds-size_3-of-7 slds-text-title" style="text-align:right;padding-top:5px;width:80px;">Show All</div>
+                                <div class="slds-col slds-size_1-of-7" style="width:60px;">
+                                    <span>
+                                        <lightning:input type="toggle" name="toggleButton" aura:id="tglbtn" 
+                                                         variant="hidden-label" messageToggleActive="" messageToggleInactive="" 
+                                                         onchange="{!c.zeroAnualUnitsChanged}" checked="{!v.showZeroProds}"/>
+                                    </span>
+                                </div>
+                                <div class="slds-col slds-size_3-of-7 slds-text-title" style="padding-top:5px;">Show No Usage Products</div>
+                            </div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-5" style="text-align:right;">
+                            <h2>To View the changes made, please Refresh.
+                                <lightning:icon iconName="utility:sync" alternativeText="Refresh" 
+                                                size="x-small" variant="inverse" class="showGreen"
+                                                style="cursor:pointer;" onclick="{!c.doInit}"/>
+                            </h2>
+                        </div>
+                    </div>
+                    <aura:if isTrue="{!v.optyObj.Bid_Type__c != ''}">
+                        <aura:if isTrue="{!v.doesOptyProdsExists}">
+                            <div aura:id="mainDiv" style="{!v.optyProdsCount > 15 ? 'height:400px;overflow:auto;margin-top:10px;' : 'overflow:auto;margin-top:10px;'}">
+                                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                                    <table class="maintable fixedtable slds-table slds-table_col-bordered slds-no-row-hover slds-table_bordered slds-table-bordered slds-border_left" 
+                                           style="border:1px solid #eaeaea;">
+                                        <thead>
+                                            <tr>
+                                                <th class="slds-cell-wrap" scope="col" 
+                                                    style="width: 40px;background-color:#8c00ff !important;color: white !important;">
+                                                    <aura:if isTrue="{!v.showSendButton}">
+                                                        <lightning:input type="checkbox" class="" name=""
+                                                                         checked="{!v.selectAll}"
+                                                                         aura:id="checkbox"
+                                                                         onchange="{!c.selectAllCheckbox}"
+                                                                         variant="label-hidden"/>
+                                                    </aura:if>
+                                                </th>
+                                                <th class="slds-truncate slds-cell-wrap" 
+                                                    style="background-color:#8c00ff !important;color: white !important;">Product&nbsp;Name</th>
+                                                <th class="slds-truncate slds-cell-wrap" 
+                                                    style="background-color:#8c00ff !important;color: white !important;">NDC</th>
+                                                <th class="slds-truncate slds-cell-wrap" 
+                                                    style="background-color:#8c00ff !important;color: white !important;">Product&nbsp;Code</th>
+                                                <th class="slds-truncate slds-cell-wrap" 
+                                                    style="background-color:#8c00ff !important;color: white !important;">Product&nbsp;Family</th>
+                                                <th class="slds-truncate slds-cell-wrap" 
+                                                    style="background-color:#8c00ff !important;color: white !important;">Product&nbsp;Director</th>
+                                                <th class="slds-truncate slds-cell-wrap" 
+                                                    style="background-color:#8c00ff !important;color: white !important;">Bid&nbsp;Number</th>
+                                                <th class="slds-truncate slds-cell-wrap" 
+                                                    style="background-color:#8c00ff !important;color: white !important;">Bid&nbsp;Name</th>
+                                                <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                    style="background-color:#8c00ff !important;color: white !important;">WAC</th>
+                                                <aura:if isTrue="{!v.isOtcProdFam}">
+                                                    <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                        style="background-color:#8c00ff !important;color: white !important;">Current&nbsp;Units</th>
+                                                    <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                        style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Units</th>
+                                                    <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                        style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Share&nbsp;%</th>
+                                                    <aura:set attribute="else">
+                                                        
+                                                        <aura:if isTrue="{!or(v.templateType=='Econdisc',v.templateType == 'Net Indirect Pricing')}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">3 Months Annualized&nbsp;Current Direct&nbsp;Selling&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">3 Months Annualized&nbsp;Current Indirect&nbsp;Selling&nbsp;Units</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!or(v.templateType=='Humana Indirect retail',v.templateType=='Humana Indirect CII')}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">3 months Annualized&nbsp;Total Selling&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed Selling&nbsp;Units</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!or(v.templateType=='Sams Club',v.templateType == 'Costco')}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">3 Months Annualized&nbsp;Current Indirect&nbsp;Selling&nbsp;Units</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!or(or(v.templateType=='Indirect',v.templateType == 'Walgreens'),or(or(v.templateType == 'ABC Progen',v.templateType == 'ABC Pharmagen'),v.templateType == 'Government Pricing'))}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current&nbsp;Indirect Selling&nbsp;Unit</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!and(v.AccountNumber != '164498',v.templateType=='Direct')}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current&nbsp;Direct Selling&nbsp;Unit</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!or(or(v.templateType == 'Direct',v.templateType == 'Direct and Indirect'),v.templateType == 'Net Indirect Pricing')}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Selling&nbsp;Units<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        
+                                                        <aura:if isTrue="{!or(or(v.templateType=='Indirect',v.templateType=='Direct and Indirect'),or(v.templateType=='Walgreens',or(or(v.templateType=='ABC Progen',v.templateType=='ABC Pharmagen'),or(v.templateType== 'Costco',or(v.templateType== 'Sams Club',
+                                                                         or(v.templateType == 'Net Indirect Pricing',v.templateType== 'Government Pricing'),or(v.templateType=='Humana Indirect retail',v.templateType=='Humana Indirect CII'))))))}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Selling&nbsp;Units<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        
+                                                        <aura:if isTrue="{!v.templateType=='Econdisc'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Other&nbsp;Direct&nbsp;Selling&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Other&nbsp;Indirect&nbsp;Selling&nbsp;Units<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        
+                                                        <aura:if isTrue="{!v.templateType == 'ClarusOne'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">3 Months Annualized OS&nbsp;And&nbsp;RAD&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">3 Months Annualized WMT&nbsp;Direct&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">3 Months Annualized WMT&nbsp;Indirect&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;OS&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;RAD&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;WMT&nbsp;Units<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'Econdisc'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Esi&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Esi&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Kroger&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Kroger&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Rx&nbsp;Outreach&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Rx&nbsp;Outreach&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Supervalu&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Supervalu&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Cigna&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Cigna&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Cordant&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Cordant&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Accerodo&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Accerodo&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'RXSS'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current Wholesaler Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current Anda Units</th>                                       
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current Retail Direct Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current Retail Indirect Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Smith Drug&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Anda&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Ahold/Delhaize&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Gaint Eagle&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Total Retail Indirect&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Units<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'BASE/DSH'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">3 Months Annualized&nbsp;Current BASE&nbsp;Selling&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">3 Months Annualized&nbsp;Current DSH&nbsp;Selling&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">3 Months Annualized&nbsp;Current Auto&nbsp;Sub&nbsp;Selling&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Base&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Dsh&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Autosub&nbsp;Units<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'ROS'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">3&nbsp;Months Annualized CVS&nbsp;Direct Selling&nbsp;Unit</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">3&nbsp;Months Annualized CVS&nbsp;Indirect Selling&nbsp;Unit</th> 
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">3&nbsp;Months Annualized Cardinal Selling&nbsp;Unit</th>                                        
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">3&nbsp;Months Annualized Major Selling&nbsp;Unit</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;CVS&nbsp;Direct&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;CVS&nbsp;Indirect&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Cardinal&nbsp;Units<br/>(Current+Incremental)</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Major&nbsp;Units<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                    </aura:set>
+                                                </aura:if>
+                                                <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                    style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Total&nbsp;Units</th>
+                                                <aura:if isTrue="{!v.isPanMove}">
+                                                    <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                        style="background-color:#8c00ff !important;color: white !important;">Panorama Target&nbsp;Price</th>
+                                                </aura:if>
+                                                  <aura:if isTrue="{!v.AccountNumber == '164498'}">
+                                                                     <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Floor&nbsp;Price</th>
+                                                                        <aura:set attribute="else">
+                                                                         <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Guidance&nbsp;Price</th>
+                                                                        </aura:set>
+                                                                    </aura:if>
+                                                      
+                                                <aura:if isTrue="{!!v.isPanMove}">
+                                                    <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                        style="background-color:#8c00ff !important;color: white !important;">Lowest&nbsp;Price&nbsp;($)</th>
+                                                </aura:if>
+                                                <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                    style="background-color:#8c00ff !important;color: white !important;">Opportunity&nbsp;Value</th>
+                                                <!-- <th class="slds-truncate slds-cell-wrap slds-text-align__right" 
+                                                    style="background-color:#8c00ff !important;color: white !important;">Financial&nbsp;Impact</th> -->
+                                                <th class="slds-text-align--right" 
+                                                    style="background-color:#8c00ff !important;color: white !important;width:150px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bid&nbsp;Type</th>
+                                                <th class="slds-text-align--right" 
+                                                    style="background-color:#8c00ff !important;color: white !important;width:150px;">&nbsp;Comments&nbsp;</th>
+                                                <th class="slds-text-align--right" 
+                                                    style="background-color:#8c00ff !important;color: white !important;width:150px;">&nbsp;Bright&nbsp;Comments&nbsp;</th>
+                                                <th class="slds-truncate slds-cell-wrap"
+                                                    style="background-color:#8c00ff !important;color: white !important;">&nbsp;</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <aura:iteration items="{!v.pagedListdata}" var="prodItem"
+                                                            indexVar="itemIndex">
+                                                <aura:if isTrue="{!prodItem.optyProdObj}">
+                                                    <aura:if isTrue="{!or(and(v.isViewAllMatched,prodItem.optyProdObj.Vision_Uploaded_Pkg_Size__c == null),and(v.isViewPartialMatched,prodItem.optyProdObj.Vision_Uploaded_Pkg_Size__c != null))}">
+                                                        <c:Vision_sendTobrightChildCmp prodItem="{!prodItem}" optyVal="{!v.optyVal}" optyObj ="{!v.optyObj}"
+                                                                                       rowIndex="{!itemIndex}" optyId="{!v.recordId}" isOtcProdFam="{!v.isOtcProdFam}"
+                                                                                       templateType="{!v.templateType}" isPanMove="{!v.isPanMove}" AccountNumber="{!v.AccountNumber}"/>
+                                                    </aura:if>
+                                                </aura:if>
+                                            </aura:iteration>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <aura:if isTrue="{!!v.showZeroProds}">
+                                <center>
+                                    <aura:if isTrue="{!!lessthan(v.wrapperList.length,50)}">
+                                        <div class="" style="margin:0px;margin-top:10px;">
+                                            <aura:iteration items="{!v.pageNumberList}" var="pageNum" indexVar="index">
+                                                <lightning:button label="{!pageNum}" name="{!pageNum}" 
+                                                                  variant="{!v.selectedPageNumber == pageNum ? 'Brand' : 'Neutral'}" 
+                                                                  value="{!pageNum}" onclick="{!c.changePage}"/>
+                                            </aura:iteration>
+                                        </div>
+                                    </aura:if>
+                                </center>
+                            </aura:if>
+                            <aura:set attribute="else">
+                                <lightning:card >
+                                    <center>
+                                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                            <span class="slds-icon_container slds-m-right_x-small" title="No data found.">
+                                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                            </span>
+                                            <h2>No Opportunity Products found.</h2>
+                                        </div>
+                                    </center>
+                                </lightning:card>
+                                <!--<div style="cursor:pointer;"
+                                     onclick="{!c.doInit}">
+                                    <center>
+                                        <h2>To View the changes made, please Refresh.
+                                            <lightning:icon iconName="utility:sync" alternativeText="Refresh" 
+                                                            size="x-small" variant="inverse" class="showGreen"/>
+                                        </h2>
+                                    </center>
+                                </div> -->
+                            </aura:set>
+                        </aura:if>
+                    </aura:if>
+                    <aura:if isTrue="{!v.optyObj.Bid_Type__c == 'NOTYPEDEFINED'}">
+                        <span>
+                            <div class="slds-badge" onclick="{!c.goToAwarded}" style="{!or(v.isShowingTabName == 'award',v.isShowingTabName == 'both') ? 'background-color:#8c00ff !important;color: white !important;cursor:pointer;' : 'cursor:pointer;'}">
+                                Awarded Products : {!v.awardedListdata.length}
+                            </div>
+                            <div class="slds-badge" onclick="{!c.goToNonAwarded}" style="{!or(v.isShowingTabName == 'nonAward',v.isShowingTabName == 'both') ? 'background-color:#8c00ff !important;color: white !important;cursor:pointer;' : 'cursor:pointer;'}">
+                                Non-Awarded Products : {!v.nonAwardedListdata.length}
+                            </div>
+                        </span>
+                        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="{!v.showSectionName}"
+                                             onsectiontoggle="{! c.handleSectionToggle }">
+                            
+                            <lightning:accordionSection name="Awarded Products" label="Awarded Products">
+                                <aura:if isTrue="{!v.awardedListdata.length != 0}">
+                                    <div aura:id="awardedDiv" id="awardedSection" style="{!v.awardedListdata.length > 15 ? 'height:400px;overflow:auto;margin-top:10px;' : 'overflow:auto;margin-top:10px;'}">
+                                        <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                                            <table class="maintable fixedtable slds-table slds-table_col-bordered slds-no-row-hover slds-table_bordered slds-table-bordered slds-border_left" 
+                                                   style="border:1px solid #eaeaea;">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="slds-cell-wrap" scope="col" 
+                                                            style="width: 40px;background-color:#8c00ff !important;color: white !important;">
+                                                            <lightning:input type="checkbox" class="" name=""
+                                                                             checked="{!v.isSelectAllAwarded}"
+                                                                             aura:id="checkbox"
+                                                                             onchange="{!c.selectAllAwardedCheckbox}"
+                                                                             variant="label-hidden"/>
+                                                        </th>
+                                                        <th class="slds-truncate slds-cell-wrap" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Product&nbsp;Name</th>
+                                                        <th class="slds-truncate slds-cell-wrap" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Product&nbsp;Code</th>
+                                                        <th class="slds-truncate slds-cell-wrap" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Product&nbsp;Family</th>
+                                                        <th class="slds-truncate slds-cell-wrap" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Product&nbsp;Director</th>
+                                                        <th class="slds-truncate slds-cell-wrap" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Bid&nbsp;Number</th>
+                                                        <th class="slds-truncate slds-cell-wrap" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Bid&nbsp;Name</th>
+                                                        <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">WAC</th>
+                                                        
+                                                        <aura:if isTrue="{!v.templateType == 'ClarusOne'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;OS&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;RAD&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;WMT&nbsp;Units</th>
+                                                        </aura:if>
+                                                        
+                                                        <aura:if isTrue="{!v.templateType == 'Econdisc'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Esi&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Esi&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Kroger&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Kroger&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Rx&nbsp;Outreach&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Rx&nbsp;Outreach&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Supervalu&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Supervalu&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Cordant&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Cordant&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Accerodo&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Accerodo&nbsp;Units</th>
+                                                            
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Units</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'RXSS'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Smith Drug&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Anda&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Ahold/Delhaize&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Gaint Eagle&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Total Retail Indirect&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Units</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'BASE/DSH'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Base&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Dsh&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Autosub&nbsp;Units</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'ROS'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;CVS&nbsp;Direct&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;CVS&nbsp;Indirect&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Cardinal&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Major&nbsp;Units</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!or(or(v.templateType=='Indirect',v.templateType=='Direct and Indirect'),or(v.templateType=='Walgreens',or(or(v.templateType=='ABC Progen',v.templateType=='ABC Pharmagen'),
+                                                                         or(v.templateType=='Econdisc',or(v.templateType== 'Costco',or(v.templateType== 'Sams Club',or(v.templateType== 'Net Indirect Pricing',v.templateType== 'Government Pricing')))))))}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Selling&nbsp;Units</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!or(or(v.templateType == 'Direct',v.templateType == 'Direct and Indirect'),or(v.templateType == 'Econdisc',v.templateType == 'Net Indirect Pricing'))}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Selling&nbsp;Units</th>
+                                                        </aura:if>
+                                                        
+                                                        <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Total&nbsp;Units</th>
+                                                        <!-- <aura:if isTrue="{!or(or(v.templateType == 'Direct',v.templateType == 'Direct and Indirect'),or(v.templateType == 'Econdisc',v.templateType == 'Net Indirect Pricing'))}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align__right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current&nbsp;Direct&nbsp;Price</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!or(or(v.templateType=='Indirect',v.templateType=='Direct and Indirect'),or(v.templateType=='Walgreens',or(v.templateType=='ABC Progen',
+                                                                         or(v.templateType=='Econdisc',or(v.templateType== 'Costco',or(v.templateType== 'Sams Club',or(v.templateType== 'Net Indirect Pricing',v.templateType== 'Government Pricing')))))))}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align__right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current&nbsp;Indirect&nbsp;Price</th>
+                                                        </aura:if> -->
+                                                        <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Guidance&nbsp;Price</th>
+                                                        <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Lowest&nbsp;Price&nbsp;($)</th>
+                                                        <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Opportunity&nbsp;Value</th>
+                                                        <!--<th class="slds-truncate slds-cell-wrap slds-text-align__right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Financial&nbsp;Impact</th>-->
+                                                        <th class="slds-text-align--right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;width:150px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bid&nbsp;Type</th>
+                                                        <th class="slds-truncate slds-cell-wrap"
+                                                            style="background-color:#8c00ff !important;color: white !important;">&nbsp;</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <aura:iteration items="{!v.awardedPagedListdata}" var="prodItem"
+                                                                    indexVar="itemIndex">
+                                                        <aura:if isTrue="{!prodItem.optyProdObj}">
+                                                            <c:Vision_sendTobrightChildCmp prodItem="{!prodItem}" optyVal="{!v.optyVal}" optyObj ="{!v.optyObj}"
+                                                                                           rowIndex="{!itemIndex}" optyId="{!v.recordId}"
+                                                                                           templateType="{!v.templateType}" isAwarded="true"/>
+                                                        </aura:if>
+                                                    </aura:iteration>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    <aura:if isTrue="{!!lessthan(v.awardedListdata.length,50)}">
+                                        <center>
+                                            <div class="" style="margin:0px;margin-top:10px;">
+                                                <aura:iteration items="{!v.pageNumberListAwarded}" var="pageNum" indexVar="index">
+                                                    <lightning:button label="{!pageNum}" name="{!pageNum}" 
+                                                                      variant="{!v.selectedAwardedPageNumber == pageNum ? 'Brand' : 'Neutral'}" 
+                                                                      value="{!pageNum}" onclick="{!c.changeAwardedPage}"/>
+                                                </aura:iteration>
+                                            </div>
+                                        </center>
+                                    </aura:if>
+                                    <aura:set attribute="else">
+                                        <center>
+                                            <div style="width:50%">
+                                                <ui:message severity="info">
+                                                    <p>There are No Already Awarded products added to this opportunity.</p>
+                                                    <p style="font-style: italic;">This section lists products that are already on the contract with {!v.optyObj.Account.Name}.</p>
+                                                </ui:message>
+                                            </div>
+                                        </center>
+                                    </aura:set>
+                                </aura:if>
+                            </lightning:accordionSection>
+                            
+                            <lightning:accordionSection name="Non-Awarded Products" label="Non-Awarded Products">
+                                <aura:if isTrue="{!v.nonAwardedListdata.length != 0}">
+                                    <div aura:id="nonAwardedDiv" id="nonAwardedSection" style="{!v.nonAwardedListdata.length > 15 ? 'height:400px;overflow:auto;margin-top:10px;' : 'overflow:auto;margin-top:10px;'}">
+                                        <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                                            <table class="maintable fixedtable slds-table slds-table_col-bordered slds-no-row-hover slds-table_bordered slds-table-bordered slds-border_left" 
+                                                   style="border:1px solid #eaeaea;">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="slds-cell-wrap" scope="col" 
+                                                            style="width: 40px;background-color:#8c00ff !important;color: white !important;">
+                                                            <lightning:input type="checkbox" class="" name=""
+                                                                             checked="{!v.isSelectAllNonAwarded}"
+                                                                             aura:id="checkbox"
+                                                                             onchange="{!c.selectAllNonAwardedCheckbox}"
+                                                                             variant="label-hidden"/>
+                                                        </th>
+                                                        <th class="slds-truncate slds-cell-wrap" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Product&nbsp;Name</th>
+                                                        <th class="slds-truncate slds-cell-wrap" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Product&nbsp;Code</th>
+                                                        <th class="slds-truncate slds-cell-wrap" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Product&nbsp;Family</th>
+                                                        <th class="slds-truncate slds-cell-wrap" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Product&nbsp;Director</th>
+                                                        <th class="slds-truncate slds-cell-wrap" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Bid&nbsp;Number</th>
+                                                        <th class="slds-truncate slds-cell-wrap" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Bid&nbsp;Name</th>
+                                                        <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">WAC</th>
+                                                        <!-- <aura:if isTrue="{!v.templateType == 'ClarusOne'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align__right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current&nbsp;OS&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align__right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current&nbsp;RAD&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align__right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current&nbsp;WMT&nbsp;Units</th>
+                                                        </aura:if> 
+                                                        <aura:if isTrue="{!v.optyBidType == 'RFP'}">-->
+                                                           <!-- <th class="slds-truncate slds-cell-wrap slds-text-align_right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Annual&nbsp;Usage</th> -->
+                                                        <!--  </aura:if>
+                                                        
+                                                        <aura:if isTrue="{!or(or(v.templateType=='Indirect',v.templateType=='Direct and Indirect'),or(v.templateType=='Walgreens',or(v.templateType=='ABC Progen',
+                                                                         or(v.templateType=='Econdisc',or(v.templateType== 'Costco',or(v.templateType== 'Sams Club',or(v.templateType== 'Net Indirect Pricing',v.templateType== 'Government Pricing')))))))}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align__right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current&nbsp;Indirect&nbsp;Units</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!or(or(v.templateType == 'Direct',v.templateType == 'Direct and Indirect'),or(v.templateType == 'Econdisc',v.templateType == 'Net Indirect Pricing'))}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align__right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current&nbsp;Direct&nbsp;Units</th>
+                                                        </aura:if> -->
+                                                        <aura:if isTrue="{!v.templateType == 'ClarusOne'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;OS&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;RAD&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;WMT&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Total&nbsp;Units</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'Econdisc'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Esi&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Esi&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Kroger&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Kroger&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Rx&nbsp;Outreach&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Rx&nbsp;Outreach&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Supervalu&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Supervalu&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Cordant&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Cordant&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Accerodo&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Accerodo&nbsp;Units</th>
+                                                            
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Units</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'RXSS'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Smith Drug&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Anda&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Ahold/Delhaize&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Gaint Eagle&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Total Retail Indirect&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Units</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'BASE/DSH'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Base&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Dsh&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Autosub&nbsp;Units</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'ROS'}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;CVS&nbsp;Direct&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;CVS&nbsp;Indirect&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Cardinal&nbsp;Units</th>
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right"
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Major&nbsp;Units<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!or(or(v.templateType=='Indirect',v.templateType=='Direct and Indirect'),or(v.templateType=='Walgreens',or(v.templateType=='ABC Progen',
+                                                                         or(v.templateType=='Econdisc',or(v.templateType== 'Costco',or(v.templateType== 'Sams Club',or(v.templateType== 'Net Indirect Pricing',v.templateType== 'Government Pricing')))))))}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Indirect&nbsp;Selling&nbsp;Units<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!or(or(v.templateType == 'Direct',v.templateType == 'Direct and Indirect'),or(v.templateType == 'Econdisc',v.templateType == 'Net Indirect Pricing'))}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Proposed&nbsp;Direct&nbsp;Selling&nbsp;Units<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        <!-- <aura:if isTrue="{!or(or(v.templateType == 'Direct',v.templateType == 'Direct and Indirect'),or(v.templateType == 'Econdisc',v.templateType == 'Net Indirect Pricing'))}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align__right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current&nbsp;Direct&nbsp;Price</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!or(or(v.templateType=='Indirect',v.templateType=='Direct and Indirect'),or(v.templateType=='Walgreens',or(v.templateType=='ABC Progen',
+                                                                         or(v.templateType=='Econdisc',or(v.templateType== 'Costco',or(v.templateType== 'Sams Club',or(v.templateType== 'Net Indirect Pricing',v.templateType== 'Government Pricing')))))))}">
+                                                            <th class="slds-truncate slds-cell-wrap slds-text-align__right" 
+                                                                style="background-color:#8c00ff !important;color: white !important;">Current&nbsp;Indirect&nbsp;Price</th>
+                                                        </aura:if> -->
+                                                        <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Guidance&nbsp;Price</th>
+                                                        <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Lowest&nbsp;Price&nbsp;($)</th>
+                                                        <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Opportunity&nbsp;Value</th>
+                                                        <!--<th class="slds-truncate slds-cell-wrap slds-text-align__right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;">Financial&nbsp;Impact</th>-->
+                                                        <th class="slds-truncate slds-cell-wrap slds-text-align--right" 
+                                                            style="background-color:#8c00ff !important;color: white !important;width:150px;">Bid&nbsp;Type</th>
+                                                        <th class="slds-truncate slds-cell-wrap"
+                                                            style="background-color:#8c00ff !important;color: white !important;">&nbsp;</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <aura:iteration items="{!v.nonAwardedPagedListdata}" var="prodItem"
+                                                                    indexVar="itemIndex">
+                                                        <aura:if isTrue="{!prodItem.optyProdObj}">
+                                                            <c:Vision_sendTobrightChildCmp prodItem="{!prodItem}" optyVal="{!v.optyVal}" optyObj ="{!v.optyObj}"
+                                                                                           rowIndex="{!itemIndex}" optyId="{!v.recordId}" isOtcProdFam="{!v.isOtcProdFam}"
+                                                                                           templateType="{!v.templateType}" isAwarded="false"/>
+                                                        </aura:if>
+                                                    </aura:iteration>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <aura:if isTrue="{!!lessthan(v.nonAwardedListdata.length,50)}">
+                                        <center>
+                                            <div class="" style="margin:0px;margin-top:10px;">
+                                                <aura:iteration items="{!v.pageNumberListNonAwarded}" var="pageNum" indexVar="index">
+                                                    <lightning:button label="{!pageNum}" name="{!pageNum}" 
+                                                                      variant="{!v.selectedNonAwardedPageNumber == pageNum ? 'Brand' : 'Neutral'}" 
+                                                                      value="{!pageNum}" onclick="{!c.changeNonAwardedPage}"/>
+                                                </aura:iteration>
+                                            </div>
+                                        </center>
+                                    </aura:if>
+                                    <aura:set attribute="else">
+                                        <center>
+                                            <div style="width:50%;">
+                                                <ui:message severity="info">
+                                                    <p>No Products newly added to this customer.</p>
+                                                    <p style="font-style: italic;">This section lists products that are to be added to the customer's contracts.</p>
+                                                </ui:message>
+                                            </div>
+                                        </center>
+                                    </aura:set>
+                                </aura:if>
+                            </lightning:accordionSection>
+                            
+                        </lightning:accordion>
+                    </aura:if>
+                    
+                </aura:set>
+            </aura:if>
+        </div>
+        <!-- <footer class="slds-modal__footer"> 
+            <aura:if isTrue="{!v.isError}">
+                <lightning:button variant="brand" name='Cancel' label='Cancel' onclick = "{!c.closeQuickActionPanel}" />
+                <aura:set attribute="else">
+                    <lightning:button name='Cancel' label='Cancel' onclick = "{!c.closeQuickActionPanel}" />
+                    
+                </aura:set>
+            </aura:if>
+        </footer> -->
+    </div>
+</aura:component>

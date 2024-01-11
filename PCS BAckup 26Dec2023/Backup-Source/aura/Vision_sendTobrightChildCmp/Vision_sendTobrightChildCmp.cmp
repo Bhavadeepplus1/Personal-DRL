@@ -1,0 +1,1051 @@
+<aura:component controller="Vision_SendToBrightCtrl" 
+                access="global">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="prodItem" type="object"/>
+    <aura:attribute name="optyVal" type="String" />
+    <aura:attribute name="optyId" type="String" />
+    <aura:attribute name="optyObj" type="object"/>
+    <aura:attribute name="templateType" type="string"/>
+    <aura:attribute name="rowIndex" type="Integer"/>
+    <aura:attribute name="unitsEditMode" type="boolean" default="false"/>
+    <aura:attribute name="inDirectUnitsEditMode" type="boolean" default="false"/>
+    <aura:attribute name="osUnitsEditMode" type="boolean" default="false"/>
+    <aura:attribute name="radUnitsEditMode" type="boolean" default="false"/>
+    <aura:attribute name="wmtUnitsEditMode" type="boolean" default="false"/>
+    <aura:attribute name="baseUnitsEditMode" type="boolean" default="false"/>
+    <aura:attribute name="dshUnitsEditMode" type="boolean" default="false"/>
+    <aura:attribute name="autoSubUnitsEditMode" type="boolean" default="false"/>
+    <aura:attribute name="smithDrugUnitsEditMode" type="boolean" default="false"/>
+    <aura:attribute name="andaUnitsEditMode" type="boolean" default="false"/>
+    <aura:attribute name="aholdUnitsEditMode" type="boolean" default="false"/>
+	<aura:attribute name="gaintEagleUnitsEditMode" type="boolean" default="false"/>
+    <aura:attribute name="totalRetailUnitsEditMode" type="boolean" default="false"/>
+    <aura:attribute name="CommentEditMode" type="boolean" default="false"/>
+    
+    <aura:attribute name="totalProposedUnits" type="Integer" default="0"/>
+    <aura:attribute name="GDPEditMode" type="boolean" default="false"/>
+    <aura:registerEvent name="DeleteRowEvt" type="c:DeleteRowEvt"/>
+    <aura:attribute name="isSentToBright" type="boolean"/>
+    <aura:attribute name="text" type="string"/>
+    <aura:attribute name="isAwarded" type="boolean"/>
+    <aura:attribute name="isEditBidType" type="boolean" default="false"/>
+    <aura:attribute name="isOtcProdFam" type="boolean"/>
+    <aura:attribute name="isPanMove" type="boolean"/>
+    <aura:attribute name="isDeleteConfirm" type="boolean" default="false"/>
+     <!-- added by Srimayee-->
+    <aura:attribute name="AccountNumber" type="string"/>
+
+    <aura:if isTrue="{!v.isDeleteConfirm}">
+        <div role="dialog" class="slds-modal slds-fade-in-open ">
+            <div class="slds-modal__container" style="max-width:1000px;width:800px;height:100vh;">
+                <lightning:buttonIcon iconName="utility:close"
+                                      onclick="{! c.closeDelete }"
+                                      alternativeText="close"
+                                      variant="bare-inverse"
+                                      class="slds-modal__close"/>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <center>
+                        <div>
+                            <b style="font-size:16px;">Are You Sure That You Want To Delete {!v.prodItem.optyProdObj.Product__r.Name}?</b><br/>
+                        </div>
+                    </center>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Cancel" title="Cancel"
+                                      onclick="{! c.closeDelete }"/>
+                    <lightning:button variant="brand"
+                                      label="Delete" title="Delete"
+                                      onclick="{!c.confirmDelete}"/>
+                </footer>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open" aura:id="customModal-Back"></div>
+    </aura:if>
+    
+    <tr class="{!v.isSentToBright ? 'slds-text-title changeColor maintable' : 'slds-text-title maintable'}" style="{!v.isSentToBright ? 'background-color: #eeeeee;' : ''}">
+        <td class="slds-cell-wrap" scope="row">
+            <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                <lightning:icon iconName="utility:lock" size="x-small" title="{!v.prodItem.optyProdObj.Status__c == 'Dropped' ? 'Product has been Dropped' : 'Product Sent To Bright'}"/>
+                <aura:set attribute="else">  
+                    <lightning:input type="checkbox" class=""
+                                     name="{!v.rowIndex}" aura:id="checkbox"
+                                     checked="{!v.prodItem.isSelected}"
+                                     onchange="{!c.checkBoxChangeHandler}" 
+                                     variant="label-hidden"/>
+                </aura:set>
+            </aura:if>
+        </td>
+        <td class="maintable">
+            <a href="{!'/'+v.prodItem.optyProdObj.Product__r.Id}"
+               target="_blank">{!v.prodItem.optyProdObj.Product__r.Name}</a>
+            <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Uploaded_Pkg_Size__c}">
+                &nbsp;&nbsp;<lightning:icon iconName="utility:change_record_type" class="red"
+                                            size="x-small" title="Alternate Pack Size Product has been selected for this Item."/>
+            </aura:if>
+            <!--  
+               onmouseout="{!c.handleMouseLeave}"
+               onmouseover="{!c.handleMouseEnter}"<div aura:id="divHelp" class="slds-popover ms-help-popup-in-header slds-hide "
+                 role="tooltip" aria-live="polite">
+                <div class="slds-popover__body ms-help-popup-body" style="color:white !important; width:300px;">
+                    <ui:outputText value="{!v.text}" class="lineSpaceClass"/>
+                </div>
+            </div>
+
+<div aura:id="divHelp" class="slds-hide slds-popover slds-nubbin_top"
+                 role="tooltip" id="help" style="position: absolute; bottom: 100%; width:auto; padding: inherit;background-color: #e2e5eb;display:block;">-->
+            
+            <div aura:id="divHelp" class="slds-hide slds-popover slds-nubbin_top"
+                 role="tooltip" id="help" style="position: absolute; top:100%; padding: inherit;background-color: #e2e5eb;display:block;z-index:99 !important">
+                <div>
+                    <b>NDC-11</b>: {!v.prodItem.optyProdObj.Product__r.Phoenix_NDC_11__c}<br/>
+                    <b>Product Family</b>: {!v.prodItem.optyProdObj.Product__r.Family}<br/>
+                    <!-- <b>Product Director</b>: {!v.prodItem.optyProdObj.Product__r.Phoenix_Product_Director__r.Name}<br/> -->
+                    <b>Strength</b>: {!v.prodItem.optyProdObj.Product__r.Phoenix_Strength__c}<br/>
+                    <b>Pack Size</b>: {!v.prodItem.optyProdObj.Product__r.Phoenix_Pkg_Size__c}<br/>
+                </div>
+            </div>
+        </td>
+        <td>
+            {!v.prodItem.optyProdObj.Product__r.Phoenix_NDC_11__c}
+        </td>
+        <td>
+            {!v.prodItem.optyProdObj.Product__r.ProductCode}
+        </td>
+        <td>
+            {!v.prodItem.optyProdObj.Product__r.Family}
+        </td>
+        <td>
+            {!v.prodItem.optyProdObj.Product__r.Phoenix_Product_Director__r.Name}
+        </td>
+        <td>
+            <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                <a href="{!'/'+v.prodItem.optyProdObj.Vision_Bid__r.Id}"
+                   target="_blank">{!v.prodItem.optyProdObj.Vision_Bid__r.Name}
+                </a>
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td>
+        <td>
+            <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                {!v.prodItem.optyProdObj.Vision_Bid__r.Phoenix_Bid_Name__c}
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td>
+        <td class="slds-text-align--right">
+            <lightning:formattedNumber value="{!v.prodItem.optyProdObj.Product__r.Phoenix_WAC__c}" style="currency" currencyCode="USD" minimumFractionDigits= "2" maximumFractionDigits="2"/>
+        </td>
+        <aura:if isTrue="{!v.isOtcProdFam}">
+            <td class="slds-text-align--right">
+                <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3_Months_Annualized_Direct_Selling_Unit__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+            </td>
+            <td class="slds-text-align--right">
+                <lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" 
+                                 disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_Units__c}" />
+                
+            </td>
+            <td class="slds-text-align--right">
+                <lightning:input type="number" class="rightAlignCss" variant="label-hidden" formatter="percent-fixed" step="0.01"
+                                 onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}"
+                                 value="{!v.prodItem.optyProdObj.Vision_Proposed_Share_Percentage__c}"/>
+            </td>
+            <aura:set attribute="else">
+                <aura:if isTrue="{!or(v.templateType=='Econdisc',v.templateType == 'Net Indirect Pricing')}">
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3_Months_Annualized_Direct_Selling_Unit__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3Months_Annualized_Indirect_Selling_Uni__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                </aura:if>
+                <aura:if isTrue="{!or(or(v.templateType=='Sams Club',v.templateType == 'Costco'),or(v.templateType=='Humana Indirect retail',v.templateType=='Humana Indirect CII'))}">
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3Months_Annualized_Indirect_Selling_Uni__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                </aura:if>
+                <aura:if isTrue="{!or(or(v.templateType=='Indirect',v.templateType == 'Walgreens'),or(or(v.templateType=='ABC Progen',v.templateType=='ABC Pharmagen'),v.templateType == 'Government Pricing'))}">
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3Months_Annualized_Indirect_Selling_Uni__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                </aura:if>
+                <aura:if isTrue="{!and(v.AccountNumber != '164498',v.templateType=='Direct')}">
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3_Months_Annualized_Direct_Selling_Unit__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                </aura:if>
+                
+                <aura:if isTrue="{!or(v.templateType=='Humana Indirect retail',v.templateType=='Humana Indirect CII')}">
+                    <td class="slds-text-align--right">
+                        <lightning:input type="number" class="rightAlignCss" 
+                                         variant="label-hidden" onfocusout="{!c.updateRecordFun}" 
+                                         disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" 
+                                         value="{!v.prodItem.optyProdObj.Proposed_Indirect_Selling_Units__c}"/>
+                    </td>
+                </aura:if>
+                
+                <aura:if isTrue="{!or(or(v.templateType == 'Direct',v.templateType == 'Direct and Indirect'),v.templateType == 'Net Indirect Pricing')}">
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditProposedUnits}">
+                        <span class="{!v.unitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.unitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Proposed_Direct_Selling_Units__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditProposedUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth guidancePrice"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="inputGDPId" blur="{!c.closePropUnitsBox}"
+                                                                    change="{!c.getProDirectUnits}"
+                                                                    value="{!v.prodItem.optyProdObj.Proposed_Direct_Selling_Units__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                </aura:if>
+                <aura:if isTrue="{!or(or(v.templateType=='Indirect',v.templateType=='Direct and Indirect'),
+                                 or(v.templateType=='Walgreens',or(or(v.templateType=='ABC Progen',v.templateType=='ABC Pharmagen'),
+                                 or(v.templateType== 'Costco',or(v.templateType== 'Sams Club',
+                                 or(v.templateType== 'Net Indirect Pricing',v.templateType== 'Government Pricing'),
+                                 or(v.templateType=='Humana Indirect retail',v.templateType=='Humana Indirect CII'))))))}">
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditIndirectProposedUnits}">
+                        <span class="{!v.inDirectUnitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.inDirectUnitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Proposed_Indirect_Selling_Units__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditIndirectProposedUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth guidancePrice"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="inputGDPId" blur="{!c.closeIndirectPropUnitsBox}"
+                                                                    change="{!c.getProIndirectUnits}"
+                                                                    value="{!v.prodItem.optyProdObj.Proposed_Indirect_Selling_Units__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                </aura:if>
+                <aura:if isTrue="{!v.templateType == 'ClarusOne'}">
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3_Months_Annualized_OS_And_RAD_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3_Months_Annualized_WMT_Direct_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3_Months_Annualized_WMT_Indirect_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditOsProposedUnits}">
+                        <span class="{!v.osUnitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.osUnitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Proposed_OS_Units__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditOsProposedUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth guidancePrice"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="inputosId" blur="{!c.closeOsPropUnitsBox}"
+                                                                    change="{!c.getProOsUnits}"
+                                                                    value="{!v.prodItem.optyProdObj.Vision_Proposed_OS_Units__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                    
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditRadProposedUnits}">
+                        <span class="{!v.radUnitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.radUnitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Proposed_RAD_Units__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditRadProposedUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth guidancePrice"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="inputRADId" blur="{!c.closeRadPropUnitsBox}"
+                                                                    change="{!c.getProRadUnits}"
+                                                                    value="{!v.prodItem.optyProdObj.Vision_Proposed_RAD_Units__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                    
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditWmtProposedUnits}">
+                        <span class="{!v.wmtUnitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.wmtUnitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Proposed_WMT_Units__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditWmtProposedUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth guidancePrice"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="inputWMTId" blur="{!c.closeWmtPropUnitsBox}"
+                                                                    change="{!c.getProWmtUnits}"
+                                                                    value="{!v.prodItem.optyProdObj.Vision_Proposed_WMT_Units__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                    
+                </aura:if>
+                <aura:if isTrue="{!v.templateType == 'BASE/DSH'}">
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3MonthAnnualCurrent_BASE_Selling_unit__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3MonthAnnualCurrentDSHSellingUnit__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3MonthAnnualCurrentAutoSubSellingUnit__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditBaseUnits}">
+                        <span class="{!v.baseUnitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.baseUnitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Proposed_BASE_Units__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditBaseUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth baseUnits"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="baseUnits" blur="{!c.closeBaseUnitsBox}"
+                                                                    change="{!c.updateRecordCtrl}"
+                                                                    value="{!v.prodItem.optyProdObj.Vision_Proposed_BASE_Units__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditdshUnits}">
+                        <span class="{!v.dshUnitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.dshUnitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Proposed_DSH_Units__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditdshUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth baseUnits"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="dshUnits" blur="{!c.closeDshUnitsBox}"
+                                                                    change="{!c.updateRecordCtrl}"
+                                                                    value="{!v.prodItem.optyProdObj.Vision_Proposed_DSH_Units__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditAutoSubUnits}">
+                        <span class="{!v.autoSubUnitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.autoSubUnitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Proposed_AutoSub_Units__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditAutoSubUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth baseUnits"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="autoSubUnits" blur="{!c.closeAutoSubUnitsBox}"
+                                                                    change="{!c.updateRecordCtrl}"
+                                                                    value="{!v.prodItem.optyProdObj.Vision_Proposed_AutoSub_Units__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                    
+                </aura:if>
+                <aura:if isTrue="{!v.templateType == 'RXSS'}">
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Current_Wholesaler_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Current_Anda_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.Current_Retail_Direct_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.Current_Retail_Indirect_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditSmithDrugUnits}">
+                        <span class="{!v.smithDrugUnitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.smithDrugUnitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Proposed_Smith_Drug_Units__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditSmithDrugUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth baseUnits"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="smithDrugUnits" blur="{!c.closeSmithDrugUnitsEditMode}"
+                                                                    change="{!c.updateRecordCtrl}"
+                                                                    value="{!v.prodItem.optyProdObj.Vision_Proposed_Smith_Drug_Units__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditAndaUnits}">
+                        <span class="{!v.andaUnitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.andaUnitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Proposed_Anda_Units__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditAndaUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth baseUnits"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="andaUnits" blur="{!c.closeAndaUnitsEditMode}"
+                                                                    change="{!c.updateRecordCtrl}"
+                                                                    value="{!v.prodItem.optyProdObj.Vision_Proposed_Anda_Units__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditAholdUnits}">
+                        <span class="{!v.aholdUnitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.aholdUnitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Proposed_DirectAholdDelhaizeUnits__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditAholdUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth baseUnits"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="aholdUnits" blur="{!c.closeAholdUnitsEditMode}"
+                                                                    change="{!c.updateRecordCtrl}"
+                                                                    value="{!v.prodItem.optyProdObj.Vision_Proposed_DirectAholdDelhaizeUnits__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditGaintEagleUnits}">
+                        <span class="{!v.gaintEagleUnitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.gaintEagleUnitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Proposed_Direct_Gaint_Eagle_Units__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditGaintEagleUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth baseUnits"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="gaintEagleUnits" blur="{!c.closeGaintEagleUnitsEditMode}"
+                                                                    change="{!c.updateRecordCtrl}"
+                                                                    value="{!v.prodItem.optyProdObj.Vision_Proposed_Direct_Gaint_Eagle_Units__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditTotalRetailUnits}">
+                        <span class="{!v.totalRetailUnitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.totalRetailUnitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Proposed_TotalRetailIndirectUnits__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditTotalRetailUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth baseUnits"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="totalRetailUnits" blur="{!c.closeTotalRetailUnitsEditMode}"
+                                                                    change="{!c.updateRecordCtrl}"
+                                                                    value="{!v.prodItem.optyProdObj.Vision_Proposed_TotalRetailIndirectUnits__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditProposedUnits}">
+                        <span class="{!v.unitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.unitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Proposed_Direct_Selling_Units__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditProposedUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth guidancePrice"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="inputGDPId" blur="{!c.closePropUnitsBox}"
+                                                                    change="{!c.getProDirectUnits}"
+                                                                    value="{!v.prodItem.optyProdObj.Proposed_Direct_Selling_Units__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                    <td class="slds-text-align--right" ondblclick="{!c.inlineEditIndirectProposedUnits}">
+                        <span class="{!v.inDirectUnitsEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                            <!-- show input and output section based on boolean flag -->
+                            <aura:if isTrue="{!v.inDirectUnitsEditMode == false}">
+                                <span><lightning:formattedNumber value="{!v.prodItem.optyProdObj.Proposed_Indirect_Selling_Units__c}" 
+                                                                 maximumFractionDigits="0"/></span>
+                                <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                    <aura:set attribute="else">
+                                        <button onclick="{!c.inlineEditIndirectProposedUnits}"
+                                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                                tabindex="0">
+                                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                                        </button>
+                                    </aura:set>
+                                </aura:if>
+                                <!-- Inline Edit Section in else case-->
+                                <aura:set attribute="else">
+                                    <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                             style="position: absolute; top: 0px;width: max-content;">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <ui:inputNumber class="slds-input inputWidth guidancePrice"
+                                                                    labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                    aura:id="inputGDPId" blur="{!c.closeIndirectPropUnitsBox}"
+                                                                    change="{!c.getProIndirectUnits}"
+                                                                    value="{!v.prodItem.optyProdObj.Proposed_Indirect_Selling_Units__c}" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                </aura:if>
+                
+                <aura:if isTrue="{!v.templateType == 'Econdisc'}">
+                    <!--<td class="slds-text-align__right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3_Months_Annualized_OS_And_RAD_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    <td class="slds-text-align__right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3_Months_Annualized_WMT_Direct_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    <td class="slds-text-align__right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3_Months_Annualized_WMT_Indirect_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>-->
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Proposed_Direct_Selling_Units__c}"/>
+                    </td>
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Proposed_Indirect_Selling_Units__c}"/>
+                    </td>
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_Direct_ESI_Units__c}"/>
+                    </td>
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_Indirect_ESI_Units__c}"/>
+                    </td>
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_Direct_Kroger_Units__c}"/>
+                    </td>
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_Indirect_Kroger_Units__c}"/>
+                    </td>
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_Direct_Rx_Outreach_Units__c}"/>
+                    </td>
+                    
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_IndirectRxOutreach_Units__c}"/>
+                    </td>
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_Direct_Supervalu_Units__c}"/>
+                    </td>
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_Indirect_Supervalu_Units__c}"/>
+                    </td>
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_Direct_Cigna_Units__c}"/>
+                    </td>
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_Indirect_Cigna_Units__c}"/>
+                    </td>
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_Direct_Cordant_Units__c}"/>
+                    </td>
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_Indirect_Cordant_Units__c}"/>
+                    </td>
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_Direct_Accerodo_Units__c}"/>
+                    </td>
+                    <td class="slds-text-align--right"><lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_Indirect_Accerodo_Units__c}"/>
+                    </td>
+                    
+                </aura:if>
+                
+                <aura:if isTrue="{!v.templateType == 'ROS'}">
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3Months_AnnualizedCVS_DirectSelling_Uni__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3MonthsAnnualizedCVSIndirectSelling_uni__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3Months_Annualized_Cardinal_Selling_Uni__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.X3_Months_Annualized_Major_Selling_Unit__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:input type="number" class="rightAlignCss" variant="label-hidden" onfocusout="{!c.updateRecordFun}" 
+                                         disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}" value="{!v.prodItem.optyProdObj.Vision_Proposed_CVS_Direct_Units__c}" />
+                        
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                         onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}"
+                                         value="{!v.prodItem.optyProdObj.Vision_Proposed_CVS_Indirect_Units__c}" />
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                         onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}"
+                                         value="{!v.prodItem.optyProdObj.Vision_Proposed_Cardinal_Units__c}" />
+                    </td>
+                    <td class="slds-text-align--right">
+                        <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                         onfocusout="{!c.updateRecordFun}" disabled="{!v.prodItem.optyProdObj.Vision_Bid__c}"
+                                         value="{!v.prodItem.optyProdObj.Vision_Proposed_Major_Units__c}" />
+                    </td>
+                </aura:if>
+            </aura:set>
+        </aura:if>
+        <td scope="row" class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.totalProposedUnits}" 
+                                       minimumFractionDigits ="0"
+                                       maximumFractionDigits ="0"/>
+        </td>
+        <aura:if isTrue="{!v.isPanMove}">
+            <td scope="row" class="slds-text-align_right">
+                <lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Panorama_Target_Price__c}"
+                                           style="currency" currencyCode="USD" />
+            </td>
+        </aura:if>
+        <td class="slds-text-align--right" ondblclick="{!c.inlineEditGuidancePrice}">
+            <span class="{!v.GDPEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                <!-- show input and output section based on boolean flag -->
+                <aura:if isTrue="{!v.GDPEditMode == false}">
+                    <span class="">
+                        <lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Guidance_Price__c}"
+                                                   style="currency" currencyCode="USD" /></span>
+                    <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <aura:set attribute="else">
+                            <button onclick="{!c.inlineEditGuidancePrice}"
+                                    class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                    tabindex="0">
+                                <lightning:icon iconName="utility:edit" size="xx-small" />
+                            </button>
+                        </aura:set>
+                    </aura:if>
+                    <!-- Inline Edit Section in else case-->
+                    <aura:set attribute="else">
+                        <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                 style="position: absolute; top: 0px;width: max-content;">
+                            <div class="slds-popover__body">
+                                <div class="slds-form-element slds-grid slds-wrap">
+                                    <div class="slds-form-element__control slds-grow">
+                                        <ui:inputCurrency class="slds-input inputWidth guidancePrice"
+                                                          labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                          aura:id="inputGDPId" blur="{!c.closeGDPBox}"
+                                                          change="{!c.getGuiPrice}"
+                                                          value="{!v.prodItem.optyProdObj.Vision_Guidance_Price__c}" />
+                                    </div>
+                                </div>
+                            </div>
+                            <span id="form-end" tabindex="0"></span>
+                        </section>
+                    </aura:set>
+                </aura:if>
+            </span>
+        </td> 
+        <aura:if isTrue="{!!v.isPanMove}">
+            <td class="slds-text-align--right">
+                <lightning:formattedNumber value="{!v.prodItem.optyProdObj.Product__r.Phoenix_Lowest_Price_SKU__c}" style="currency" currencyCode="USD" minimumFractionDigits= "0"/>
+            </td>
+        </aura:if>
+        <td class="slds-text-align--right">
+            <lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Opportunity_Value__c}" style="currency" currencyCode="USD" minimumFractionDigits= "0"/>
+        </td>
+        <!-- <td class="slds-text-align__right">
+            <lightning:formattedNumber value="{!v.prodItem.optyProdObj.Vision_Financial_Impact__c}"
+                                       minimumFractionDigits= "0"/>WIP
+        </td> -->
+        <td class="slds-text-align--right">
+            {!v.prodItem.optyProdObj.Vision_Bid_Type__c}
+        </td>
+        <td class="slds-text-align--right" ondblclick="{!c.inlineEditComment}">
+            <span class="{!v.CommentEditMode ? 'slds-grid slds-grid_align-spread' : ''}">
+                <!-- show input and output section based on boolean flag -->
+                <aura:if isTrue="{!v.CommentEditMode == false}">
+                    <span class="">
+                        {!v.prodItem.optyProdObj.Sales_Notes__c}
+                                                  </span>
+                    <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <aura:set attribute="else">
+                            <button onclick="{!c.inlineEditComment}"
+                                    class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                    tabindex="0">
+                                <lightning:icon iconName="utility:edit" size="xx-small" />
+                            </button>
+                        </aura:set>
+                    </aura:if>
+                    <!-- Inline Edit Section in else case-->
+                    <aura:set attribute="else">
+                        <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                 style="position: absolute; top: 0px;width: max-content;">
+                            <div class="slds-popover__body">
+                                <div class="slds-form-element slds-grid slds-wrap">
+                                    <div class="slds-form-element__control slds-grow">
+                                        <ui:inputText class="slds-input inputWidth guidancePrice"
+                                                          labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                          aura:id="inputCmtId" blur="{!c.closeCmtPBox}"
+                                                          change="{!c.getComment}"
+                                                          value="{!v.prodItem.optyProdObj.Sales_Notes__c}" />
+                                    </div>
+                                </div>
+                            </div>
+                            <span id="form-end" tabindex="0"></span>
+                        </section>
+                    </aura:set>
+                </aura:if>
+            </span>
+        </td> 
+        <td class="slds-text-align--right">
+            <div class="slds-has-flexi-truncate" style="width:150px;cursor:pointer;" title="{!v.prodItem.optyProdObj.Status__c == 'Dropped' ? 'Dropped Comments' : 'Bright Comments'}">
+                <p class="slds-truncate" title="{!v.prodItem.optyProdObj.Vision_Bright_Delete_Comments__c}">{!v.prodItem.optyProdObj.Vision_Bright_Delete_Comments__c}</p>
+            </div>
+        </td>
+        <!--<td class="slds-text-align__right" style="width:150px;" ondblclick="{!c.inlineEditBidType}">
+            <span class="slds-grid slds-grid_align-spread">
+                <aura:if isTrue="{!v.isEditBidType == false}">
+                    <span class="">{!v.prodItem.optyProdObj.Vision_Bid_Type__c}</span>
+                    <aura:if isTrue="{!v.prodItem.optyProdObj.Vision_Bid__c}">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <aura:set attribute="else">
+                            <button onclick="{!c.inlineEditBidType}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0">
+                                <lightning:icon iconName="utility:edit" size="xx-small" />
+                            </button>
+                        </aura:set>
+                    </aura:if>
+                    <aura:set attribute="else">
+                        <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width:max-content;">
+                            <div class="slds-popover__body">
+                                <div class="slds-form-element slds-grid slds-wrap">
+                                    <div class="slds-form-element__control slds-grow">
+                                        <lightning:select name="bidTypeChange"
+                                                          aura:id="bidTypeChangeId"
+                                                          onblur="{!c.closeinlineEditBidType}"
+                                                          onchange="{!c.onBidTypeUpdate}"
+                                                          variant="label-hidden">
+                                            <option value="{!v.prodItem.optyProdObj.Vision_Bid_Type__c}">
+                                                {!v.prodItem.optyProdObj.Vision_Bid_Type__c}
+                                            </option>
+                                            <aura:if isTrue="{!!v.isAwarded}">
+                                                <aura:if isTrue="{!(v.prodItem.optyProdObj.Vision_Bid_Type__c != 'Product Addition')}" >
+                                                    <option value="Product Addition">Product Addition</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!(v.prodItem.optyProdObj.Vision_Bid_Type__c != 'New Product Launch')}" >
+                                                    <option value="New Product Launch">New Product Launch</option>
+                                                </aura:if>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.isAwarded}">
+                                                <aura:if isTrue="{!(v.prodItem.optyProdObj.Vision_Bid_Type__c != 'Volume Review')}" >
+                                                    <option value="Volume Review">Volume Review</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!(v.prodItem.optyProdObj.Vision_Bid_Type__c != 'Price Change')}" >
+                                                    <option value="Price Change">Price Change</option>
+                                                </aura:if>
+                                            </aura:if>
+                                            <aura:if isTrue="{!(v.prodItem.optyProdObj.Vision_Bid_Type__c != 'RFP Bids')}" >
+                                                <option value="RFP Bids">RFP Bids</option>
+                                            </aura:if>
+                                        </lightning:select>
+                                    </div>
+                                </div>
+                            </div>
+                            <span id="form-end" tabindex="0"></span>
+                        </section>
+                    </aura:set>
+                </aura:if>
+            </span>
+        </td> -->
+        <td class="slds-text-align--center">
+            <aura:if isTrue="{!!v.isSentToBright}">
+                <lightning:icon class="changeDeleteIconColor"
+                                iconName="utility:delete"
+                                onclick="{!c.removeDeletedRow}"
+                                name="{!v.rowIndex}" size="x-small"
+                                style="cursor: pointer;" title="Delete Product"/>
+            </aura:if>
+        </td>
+    </tr>
+    
+</aura:component>

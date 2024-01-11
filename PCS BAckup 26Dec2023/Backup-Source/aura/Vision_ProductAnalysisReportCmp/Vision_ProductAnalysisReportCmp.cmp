@@ -1,0 +1,702 @@
+<aura:component controller = "Vision_ProductAnalysisCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    <aura:attribute name="recordId" type = "Id"/>
+    <aura:attribute name="loaded" type="boolean" />
+    <aura:attribute name="valueChanged" type="boolean" default = "false"/>
+     <aura:attribute name="totalBusinessGained" type="integer" />
+    <aura:attribute name="totalBusinessLost" type="integer" />
+    <aura:attribute name="totalBusRetWitGained" type="integer" />
+    <aura:attribute name="totalBusRetWitLoss" type="integer" />
+    <aura:attribute name="totalBusinessImpactPA" type="integer" />
+    <aura:attribute name="totalBusinessImpactNPL" type="integer" />
+    <aura:attribute name="totalBusinessImpactRFP" type="integer" />
+    <aura:attribute name="totalBusinessImpactNC" type="integer" />
+    <aura:attribute name="totalBusinessImpactPCDecrease" type="integer" />
+    <aura:attribute name="totalBusinessImpactVRDecrease" type="integer" />
+    <aura:attribute name="totalBusinessImpactRFPDecrease" type="integer" />
+    <aura:attribute name="totalBusinessImpactPCDecreaseGain" type="integer" />
+    <aura:attribute name="totalBusinessImpactVRDecreaseGain" type="integer" />
+    <aura:attribute name="totalBusinessImpactRFPDecreaseGain" type="integer" />
+    <aura:attribute name="totalBusinessImpactMPRLoss" type="integer" />
+    <aura:attribute name="totalBusinessImpactPCLoss" type="integer" />
+    <aura:attribute name="totalBusinessImpactVROLoss" type="integer" />
+    <aura:attribute name="totalBusinessImpactRFPLoss" type="integer" />
+    <aura:attribute name= "recentAwardsProdAdditionList" type = "list"/>
+    <aura:attribute name= "recentAwardsNewPLList" type = "list"/>
+    <aura:attribute name= "recentAwardsRFPList" type = "list"/>
+    <aura:attribute name= "recentAwardsNewCustomerList" type = "list"/>
+    <aura:attribute name= "decreasesRFPList" type = "list"/>
+    <aura:attribute name= "decreasesPriceChangeList" type = "list"/>
+    <aura:attribute name= "decreasesvolumeReviewList" type = "list"/>
+    <aura:attribute name= "decreasesGainRFPList" type = "list"/>
+    <aura:attribute name= "decreasesGainPriceChangeList" type = "list"/>
+    <aura:attribute name= "decreasesGainvolumeReviewList" type = "list"/>
+    <aura:attribute name= "productLossesMassProductRemovalList" type = "list"/>
+    <aura:attribute name= "productLossesPriceChangeList" type = "list"/>
+    <aura:attribute name= "productLossesvolumeReviewList" type = "list"/>
+    <aura:attribute name= "productLossesRFPList" type = "list"/>
+    
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'This Fiscal Year', 'value': 'THIS_FISCAL_YEAR'},
+                                                        {'label': 'This Calendar Year', 'value': 'THIS_YEAR'},
+                                                        {'label': 'This Quarter', 'value': 'THIS_QUARTER'},
+                                                        {'label': 'This Month', 'value': 'THIS_MONTH'},
+                                                        {'label': 'This Week', 'value': 'THIS_WEEK'},
+                                                        {'label': 'Last Fiscal Year', 'value': 'LAST_FISCAL_YEAR'},
+                                                        {'label': 'Last Calendar Year', 'value': 'LAST_YEAR'},
+                                                        {'label': 'Last Quarter', 'value': 'LAST_QUARTER'},
+                                                        {'label': 'Last Month', 'value': 'LAST_MONTH'},
+                                                        {'label': 'Last Week', 'value': 'LAST_WEEK'},
+                                                        {'label': 'Custom', 'value': 'Custom'},
+                                                        ]"/>
+    <aura:attribute name="selectedId" type="String" />
+    <aura:attribute name="selectedRange" type="String" />
+    <aura:attribute name="selectedDate" type="String" />
+    <aura:attribute name="startDate" type="Date" default="" />
+    <aura:attribute name="endDate" type="Date" default="" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <ltng:require scripts="{!$Resource.ChartJS}" afterScriptsLoaded="{!c.loadCharts}"/>
+    <ltng:require scripts="{!$Resource.WaterFallChartJS}" afterScriptsLoaded="{!c.loadCharts}"/>
+    <ltng:require scripts="{!$Resource.GoogleWaterFallChart}" afterScriptsLoaded="{!c.loadCharts}"/>
+    <ltng:require scripts="{!$Resource.ChartJQuery}" />
+    <aura:if isTrue="{! v.loaded }">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+        <!--<div class="demo-only" >
+                <div class="slds-spinner_container slds-align_absolute-center" >
+                    <div role="status">
+                        <img src="{!$Resource.LoadingProgress}" />
+                    </div>
+                </div>
+            </div>-->
+    </aura:if>
+    <div class="slds-grid">
+        <div class="slds-col slds-size_2-of-12">
+            <lightning:select aura:id="rangeId" name="Analysis Time Period" label="Analysis Time Period" onchange="{! c.handleChange }">
+                <aura:iteration items="{!v.options}" var="option">
+                    <option  text="{!option.label}" value="{!option.value}" selected="{!option.selected}"/>
+                </aura:iteration>
+            </lightning:select>
+        </div>
+        <aura:if isTrue="{!v.selectedRange == 'Custom' }">
+            <div class="slds-align_absolute-center">
+                <lightning:input type="date" name="date1" label="Start Date" value="{!v.startDate}" fieldLevelHelp="Price Effective Date" required="true"/> &nbsp;&nbsp;
+                <lightning:input type="date" name="date2" label="End Date" value="{!v.endDate}" fieldLevelHelp="Price Effective Date" required="true"/> &nbsp;&nbsp;
+                <div style="margin-top: 22px;">
+                    <lightning:button variant="brand" label="Run Analysis" title="Run Analysis" onclick="{! c.filterData }" class="slds-m-around_xx-small" />
+                    <lightning:button variant="brand-outline" label="Reset" title="Reset" onclick="{! c.resetData }" class="slds-m-around_xx-small" />
+                </div>
+            </div>  
+        </aura:if>
+    </div><br/>
+    <div class="slds-box" style="height:auto;padding-bottom: 0px;">
+        <b> <p style="font-size:22px;">Business Gained(${!v.totalBusinessGained})</p></b>
+        <div aura:id="mainDiv" style="height:auto;overflow:auto;margin-top:10px; border-radius: 8px;">
+            <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px; margin: auto;">
+                <thead class="headerOfTable">
+                    <tr id="styleids">
+                        <!--slds-truncate slds-cell-wrap slds-text-align_center-->
+                        <!--<th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>S.No</p></b></th>    -->
+                        <th class="slds-truncate"  style="font-size:14px; padding: 4px 8px;background-color: #30AB30; color: white;"><b><p>Product Description</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>BidLine Item</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Awarded Volume</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Internal Deadnet Price ($)</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Awarded Annual Value</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Effective Date</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Impacted Months</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>Annual Impact</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #30AB30; color: white;"><b><p>FY Business Impact</p></b></th>
+                    </tr>
+                    <tr><th colspan="9" style="font-size:16px;background-color: #E0F9E2; color: black; padding: 4px;">New Product Launch ({!v.recentAwardsNewPLList.length}) (<lightning:formattedNumber value="{!v.totalBusinessImpactNPL}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)</th></tr>
+                </thead>
+                <tbody>
+                    <aura:if isTrue="{!v.recentAwardsNewPLList.length != 0}">
+                        <aura:iteration items="{!v.recentAwardsNewPLList}" var="bid" indexVar="sNo">
+                            <c:VisionProductAnalysisChild recentAwardsProdAdditionList="{!bid}" />
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                    <tr><th colspan="9" style="font-size:16px;background-color: #E0F9E2; color: black; padding: 4px; font-weight: bold;">Product Addition ({!v.recentAwardsProdAdditionList.length}) (<lightning:formattedNumber value="{!v.totalBusinessImpactPA}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)</th></tr>
+                    <aura:if isTrue="{!v.recentAwardsProdAdditionList.length != 0}">
+                        <aura:iteration items="{!v.recentAwardsProdAdditionList}" var="bid" indexVar="sNo">
+                            <c:VisionProductAnalysisChild recentAwardsProdAdditionList="{!bid}" />
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                    <tr><th colspan="9" style="font-size:16px;background-color: #E0F9E2; color: black; padding: 4px; font-weight: bold;">RFP ({!v.recentAwardsRFPList.length}) (<lightning:formattedNumber value="{!v.totalBusinessImpactRFP}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)</th></tr>
+                    <aura:if isTrue="{!v.recentAwardsRFPList.length != 0}">
+                        <aura:iteration items="{!v.recentAwardsRFPList}" var="bid" indexVar="sNo">
+                            <c:VisionProductAnalysisChild recentAwardsProdAdditionList="{!bid}" />
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                    <tr><th colspan="9" style="font-size:16px;background-color: #E0F9E2; color: black; padding: 4px; font-weight: bold;">New Customer ({!v.recentAwardsNewCustomerList.length}) (<lightning:formattedNumber value="{!v.totalBusinessImpactNC}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)</th></tr>
+                    <aura:if isTrue="{!v.recentAwardsNewCustomerList.length != 0}">
+                        <aura:iteration items="{!v.recentAwardsNewCustomerList}" var="bid" indexVar="sNo">
+                            <c:VisionProductAnalysisChild recentAwardsProdAdditionList="{!bid}" />
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                </tbody>
+            </table><br></br>
+        </div>
+    </div>
+    <br></br>
+    <div class="slds-box" style="height:auto;padding-bottom: 0px;">
+        <b> <p style="font-size:22px;">Business Retained with Gain(${!v.totalBusRetWitGained})</p></b>
+        <div aura:id="mainDiv" style="height:auto;overflow:auto;margin-top:10px; border-radius: 8px;">
+            <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px; margin: auto;">
+                <thead>
+                    <tr><th colspan="11" style="font-size:16px;background-color: #257CFF; color: white; padding: 4px;">RFP ({!v.decreasesGainRFPList.length}) (<lightning:formattedNumber value="{!v.totalBusinessImpactRFPDecreaseGain}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)</th></tr>
+                    <tr id="styleids">
+                        <th class="slds-truncate" style="font-size:14px; padding: 4px 8px; background-color: #E0ECFF; color:black;"><b><p>Product Description</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>BidLine Item</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Previous Volume</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Awarded Volume</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Previous DN Price ($)</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Internal Deadnet Price ($)</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Awarded Annual Value</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Effective Date</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Impacted Months</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Annual Impact</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>FY Business Impact</p></b></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:if isTrue="{!v.decreasesGainRFPList.length != 0}">
+                        <aura:iteration items="{!v.decreasesGainRFPList}" var="bid" indexVar="sNo">
+                            <c:VisionProductAnalysisDecreaseGainChild recentAwardsProdAdditionList="{!bid}" tableSection="RFPDecrease" />
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                </tbody>
+            </table><br></br>
+        </div>
+        <div aura:id="mainDiv" style="height:auto;overflow:auto;margin-top:10px; border-radius: 8px;">
+            <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px; margin: auto;">
+                <thead>
+                    <tr><th colspan="10" style="font-size:16px;background-color: #257CFF; color: white; padding: 4px;">Price Change ({!v.decreasesGainPriceChangeList.length}) (<lightning:formattedNumber value="{!v.totalBusinessImpactPCDecreaseGain}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)</th></tr>
+                    <tr id="styleids">
+                        <!--<th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>S.No</p></b></th>    -->
+                        <th class="slds-truncate"  style="font-size:14px; padding: 4px 8px; background-color: #E0ECFF; color:black;"><b><p>Product Description</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>BidLine Item</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Awarded Volume</p></b></th>
+                        <th  class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Previous DN Price ($)</p></b></th>
+                        <th  class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Internal Deadnet Price ($)</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Awarded Annual Value</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Effective Date</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Impacted Months</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Annual Impact</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>FY Business Impact</p></b></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:if isTrue="{!v.decreasesGainPriceChangeList.length != 0}">
+                        <aura:iteration items="{!v.decreasesGainPriceChangeList}" var="bid" indexVar="sNo">
+                            <c:VisionProductAnalysisDecreaseGainChild recentAwardsProdAdditionList="{!bid}" />
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                    <tr><th colspan="10" style="font-size:16px;background-color: #257CFF; color: white; padding: 4px;font-weight: bold;">Volume Review ({!v.decreasesGainvolumeReviewList.length}) (<lightning:formattedNumber value="{!v.totalBusinessImpactVRDecreaseGain}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)</th></tr>
+                    <!--<tr><th colspan="10" style="font-size:16px;background-color: #FEB343; color: white; padding: 4px;font-weight: bold;">Volume Review (0) ($0)</th></tr>-->
+                    <tr id="styleids" style="background-color: #F3F3F3;">
+                        <!--<th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>S.No</p></b></th>    -->
+                        <th class="slds-truncate"  style="font-size:14px; padding: 4px 8px; background-color: #E0ECFF; color:black;"><b><p>Product Description</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>BidLine Item</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Previous Volume</p></b></th>
+                        <th  class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Awarded Volume</p></b></th>
+                        <th  class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Internal Deadnet Price ($)</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Awarded Annual Value</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Effective Date</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Impacted Months</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>Annual Impact</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #E0ECFF; color:black;"><b><p>FY Business Impact</p></b></th>
+                    </tr>
+                    <!--<tr>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                    </tr>-->
+                    <aura:if isTrue="{!v.decreasesGainvolumeReviewList.length != 0}">
+                        <aura:iteration items="{!v.decreasesGainvolumeReviewList}" var="bid" indexVar="sNo">
+                            <c:VisionProductAnalysisDecreaseGainChild recentAwardsProdAdditionList="{!bid}" tableSection="VRDecrease" />
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                </tbody>
+            </table><br></br>
+        </div>
+    </div>
+    <br/>
+    <div class="slds-box" style="height:auto;padding-bottom: 0px;">
+        <b> <p style="font-size:22px;">Business Retained with Loss(${!v.totalBusRetWitLoss})</p></b>
+        <div aura:id="mainDiv" style="height:auto;overflow:auto;margin-top:10px; border-radius: 8px;">
+            <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px; margin: auto;">
+                <thead>
+                    <tr><th colspan="11" style="font-size:16px;background-color: #FEB343; color: white; padding: 4px;">RFP ({!v.decreasesRFPList.length}) <span style="color: red;">(<ui:outputCurrency aura:id="curr" value="{!v.totalBusinessImpactRFPDecrease}" format="$##,##,###,###"/>)</span></th></tr>
+                    <tr id="styleids">
+                        <th class="slds-truncate" style="font-size:14px; padding: 4px 8px; background-color: #F9F2E0; color:black;"><b><p>Product Description</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>BidLine Item</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Previous Volume</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Awarded Volume</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Previous DN Price ($)</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Internal Deadnet Price ($)</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Awarded Annual Value</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Effective Date</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Impacted Months</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Annual Impact</p></b></th>
+                        <th class="slds-truncate" style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>FY Business Impact</p></b></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:if isTrue="{!v.decreasesRFPList.length != 0}">
+                        <aura:iteration items="{!v.decreasesRFPList}" var="bid" indexVar="sNo">
+                            <c:VisionProductAnalysisDecreaseChild recentAwardsProdAdditionList="{!bid}" tableSection="RFPDecrease" />
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                </tbody>
+            </table><br></br>
+        </div>
+        <div aura:id="mainDiv" style="height:auto;overflow:auto;margin-top:10px; border-radius: 8px;">
+            <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px; margin: auto;">
+                <thead>
+                    <tr><th colspan="10" style="font-size:16px;background-color: #FEB343; color: white; padding: 4px;">Price Change ({!v.decreasesPriceChangeList.length}) <span style="color: red;">(<ui:outputCurrency aura:id="curr" value="{!v.totalBusinessImpactPCDecrease}" format="$##,##,###,###"/>)</span></th></tr>
+                    <tr id="styleids">
+                        <!--<th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>S.No</p></b></th>    -->
+                        <th class="slds-truncate"  style="font-size:14px; padding: 4px 8px; background-color: #F9F2E0; color:black;"><b><p>Product Description</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>BidLine Item</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Awarded Volume</p></b></th>
+                        <th  class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Previous DN Price ($)</p></b></th>
+                        <th  class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Internal Deadnet Price ($)</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Awarded Annual Value</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Effective Date</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Impacted Months</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Annual Impact</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>FY Business Impact</p></b></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:if isTrue="{!v.decreasesPriceChangeList.length != 0}">
+                        <aura:iteration items="{!v.decreasesPriceChangeList}" var="bid" indexVar="sNo">
+                            <c:VisionProductAnalysisDecreaseChild recentAwardsProdAdditionList="{!bid}" />
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                    <tr><th colspan="10" style="font-size:16px;background-color: #FEB343; color: white; padding: 4px;font-weight: bold;">Volume Review ({!v.decreasesvolumeReviewList.length}) <span style="color: red;">(<ui:outputCurrency aura:id="curr" value="{!v.totalBusinessImpactVRDecrease}" format="$##,##,###,###"/>)</span></th></tr>
+                    <!--<tr><th colspan="10" style="font-size:16px;background-color: #FEB343; color: white; padding: 4px;font-weight: bold;">Volume Review (0) ($0)</th></tr>-->
+                    <tr id="styleids" style="background-color: #F3F3F3;">
+                        <!--<th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>S.No</p></b></th>    -->
+                        <th class="slds-truncate"  style="font-size:14px; padding: 4px 8px; background-color: #F9F2E0; color:black;"><b><p>Product Description</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>BidLine Item</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Previous Volume</p></b></th>
+                        <th  class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Awarded Volume</p></b></th>
+                        <th  class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Internal Deadnet Price ($)</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Awarded Annual Value</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Effective Date</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Impacted Months</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>Annual Impact</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px; background-color: #F9F2E0; color:black;"><b><p>FY Business Impact</p></b></th>
+                    </tr>
+                    <!--<tr>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                    </tr>-->
+                    <aura:if isTrue="{!v.decreasesvolumeReviewList.length != 0}">
+                        <aura:iteration items="{!v.decreasesvolumeReviewList}" var="bid" indexVar="sNo">
+                            <c:VisionProductAnalysisDecreaseChild recentAwardsProdAdditionList="{!bid}" tableSection="VRDecrease" />
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                </tbody>
+            </table><br></br>
+        </div>
+        <!--<div aura:id="mainDiv" style="height:auto;overflow:auto;margin-top:10px; border-radius: 8px;">
+            <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px; margin: auto;">
+                <thead>
+                    <tr><th colspan="10" style="font-size:16px;background-color: red; color: white; padding: 4px;">Volume Review ({!v.decreasesvolumeReviewList.length}) (<lightning:formattedNumber value="{!v.totalBusinessImpactVRDecrease}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)</th></tr>
+                    <tr id="styleids">
+                        <th class="slds-truncate"  style="font-size:14px; padding: 4px 8px;"><b><p>Product Description</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px"><b><p>BidLine Item</p></b></th>
+                        
+                        <th class="slds-truncate"  style="font-size:14px"><b><p>Previous Volume</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px"><b><p>Awarded Volume</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px"><b><p>Internal Deadnet Price ($)</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px"><b><p>Awarded Annual Value</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px"><b><p>Effective Date</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px"><b><p>Impacted Months</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px"><b><p>Annual Impact</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px"><b><p>FY Business Impact</p></b></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:if isTrue="{!v.decreasesvolumeReviewList.length != 0}">
+                        <aura:iteration items="{!v.decreasesvolumeReviewList}" var="bid" indexVar="sNo">
+                            <tr id="styleids">
+                                <td class="rows" style="padding: 4px 8px 4px 20px;">{!bid.Phoenix_Product__r.Name}</td>
+                                <td class="rows">
+                                    <lightning:formattedUrl  value="{!'/' + bid.Id}" label="{!bid.Name}"  target="_blank" />
+                                </td>
+                                <td class="slds-text-align_right rows">
+                                    <lightning:formattedNumber value="{!bid.Phoenix_Total_Selling_Unit__c}"/>
+                                </td>
+                                <td class="slds-text-align_right rows">
+                                    <lightning:formattedNumber value="{!bid.Phoenix_Awarded_Quantity__c}"/>
+                                </td>
+                                <td class="slds-text-align_right rows">
+                                    <lightning:formattedNumber value="{!bid.Phoenix_Proposed_ASP_Dose__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/>
+                                </td>
+                                <td class="slds-text-align_right rows">
+                                    <lightning:formattedNumber value="{!(bid.Phoenix_Awarded_Quantity__c * bid.Phoenix_Proposed_ASP_Dose__c) - (bid.Phoenix_Total_Selling_Unit__c * bid.Phoenix_Proposed_ASP_Dose__c) }" style="currency" currencyCode="USD" maximumFractionDigits="0"  minimumFractionDigits="0"/>
+                                </td>
+                                <td class="slds-text-align_right rows" >
+                                    <aura:if isTrue="{!bid.Customer_Response_Lines__r != null}">
+                                        <lightning:formattedUrl  value="{!'/' + bid.Customer_Response_Lines__r[0].Id}" label="{!bid.formattedEffectiveDate}"  target="_blank" />
+                                    </aura:if>
+                                </td>
+                                <td class="slds-text-align_right rows">
+                                    <lightning:formattedNumber value="{!bid.monthsRemaining}" maximumFractionDigits="2"  minimumFractionDigits="0"/>
+                                </td>
+                                <td class="slds-text-align_right rows">
+                                    <lightning:formattedNumber value="{!(bid.Phoenix_Awarded_Quantity__c - bid.Phoenix_Total_Selling_Unit__c)*bid.Phoenix_Proposed_ASP_Dose__c}" style="currency" currencyCode="USD" maximumFractionDigits="0"  minimumFractionDigits="0"/>
+                                </td>
+                                <aura:if isTrue="{!bid.businessImpactPositive}">
+                                    <td class="slds-text-align_right rows" style="color: green; padding: 4px 8px;">
+                                        <lightning:formattedNumber value="{!bid.businessImpact}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                    </td>
+                                    <aura:set attribute="else">
+                                        <td class="slds-text-align_right rows" style="color: red; padding: 4px 8px;">
+                                            <lightning:formattedNumber value="{!bid.businessImpact}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                        </td>
+                                    </aura:set>
+                                </aura:if>
+                            </tr>
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                </tbody>
+            </table>
+        </div>-->
+    </div>
+    <br></br>
+    <div class="slds-box" style="height:auto;padding-bottom: 0px;">
+        <b> <p style="font-size:22px;">Business Lost(${!v.totalBusinessLost})</p></b>
+        <div aura:id="mainDiv" style="height:auto;overflow:auto;margin-top:10px; border-radius: 8px;">
+            <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px; margin: auto;">
+                <thead>
+                    <tr id="styleids">
+                        <!--<th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>S.No</p></b></th>    -->
+                        <th class="slds-truncate"  style="font-size:14px; padding: 4px 8px;background-color: #EB4747; color: white;"><b><p>Product Description</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #EB4747; color: white;"><b><p>BidLine Item</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #EB4747; color: white;"><b><p>Previous Volume</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #EB4747; color: white;"><b><p>Previous DN Price ($)</p></b></th>
+                        <!--<th class="slds-truncate"  style="font-size:14px"><b><p>Awarded Annual Value</p></b></th>-->
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #EB4747; color: white;"><b><p>Effective Date</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #EB4747; color: white;"><b><p>Impacted Months</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #EB4747; color: white;"><b><p>Annual Impact</p></b></th>
+                        <th class="slds-truncate"  style="font-size:14px;background-color: #EB4747; color: white;"><b><p>FY Business Impact</p></b></th>
+                    </tr>
+                    <tr>
+                        <th colspan="8" style="font-size:16px;background-color: #F9E0E0; padding: 4px; font-weight: bold;">
+                            Mass Product Removal ({!v.productLossesMassProductRemovalList.length})  
+                            <aura:if isTrue="{!v.totalBusinessImpactMPRLoss !=0}">
+                                <span style="color:red;">
+                                    (-<lightning:formattedNumber value="{!v.totalBusinessImpactMPRLoss}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)
+                                </span>
+                                <aura:set attribute="else">
+                                    <span style="color:red;">
+                                        (<lightning:formattedNumber value="{!v.totalBusinessImpactMPRLoss}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)
+                                    </span>
+                                </aura:set>
+                            </aura:if>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:if isTrue="{!v.productLossesMassProductRemovalList.length != 0}">
+                        <aura:iteration items="{!v.productLossesMassProductRemovalList}" var="bid" indexVar="sNo">
+                            <c:VisionProductAnalysisLossChild recentAwardsProdAdditionList="{!bid}" />
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                    <tr><th colspan="8" style="font-size:16px;background-color: #F9E0E0; padding: 4px; font-weight: bold;">
+                        Price Change ({!v.productLossesPriceChangeList.length}) 
+                        <aura:if isTrue="{!v.totalBusinessImpactPCLoss != 0}">
+                            <span style="color: red;">
+                                (-<lightning:formattedNumber value="{!v.totalBusinessImpactPCLoss}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)
+                            </span>
+                            <aura:set attribute="else">
+                                <span style="color: red;">
+                                    (<lightning:formattedNumber value="{!v.totalBusinessImpactPCLoss}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)
+                                </span>
+                            </aura:set>
+                        </aura:if>
+                        </th>
+                    </tr>
+                    <aura:if isTrue="{!v.productLossesPriceChangeList.length != 0}">
+                        <aura:iteration items="{!v.productLossesPriceChangeList}" var="bid" indexVar="sNo">
+                            <c:VisionProductAnalysisLossChild recentAwardsProdAdditionList="{!bid}" />
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                    <tr>
+                        <th colspan="8" style="font-size:16px;background-color: #F9E0E0;  padding: 4px; font-weight: bold;">
+                            Volume Review ({!v.productLossesvolumeReviewList.length}) 
+                            <aura:if isTrue="{!v.totalBusinessImpactVROLoss !=0}">
+                                <span style="color:red;">
+                                    (-<lightning:formattedNumber value="{!v.totalBusinessImpactVROLoss}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)
+                                </span>
+                                <aura:set attribute="else">
+                                    <span style="color:red;">
+                                        (<lightning:formattedNumber value="{!v.totalBusinessImpactVROLoss}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)
+                                    </span>
+                                </aura:set>
+                            </aura:if>
+                        </th>
+                    </tr>
+                    <aura:if isTrue="{!v.productLossesvolumeReviewList.length != 0}">
+                        <aura:iteration items="{!v.productLossesvolumeReviewList}" var="bid" indexVar="sNo">
+                            <c:VisionProductAnalysisLossChild recentAwardsProdAdditionList="{!bid}" />
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                    <tr>
+                        <th colspan="8" style="font-size:16px;background-color: #F9E0E0;  padding: 4px; font-weight: bold;">
+                            RFP ({!v.productLossesRFPList.length})  
+                            <aura:if isTrue="{!v.totalBusinessImpactRFPLoss !=0}">
+                                <span style="color:red;">
+                                    (-<lightning:formattedNumber value="{!v.totalBusinessImpactRFPLoss}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)
+                                </span>
+                                <aura:set attribute="else">
+                                    <span style="color:red;">
+                                        (<lightning:formattedNumber value="{!v.totalBusinessImpactRFPLoss}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0" />)
+                                    </span>
+                                </aura:set>
+                            </aura:if>
+                        </th>
+                    </tr>
+                    <aura:if isTrue="{!v.productLossesRFPList.length != 0}">
+                        <aura:iteration items="{!v.productLossesRFPList}" var="bid" indexVar="sNo">
+                            <c:VisionProductAnalysisLossChild recentAwardsProdAdditionList="{!bid}" tableSection="LossPriceChange" />
+                        </aura:iteration>
+                        <aura:set attribute="else">
+                            <tr>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </aura:set>
+                    </aura:if>
+                </tbody>
+            </table><br></br>
+        </div>
+    </div>
+    <br></br>
+    <div  id="chartDiv">
+      <div class="slds-col slds-size--1-of-1 slds-small-size--1-of-2 slds-medium-size--3-of-4" style="height: 450px; width: 100%" id="container"></div>
+    </div>
+  <!--  <div id="chart_div" style="width: 900px; height: 500px;"></div>-->
+    
+</aura:component>

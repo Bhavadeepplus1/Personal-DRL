@@ -1,0 +1,454 @@
+<aura:component controller="Phoenix_NDCChangeEditor" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,lightning:isUrlAddressable" access="global" >
+	<aura:attribute name="recordId" type="String"  />
+    <aura:attribute name="recordIdNew" type="String" />
+    <aura:attribute name="productList" type="Phoenix_NDC_Change_Product__c[]"/>
+    <aura:attribute name="selectedProductIds" type="List" />
+    <aura:attribute name="proposedProducts" type="List" />
+    <aura:attribute name="currentProducts" type="List" />
+    <aura:attribute name="CurrentProductFamily" type="String" />
+    <aura:attribute name="ProposedProductFamily" type="String" />
+    <aura:attribute name="disableAddRow" type="boolean" />    
+    <aura:attribute name="url" type="String"/>
+    <aura:attribute name="isProductNotSelected" type="boolean" default="true" />
+    <aura:attribute name="isProductsSelected" type="boolean" />
+    <aura:attribute name="ApprovalStatus" type="String" />
+    <aura:attribute name="selectedProducts" type="List" />
+    <aura:attribute name="selectedCurrentProducts" type="List" />
+    <aura:attribute name="popupData" type="Object"/>
+    <aura:attribute name="searchList" type="Object" />
+    <aura:attribute name="originalData" type="Object" />
+    <aura:attribute name="popupColumns" type="List"/>
+    <aura:attribute name="mydata" type="Object"/>
+    <aura:attribute name="mycolumns" type="List"/>
+    <aura:attribute name="selectedLineItems" type="List" />
+    <aura:attribute name="selectedLineItemsDuplicates" type="List" />
+    <aura:attribute name="selectedCurrentProduct" type="string" />
+    <aura:attribute name="selectedProposedProduct" type="string" />
+    <aura:attribute name="deleteLineItems" type="List" />
+    <aura:attribute name="isModalOpen" type="boolean" />
+    <aura:attribute name="existingData" type="List" />
+    <aura:attribute name="rowsToDelete" type="List" />
+    <aura:attribute name="disableDelete" type="boolean" default="true" />
+    <aura:attribute name="disableBack" type="boolean" />
+    <aura:attribute name="removedLineItems" type="List" />
+    <aura:attribute name="sortedBy" type="String" default="Name"/>
+    <aura:attribute name="sortedDirection" type="string" default="asc" />
+    <aura:attribute name="draftValues" type="Object" default="[]"/>
+    <aura:attribute name="ndcChangeProductIds" type="Object" />
+    <aura:attribute name="selectAllCheckbox" type="boolean" default="false" />
+    <aura:attribute name="inputLeadTime" type="Object" />
+    <aura:attribute type="map" name="productsMap"/>
+    <aura:attribute name="removeChangeProductId" type="String" />
+    <aura:attribute name="existingNPRIds" type="List" />
+    <aura:attribute name="deleteNPRIds" type="List" />
+    <aura:attribute name="deleteAllRows" type="boolean" />
+    <aura:attribute name="loaded" type="Boolean" default="false" />
+    <aura:attribute name="popupLoaded" type="Boolean" default="false" />
+    
+    <aura:attribute name="pageReference" type="Object"/>
+    
+    <lightning:navigation aura:id="navService"/>  
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <!--Event handler for Add and Delete Row Event which is fire from Child Component--> 
+    <aura:handler name="DeleteRowEvt" event="c:DeleteRowEvt" action="{!c.removeDeletedRow}"/>
+    <aura:handler name="AddRowEvt" event="c:AddNewRowEvt" action="{!c.addNewRow}"/>
+    
+    <aura:registerEvent name="productInstancesLength" type="c:NDCChangeEvent"/>    
+    <aura:registerEvent name="NDCChangeToLineItems" type="c:NDCChangeToLineItems"/> 
+    
+    
+    <aura:if isTrue="{! v.loaded }">
+        <lightning:spinner alternativeText="Loading" />
+    </aura:if>
+    <aura:if isTrue="{!v.isProductNotSelected}">
+        <div class="slds-box slds-theme_default slds-m-top_small" id="top">
+            <div class="slds-p-around_medium slds-align_absolute-center" role="banner">
+                <h1 class="slds-modal__title slds-hyphenate slds-text-heading--medium">
+                    Select Product
+                </h1>
+            </div>
+            <div class="slds-media__body slds-m-top-medium slds-border_top slds-border_bottom slds-border_right slds-border_left scrollable_y">
+                <lightning:card>
+                    <table class="slds-table slds-table_bordered slds-table_cell-buffer"> 
+                        <thead>
+                            <tr>
+                                <th scope="col" class="slds-truncate slds-cell-wrap">
+                                    Current Product
+                                </th>
+                                <th scope="col" class="slds-truncate slds-cell-wrap customTh" style="width: 50px;">
+                                    Current NDC
+                                </th>
+                                <th scope="col" class="slds-truncate slds-cell-wrap customTh" style="width: 50px;">
+                                    Current SAP Number
+                                </th>
+                                <th scope="col" class="slds-truncate slds-cell-wrap customTh" style="width: 50px;">
+                                    Current Pack Size
+                                </th>
+                                <th scope="col" class="slds-truncate slds-cell-wrap">
+                                    Proposed Product
+                                </th>
+                                <th scope="col" class="slds-truncate slds-cell-wrap customTh" style="width: 50px;">
+                                    Proposed NDC
+                                </th>
+                                <th scope="col" class="slds-truncate slds-cell-wrap customTh" style="width: 50px;">
+                                    Product SAP Number
+                                </th>
+                                <th scope="col" class="slds-truncate slds-cell-wrap customTh" style="width: 50px;">
+                                    Proposed Pack Size
+                                </th>
+                                <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+                                    <th scope="col" style="text-align: center; width: 50px;">
+                                        <lightning:button class="customButton" variant="neutral" iconName="utility:add" iconPosition="left" onclick="{!c.AddNewRow}" />
+                                    </th>
+                                </aura:if>
+                            </tr>
+                        </thead>   
+                        <tbody>
+                            <!--Iterate the child Component for display Table rows 
+                       with pass the List Item Index for track the Every child Component 
+                       and pass each List Instance -->         
+                            <aura:iteration items="{!v.productList}" var="item" indexVar="index">
+                                <c:Phoenix_NDCChangeChildRowItem currentProductFamily ="{!v.CurrentProductFamily}" ApprovalStatus="{!v.ApprovalStatus}" productInstance="{!item}" rowIndex="{!index}" proposedProducts="{!v.proposedProducts}" recordIdNew="{!v.recordIdNew}" selectedProducts="{!v.selectedProducts}"/>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                    <div class="modal-footer slds-modal__footer slds-align_absolute-center" role="banner">
+                        <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+                            <lightning:button class="slds-m-top_medium" variant="brand" type="Button" label="Save &amp; Search" onclick="{!c.Save}" />
+                            <aura:set attribute="else">
+                                <lightning:button class="slds-m-top_medium" variant="brand" type="Button" label="Save &amp; Search" disabled="true" />
+                            </aura:set>
+                        </aura:if>
+                    </div>
+                </lightning:card>
+            </div>
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.isProductsSelected}" >
+        <div class="slds-box slds-theme_default slds-m-top_small slds-scrollable_y" id="top">
+            <div class="slds-p-around_medium slds-align_absolute-center" role="banner">
+                <h1 class="slds-modal__title slds-hyphenate slds-text-heading--medium">
+                    NDC Line Items
+                </h1>
+            </div>
+            <div class="slds-p-around_medium slds-align_absolute-center" role="banner">
+                <div class="slds-align_absolute-center" >
+                    <h2 class="slds-modal__title slds-hyphenate slds-text-heading--medium" style="padding-left: 267px;">
+                        Selected List of Contracts
+                    </h2>
+                </div>
+                <div class="slds-float_right" >
+                    <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+                        <lightning:button label="Add Contracts" onclick="{!c.openModal}" />
+                        <lightning:button label="Delete Contracts" onclick="{!c.removeSelectedContracts}" disabled="{!v.disableDelete}" />
+                        <aura:set attribute="else">
+                            <lightning:button label="Add Contracts" disabled="true" />
+                            <lightning:button label="Delete Contracts" disabled="true" />
+                        </aura:set>
+                    </aura:if>
+                </div>
+            </div>
+            <aura:if isTrue="{!v.isModalOpen}">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_large">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <lightning:buttonIcon iconName="utility:close"
+                                                  onclick="{! c.closeModal }"
+                                                  alternativeText="close"
+                                                  variant="bare-inverse"
+                                                  class="slds-modal__close"/>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Select Contracts</h2>
+                            <div style="float: right;">
+                                <lightning:input type="search" lable="Search" placeholder="Search from Contracts" aura:id="SearchBox" onchange="{!c.searchTable}" />
+                            </div>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                            <!-- Modal for Contracts Selection -->
+                            <aura:if isTrue="{! v.popupLoaded }">
+                                <lightning:spinner alternativeText="Loading" />
+                            </aura:if>
+                            <div class="slds-media__body slds-m-top-medium slds-border_top slds-border_bottom slds-border_right slds-border_left" >
+                                <aura:if isTrue="{!v.popupData.length == 0}">
+                                    <lightning:card >
+                                        <center>
+                                            <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                                <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                                    <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                                </span>
+                                                <h2>No Contracts found</h2>
+                                            </div>
+                                        </center>
+                                    </lightning:card>
+                                    <aura:set attribute="else" >
+                                        <div id="tableDiv" class="slds-p-around_small modal-body scrollable slds-modal__content slds-p-around--medium slds-scrollable_y" data-scoped-scroll="true" style="background-color:#f3f2f2;padding:0px;height: 300px;">
+                                            <lightning:datatable data="{! v.popupData }"
+                                                                 columns="{! v.popupColumns }"
+                                                                 keyField="id"
+                                                                 onrowselection="{! c.getSelectedName }"
+                                                                 onsort="{!c.updateSorting}"
+                                                                 sortedBy="{!v.sortedBy}"
+                                                                 sortedDirection="{!v.sortedDirection}"
+                                                                 />                    
+                                        </div>
+                                    </aura:set>
+                                </aura:if>
+                            </div>
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral" 
+                                              label="Cancel"
+                                              title="Cancel"
+                                              onclick="{! c.closeModal }"/>
+                            <lightning:button variant="brand" 
+                                              label="Add"
+                                              title="Add"
+                                              onclick="{! c.displaySelectedNDCLineItems }"/>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop--open" id="backdrop"></div>
+            </aura:if>
+            <div class="slds-media__body slds-m-top-medium slds-border_top slds-border_bottom slds-border_right slds-border_left">
+                <lightning:card>
+                    <div aura:id="mainDiv" style="height:450px;overflow:auto;margin-top:10px;" class=" slds-m-right_small slds-m-left_small">
+                        <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                            <table aura:id="LineTable"  class="customtable slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="slds-truncate slds-cell-wrap">
+                                        <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+                                            <div class="slds-form-element">
+                                                <div class="slds-form-element__control">
+                                                    <label class="slds-checkbox">
+                                                        <ui:inputCheckbox value="{!v.selectAllCheckbox}" change="{!c.checkboxAll}" />
+                                                        <span class="slds-checkbox_faux"></span>
+                                                        <span class="slds-form-element__label text"></span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <aura:set attribute="else">
+                                                <div class="slds-form-element">
+                                                    <div class="slds-form-element__control">
+                                                        <label class="slds-checkbox">
+                                                            <ui:inputCheckbox value="{!v.selectAllCheckbox}" change="{!c.checkboxAll}" disabled="true" />
+                                                            <span class="slds-checkbox_faux"></span>
+                                                            <span class="slds-form-element__label text"></span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </aura:set>
+                                        </aura:if>
+                                    </th>
+                                    <th scope="col" class="slds-truncate slds-cell-wrap">
+                                        Account
+                                    </th>
+                                    <th scope="col" class="slds-truncate slds-cell-wrap">
+                                        Contract #
+                                    </th>
+                                    <th scope="col" class="slds-truncate slds-cell-wrap">
+                                        Contract Description
+                                    </th>
+                                    <th scope="col" class="slds-truncate slds-cell-wrap">
+                                        NPR Record
+                                    </th>
+                                    <th scope="col" class="slds-truncate slds-cell-wrap">
+                                        Current Product
+                                    </th>
+                                    <th scope="col" class="slds-truncate slds-cell-wrap">
+                                        Current Product Pack Size
+                                    </th>
+                                    <th scope="col" class="slds-truncate slds-cell-wrap">
+                                        Current Product NDC
+                                    </th>
+                                    <th scope="col" class="slds-truncate slds-cell-wrap">
+                                        Contract Price
+                                    </th>
+                                    <th scope="col" class="slds-truncate slds-cell-wrap">
+                                        Proposed Product
+                                    </th>
+                                    <th scope="col" class="slds-truncate slds-cell-wrap">
+                                        Proposed Product Pack Size
+                                    </th>
+                                    <th scope="col" class="slds-truncate slds-cell-wrap">
+                                        Proposed Product NDC
+                                    </th>
+                                    <th scope="col" class="slds-truncate slds-cell-wrap">
+                                        Awarded Quantity
+                                    </th>
+                                    <th scope="col" class="slds-truncate slds-cell-wrap">
+                                        Actual Qty 12m
+                                    </th>
+                                    <!--<th scope="col">
+                                        <div class="slds-truncate" title="SCM Approval">SCM Approval</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Lead Time (SCM)">Lead Time (SCM)</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Phoenix_Remarks__c">SCM Remarks</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Finance Approval">Finance Approval</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Finance Approval">Finance Approval Remarks</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Contracts Approval">Contracts Approval</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Contracts Approval">Contracts Approval Remarks</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Customer Approval">Customer Approval</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Customer Approval">Customer Approval Remarks</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Vistex Approval">Vistex Approval</div>
+                                    </th>
+                                    <th scope="col">
+                                        <div class="slds-truncate" title="Vistex Approval">Vistex Approval Remarks</div>
+                                    </th>-->
+                                </tr>
+                            </thead>   
+                            <tbody>         
+                                <aura:iteration items="{!v.mydata}" var="instance">
+                                    <tr>
+                                        <td>
+                                            <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+                                                <div class="slds-form-element">
+                                                    <div class="slds-form-element__control">
+                                                        <label class="slds-checkbox">
+                                                            <ui:inputCheckbox aura:id="checkbox" value="{!instance.isChecked}" text="{!instance.Phoenix_Current_NPR__c}" change="{!c.getSelectedContracts}" />
+                                                            <span class="slds-checkbox_faux"></span>
+                                                            <span class="slds-form-element__label text"></span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <aura:set attribute="else">
+                                                    <div class="slds-form-element">
+                                                        <div class="slds-form-element__control">
+                                                            <label class="slds-checkbox">
+                                                                <ui:inputCheckbox aura:id="checkbox" disabled="true" />
+                                                                <span class="slds-checkbox_faux"></span>
+                                                                <span class="slds-form-element__label text"></span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </aura:set>
+                                            </aura:if>
+                                        </td>
+                                        <td>
+                                            <a href="{!instance.Account_Url}"
+                                               target="_blank">{!instance.Account}</a>
+                                        </td>
+                                        <td>
+                                            <a href="{!instance.Contract_Url}"
+                                               target="_blank">{!instance.Contract}</a>
+                                        </td>
+                                        <td>
+                                            {!instance.Phoenix_Contract_Internal_Description__c}
+                                        </td>
+                                        <td class="slds-cell-wrap" scope="col">
+                                            <a href="{!instance.NPR_URL}"
+                                               target="_blank">{!instance.NPR}</a>
+                                        </td>
+                                        <td>
+                                            {!instance.Phoenix_Current_Product_Name__c}
+                                        </td>
+                                        <td>
+                                            {!instance.Phoenix_Current_Product_Pack_Size__c}
+                                        </td>
+                                        <td>
+                                            {!instance.Phoenix_Current_Product_NDC__c}
+                                        </td>
+                                        <td>
+                                            {!instance.Phoenix_Contract_Price__c}
+                                        </td>
+                                        <td>
+                                            {!instance.Phoenix_Proposed_Product_Name__c}
+                                        </td>
+                                        <td>
+                                            {!instance.Phoenix_Proposed_Product_Pack_Size__c}
+                                        </td>
+                                        <td>
+                                            {!instance.Phoenix_Proposed_Product_NDC__c}
+                                        </td>
+                                        <td>
+                                            {!instance.Phoenix_Awarded_Quantity__c}
+                                        </td>
+                                        <td>
+                                            {!instance.Phoenix_Actual_Quantity_Last_12m__c}
+                                        </td>
+                                        <!--<td>
+                                            <lightning:select name="SCMApproval">
+                                                <option value="{!instance.Phoenix_SCM_Approval__c}">{!instance.Phoenix_SCM_Approval__c}</option>
+                                                <option value="Approve">Approve</option>
+                                                <option value="Reject">Reject</option>
+                                            </lightning:select>
+                                        </td>
+                                        <td>
+                                            {!instance.Phoenix_Lead_Time__c}
+                                        </td>
+                                        <td>
+                                            <lightning:input type="text" name="{!instance.NPR}" onchange="{!c.getInputValue}" />
+                                        </td>
+                                        <td>
+                                            <lightning:select name="FinanceApproval">
+                                                <option value=""></option>
+                                                <option value="Approve">Approve</option>
+                                                <option value="Reject">Reject</option>
+                                            </lightning:select>
+                                        </td>
+                                        <td>
+                                            <lightning:input type="text" name="{!instance.NPR}" onchange="{!c.getInputValue}" />
+                                        </td>
+                                        <td>
+                                            <lightning:select name="ContractsApproval">
+                                                <option value=""></option>
+                                                <option value="Approve">Approve</option>
+                                                <option value="Reject">Reject</option>
+                                            </lightning:select>
+                                        </td>
+                                        <td>
+                                            <lightning:input type="text" name="{!instance.NPR}" onchange="{!c.getInputValue}" />
+                                        </td>
+                                        <td>
+                                            <lightning:select name="CustomerApproval">
+                                                <option value=""></option>
+                                                <option value="Approve">Approve</option>
+                                                <option value="Reject">Reject</option>
+                                            </lightning:select>
+                                        </td>
+                                        <td>
+                                            <lightning:input type="text" name="{!instance.NPR}" onchange="{!c.getInputValue}" />
+                                        </td>
+                                        <td>
+                                            <lightning:select name="VistexApproval">
+                                                <option value=""></option>
+                                                <option value="Approve">Approve</option>
+                                                <option value="Reject">Reject</option>
+                                            </lightning:select>
+                                        </td>
+                                        <td>
+                                            <lightning:input type="text" name="{!instance.NPR}" onchange="{!c.getInputValue}" />
+                                        </td> -->
+                                    </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                </lightning:card>
+            </div>
+            <div class="modal-footer slds-modal__footer slds-align_absolute-center" role="banner">
+                <lightning:button class="slds-m-top_medium" variant="neutral" type="button" label="Cancel" onclick="{!c.backToDetailPage}" />
+                <lightning:button class="slds-m-top_medium" variant="neutral" type="button" label="Back" onclick="{!c.backToNDCChange}" disabled="{!v.selectedLineItems.length != 0}" />
+                <lightning:button class="slds-m-top_medium" variant="brand" type="button" label="Save &amp; Close" onclick="{!c.saveSelectedRows}" />
+            </div>
+        </div>
+    </aura:if>
+</aura:component>

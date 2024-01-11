@@ -1,0 +1,640 @@
+<aura:component  controller = "Vision_Order_Compliance_Report_Class" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+      <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="singlerec" type="object" />
+    <aura:attribute name="orderList" type="object" />
+    <aura:attribute name="recordId" type="String" />
+     <aura:attribute name="orderQty" type="Decimal" />
+     <aura:attribute name="netValue" type="Decimal" />
+    <aura:attribute name="loaded" type="Boolean" />
+    <aura:attribute name="spinner" type="Boolean" />
+    <aura:attribute name="expandCollapse" type="Boolean" default="false"/>
+    <aura:attribute name="statusExpand" type="Boolean" default="false"/>
+    <aura:attribute name="orderModalOpen" type="boolean" default="false"/>
+     <aura:attribute name="graphProductCode" type="String" />  
+    <aura:attribute name="graphSoldToCust" type="String" /> 
+    
+      
+    <aura:attribute name="ProdName" type="String" /> 
+    <aura:attribute name="Ndc" type="String" /> 
+        <aura:attribute name="showGraph" type="boolean" default="false"/>
+
+    <aura:attribute name="showComments" type="boolean" default="false"/>
+    <aura:attribute name="showSpinnerInCommentPop" type="boolean" default="false"/>
+    <aura:attribute name="listOfCmnts" type="List"/>
+    <aura:attribute name="brightCmnts" type="list"/>
+    <aura:attribute name="showSaveComntButton" type="boolean" default="false"/>   
+    <aura:attribute name="ndcList" type="list"/>
+    <aura:attribute name="visionComment" type="String"/>
+     <aura:attribute name="ProdIdForComment" type="String"/>
+    <aura:attribute name="pickList" type="List" default="[
+                                                        {'label': '12 Months', 'value': '12Month'},
+                                                        {'label': '6 Months', 'value': '6Month'},
+                                                        {'label': '3 Months', 'value': '3Month'},
+                                                        ]"/>
+       <aura:attribute name="selectedId" type="String" />
+
+    <aura:attribute name="itemDescDrover" type="Boolean"  default="false" />
+    <aura:attribute name="month7drover" type="Boolean"  default="false" />
+    <aura:attribute name="month6drover" type="Boolean"  default="false" />
+    <aura:attribute name="month5drover" type="Boolean"  default="false" />
+    <aura:attribute name="month4drover" type="Boolean"  default="false" />
+    <aura:attribute name="month3drover" type="Boolean"  default="false" />
+    <aura:attribute name="month2drover" type="Boolean"  default="false" />
+    
+    <aura:if isTrue="{! v.loaded }">
+        
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if> 
+    <aura:if  isTrue="{!v.singlerec.showProdFam}"> 
+        <aura:iteration items="{!v.singlerec.orderComplianceList}" var="singlerec" >
+            
+            
+            <tr>
+                <aura:if isTrue="{!or(singlerec.M7_Avg_Compliance__c ge 75,singlerec.M7_Avg_Compliance__c == undefined )}">          
+                    <td  class="{!(AND(singlerec.M7_Avg_Compliance__c lt 90, singlerec.M7_Avg_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month1ColumnData' :
+                                'purplelikeIcon slds-text-align_center month1ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M7_Avg_Compliance__c}"/></td>
+                    <aura:set attribute="else"> 
+                        <td class="redIcon month1ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M7_Avg_Compliance__c }" size="x-small"/></td>
+                        
+                    </aura:set>
+                </aura:if> 
+                <aura:if isTrue="{!or(singlerec.M6_Avg_Compliance__c ge 75,singlerec.M6_Avg_Compliance__c == undefined )}">          
+                    <td  class="{!(AND(singlerec.M6_Avg_Compliance__c lt 90, singlerec.M6_Avg_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month2ColumnData' :
+                                'purplelikeIcon slds-text-align_center month2ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M6_Avg_Compliance__c}"/></td>
+                    <aura:set attribute="else"> 
+                        <td class="redIcon month2ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M6_Avg_Compliance__c }" size="x-small"/></td>
+                        
+                    </aura:set>
+                </aura:if> 
+                <aura:if isTrue="{!or(singlerec.M5_Avg_Compliance__c ge 75,singlerec.M5_Avg_Compliance__c == undefined )}">          
+                    <td  class="{!(AND(singlerec.M5_Avg_Compliance__c lt 90, singlerec.M5_Avg_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month3ColumnData' :
+                                'purplelikeIcon slds-text-align_center month3ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M5_Avg_Compliance__c}"/></td>
+                    <aura:set attribute="else"> 
+                        <td class="redIcon month3ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M5_Avg_Compliance__c }" size="x-small"/></td>
+                        
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!or(singlerec.M4_Avg_Compliance__c ge 75,singlerec.M4_Avg_Compliance__c == undefined )}">          
+                    <td  class="{!(AND(singlerec.M4_Avg_Compliance__c lt 90, singlerec.M4_Avg_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month4ColumnData' :
+                                'purplelikeIcon slds-text-align_center month4ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M4_Avg_Compliance__c}"/></td>
+                    <aura:set attribute="else"> 
+                        <td class="redIcon month4ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M4_Avg_Compliance__c }" size="x-small"/></td>
+                        
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!or(singlerec.M3_Avg_Compliance__c ge 75,singlerec.M3_Avg_Compliance__c == undefined )}">          
+                    <td  class="{!(AND(singlerec.M3_Avg_Compliance__c lt 90, singlerec.M3_Avg_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month5ColumnData' :
+                                'purplelikeIcon slds-text-align_center month5ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M3_Avg_Compliance__c}"/></td>
+                    <aura:set attribute="else"> 
+                        <td class="redIcon month5ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M3_Avg_Compliance__c }" size="x-small"/></td>
+                        
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!or(singlerec.M2_Avg_Compliance__c ge 75,singlerec.M2_Avg_Compliance__c == undefined )}">          
+                    <td  class="{!(AND(singlerec.M2_Avg_Compliance__c lt 90, singlerec.M2_Avg_Compliance__c ge 75) ? 'greenIcon slds-text-align_center month6ColumnData' :
+                                'purplelikeIcon slds-text-align_center month6ColumnData' )}"><lightning:icon iconName="utility:like" size="x-small" title="{!singlerec.M2_Avg_Compliance__c}"/></td>
+                    <aura:set attribute="else"> 
+                        <td class="redIcon month6ColumnData" ><lightning:icon iconName="utility:dislike" title="{!singlerec.M2_Avg_Compliance__c }" size="x-small"/></td>
+                        
+                    </aura:set>
+                </aura:if>
+                
+                <td class="itemDesColumnData  fixedcolumn" style="max-width:517px !important;overflow: hidden;" >
+                     <span  title="{!('Supply Effective Date: '+singlerec.Supply_Effective_Date__c +' || Price Effective Date: ' +singlerec.Price_Effective_Date__c)}"> {!singlerec.Vision_Product__r.Name}</span>&nbsp;
+                <lightning:buttonIcon iconName="utility:fulfillment_order" class="purpleIcon lessThanCss" variant="bare" onclick="{! c.openModal }" name="{!singlerec.Vision_Product__r.ProductCode}" value="{!singlerec.Sold_to_customer_code__c}" alternativeText="View Orders" title="View Orders"/>&nbsp;
+                <lightning:buttonIcon iconName="utility:metrics" class="purpleIcon" variant="bare" onclick="{! c.showGraph }" alternativeText="Show Graph" name="{!singlerec.Vision_Product__r.ProductCode}" value="{!singlerec.Sold_to_customer_code__c}" title="Show Graph"/>&nbsp;
+                <aura:if isTrue="{!(and(singlerec.GCP_Backorder_SRx_Rx__r.Vision_MoH__c lt 0, singlerec.Vision_Product__r.Phoenix_Rx_SRx_OTC__c == 'Rx'))}">
+                   <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                              
+                </aura:if>
+                    <aura:if isTrue="{!(and(singlerec.GCP_Backorder_SRx_Rx__r.Vision_On_Backorder__c == 'Yes' , singlerec.Vision_Product__r.Phoenix_Rx_SRx_OTC__c == 'SRx'))}">
+                     <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                              
+                    </aura:if>
+                    <aura:if isTrue="{!(and(singlerec.GCP_Backorder_OTC__r.Vision_Backorder_Qty__c gt 0, singlerec.Vision_Product__r.Phoenix_Rx_SRx_OTC__c == 'OTC'))}">
+                      <img src="{!$Resource.BackorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="Backorder on this NDC" />                              
+                    </aura:if>&nbsp;
+                    <aura:if isTrue="{!singlerec.Is_in_Openorder__c}">     
+  <img src="{!$Resource.Noopenorder}" class="imageclass" style="max-width: 20px;height: 20px;" title="Open Orders on this Product" />                                             
+                        
+                        <aura:set attribute="else"> 
+                              <img src="{!$Resource.OpenorderIcon1}" class="imageclass" style="max-width: 20px;height: 20px;" title="No Open Orders on this Product" />                                         
+                            
+                        </aura:set> 
+                    </aura:if>
+                                     <aura:if isTrue="{!singlerec.Product_Position__c != null}">
+                    <span title="{!singlerec.Product_Position__c}"> ({!singlerec.Product_Position__c})</span> 
+                    </aura:if>
+                </td>
+                <aura:if isTrue="{!v.itemDescDrover}">
+                <td class="ndcColumnData fixedcolumn2" title="">{!singlerec.Vision_Product__r.Phoenix_NDC_11__c}</td>
+                <td class="packColumnData fixedcolumn3" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.Vision_Product__r.Phoenix_Pkg_Size__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>  
+                </aura:if>
+                <aura:if isTrue="{!v.month7drover}">
+                    <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M7_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M7_Avg_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                </aura:if>
+                <td class="" title="{!('Avg:'+singlerec.M7_Avg_Quantity__c)}"  style="{!(singlerec.M7_Avg_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M7_Avg_Compliance__c le 90, singlerec.M7_Avg_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                    <lightning:formattedNumber value="{!singlerec.M7_Avg_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                                       
+              <aura:if isTrue="{!v.month6drover}">
+                <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M6_Quantity__c}"   minimumFractionDigits="0" maximumFractionDigits="0"/></td> 
+                <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M6_Avg_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                </aura:if>
+                <td class="" title="{!('Avg:'+singlerec.M6_Avg_Quantity__c)}"  style="{!(singlerec.M6_Avg_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M6_Avg_Compliance__c le 90, singlerec.M6_Avg_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                    <lightning:formattedNumber value="{!singlerec.M6_Avg_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                                        
+               <aura:if isTrue="{!v.month5drover}">
+                <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M5_Quantity__c}"   minimumFractionDigits="0" maximumFractionDigits="0"/></td>           
+                <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M5_Avg_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                </aura:if>
+                <td class="" title="{!('Avg:'+singlerec.M5_Avg_Quantity__c)}" style="{!(singlerec.M5_Avg_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M5_Avg_Compliance__c le 90, singlerec.M5_Avg_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                    <lightning:formattedNumber value="{!singlerec.M5_Avg_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+               <aura:if isTrue="{!v.month4drover}">
+                <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M4_Quantity__c}"   minimumFractionDigits="0" maximumFractionDigits="0"/></td>           
+                <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M4_Avg_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                </aura:if>
+                   <td class="" title="{!('Avg:'+singlerec.M4_Avg_Quantity__c)}" style="{!(singlerec.M4_Avg_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M4_Avg_Compliance__c le 90, singlerec.M4_Avg_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                    <lightning:formattedNumber value="{!singlerec.M4_Avg_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                <aura:if isTrue="{!v.month3drover}">
+                <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M3_Quantity__c}"   minimumFractionDigits="0" maximumFractionDigits="0"/></td>           
+                <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M3_Avg_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                </aura:if>
+                    <td class="" title="{!('Avg:'+singlerec.M3_Avg_Quantity__c)}" style="{!(singlerec.M3_Avg_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M3_Avg_Compliance__c le 90, singlerec.M3_Avg_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                    <lightning:formattedNumber value="{!singlerec.M3_Avg_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+               <aura:if isTrue="{!v.month2drover}">
+                   <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M2_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>           
+                <td class="" style="text-align:center;"><lightning:formattedNumber value="{!singlerec.M2_Avg_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                </aura:if>
+                   <td class="" title="{!('Avg:'+singlerec.M2_Avg_Quantity__c)}" style="{!(singlerec.M2_Avg_Compliance__c ge 90 ? 'color:purple;text-align:center;' : AND(singlerec.M2_Avg_Compliance__c le 90, singlerec.M2_Avg_Compliance__c ge 75) ? 'color:green;text-align:center;' : 'color:red;text-align:center;')}">
+                    <lightning:formattedNumber value="{!singlerec.M2_Avg_Compliance__c}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>                        
+                <td class="slds-text-align--center">
+                    <!-- <button onclick="{!c.inlineEditComments}" 
+                        class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                        tabindex="0" id="{!indx}">-->
+                    <lightning:buttonIcon variant="bare" iconName="utility:comments"  size="medium"  value="{!singlerec.Vision_Product__c}" onclick="{!c.inlineEditComments}"/>
+                    
+                    
+                    <!-- </button>-->
+                </td>
+                
+            </tr>
+            
+            
+        </aura:iteration>
+        
+    </aura:if>
+  <aura:if  isTrue="{!v.orderModalOpen}"> 
+        
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container">
+             
+                
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;">
+                    <aura:if isTrue="{!v.spinner }">
+                        <center><div class="slds-box" style="font-size:16px;font-weight:bold;"> Please wait while loading the Order Data...</div></center>
+                        <aura:set attribute="else">  
+                               <div> 
+                        <center> <b style="font-size:16px;">{!v.custName} Order Details for {!v.orderProdName}</b></center> 
+                    </div>  
+                    
+                            <div style="padding-left:10px;padding-right:10px;">
+                                <div aura:id="mainDiv" style="height:430px;overflow:auto;margin-top:10px;border: 1px solid #cfcfcf;">
+                                    
+                                    <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                                        <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered slds-table--header-fixed">
+                                            <thead>
+                                                <tr>  
+                                                    <th class="orderheaderSticky ordersummarySticky" style="font-size:15px;font-weight:Bold;text-align:left;background-color:#257CFF;color:white;padding:5px;">Order Status</th> 
+                                                    <th class="orderheaderSticky" style="font-size:15px;font-weight:Bold;text-align:left;background-color:#257CFF;color:white;padding:5px;">Order Number</th>
+                                                    <th class="orderheaderSticky" style="font-size:15px;font-weight:Bold;text-align:left;background-color:#257CFF;color:white;padding:5px;">Ship to Customer Name</th> 
+                                                    <th class="orderheaderSticky" style="font-size:15px;font-weight:Bold;text-align:left;background-color:#257CFF;color:white;padding:5px;">Order Quantity</th>  
+                                                    <th class="orderheaderSticky" style="font-size:15px;font-weight:Bold;text-align:left;background-color:#257CFF;color:white;padding:5px;">Net Value</th>  
+                                                    <th class="orderheaderSticky" style="font-size:15px;font-weight:Bold;text-align:left;background-color:#257CFF;color:white;padding:5px;">Order Date</th>  
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr><td class="ordersummarySticky" style="font-size:15px;"><b>Summary</b></td>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td style="text-align:right;"><b><lightning:formattedNumber value="{!v.orderQty}"  minimumFractionDigits="0" maximumFractionDigits="0"/></b></td>
+                                                    <td style="text-align:right;"><b><lightning:formattedNumber value="{!v.netValue}"  style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></b></td>
+                                                    <td></td>
+                                                    
+                                                </tr>
+                                                <aura:iteration items="{!v.orderList}" var="item" >
+                                                    <tr> <td class="ordersummarySticky" > <b>{!item.soldToCustName}</b>-<i>{!item.soldToCustCode}</i> <aura:if isTrue="{!item.expandsolToCust}">
+                                                        <b> (<lightning:buttonIcon iconName="utility:minimize_window" class="iconCSS IconColor" variant="bare" onclick="{! c.handleClick1 }" name="{!item.soldToCustName}" alternativeText="Hide Status" title="Hide Status" />)</b>
+                                                        
+                                                        <aura:set attribute="else">
+                                                            <b>   (<lightning:buttonIcon class ="IconColor" iconName="utility:add" variant="bare" onclick="{! c.handleClick2 }" name="{!item.soldToCustName}" alternativeText="Show Status" title="Show Status" />)</b>
+                                                            
+                                                        </aura:set>
+                                                        </aura:if> </td> 
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td style="text-align:right;"><b><lightning:formattedNumber value="{!item.orderQty}" minimumFractionDigits="0" maximumFractionDigits="0"/></b></td>
+                                                        <td style="text-align:right;"><b><lightning:formattedNumber value="{!item.netValue}"  style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></b></td>
+                                                        <td></td>
+                                                    </tr>
+                                                    <aura:if isTrue="{!item.expandsolToCust}">
+                                                        <aura:iteration items="{!item.statusWrapperList}" var="order" >
+                                                            <tr>
+                                                                
+                                                                <aura:if isTrue="{!order.status == 'Cancelled'}">
+                                                                    <td class="ordersummarySticky" style="color:Red !important;text-align:right;font-weight:bold;">{!order.status}({!order.orderList.length}) <aura:if isTrue="{!order.expandStatus}">
+                                                                        (<lightning:buttonIcon iconName="utility:minimize_window" class="iconCSS IconColor" variant="bare" onclick="{! c.handleClick3 }" name="{!order.status}" value="{!order.soldToCustName}" alternativeText="Hide Order Details" title="Hide Order Details" />)
+                                                                        
+                                                                        <aura:set attribute="else">
+                                                                            (<lightning:buttonIcon class ="IconColor" iconName="utility:add" variant="bare" onclick="{! c.handleClick4 }" name="{!order.status}" value="{!order.soldToCustName}" alternativeText="Show Order Details" title="Show Order Details" />)
+                                                                            
+                                                                        </aura:set>
+                                                                        </aura:if></td>
+                                                                    
+                                                                    <aura:set attribute="else">   
+                                                                        <td class="ordersummarySticky" style="text-align:right;font-weight:bold;"> {!order.status}({!order.orderList.length}) <aura:if isTrue="{!order.expandStatus}">
+                                                                            (<lightning:buttonIcon iconName="utility:minimize_window" class="iconCSS IconColor" variant="bare" onclick="{! c.handleClick3 }" name="{!order.status}" value="{!order.soldToCustName}" alternativeText="Hide Order Details" title="Hide Order Details" />)
+                                                                            
+                                                                            <aura:set attribute="else">
+                                                                                (<lightning:buttonIcon class ="IconColor" iconName="utility:add" variant="bare" onclick="{! c.handleClick4 }" name="{!order.status}" value="{!order.soldToCustName}" alternativeText="Show Order Details" title="Show Order Details" />)
+                                                                                
+                                                                            </aura:set>
+                                                                            </aura:if></td>
+                                                                        
+                                                                    </aura:set>
+                                                                </aura:if>
+                                                                
+                                                                
+                                                                <td></td>
+                                                                <td></td>
+                                                                
+                                                                <aura:if isTrue="{!order.status == 'Cancelled'}">
+                                                                    <td style="color:Red !important;text-align:right;"><b>-<lightning:formattedNumber value="{!order.orderQty}"  minimumFractionDigits="0" maximumFractionDigits="0"/></b></td>
+                                                                    <td style="color:Red !important;text-align:right;"><b>-<lightning:formattedNumber value="{!order.netValue}"  style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></b></td>
+                                                                    
+                                                                    <aura:set attribute="else">   
+                                                                        <aura:if isTrue="{!order.status == 'Partially Delivered'}">
+                                                                            <td style="text-align:right;text-align:right;"><b><lightning:formattedNumber value="{!order.orderQty}"  minimumFractionDigits="0" maximumFractionDigits="0"/>&nbsp;(<lightning:formattedNumber value="{!order.shipQty}"  minimumFractionDigits="0" maximumFractionDigits="0"/>)</b></td>
+                                                                            <td style="text-align:right;text-align:right;"><b><lightning:formattedNumber value="{!order.netValue}"  style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>&nbsp;</b></td>    
+                                                                            <aura:set attribute="else">   
+                                                                                
+                                                                                <td style="text-align:right;text-align:right;"><b><lightning:formattedNumber value="{!order.orderQty}"  minimumFractionDigits="0" maximumFractionDigits="0"/></b></td>
+                                                                                <td style="text-align:right;text-align:right;"><b><lightning:formattedNumber value="{!order.netValue}"  style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></b></td>
+                                                                            </aura:set>
+                                                                        </aura:if>
+                                                                    </aura:set>
+                                                                </aura:if>
+                                                                
+                                                                <td></td>
+                                                            </tr>
+                                                            <aura:if isTrue="{!order.expandStatus}">
+                                                                <aura:iteration items="{!order.orderList}" var="orderlist" >
+                                                                    <tr> 
+                                                                        <aura:if isTrue="{!orderlist.Vision_Order_Status__c == 'Cancelled'}">
+                                                                            <td class="ordersummarySticky" style="color:Red;text-align:right;"> {!orderlist.Vision_Order_Status__c}</td>                                        
+                                                                            <td style="color:Red;"> {!orderlist.Vision_Order_Number__c}</td>
+                                                                            <td style="color:Red;"> {!orderlist.Vision_Ship_to_Customer_Name__c}</td>
+                                                                            <td style="color:Red !important;text-align:right;">-<lightning:formattedNumber value="{!orderlist.Vision_Order_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                                                            <td style="color:Red !important;text-align:right;">-<lightning:formattedNumber value="{!orderlist.Vision_Net_Value__c}"  style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                                                            <td style="color:Red;text-align:right;">    <lightning:formattedDateTime value="{!orderlist.Vision_Order_Date__c}" month="numeric" day="numeric" year="numeric"/></td>   
+                                                                            <aura:set attribute="else">  
+                                                                                <aura:if isTrue="{!order.status == 'Partially Delivered'}">
+                                                                                    <td class="ordersummarySticky" style="text-align:right;"> {!orderlist.Vision_Order_Status__c}</td>                                        
+                                                                                    <td> {!orderlist.Vision_Order_Number__c}</td>
+                                                                                    <td> {!orderlist.Vision_Ship_to_Customer_Name__c}</td>                                        
+                                                                                    <td style="text-align:right;"><lightning:formattedNumber value="{!orderlist.Vision_Order_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/>&nbsp;(<lightning:formattedNumber title="Shipped Quantity" value="{!orderlist.Vision_GCP_Ship_Quanity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/>)</td>
+                                                                                    <td style="text-align:right;"><lightning:formattedNumber value="{!orderlist.Vision_Net_Value__c}"  style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>&nbsp;</td>
+                                                                                    <td style="text-align:right;">    <lightning:formattedDateTime value="{!orderlist.Vision_Order_Date__c}" month="numeric" day="numeric" year="numeric"/></td>   
+                                                                                    <aura:set attribute="else"> 
+                                                                                        <td class="ordersummarySticky" style="text-align:right;" > {!orderlist.Vision_Order_Status__c}</td>                                        
+                                                                                        <td> {!orderlist.Vision_Order_Number__c}</td>
+                                                                                        <td> {!orderlist.Vision_Ship_to_Customer_Name__c}</td>                                        
+                                                                                        <td style="text-align:right;"><lightning:formattedNumber value="{!orderlist.Vision_Order_Quantity__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                                                                        <td style="text-align:right;"><lightning:formattedNumber value="{!orderlist.Vision_Net_Value__c}"  style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                                                                        <td style="text-align:right;"><lightning:formattedDateTime value="{!orderlist.Vision_Order_Date__c}" month="numeric" day="numeric" year="numeric"/></td>   
+                                                                                    </aura:set>
+                                                                                </aura:if>
+                                                                            </aura:set>
+                                                                        </aura:if>
+                                                                        
+                                                                    </tr> 
+                                                                </aura:iteration>
+                                                            </aura:if>
+                                                        </aura:iteration>
+                                                    </aura:if>
+                                                    
+                                                </aura:iteration>
+                                            </tbody>
+                                        </table>  
+                                    </div></div>
+                                <div align="right" style="text-align:'right;'"> <b>Disclaimer: </b>We are considering last 12 months orders in calculations except cancelled orders but displaying cancelled orders for reference.</div> 
+                            </div>
+                        </aura:set>
+                    </aura:if>
+                    
+                    
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" label="Close" title="Close"
+                                      onclick="{! c.closeModel }" />
+                </footer>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div> 
+        
+    </aura:if>
+    <aura:if isTrue="{!v.showComments}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                 aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_medium">
+            
+            <div class="slds-modal__container">
+                
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" onclick="{!c.closeCommentPopup}"
+                                          alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                    
+                    <h2 class="slds-text-heading_medium slds-hyphenate"><b>{!v.gcpLineItem.Phoenix_Product_Family__c} Comments/Insights</b></h2>
+                    
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                    <aura:if isTrue="{!v.showSpinnerInCommentPop}">
+                        <lightning:spinner size="medium" variant="brand" />
+                    </aura:if>
+                    <div>
+                        <div>
+                            <lightning:textarea label="Vision Comment"
+                                                value="{!v.visionComment}"
+                                                placeholder="Enter Comment Here..."/>
+                        </div>
+                        <div style="text-align:right;">
+                            <lightning:button variant="brand" label="Save" title="Save"
+                                              onclick="{! c.onSaveCmnt }"/>
+                        </div>
+                    </div>
+                    <!-- <aura:if isTrue="{!v.doesCmntsExist}">
+                        <div style="text-align:right;margin-top:5px;">
+                            <lightning:button aura:id="allCmnts" onclick="{!c.downloadCmnts}">
+                                <span>
+                                    Export All Comments&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                </span>
+                            </lightning:button>
+                        </div>
+                    </aura:if> -->
+                    <aura:iteration items="{!v.listOfCmnts}" var="cmntLineList" indexVar="sNo">
+                        <lightning:accordion allowMultipleSectionsOpen="true" aura:id="accordion" activeSectionName="CmntSection">
+                            <aura:if isTrue="{!cmntLineList.cmntCat=='Vision Comments'}">
+                                <lightning:accordionSection name="Vision Comments" label="Vision Comments">
+                                    <aura:if isTrue="{!not(empty(cmntLineList.cmntWrapList))}">
+                                        <!-- <div style="text-align:right;margin-bottom:5px;">
+                                            <lightning:button aura:id="visionCmnts" onclick="{!c.downloadCmnts}">
+                                                <span>
+                                                    Export&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                                </span>
+                                            </lightning:button>
+                                        </div> -->
+                                        <aura:iteration items="{!cmntLineList.cmntWrapList}" var="visionCmnts">
+                                            <div class="slds-box" style="padding:10px;margin-bottom:3px;">
+                                                <article class="slds-post slds-card">
+                                                    <header class="slds-post__header slds-media">
+                                                        <div class="slds-media__figure">
+                                                            <a href="#" class="slds-avatar slds-avatar_circle slds-avatar_large">
+                                                                <img alt="{!visionCmnts.userName}" src="{!visionCmnts.profilePicUrl}" 
+                                                                     title="{!visionCmnts.userName}"/>
+                                                            </a>
+                                                        </div>
+                                                        <div class="slds-media__body">
+                                                            <div class="slds-grid slds-grid_align-spread slds-has-flexi-truncate">
+                                                                <p class="slds-text-body_small">
+                                                                    {!visionCmnts.userName} 
+                                                                </p>
+                                                            </div>
+                                                            <p class="slds-text-body_small">
+                                                                <a href="#" title="" 
+                                                                   class="slds-text-link_reset">{!visionCmnts.cmntDate}
+                                                                </a>
+                                                            </p>
+                                                        </div>
+                                                    </header>
+                                                    <div class="slds-post__content">
+                                                        <p style="margin-left:5px;">{!visionCmnts.cmntString}</p>
+                                                    </div>
+                                                </article> 
+                                            </div>
+                                        </aura:iteration>
+                                        <aura:set attribute="else">
+                                            <center>
+                                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                                     role="alert" style="width:50%;">
+                                                    <span class="slds-icon_container slds-m-right_x-small"
+                                                          title="Please add line items to view the table">
+                                                        <lightning:icon iconName="utility:info" alternativeText="info"
+                                                                        size="x-small" variant="inverse" />
+                                                    </span>
+                                                    <h2>No Vision Comments Found</h2>
+                                                </div>
+                                            </center>
+                                        </aura:set>
+                                    </aura:if>
+                                </lightning:accordionSection>
+                            </aura:if>
+                            
+                            <aura:if isTrue="{!cmntLineList.cmntCat=='Panorama Comments'}">
+                                <lightning:accordionSection name="Panorama Comments" label="Panorama Comments">
+                                    <aura:if isTrue="{!not(empty(cmntLineList.cmntWrapList))}">
+                                        <!-- <div style="text-align:right;margin-bottom:5px;">
+                                            <lightning:button aura:id="panoramaCmnts" onclick="{!c.downloadCmnts}">
+                                                <span>
+                                                    Export&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                                </span>
+                                            </lightning:button>
+                                        </div> -->
+                                        <aura:iteration items="{!cmntLineList.cmntWrapList}" var="visionCmnts">
+                                            <div class="slds-box" style="padding:10px;margin-bottom:3px;">
+                                                <article class="slds-post slds-card">
+                                                    <header class="slds-post__header slds-media">
+                                                        <div class="slds-media__figure">
+                                                            <img alt="{!visionCmnts.userName}" src="/docs/component-library/app/images/examples/avatar1.jpg" 
+                                                                 title="{!visionCmnts.userName}"/>
+                                                        </div>
+                                                        <div class="slds-media__body">
+                                                            <div class="slds-grid slds-grid_align-spread slds-has-flexi-truncate">
+                                                                <p class="slds-text-body_small">
+                                                                    {!visionCmnts.userName}
+                                                                </p>
+                                                            </div>
+                                                            <p class="slds-text-body_small">
+                                                                <a href="#" title="" 
+                                                                   class="slds-text-link_reset">
+                                                                    {!visionCmnts.cmntDate}
+                                                                </a>
+                                                            </p>
+                                                        </div>
+                                                    </header>
+                                                    <div class="slds-post__content">
+                                                        <aura:if isTrue="{!visionCmnts.gcpCmntObj.long_term_strategy__c != ''}">
+                                                            <div class="slds-label" style="font-weight:bold;">Long Term Strategy</div>
+                                                            <div><p style="margin-left:5px;">{!visionCmnts.gcpCmntObj.long_term_strategy__c}</p></div>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!visionCmnts.gcpCmntObj.short_term_strategy__c != ''}">
+                                                            <div class="slds-label" style="font-weight:bold;">Short Term Strategy</div>
+                                                            <div><p style="margin-left:5px;">{!visionCmnts.gcpCmntObj.short_term_strategy__c}</p></div>
+                                                        </aura:if>
+                                                    </div>
+                                                </article> 
+                                            </div>
+                                        </aura:iteration>
+                                        <aura:set attribute="else">
+                                            <center>
+                                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                                     role="alert" style="width:50%;">
+                                                    <span class="slds-icon_container slds-m-right_x-small"
+                                                          title="Please add line items to view the table">
+                                                        <lightning:icon iconName="utility:info" alternativeText="info"
+                                                                        size="x-small" variant="inverse" />
+                                                    </span>
+                                                    <h2>No Vision Comments Found</h2>
+                                                </div>
+                                            </center>
+                                        </aura:set>
+                                    </aura:if>
+                                </lightning:accordionSection>
+                            </aura:if>
+                            
+                        </lightning:accordion>
+                    </aura:iteration>
+                    
+                    <aura:if isTrue="{!not(empty(v.brightCmnts))}">
+                        <lightning:accordion allowMultipleSectionsOpen="true" aura:id="accordion">
+                            <lightning:accordionSection name="Bright Comments" label="Bright Comments">
+                                <!-- <div style="text-align:right;margin-bottom:5px;">
+                                        <lightning:button aura:id="brightCmnts" onclick="{!c.downloadCmnts}">
+                                            <span>
+                                                Export&nbsp;&nbsp;&nbsp;<lightning:icon iconName="utility:download" size="x-small"/>
+                                            </span>
+                                        </lightning:button>
+                                    </div> -->
+                                <aura:iteration items="{!v.brightCmnts}" var="brightCmnts">
+                                    <div class="slds-box" style="padding:10px;margin-bottom:3px;">
+                                        <div><b>Bid # <a href="{!'/'+brightCmnts.bidId}" target="_blank">{!brightCmnts.key}</a></b></div>
+                                        <br/>
+                                        <div>
+                                            <aura:iteration items="{!brightCmnts.value}" var="brightCmntLines">
+                                                <article class="slds-post slds-card">
+                                                    <header class="slds-post__header slds-media">
+                                                        <div class="slds-media__figure">
+                                                            <a href="#" class="slds-avatar slds-avatar_circle slds-avatar_large">
+                                                                <img alt="{!brightCmntLines.userName}" src="{!brightCmntLines.profilePicUrl}" 
+                                                                     title="{!brightCmntLines.userName}"/>
+                                                            </a>
+                                                        </div>
+                                                        <div class="slds-media__body">
+                                                            <div class="slds-grid slds-grid_align-spread slds-has-flexi-truncate">
+                                                                <p class="slds-text-body_small">
+                                                                    {!brightCmntLines.userName} - {!brightCmntLines.cmntAprvlStage}
+                                                                </p>
+                                                            </div>
+                                                            <p class="slds-text-body_small">
+                                                                {!brightCmntLines.cmntDate}
+                                                            </p>
+                                                        </div>
+                                                    </header>
+                                                    <div class="slds-post__content">
+                                                        <p>{!brightCmntLines.cmntString}</p>
+                                                    </div>
+                                                </article> 
+                                            </aura:iteration>
+                                        </div>
+                                    </div>
+                                </aura:iteration>
+                            </lightning:accordionSection>
+                        </lightning:accordion>
+                    </aura:if>
+                </div>
+                <!--/div-->
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" label="Close" title="Close"
+                                      onclick="{! c.closeCommentPopup }" />
+                    <aura:if isTrue="{!v.showSaveComntButton}">
+                        <lightning:button variant="brand" label="Save" title="Save"
+                                          onclick="{! c.onRecChange }" />
+                    </aura:if>
+                </footer>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    <aura:if  isTrue="{!v.showGraph}"> 
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                      <div class="slds-grid" >
+                          <div class="slds-col slds-size_1-of-12 slds-m-top_small " >  
+                     <div><b>Analysis based on:</b></div>
+                          </div>
+                          <div class="slds-col slds-size_11-of-12 slds-m-bottom_medium " >  
+                     <lightning:layout  multipleRows="true" >
+                    
+                <aura:iteration items="{!v.pickList}" var="picklist">
+                    <lightning:layoutItem size="1" >
+                            
+                            <div class="paddingRadio" style="padding-top: 5px;padding-bottom: 5px;">
+                                <span class="{!picklist.isSelected ? 'slds-badge slds-theme_success badgeFontClass' : 'slds-badge slds-badge_lightest'}"
+                                      
+                                      data-id="{!picklist.userId}" 
+                                      onclick="{!c.onSelectUser}"
+                                      style="cursor:pointer;padding-top: 5px;padding-bottom: 5px;">
+                                    
+                                    <lightning:icon class="{!picklist.isSelected ? 'showGreen' : ''}" iconName="utility:routing_offline" size="x-small"/>&nbsp;&nbsp;{!picklist.userId}
+                                    
+                                </span>
+                               
+                            </div>
+                          
+                    </lightning:layoutItem>
+                </aura:iteration>
+            </lightning:layout>
+                          </div>
+                    </div>
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closegraphModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;">
+                <aura:if  isTrue="{!v.selectedId == '12Month'}">    
+                    <c:Order_Compliance_Graph graphData="{!v.graphData}" graphProductCode="{!v.graphProductCode}" graphSoldToCust="{!v.graphSoldToCust}" recordId="{!v.recordId}" type="awarded" selectedId="12Month"/>  
+                    </aura:if>
+                     <aura:if  isTrue="{!v.selectedId == '3Month'}">    
+                    <c:Order_Compliance_Graph graphData="{!v.graphData}" graphProductCode="{!v.graphProductCode}" graphSoldToCust="{!v.graphSoldToCust}" recordId="{!v.recordId}" type="awarded" selectedId="3Month"/>  
+                    </aura:if>
+                     <aura:if  isTrue="{!v.selectedId == '6Month'}">    
+                    <c:Order_Compliance_Graph graphData="{!v.graphData}" graphProductCode="{!v.graphProductCode}" graphSoldToCust="{!v.graphSoldToCust}" recordId="{!v.recordId}" type="awarded" selectedId="6Month"/>  
+                    </aura:if>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" label="Close" title="Close"
+                                      onclick="{! c.closegraphModel }" />
+                </footer>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div> 
+        
+        
+        
+    </aura:if>
+</aura:component>

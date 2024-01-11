@@ -1,0 +1,462 @@
+<aura:component controller="VisionSearchSelectBidsCtrl" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="showProducts" type="Boolean"/>
+    <aura:attribute name="bidType" type="String" />
+    <aura:attribute name="showBids" type="Boolean" default="true"/>
+    <aura:attribute name="BidList" type="list" />
+    <aura:attribute name="selectedBids" type="list" />
+    <aura:attribute name="allData" type="List" description="used to store the bid list"/>
+    <aura:attribute name="searchText" type="string" />
+    <aura:attribute name="selectedCount" type="integer" default="0" description="selected Records Count"/>
+    <aura:attribute name="selectedBidIds" type="list" description="Selected Bid details" default="[]"/>
+    <aura:attribute name="QLlist" type="list" description="All Bid details" default="[]" />
+    <aura:attribute name="QLlist1" type="list" description="All Bid details" default="[]" />
+    <aura:attribute name="selectAll" type="Boolean" default="false" />
+    <aura:attribute name="currentPageNumber" type="Integer" default="1"/>
+    <aura:attribute name="pageSize" type="Integer" default="100"/>
+    <aura:attribute name="totalPages" type="Integer" default="0"/>
+    <aura:attribute name="pageList" type="List"/>
+    <aura:attribute name="totalRecordsCount" type="Integer" default="0" description="display the total number of records"/>
+    <aura:attribute name="BidCopyList" type="Object[]" description="used to store the bid list to display in table"/>
+    <aura:attribute name="Allproduct" type="Object[]" description="used to store the bid list to display in table"/>
+    <aura:attribute name="showSelectedBids" type="Boolean" default="false" />
+    <aura:attribute name="isQLlistempty" type="Boolean" default="false" />
+    <aura:attribute name="isModalOpen" type="boolean" default="false" />
+    <aura:attribute name="modalBidList" type="Object[]" description="used to store the selected bids to display in Modal popup"/>
+    <aura:attribute name="showSpinnerSelProds" type="Boolean" default="false" />
+    <aura:attribute name="arrowDirection" type="string" default="arrowup" description="Use for change arrow sign direction on header based on click"/>
+    <aura:attribute name="isAsc" type="boolean" default="true" description="boolean flag for pass sorting condition to apex class"/>
+    <aura:attribute name="selectedTabsoft" type="string" default="BidName" description="Use for show/hide arraow sign on header based on conditions"/>
+    
+    <aura:attribute name="parent" type="Aura.Component"/>
+    
+    <aura:method name="refreshTab" action="{!c.doInit}" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:if isTrue="{!v.showProducts}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium" aria-labelledby="modal-heading-01" aria-modal="true">
+        <aura:if isTrue="{!v.showSpinnerSelProds}">
+            <lightning:spinner variant="brand" class="spinColor" size="medium" />
+        </aura:if>
+        <div class="slds-modal__container" style="width:100% !important;padding-bottom:0px;padding-top: 0px;padding-left:0px;padding-right:0px;">
+            <div class="modal-header slds-modal__header" style="padding-right: 0px; padding-top: 5px; padding-bottom: 0px; padding-left: 0px;">
+                <h2  class="slds-modal__title slds-hyphenate"  style="color:#675e5e">
+                    <p style="font-size:21px;"><b>Add Bids</b> </p> 
+                </h2>
+                <div class="slds-grid slds-wrap" style="margin: 0px 8px;">
+                    <div class="slds-col  slds-grid slds-size_1-of-1">
+                        <div class="slds-col slds-size_11-of-12 slds-m-top_large">
+                            <span onkeypress="{!c.keyCheck}" >
+                                <lightning:input value="{!v.searchText}" type="search"
+                                                 variant="label-hidden" placeholder="Search with multiple Bid Numbers, Bid Names separated with comma"
+                                                 aura:id="SearchBox" onchange="{!c.onClearSearch}"
+                                                 /></span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-12 slds-m-top_large">
+                            <lightning:button label="Search" variant="brand" onclick="{!c.onsearch}" />
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="slds-grid slds-wrap">
+                    <div class="slds-col  slds-grid slds-size_1-of-1 slds-m-left_small">                                           
+                        <div class="slds-col slds-size_2-of-12 slds-m-top_medium sapdata" style="margin-bottom: 2px">
+                            <span class="slds-badge slds-badge_lightest slds-m-bottom_xx-small" style="display:inline-block;">
+                                Selected Bids : {!v.selectedCount} <!--+v.selectedProductsCount-->
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_3-of-12 slds-m-top_medium sapdata" style="margin-bottom: 2px">
+                            <a onclick="{!c.showSelectedBids}"><b>View Selected Bids</b></a>
+                        </div>
+                    </div>
+                </div>
+                
+                <aura:if isTrue="{!v.noProducts}">
+                    <div class="matchPanelError" tabindex="0" role="alert"
+                         style="color:#c23934;text-align:center;">
+                        <span>No items to display</span>
+                    </div>
+                </aura:if>
+            </div>
+            <aura:if isTrue="{!v.showBids}">
+                <div id="myDIV" class="modal-body scrollable slds-modal__content slds-p-around--medium" data-scoped-scroll="true" style="background-color:#f3f2f2;padding:0px;">
+                    <div>
+                        <div class="slds-col slds-size_1-of-1 slds-medium-size_6-of-6 slds-large-size_12-of-12 slds-p-top_large" style="padding:0px;max-height: 500px;">
+                            
+                            <aura:if isTrue="{!v.noData}">
+                                <div class="matchPanelError" tabindex="0" role="alert"
+                                     style="color:#c23934;text-align:center;">
+                                    <span>No search results found</span>
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!v.isModalOpen}">
+                                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                                    
+                                    <div class="slds-modal__container" style="max-width:80% ! important;">
+                                        
+                                        <!-- Modal/Popup Box Header Starts here-->
+                                        <header class="slds-modal__header">
+                                            <lightning:buttonIcon iconName="utility:close"
+                                                                  onclick="{!c.closePopup}"
+                                                                  alternativeText="close"
+                                                                  variant="bare-inverse"
+                                                                  class="slds-modal__close"/>
+                                            <aura:if isTrue="{! not(empty(v.modalBidList))}">
+                                                <h2 class="slds-text-heading_medium slds-hyphenate"><b>Selected Bids</b></h2>
+                                            </aura:if>
+                                        </header>
+                                        <!--Modal/Popup Box Body Starts here-->
+                                        <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                                        <div class="slds-modal__content slds-p-around_medium" >
+                                            
+                                            <aura:if isTrue="{! not(empty(v.modalBidList))}">
+                                                <table
+                                                       class="slds-table slds-table_cell_buffered slds-max-medium-table_stacked-horizontal slds-table_bordered"
+                                                       style="border:1px solid #eaeaea;">
+                                                    <thead>
+                                                        
+                                                        <tr class="slds-text-title">
+                                                            
+                                                            <th scope="col" class="slds-cell-wrap ">
+                                                                <div class="slds-truncate" title="Bid No.">
+                                                                    Bid No.
+                                                                </div>
+                                                            </th>
+                                                            <th scope="col" class="slds-cell-wrap ">
+                                                                <div class="slds-truncate" title="Bid Name">
+                                                                    Bid Name
+                                                                </div>
+                                                            </th>
+                                                            <th scope="col" class="slds-cell-wrap ">
+                                                                <div class="slds-truncate" title="Bid Type">
+                                                                    Bid Type
+                                                                </div>
+                                                            </th>
+                                                            <th scope="col" class="slds-cell-wrap ">
+                                                                <div class="slds-truncate" title="Bid Owner">
+                                                                    Bid Owner
+                                                                </div>
+                                                            </th>            
+                                                            <th scope="col" class="slds-cell-wrap ">
+                                                                <div class="slds-truncate" title="Bid Owner">
+                                                                    Bid Submitted Date
+                                                                </div>
+                                                            </th>
+                                                            <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                                                <div class="slds-truncate" title="Delete">
+                                                                </div>
+                                                            </th>                                                            
+                                                        </tr>
+                                                    </thead> 
+                                                    <tbody>
+                                                        <aura:iteration items="{!v.modalBidList}" var="bid"
+                                                                        indexVar="itemIndex">
+                                                            <tr>
+                                                                <td class="slds-cell-wrap" scope="col">
+                                                                    <a href="{!'/'+bid.Id}"
+                                                                       target="_blank">{!bid.Name}</a>
+                                                                </td>
+                                                                <td class="slds-cell-wrap" scope="col">
+                                                                    {!bid.Phoenix_Bid_Name__c}
+                                                                </td>
+                                                                <td class="slds-cell-wrap " scope="col">
+                                                                    {!bid.Phoenix_Bid_Type__c}
+                                                                </td>
+                                                                <td class="slds-cell-wrap " scope="col">
+                                                                    {!bid.Phoenix_Bid_Owner__r.Name}
+                                                                </td>  
+                                                                <td class="slds-cell-wrap " scope="col">
+                                                                    {!bid.formattedSubmittedDate}
+                                                                </td> 
+                                                                <td class="slds-cell-wrap" scope="col" title="Delete Bid" style="padding-left: 0px;padding-right: 0px;">
+                                                                    <lightning:button class="customBIcon"
+                                                                                      iconName="action:delete" iconPosition="left"
+                                                                                      onclick="{!c.removeDeletedRow }"
+                                                                                      name="{!bid.Id}" />
+                                                                </td>
+                                                            </tr>
+                                                        </aura:iteration>
+                                                    </tbody>
+                                                </table>
+                                                <aura:set attribute="else">
+                                                    <p style="text-align:center">No bids selected.</p>  
+                                                </aura:set>
+                                            </aura:if>
+                                        </div>
+                                        <!--/div-->
+                                        <!--Modal/Popup Box Footer Starts here-->
+                                        <footer class="slds-modal__footer">
+                                            <lightning:button variant="neutral"
+                                                              label="Cancel"
+                                                              title="Cancel"
+                                                              onclick="{! c.closePopup }"/>
+                                            
+                                        </footer>
+                                    </div>
+                                    
+                                </section>
+                                <div class="slds-backdrop slds-backdrop_open"></div>
+                                
+                            </aura:if > 
+                            
+                            <aura:if isTrue="{!not(empty(v.BidList))}">
+                                <table class=" maintable slds-table slds-table_cell_buffered slds-max-medium-table_stacked-horizontal slds-table_bordered" style="border:1px solid #eaeaea;padding-left: 5px">
+                                    <thead>
+                                        <tr class="slds-text-title">
+                                            <th scope="row" style="height: 29px;width: 57px;padding-left: 0px">
+                                                <lightning:input type="checkbox"
+                                                                 class="slds-checkbox"
+                                                                 name=""
+                                                                 checked="{!v.selectAll}"
+                                                                 aura:id="checkbox"
+                                                                 onchange="{!c.selectAllCheckbox}" />
+                                            </th>
+                                            <th scope="row" class="slds-cell-wrap " onclick="{!c.sortBidNo}">
+                                                
+                                                <div class="slds-truncate" title="Bid No.">
+                                                    <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                                        <span class="slds-assistive-text">Sort</span>
+                                                        <span class="slds-truncate" title="Bid No.">Bid No.</span>  
+                                                        <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'BidNo') }">&nbsp;  &#9660; </aura:if>  
+                                                        <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'BidNo') }"> &nbsp;  &#9650; </aura:if>                        
+                                                    </a>
+                                                </div>
+                                            </th>
+                                            <th scope="row" class="slds-cell-wrap " onclick="{!c.sortBidName}">
+                                                
+                                                <div class="slds-truncate" title="Bid Name">
+                                                    <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                                        <span class="slds-assistive-text">Sort</span>
+                                                        <span class="slds-truncate" title="Bid Name">Bid Name</span>  
+                                                        <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'BidName') }">&nbsp;  &#9660; </aura:if>  
+                                                        <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'BidName') }"> &nbsp;  &#9650; </aura:if>                        
+                                                    </a>
+                                                </div>
+                                            </th>
+                                            <th scope="row" class="slds-cell-wrap " onclick="{!c.sortBidType}">
+                                                <div class="slds-truncate" title="Bid Type">
+                                                    
+                                                    <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                                        <span class="slds-assistive-text">Sort</span>
+                                                        <span class="slds-truncate" title="Bid Type">Bid Type</span>  
+                                                        <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'BidType') }">&nbsp;  &#9660; </aura:if>  
+                                                        <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'BidType') }"> &nbsp;  &#9650; </aura:if>                        
+                                                    </a>
+                                                </div>
+                                            </th>
+                                            
+                                            <th scope="row" class="slds-cell-wrap " onclick="{!c.sortBidOwner}">
+                                                <div class="slds-truncate" title="Bid Owner">
+                                                    <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                                        <span class="slds-assistive-text">Sort</span>
+                                                        <span class="slds-truncate" title="Bid Owner">Bid Owner</span>  
+                                                        <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'BidOwner') }">&nbsp;  &#9660; </aura:if>  
+                                                        <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'BidOwner') }"> &nbsp;  &#9650; </aura:if>                        
+                                                    </a>
+                                                </div>
+                                            </th>
+                                            
+                                            <th scope="row" class="slds-cell-wrap " onclick="{!c.sortDate}">
+                                                <div class="slds-truncate" title="Bid Submitted Date">
+                                                    <a href="javascript:void(0);" class="slds-th__action slds-text-link--reset">
+                                                        <span class="slds-assistive-text">Sort</span>
+                                                        <span class="slds-truncate" title="Bid Submitted Date">Bid Submitted Date</span>  
+                                                        <aura:if isTrue="{! and(v.arrowDirection == 'arrowdown', v.selectedTabsoft == 'Date') }">&nbsp;  &#9660; </aura:if>  
+                                                        <aura:if isTrue="{! and(v.arrowDirection != 'arrowdown', v.selectedTabsoft == 'Date') }"> &nbsp;  &#9650; </aura:if>                        
+                                                    </a>
+                                                </div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <aura:iteration items="{!v.BidList}" var="bid"
+                                                        indexVar="itemIndex">
+                                            <tr class="slds-text-title" >
+                                                <td class="slds-cell-wrap" scope="row" style="padding-left:0px;">
+                                                    <lightning:input type="checkbox"
+                                                                     class="slds-checkbox"
+                                                                     name="{!bid.Id}"
+                                                                     checked="{!bid.isSelected}"
+                                                                     aura:id="checkbox" 
+                                                                     onchange="{!c.checkBoxChangeHandler}"/>
+                                                </td>
+                                                <td class="slds-cell-wrap" scope="row">
+                                                    <a href="{!'/'+bid.Id}"
+                                                       target="_blank">{!bid.Name}</a>
+                                                </td>
+                                                <td class="slds-cell-wrap" scope="row">
+                                                    {!bid.Phoenix_Bid_Name__c}
+                                                </td>
+                                                <td class="slds-cell-wrap " scope="row">
+                                                    {!bid.Phoenix_Bid_Type__c}
+                                                </td>
+                                                <td class="slds-cell-wrap " scope="row">
+                                                    {!bid.Phoenix_Bid_Owner__r.Name}
+                                                </td>    
+                                                <td class="slds-cell-wrap " scope="row">
+                                                    {!bid.formattedSubmittedDate}
+                                                </td>     
+                                            </tr>
+                                        </aura:iteration>
+                                    </tbody>
+                                </table>
+                                <aura:set attribute="else">
+                                    <aura:if isTrue="{!v.noData==false}">
+                                        <div class="matchPanelError" tabindex="0" role="alert" style="color:#c23934;text-align:center;">
+                                            <span>No Bids to display</span>
+                                        </div>
+                                    </aura:if></aura:set>
+                            </aura:if>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer slds-modal__footer slds-p-vertical_x-small" style="background-color:white;">
+                    <aura:if isTrue="{!not(empty(v.BidList))}">
+                        <lightning:layout multipleRows="true" class="slds-grid slds-gutters">
+                            <lightning:layoutItem flexibility="auto"></lightning:layoutItem>
+                            <lightning:layoutItem flexibility="auto">
+                                <div class="slds-float_right">
+                                    <lightning:button label="First" iconName="utility:left"
+                                                      iconPosition="left" onclick="{!c.onFirst}"
+                                                      disabled="{! v.currentPageNumber == 1}" />
+                                    <lightning:button iconName="utility:chevronleft" iconPosition="left"
+                                                      onclick="{!c.onPrev}" disabled="{! v.currentPageNumber == 1}" />
+                                    <span class="slds-p-horizontal_x-small">
+                                        <a onclick="{!c.processMe}" name="1"
+                                           class="{! (v.currentPageNumber == 1) ? 'selected' : ''}">1</a>
+                                    </span>
+                                    <span class="slds-p-horizontal_xxx-small">
+                                        <a>...</a>
+                                    </span>
+                                    <aura:iteration items="{!v.pageList}" var="item">
+                                        <span class="slds-p-horizontal_x-small">
+                                            <a onclick="{!c.processMe}" name="{!item}"
+                                               class="{! (v.currentPageNumber == item) ? 'selected' : ''}">{!item}</a>
+                                        </span>
+                                    </aura:iteration>
+                                    <span class="slds-p-horizontal_xxx-small">
+                                        <a>...</a>
+                                    </span>
+                                    <span class="slds-p-horizontal_x-small">
+                                        <a onclick="{!c.processMe}" name="{!v.totalPages}"
+                                           class="{! (v.currentPageNumber == v.totalPages) ? 'selected' : ''}">{!v.totalPages}</a>
+                                    </span>
+                                    <lightning:button iconName="utility:chevronright" iconPosition="right"
+                                                      disabled="{! v.currentPageNumber == v.totalPages}"
+                                                      onclick="{!c.onNext}" />
+                                    <lightning:button label="Last" iconName="utility:right"
+                                                      iconPosition="right"
+                                                      disabled="{! v.currentPageNumber == v.totalPages}"
+                                                      onclick="{!c.onLast}" />
+                                </div>  
+                            </lightning:layoutItem>
+                            <lightning:layoutItem flexibility="auto">
+                                <div class="slds-float_right">
+                                    <lightning:button variant="neutral" label="Cancel" onclick="{!c.closeModal}" />
+                                    
+                                    <lightning:button variant="brand" label="Next" disabled="{!v.selectedCount == 0}"
+                                                      onclick="{!c.processProducts}" /></div>
+                            </lightning:layoutItem>
+                            
+                        </lightning:layout>
+                    </aura:if>
+                </div>
+            </aura:if>
+        </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if>
+    <aura:if isTrue="{!v.showSelectedBids}">
+        <aura:if isTrue="{!v.showSpinnerSelProds}">
+            <lightning:spinner variant="brand" class="spinColor" size="large" />
+        </aura:if>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container" style="width: 100% !important;padding-top: 10px;padding: 0% 0%;">
+                <div class="modal-header slds-modal__header"  style="padding-right: 5px; padding-top: 10px; padding-bottom: 10px; padding-left: 10px;">
+                    <h2  class="slds-modal__title slds-hyphenate" style="color:#675e5e">
+                        <p style="font-size:21px;"><b>Selected Bids</b></p>   
+                    </h2>
+                </div>
+                <div class="modal-body scrollable slds-modal__content slds-p-around--medium" data-scoped-scroll="true" style="background-color:#f3f2f2;padding:0px;">
+                    
+                    
+                    <!--<div class="slds-col  slds-size_1-of-1 slds-medium-size_6-of-6 slds-large-size_12-of-12 slds-p-top_large" style="padding-top:3px;width:100%">-->
+                    <aura:if isTrue="{!not(empty(v.QLlist))}">
+                        <table class="customtable slds-table slds-table_cell_buffered slds-max-medium-table_stacked-horizontal slds-table_bordered" style="border:1px solid #eaeaea;padding-left: 5px">
+                            <thead>
+                                <tr class="slds-text-title">
+                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                        <div class="slds-truncate" title="Bid No.">
+                                            Bid No.
+                                        </div>
+                                    </th>
+                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                        <div class="slds-truncate" title="Bid Name">
+                                            Bid Name
+                                        </div>
+                                    </th>
+                                    
+                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                        <div class="slds-truncate" title="Bid Type">
+                                            Bid Type
+                                        </div>
+                                    </th>
+                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                        <div class="slds-truncate" title="Bid Owner">
+                                            Bid Owner
+                                        </div>
+                                    </th>   
+                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                        <div class="slds-truncate" title="Bid Submitted Date">
+                                            Bid Submitted Date
+                                        </div>
+                                    </th>  
+                                    <th scope="col" class="slds-cell-wrap slds-text-align_left">
+                                        <div class="slds-truncate" title="delete">
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <aura:iteration items="{!v.QLlist}" var="bid"
+                                                indexVar="itemIndex">
+                                    <tr class="slds-text-title" >
+                                        
+                                        <td class="slds-cell-wrap" scope="row">
+                                            <a href="{!'/'+bid.Id}"
+                                               target="_blank">{!bid.Name}</a>
+                                        </td>
+                                        <td class="slds-cell-wrap " scope="row">
+                                            {!bid.Phoenix_Bid_Name__c}
+                                        </td>
+                                        <td class="slds-cell-wrap " scope="row">
+                                            {!bid.Phoenix_Bid_Type__c}
+                                        </td>
+                                        <td class="slds-cell-wrap " scope="row">
+                                            {!bid.Phoenix_Bid_Owner__r.Name}
+                                        </td>
+                                        <td class="slds-cell-wrap " scope="row">
+                                            {!bid.formattedSubmittedDate}
+                                        </td>
+                                        <td class="slds-cell-wrap" scope="row" title="Delete Bid" style="padding-left: 0px;padding-right: 0px;">
+                                            <lightning:button class="customBIcon"
+                                                              iconName="action:delete" iconPosition="left"
+                                                              onclick="{!c.removeDeletedRow }"
+                                                              name="{!bid.Id}" />
+                                        </td>
+                                    </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                    </aura:if>                        
+                </div>
+                <div class="modal-footer slds-modal__footer" style="background-color:white;padding:5px;">
+                    <lightning:button variant="neutral" label="Back" onclick="{!c.ShowProdList}"/>
+                    <lightning:button variant="neutral" label="Cancel" onclick="{!c.closeModal}" />
+                    <lightning:button variant="brand" label="Calculate" disabled="{!v.QLlist.length==0}"
+                                      onclick="{!c.calculateAnalysis}" />
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if>
+</aura:component>

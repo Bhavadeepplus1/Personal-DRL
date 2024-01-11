@@ -1,0 +1,255 @@
+<aura:component controller = "Vision_AllCustomer_Calendar_Cls" implements="force:lightningQuickActionWithoutHeader,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:isUrlAddressable" access="global" >
+    <aura:attribute name="loaded" type="Boolean" />
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <lightning:navigation aura:id="navService"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+    <ltng:require styles="{!$Resource.Calendar     + '/fullcalendar.min.css'}"
+                  scripts="{!join(',',
+                           $Resource.Calendar  + '/jquery.min.js',
+                           $Resource.Calendar  + '/moment.min.js',
+                           $Resource.Calendar  + '/fullcalendar.min.js',
+                           $Resource.Calendar  + '/theme.js'
+                           )}"
+                  afterScriptsLoaded="{!c.afterScriptsLoaded}" />
+    <ltng:require scripts="{!$Resource.ChartJQuery}" />
+    <aura:attribute name="accObj" type="Account"/>
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="alertedItemType" type="String"/>
+    <aura:attribute name="selectedRecIdForAlert" type="String"/>
+    <aura:attribute name='Objectlist' type='Object[]'/>
+    <aura:attribute name="buttonstate" type="Boolean" default="false"/>
+    <aura:attribute name="iconName" type="Boolean" />
+    <aura:attribute name="test_icon" type= "Boolean" default="false"/>
+     <aura:attribute name="isLegendsModalOpen" type="boolean" default="false"/>
+    <!--<img src="{!$Resource.HammerIcon}" />-->
+  
+    <div class="slds-card">
+                    <p align="right" style="color:#5224B2;padding-top: -10px;padding-right: 20px" >Legends&nbsp;<lightning:icon style="cursor:pointer" class="purpleIcon" iconName="utility:in_app_assistant" size="small" onclick="{!c.openLegendsModal}"/></p>  
+        <div style="padding-left: 20px;padding-right: 20px">
+            <div id="calendar" class="slds-card" style="padding-top: -30px">
+            </div> 
+        </div>
+    </div>
+	
+    <aura:if isTrue="{!v.isLegendsModalOpen}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container slds-p-bottom_x-large">
+                <header class="slds-modal__header">
+                    
+                    <div class="slds-text-align_left bottompadding2"> <b style="align:left; font-size: 20px;">Account Calendar</b></div>  
+                    
+                    
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeLegendsModel }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium slds-p-bottom_x-large slds-is-relative bottompadding" id="modal-content-id-1">
+                    <div class="slds-grid slds-gutters bottompadding">
+               				<div class="slds-col"><div class='box red'></div> <p style="font-style: italic;">&nbsp;Needs Attention / Action Pending</p></div>
+                        <div class="slds-col"><div class='box orange'></div><p style="font-style: italic;">&nbsp;Work in Progress</p></div> 
+                        <div class="slds-col"><div class='box green'></div><p style="font-style: italic;">&nbsp;Completed / No Action Required</p></div>
+                    </div>
+                   <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders bottompadding1">      
+                    <div>
+                        <div style="padding-left:10px;padding-right:10px;">
+                            <div aura:id="mainDiv" style="overflow:auto;margin-top:10px;border-radius: 0.25rem;border: 1px solid #cfcfcf;">
+                                
+                                    <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordergb(255,0,0) slds-table_col-bordergb(255,0,0) slds-table--header-fixed">                            <thead>
+                                        <tr>
+                                            <th style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;padding:5px;font-size: 18px;text-align:left" colspan="3">Bids</th>
+                                         
+										 </tr>
+                                        
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                            <th style="column-width: 100px;background-color:#C0C0C0;font-size: 16px;border: 1px solid black"><b>Indicator</b></th>
+                                             <th style="column-width: 100px;background-color:#C0C0C0;font-size: 16px;border: 1px solid black"><b>Time Condition</b></th>
+                                             <th style="column-width: 100px;background-color:#C0C0C0;font-size: 16px;border: 1px solid black"><b>Bid Status</b></th>
+                                       		 </tr>
+                                                <tr>
+                                                    <td style="background-color:rgb(0,128,0);border: 1px solid black" > <img src="/resource/1649397787000/AccountCalender_B" height="30" width="30"/><!--<lightning:icon iconName="standard:webcart" alternativeText="" title="" />--></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">No Time Condition</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Customer's Update<br></br>Vistex Update<br></br>Closed</td>
+                                                </tr>
+                                            	<tr>
+                                                    <td style="background-color:rgb(255,140,0);border: 1px solid black" > <img src="/resource/1649397787000/AccountCalender_B" height="30" width="30"/></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">(Today + 5 Days) =&#60; Internal Target Date</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Supply Chain<br></br>Marketing<br></br>SCM &amp; Marketing<br></br>Marketing Lead<br></br>Marketing Head<br></br>Business Head<br></br>Finance<br></br>Sr Director or VP Finance<br></br>Customer Service<br></br>Customer Service Update<br></br>Vistex Customer Code Update<br></br>Contracts</td>
+                                                </tr>
+                                            	<tr>
+													<td style="background-color:rgb(255,0,0);border: 1px solid black" > <img src="/resource/1649397787000/AccountCalender_B" height="30" width="30"/></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">No Time Condition</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Draft<br></br>Hold</td>
+                                            	</tr>
+                                            	<tr>
+													<td style="background-color:rgb(255,0,0);border: 1px solid black" > <img src="/resource/1649397787000/AccountCalender_B" height="30" width="30"/></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Internal Target Date &#60; (Today + 5 Days)</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Supply Chain<br></br>Marketing<br></br>SCM &amp; Marketing<br></br>Marketing Lead<br></br>Marketing Head<br></br>Business Head<br></br>Finance<br></br>Sr Director or VP Finance<br></br>Customer Service<br></br>Customer Service Update<br></br>Vistex Customer Code Update<br></br>Contracts</td>
+                                            	</tr>
+                                            	<tr>
+													<td style="background-color:#808080;border: 1px solid black" > <img src="/resource/1649397787000/AccountCalender_B" height="30" width="30"/></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">No Time Condition</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Closed-Draft<br></br>Supply Chain Rejected<br></br>Marketing Rejected<br></br>Marketing Lead Rejected<br></br>Marketing Head Rejected<br></br>Business Head Rejected<br></br>Finance Rejected<br></br>Sr Director or VP Finance Rejected<br></br>Customer Service Rejected<br></br>Contracts Rejected<br></br>Customer Rejected<br></br>Vistex Update Rejected</td>
+                                            	</tr>
+                                            	<tr>
+                                            		<th style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;padding:5px;font-size: 18px;text-align:left" colspan="3">Opportunities</th>
+                                            </tr>
+                                            <tr>
+                                               <th style="column-width: 100px;background-color:#C0C0C0;font-size: 16px;border: 1px solid black"><b>Indicator</b></th>
+  
+                                                <th style="column-width: 100px;background-color:#C0C0C0;font-size: 16px;border: 1px solid black"><b>Time Condition</b></th>
+                                             		<th style="column-width: 100px;background-color:#C0C0C0;font-size: 16px;border: 1px solid black"><b>Opportunity Status</b></th>
+                                         
+										 		</tr>
+                                            	<tr>
+                                                    <td style="background-color:rgb(0,128,0);border: 1px solid black" > <img src="/resource/1653400974000/AccountCalender_O" height="30" width="30"/></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">No Time Condition</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Closed Won<br></br>Closed Lost<br></br>Sent to BRIGHT</td>
+                                                </tr>
+                                            	<tr>
+                                                    <td style="background-color:rgb(255,140,0);border: 1px solid black" ><img src="/resource/1653400974000/AccountCalender_O" height="30" width="30"/></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">(Today + 5 Days) =&#60; Internal Target Date</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Opportunity in progress</td>
+                                                </tr>
+                                            	
+                                            	<tr>
+                                                    <td style="background-color:rgb(255,0,0);border: 1px solid black" > <img src="/resource/1653400974000/AccountCalender_O" height="30" width="30"/><!--<lightning:icon iconName="standard:opportunity" alternativeText="" title="" />--></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Internal Target Date &#60; (Today + 5 Days)</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Opportunity in progress</td>
+                                                </tr>
+                                            	<tr>
+                                            		<th style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;padding:5px;font-size: 18px;text-align:left" colspan="3">Panorama Tasks</th>
+                                           		 </tr>
+                                                    <tr>
+                                                    <th style="column-width: 100px;background-color:#C0C0C0;font-size: 16px;border: 1px solid black"><b>Indicator</b></th>
+                                                    <th style="column-width: 100px;background-color:#C0C0C0;font-size: 16px;border: 1px solid black"><b>Time Condition</b></th>
+                                             		<th style="column-width: 100px;background-color:#C0C0C0;font-size: 16px;border: 1px solid black"><b>Task Status</b></th>
+                                         
+										 		</tr>
+                                            	<tr>
+                                                    <td style="background-color:rgb(0,128,0);border: 1px solid black" > <img src="/resource/1653551407000/AccountCalender_P" height="30" width="30"/></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">No Time Condition</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Sent to BRIGHT</td>
+                                                </tr>
+                                            	<tr>
+                                                    <td style="background-color:rgb(255,140,0);border: 1px solid black" > <img src="/resource/1653551407000/AccountCalender_P" height="30" width="30"/></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">(Today + 5 Days) =&#60; Internal Target Date</td>
+                                                    <td style="background-color:#D3D3D3">Sent to OPPORTUNITY</td>
+                                                </tr>
+                                            	<tr>
+                                                    <td style="background-color:rgb(255,0,0);border: 1px solid black" > <img src="/resource/1653551407000/AccountCalender_P" height="30" width="30"/><!--<lightning:icon iconName="standard:activations" alternativeText="" title="" />--></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Internal Target Date &#60; (Today + 5 Days)</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Sent to OPPORTUNITY</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="background-color:rgb(255,0,0);border: 1px solid black" > <img src="/resource/1653551407000/AccountCalender_P" height="30" width="30"/><!--<lightning:icon iconName="standard:activations" alternativeText="" title="" />--></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">No Time Condition</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">New</td>
+                                                </tr>
+                                            <tr>
+                                            		<th style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;padding:5px;font-size: 18px;text-align:left" colspan="3">Contracts</th>
+                                         
+										 		</tr>
+                                              <tr>
+                                                    <th style="column-width: 100px;background-color:#C0C0C0;font-size: 16px;border: 1px solid black"><b>Indicator</b></th>
+                                                    <th style="column-width: 100px;background-color:#C0C0C0;font-size: 16px;border: 1px solid black"><b>Time Condition</b></th>
+                                             		<th style="column-width: 100px;background-color:#C0C0C0;font-size: 16px;border: 1px solid black"><b>Contract Status</b></th>
+                                         
+										 		</tr>
+                                            	<tr>
+                                                    <td style="background-color:rgb(0,128,0);border: 1px solid black" > <img src="/resource/1653481576000/AccountCalender_C" height="30" width="30"/><!--<lightning:icon iconName="standard:task" alternativeText="" title="" />--></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Contract Start Date</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">-</td>
+                                            	</tr>
+                                            <tr>
+                                                    <td style="background-color:rgb(255,0,0);border: 1px solid black" > <img src="/resource/1653481576000/AccountCalender_C" height="30" width="30"/><!--<lightning:icon iconName="standard:task" alternativeText="" title="" />--></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Contract End Date</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">-</td>
+                                            	</tr>
+                                            	<tr>
+                                            		<th style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;padding:5px;font-size: 18px;text-align:left" colspan="3">Events</th>
+                                         
+										 		</tr>
+                                            	<tr>
+                                                    <td style="background-color:rgb(0,0,128);border: 1px solid black" > <img src="/resource/1653551355000/AccountCalender_E" height="30" width="30"/><!--<lightning:icon iconName="standard:events" alternativeText="" title="" />--></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">-</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">-</td>
+                                            	</tr>
+                                             	<tr>
+                                            		<th style="font-weight:Bold;text-align:center;background-color:#257CFF;color:white;padding:5px;font-size: 18px;text-align:left" colspan="3">Tasks</th>
+                                         
+										 		</tr>
+                                            	<tr>
+                                                    <td style="background-color:rgb(0,0,255);border: 1px solid black" > <img src="/resource/1653481576000/AccountCalender_T" height="30" width="30"/><!--<lightning:icon iconName="standard:task" alternativeText="" title="" />--></td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">-</td>
+                                                    <td style="background-color:#D3D3D3;border: 1px solid black">Open<br></br>Completed</td>
+                                            	</tr>
+                                                
+                                        </tbody>
+                                    </table>  
+                                </div>
+                            </div></div>
+                    </div>
+                </div>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if> 
+     
+    <aura:if isTrue="{! v.loaded }">
+        
+            <center>
+                <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                         aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                    <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                        <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                            <img src="{!$Resource.LoadingProgress}" />  
+                        </div>  
+                    </div>  
+                </section>   
+                <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+            </center>
+            <!--<div class="demo-only" >
+                <div class="slds-spinner_container slds-align_absolute-center" >
+                    <div role="status">
+                        <img src="{!$Resource.LoadingProgress}" />
+                    </div>
+                </div>
+            </div>-->
+        </aura:if>
+    
+    <div>
+      <!--  <div class="fc-center">
+            <lightning:layout pullToBoundary="high">
+                <lightning:layoutItem  size="9" flexibility="auto">
+                    <lightning:buttonStateful class="listBtn"
+                                              labelWhenOff="List View"
+                                              labelWhenOn="Grid View"
+                                              state="{!v.buttonstate}"  onclick="{!c.handleClick}"
+                                              />
+                    
+                    
+                    
+                    
+                </lightning:layoutItem>
+                
+            </lightning:layout>
+        </div>-->
+        <!--    <div class="fc-toolbar fc-header-toolbar"><div class="fc-left"><div class="fc-button-group"><button aria-label="prev" class="fc-prev-button fc-button fc-state-default fc-corner-left" type="button"><span class="fc-icon fc-icon-left-single-arrow"></span></button><button aria-label="next" class="fc-next-button fc-button fc-state-default fc-corner-right" type="button"><span class="fc-icon fc-icon-right-single-arrow"></span></button></div><button class="fc-today-button fc-button fc-state-default fc-corner-left fc-corner-right fc-state-disabled" type="button" disabled="">today</button></div><div class="fc-right"><div class="fc-button-group"><button class="fc-month-button fc-button fc-state-default fc-corner-left fc-state-active" type="button">month</button><button class="fc-basicWeek-button fc-button fc-state-default" type="button">week</button><button class="fc-basicDay-button fc-button fc-state-default fc-corner-right" type="button">day</button></div></div><div class="fc-center"><h2>April 2022</h2></div><div class="fc-clear"></div></div>
+    -->
+        <br/>
+        
+        <aura:if isTrue="{!v.isModalOpen}">
+            <c:Vision_Alert_Component isModalOpen="{!v.isModalOpen}" accObj = "{!v.accObj}" alertType = "accCalendar"/>
+        </aura:if> 
+        
+        <!-- <lightning:button aura:id="calendar add_notification" class="btncolor" type="Create" label="Create Notification" variant="neutral"  onclick="{!c.openModel}"/> 
+        -->
+       
+       <div id="listcalendar" class="slds-card"/>
+    </div>
+</aura:component>

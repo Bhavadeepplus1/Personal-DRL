@@ -1,0 +1,735 @@
+<aura:component controller = "Vision_DRLSales_Product_MyDivisionCtrl" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:isUrlAddressable" access="global" >
+
+    <aura:attribute name="accId" type="String"/>
+    <aura:attribute name="accName" type="String"/>
+    <aura:attribute name="selectedComparision" type="String"/>
+    <lightning:navigation aura:id="navigationService" />
+    <aura:handler name = "init" value ="{!this}" action = "{!c.initRecords}"/>
+    <aura:attribute name="responseList" type="list" />
+    <aura:attribute name="loaded" type="Boolean" />
+    <aura:attribute name="headers" type="object" />
+    <aura:attribute name="headersList" type="list" />
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Last 12 Months Vs. Previous 12 Months', 'value': 'last12monthsvsprevious12months'},
+                                                        {'label': 'Last Quarter Vs. Previous Quarter', 'value': 'lastquartervspreviousquarter'},
+                                                        {'label': 'FYTD Vs. Previous FYTD', 'value': 'fytdvspreviousfytd'},
+                                                        ]"/>
+    <!-- {'label': 'Last Month Vs. Previous Month', 'value': 'lastmonthvspreviousmonth'},-->
+    
+    <aura:attribute name="comparison" type="String" default="{!v.selectedComparision}" />
+    <aura:attribute name="summaryObj" type="object"/>
+    <aura:attribute name="ShowINT" type="boolean" default="true" /> 
+    <aura:attribute name="isRxChecked" type="boolean" default=""/>
+    <aura:attribute name="isRxCheck" type="boolean"/>
+    <aura:attribute name="isSRxChecked" type="boolean"/>
+    <aura:attribute name="isOtcChecked" type="boolean" />
+    <aura:attribute name="isINTChecked" type="boolean"/> 
+    <aura:attribute name="showTPT" type="boolean"/>
+    <aura:attribute name="selections" type="list" />
+    <aura:attribute name="selectedValue" type="String" />
+    <ltng:require scripts="{!$Resource.ChartJS}"/>
+    <ltng:require scripts="{!$Resource.ChartJQuery}" />
+    <aura:attribute name="showChart" type="boolean" default="false" />
+    <aura:attribute name="showMonthlyCharts" type="boolean" default="false" />
+    <aura:attribute name="tableData" type="list" />
+    <aura:attribute name="customerIdList" type="list" />
+    <aura:attribute name="showOnlyTenRecords" type="Boolean" default="true" />
+    <aura:attribute name="showOthersBttn" type="Boolean" default="true" />
+    <aura:attribute name="chartobj1" type="Object" access="public"/>
+    <aura:attribute name="chartobj2" type="Object" access="public"/>
+    <aura:attribute name="chartobj3" type="Object" access="public"/>
+    <aura:attribute name="chartobj4" type="Object" access="public"/>
+    <aura:attribute name="countOfAccountsOwned" type="Integer" />
+    <aura:attribute name="finalMonthlyList" type="Map" />
+    <aura:attribute name="finalMonthlyPreviousList" type="Map" />
+    <aura:attribute name="xaxizLables" type="list" /> 
+    <aura:attribute name="xAxisLabelsSummary" type="list" /> 
+    <aura:attribute name="QuarterLableList" type="list" />  
+    <aura:attribute name="salesdl" type="list" />
+    <aura:attribute name="units" type="list" />
+    <aura:attribute name="tpt" type="list" />
+    <aura:attribute name="tptPercent" type="list" />
+    <aura:attribute name="salesdlPrev" type="list" />
+    <aura:attribute name="unitsPrev" type="list" />
+    <aura:attribute name="tptPrev" type="list" />
+    <aura:attribute name="tptPercentPrev" type="list" />
+    <aura:attribute name="summaryDataObject" type="Object" />
+    <aura:attribute name="summaryQuarterlyDataObject" type="Object" />
+    <aura:attribute name="salesdlSummary" type="list" />
+    <aura:attribute name="unitsSummary" type="list" />
+    <aura:attribute name="tptSummary" type="list" />
+    <aura:attribute name="tptPercentSummary" type="list" />
+    <aura:attribute name="sumOfPrevSales" type="list" />
+    <aura:attribute name="sumOfPrevUnits" type="list" />
+    <aura:attribute name="sumOfRecentUnits" type="list" />
+    <aura:attribute name="sumOfPrevTPTDl" type="list" />
+    <aura:attribute name="sumOfRecentTPTDl" type="list" />
+    <aura:attribute name="sumOfPrevTPTPerc" type="list" />
+    <aura:attribute name="sumOfRecentTPTPerc" type="list" />
+    <aura:attribute name="sumOfRecentSales" type="list" />
+    <aura:attribute name="salesdlPrevSummary" type="list" />
+    <aura:attribute name="unitsPrevSummary" type="list" />
+    <aura:attribute name="tptPrevSummary" type="list" />
+    <aura:attribute name="tptPercentPrevSummary" type="list" />
+    <aura:attribute name="recentData" type="list" />
+    <aura:attribute name="previousData" type="list" />
+    <aura:attribute name="monthlyListKeys" type="list" />
+    <aura:attribute name="customerName" type="string" />
+    <aura:attribute name="customerId" type="string" />
+    <aura:attribute name="noData" type="boolean" />
+    <aura:attribute name="isAsc" type="Boolean"/>
+    <aura:attribute name="filterName" type="String"/>
+    <aura:attribute name="sortField" type="String"/>
+    <aura:attribute name="classS" type="string" />
+    <aura:attribute name="classV" type="string" />
+    <aura:attribute name="classT" type="string" />
+    <aura:attribute name="classP" type="string" />
+    <aura:attribute name="isSalesLessThanZero" type="boolean" />
+    <aura:attribute name="isUnitsLessThanZero" type="boolean" />
+    <aura:attribute name="isTPTLessThanZero" type="boolean" />
+    <aura:attribute name="isTPTPercentLessThanZero" type="boolean" />
+    <aura:attribute name="productFamilies" type="list" />
+    <aura:attribute name="allProductFamilies" type="list" />
+    <aura:attribute name="chartData" type="list" />
+    <aura:attribute name="allAccountsChartData" type="list" />
+    <aura:attribute name="showMoreButton" type="boolean" />
+    <aura:attribute name="GCPUpdateDate" type="String" />
+    <aura:attribute name="VisionUpdateDate" type="String" />
+    <aura:attribute name="DataAvailableTill" type="String" />
+    <aura:attribute name="keySet" type="list" />
+     <aura:attribute name="keySetPrev" type="list" />
+    <aura:attribute name="recentLastMonth" type="integer" />
+     <aura:attribute name="previousLastMonth" type="integer" />
+      <aura:attribute name="showBoolean" type="boolean" default="true"/>
+     <aura:attribute name="res" type="map" />
+     <aura:attribute name="searchText" type="String" />
+    <aura:method name="childToParentMethod" action="{!c.scrollToCustomerGraph}" access="public">
+        <aura:attribute name="custId" type="Id"/> 
+        <aura:attribute name="Index" type="integer"/>
+    </aura:method>
+    
+    <div class="slds-box" style="padding:10px;background-color:white;">
+        <div class="slds-grid" style="padding-top: 0px;">
+            <div class="slds-col slds-size_1-of-4" style="padding-top: 0px;">
+                <div class="slds-grid" >
+                    <div class="slds-col slds-size_1-of-3 slds-grid slds-gutters">
+                        <div class="slds-col">
+                        	<b><lightning:input aura:id="RX" type="toggle" label="Rx" onchange="{!c.searchSrxRxOttc}" checked="{!v.isRxChecked}" messageToggleActive="" messageToggleInactive=""/></b>
+                        </div>
+                        <div class="slds-col">
+                              <b><p style ="color:#3E3E3C;font-size: 12px;" ></p></b>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3 slds-grid slds-gutters">
+                        <div class="slds-col">
+                        	<b><lightning:input aura:id="SRX" type="toggle" label="SRx" onchange="{!c.searchSrxRxOttc}" checked="{!v.isSRxChecked}" messageToggleActive="" messageToggleInactive="" /></b>
+                        </div>
+                        <div class="slds-col">
+                              <b><p style ="color:#3E3E3C;font-size: 12px;" ></p></b>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3 slds-grid slds-gutters">
+                      	<div class="slds-col">
+                        	<b><lightning:input aura:id="OTC" type="toggle" label="OTC" onchange="{!c.searchSrxRxOttc}" checked="{!v.isOtcChecked}" messageToggleActive="" messageToggleInactive="" /></b>
+                        </div>
+                       <div class="slds-col">
+                              <b><p style ="color:#3E3E3C;font-size: 12px;" ></p></b>
+                        </div>
+                    </div>
+                </div>
+            </div> 
+            <div class="slds-size_3-of-4">
+                <div class="slds-grid slds-gutters" id="dateSection" style="padding-right: 0px;">
+                    <div class="slds-col slds-size_1-of-4"></div>
+                    <div class="slds-col slds-size_1-of-4" style="font-style: italic;">
+                        <span class="slds-p-left_medium"><b>GCP Update Date:&nbsp;</b></span> <lightning:formattedDateTime value="{!v.GCPUpdateDate}"/>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4" style="font-style: italic;">
+                        <span class="slds-p-left_medium"><b>Vision Update Date:&nbsp;</b></span> <lightning:formattedDateTime value="{!v.VisionUpdateDate}"/>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4" style="font-style: italic;">
+                        <span class="slds-p-left_medium"><b>Data Available till:&nbsp;</b></span> <lightning:formattedDateTime value="{!v.DataAvailableTill}"/>
+                    </div>
+                </div>  
+            </div>
+        </div>
+        <div class="slds-grid slds-gutters">
+            <!--<div class="slds-col slds-size_1-of-4" style="text-align: right;padding-top: 25px;">
+                <lightning:button label="Export" title="Export" onclick="{!c.downloadCsv}"/>
+            </div>-->
+           <!--<div class="slds-col slds-size_1-of-4" style="padding-top: 30px;">
+                
+                <b><lightning:input aura:id="INT/EXT" type="toggle" label="EXT" onchange="{!c.searchIntExt}" checked="{!v.showTPT}" messageToggleActive="" messageToggleInactive=""/></b>
+                   
+            </div>-->
+            <div class="slds-col slds-size_1-of-4" style="padding-top: 30px">
+              <span onkeypress="{}">
+               <lightning:input value="{!v.searchText}" type="search" title="Search by Product Name"
+                                         variant="label-hidden" placeholder="Search by Product Name"
+                                         aura:id="SearchBox" 
+                                         />
+                </span>
+            </div>
+            <div class="slds-col slds-size_1-of-4" style="padding-top: 30px">
+                <lightning:button label="Search" title="Neutral action" onclick="{! c.onsearch }"/>
+            </div>
+             <div class="slds-col slds-size_1-of-4" style="padding-top: 30px;">
+                <div class="slds-grid">
+               <div>
+                   <span>
+                <b><lightning:input aura:id="INT/EXT" type="toggle" label="INT" onchange="{!c.searchIntExt}" checked="{!v.showTPT}" messageToggleActive="" messageToggleInactive=""/></b>
+                   </span>
+                </div>&nbsp;
+                <div class="slds-p-top_xxx-small">
+                    <span>
+                       <b><p style ="color:#3E3E3C;font-size: 12px;">EXT</p></b> 
+                    </span>
+                </div>
+                </div>
+                   </div>
+            
+            <div class="slds-col slds-size_1-of-4 picklistCSS">
+                <lightning:combobox name="comparison"  label="Analysis Based On" value="{!v.selectedComparision}" placeholder="Select Comparison" options="{! v.options }" onchange="{! c.handleChange }"/>
+            </div>
+        </div>
+        <!-- date comparision-->
+        <aura:if isTrue="{! v.loaded }">
+            <center>
+                <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                         aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                    <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                        <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                            <img src="{!$Resource.LoadingProgress}" />  
+                        </div>  
+                    </div>  
+                </section>   
+                <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+            </center>
+            <!--<div class="demo-only" >
+                <div class="slds-spinner_container slds-align_absolute-center" >
+                    <div role="status">
+                        <img src="{!$Resource.LoadingProgress}" />
+                    </div>
+                </div>
+            </div>-->
+        </aura:if>
+        <aura:if isTrue="{!v.noData}">
+            <lightning:card >
+                <center>
+                    <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                        <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                            <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                        </span>
+                        <h2>No data found.</h2>
+                    </div>
+                </center>
+            </lightning:card>
+        </aura:if>
+		<aura:if isTrue="{!and(v.responseList.length != 0,v.noData == false)}">
+                <div aura:id="mainDiv" style="height:430px;overflow:auto;margin-top:10px;border-radius: 0.25rem;border: 2px solid #cfcfcf;">
+                    <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                        <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered">
+                            <thead class="headerOfTable">
+                                <tr>
+                                    <th colspan="2" class="slds-truncate slds-cell-wrap slds-text-align_left" style="text-transform: uppercase; font-size: 15px;">{!v.accName} ({!v.countOfAccountsOwned})</th>
+                                    <th colspan="16" style="text-align:center;"> 
+                                        <div class="slds-grid">
+                                            <aura:if isTrue ="{!v.showTPT}">
+                                                 <div class="slds-col slds-size_11-of-12 slds-text-align_center" style="font-size: 15px;">
+                                                NET SALES  &amp; QUANTITY ANALYSIS
+                                            </div>
+                                                <aura:set attribute="else">
+                                            <div class="slds-col slds-size_11-of-12 slds-text-align_center" style="font-size: 15px;">
+                                                NET SALES, QUANTITY &amp; TPT ANALYSIS
+                                            </div>
+                                                </aura:set>
+                                            </aura:if>
+                                            <div class="slds-col slds-size_1-of-12 slds-text-align_right">
+                                                <lightning:buttonIcon class ="slds-icon_small" iconName="utility:download" 
+                                                                      onclick="{!c.downloadCsv}"/>
+                                            </div>                                                
+                                            <!--<lightning:button label="Export" title="Export" onclick="{!c.downloadCsv}"/> product_consumed_state-->
+                                        </div>
+                                    </th>
+                                </tr>
+                                <tr> 
+                                    <!--<th></th>-->
+                                    <th rowspan="2"  style = "width:3%" class="slds-text-align_center">#</th>
+                                    <th rowspan="2"  style = "width:20%" class="slds-truncate slds-cell-wrap slds-text-align_left">Product Family</th>
+                                    <aura:if isTrue ="{!v.showTPT}">
+                                        <th rowspan="2"  style = "width:2%" class="slds-truncate slds-cell-wrap slds-text-align_center">Q</th>
+                                    	<th rowspan="2"  style = "width:2%" class="slds-truncate slds-cell-wrap slds-text-align_center">S</th>
+                                        <aura:set attribute = "else">
+                                    <th rowspan="2"  style = "width:2%" class="slds-truncate slds-cell-wrap slds-text-align_center">Q</th>
+                                    <th rowspan="2"  style = "width:2%" class="slds-truncate slds-cell-wrap slds-text-align_center">S</th>
+                                    <th rowspan="2"  style = "width:2%" class="slds-truncate slds-cell-wrap slds-text-align_center">T</th>
+                                    <th rowspan="2"  style = "width:2%" class="slds-truncate slds-cell-wrap slds-text-align_center">%</th>
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:if isTrue ="{!v.showTPT}">
+                                         <th colspan="3" class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #b6a6ed;color: white;border-color: #bfbbba; color: black; font-size: 14px;">Quantity (EU)</th>
+                                    	<th colspan="3" class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #abc1f5;color: white;border-color: #bfbbba; color: black; font-size: 14px;">Sales ($)</th>
+                                        <aura:set attribute ="else">
+                                    <th colspan="3" class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #b6a6ed;color: white;border-color: #bfbbba; color: black; font-size: 14px;">Quantity (EU)</th>
+                                    <th colspan="3" class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #abc1f5;color: white;border-color: #bfbbba; color: black; font-size: 14px;">Sales ($)</th>
+                                    <th colspan="3" class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #f0aabb;color: white;border-color: #bfbbba; color: black; font-size: 14px;">TPT ($)</th>
+                                    <th colspan="3" class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #fcfbd9;border-color: #bfbbba; font-size: 14px;">TPT %</th>
+                                        </aura:set>
+                                     </aura:if>
+                                   </tr>
+                                <tr>
+                                    <aura:if isTrue = "{!v.showTPT}">
+                                         <th class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #947aeb;color: white;border-color: #bfbbba;">
+                                        <span onclick="{!c.sortByDrlPreviousUnits}">
+                                            <aura:if isTrue="{!and(v.isAsc,v.filterName == 'Previous Units')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.two}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!and(!v.isAsc,v.filterName == 'Previous Units')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.two}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.filterName != 'Previous Units'}">
+                                                <div style="cursor: pointer;">{!v.headers.two}</div>
+                                            </aura:if>
+                                        </span>
+                                    </th>
+                                    <th class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #947aeb;color: white;border-color: #bfbbba;">
+                                        <span onclick="{!c.sortByDrlRecentUnits}">
+                                            <aura:if isTrue="{!and(v.isAsc,v.filterName == 'Recent Units')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.one}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!and(!v.isAsc,v.filterName == 'Recent Units')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.one}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.filterName != 'Recent Units'}">
+                                                <div style="cursor: pointer;">{!v.headers.one}</div>
+                                            </aura:if>
+                                        </span>
+                                    </th>
+                                    <th class="slds-truncate slds-cell-wrap zindexPrd slds-text-align_center" style="background-color: #947aeb;color: white;border-color: #bfbbba;" aura:id="zvaluePrd">Trending</th>
+                                    <th class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #7a9ceb;color: white;border-color: #bfbbba;">
+                                        <span onclick="{!c.sortByDrlPreviousSales}">
+                                            <aura:if isTrue="{!and(v.isAsc,v.filterName == 'Previous Sales')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.two}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!and(!v.isAsc,v.filterName == 'Previous Sales')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.two}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.filterName != 'Previous Sales'}">
+                                                <div style="cursor: pointer;">{!v.headers.two}</div>
+                                            </aura:if>
+                                        </span>
+                                    </th>
+                                    <th class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #7a9ceb;color: white;border-color: #bfbbba;">
+                                        <span onclick="{!c.sortByDrlRecentSales}">
+                                            <aura:if isTrue="{!and(v.isAsc,v.filterName == 'Recent Sales')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.one}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!and(!v.isAsc,v.filterName == 'Recent Sales')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.one}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.filterName != 'Recent Sales'}">
+                                                <div style="cursor: pointer;">{!v.headers.one}</div>
+                                            </aura:if>
+                                        </span>
+                                    </th>
+                                    <th class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #7a9ceb;color: white;border-color: #bfbbba;">Trending</th>
+
+                                        <aura:set attribute ="else">
+                                    <th class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #947aeb;color: white;border-color: #bfbbba;">
+                                        <span onclick="{!c.sortByDrlPreviousUnits}">
+                                            <aura:if isTrue="{!and(v.isAsc,v.filterName == 'Previous Units')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.two}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!and(!v.isAsc,v.filterName == 'Previous Units')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.two}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.filterName != 'Previous Units'}">
+                                                <div style="cursor: pointer;">{!v.headers.two}</div>
+                                            </aura:if>
+                                        </span>
+                                    </th>
+                                    <th class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #947aeb;color: white;border-color: #bfbbba;">
+                                        <span onclick="{!c.sortByDrlRecentUnits}">
+                                            <aura:if isTrue="{!and(v.isAsc,v.filterName == 'Recent Units')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.one}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!and(!v.isAsc,v.filterName == 'Recent Units')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.one}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.filterName != 'Recent Units'}">
+                                                <div style="cursor: pointer;">{!v.headers.one}</div>
+                                            </aura:if>
+                                        </span>
+                                    </th>
+                                    <th class="slds-truncate slds-cell-wrap zindexPrd slds-text-align_center" style="background-color: #947aeb;color: white;border-color: #bfbbba;" aura:id="zvaluePrd">Trending</th>
+                                    <th class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #7a9ceb;color: white;border-color: #bfbbba;">
+                                        <span onclick="{!c.sortByDrlPreviousSales}">
+                                            <aura:if isTrue="{!and(v.isAsc,v.filterName == 'Previous Sales')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.two}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!and(!v.isAsc,v.filterName == 'Previous Sales')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.two}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.filterName != 'Previous Sales'}">
+                                                <div style="cursor: pointer;">{!v.headers.two}</div>
+                                            </aura:if>
+                                        </span>
+                                    </th>
+                                    <th class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #7a9ceb;color: white;border-color: #bfbbba;">
+                                        <span onclick="{!c.sortByDrlRecentSales}">
+                                            <aura:if isTrue="{!and(v.isAsc,v.filterName == 'Recent Sales')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.one}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!and(!v.isAsc,v.filterName == 'Recent Sales')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.one}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.filterName != 'Recent Sales'}">
+                                                <div style="cursor: pointer;">{!v.headers.one}</div>
+                                            </aura:if>
+                                        </span>
+                                    </th>
+                                    <th class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #7a9ceb;color: white;border-color: #bfbbba;">Trending</th>
+                                    <th class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #eb7a96;color: white;border-color: #bfbbba;">
+                                        <span onclick="{!c.sortByDrlPreviousTPT}">
+                                            <aura:if isTrue="{!and(v.isAsc,v.filterName == 'Previous TPT')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.two}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!and(!v.isAsc,v.filterName == 'Previous TPT')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.two}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.filterName != 'Previous TPT'}">
+                                                <div style="cursor: pointer;">{!v.headers.two}</div>
+                                            </aura:if>
+                                        </span>
+                                    </th>
+                                    <th class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #eb7a96;color: white;border-color: #bfbbba;">
+                                        <span onclick="{!c.sortByDrlRecentTPT}">
+                                            <aura:if isTrue="{!and(v.isAsc,v.filterName == 'Recent TPT')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.one}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowup" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!and(!v.isAsc,v.filterName == 'Recent TPT')}">
+                                                <div class="slds-icon_container" style="cursor: pointer;">  
+                                                    {!v.headers.one}&nbsp;<lightning:icon class="whiteIcon" iconName="utility:arrowdown" 
+                                                                                          size="xx-small" 
+                                                                                          alternativeText="sort arrow up"/>  
+                                                </div>
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.filterName != 'Recent TPT'}">
+                                                <div style="cursor: pointer;">{!v.headers.one}</div>
+                                            </aura:if>
+                                        </span>
+                                    </th>
+                                    <th class="slds-truncate slds-cell-wrap zindexPkg slds-text-align_center" style="background-color: #eb7a96;color: white;border-color: #bfbbba;" aura:id="zvaluePkg">Trending</th>
+                                    <th class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #fffcbd;border-color: #bfbbba;">{!v.headers.two}</th>
+                                    <th class="slds-truncate slds-cell-wrap slds-text-align_center" style="background-color: #fffcbd;border-color: #bfbbba;">{!v.headers.one}</th>
+                                    <th class="slds-truncate slds-cell-wrap zindexPkg slds-text-align_center" style="background-color: #fffcbd;border-color: #bfbbba;">Trending</th>
+                                        </aura:set>
+                                    </aura:if>
+                                    </tr>
+                                
+                                <tr>
+                                    
+                                    <!-- <td style="background-color: #f0f0f0; color: #080707;">&nbsp;</td>
+                                            <td style="background-color: #f0f0f0; color: #080707;">&nbsp;</td>
+                                            <td style="background-color: #f0f0f0; color: #080707;">&nbsp;</td>
+                                            <td style="background-color: #f0f0f0; color: #080707;">&nbsp;</td>
+                                            <td style="background-color: #f0f0f0; color: #080707;">&nbsp;</td>
+                                            <td style="background-color: #f0f0f0; color: #080707;">&nbsp;</td>-->
+                                    <td colspan="2" class="slds-text-align_left" style="background-color: #f0f0f0; color: #080707; font-size:14px;">
+                                        <b>
+                                            <lightning:button variant="base" label="Summary" title="Summary" onclick="{!c.scrollToSummaryBlock}"/>
+                                        </b>
+                                    </td>
+                                    <aura:if isTrue ="{!v.showTPT}">
+                                        <td class="slds-text-align_center tip2" style="background-color: #f0f0f0; color: #080707; font-size:14px;">
+                                        <lightning:icon class="{!v.classV}" 
+                                                        iconName="utility:light_bulb" 
+                                                        size="x-small"/>
+                                        <span>
+                                            <lightning:formattedNumber value="{!(v.summaryObj.volumeSummary - v.summaryObj.volumePrevSummary)}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </td>
+                                    <td class="slds-text-align_center tip1" style="background-color: #f0f0f0; color: #080707; font-size:14px;">
+                                        <lightning:icon class="{!v.classS}" 
+                                                        iconName="utility:light_bulb" 
+                                                        size="x-small"/>
+                                        <span>
+                                            <lightning:formattedNumber value="{!(v.summaryObj.salesSummary - v.summaryObj.salesPrevSummary)}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </td>
+                                        <aura:set attribute = "else">
+                                    <td class="slds-text-align_center tip2" style="background-color: #f0f0f0; color: #080707; font-size:14px;">
+                                        <lightning:icon class="{!v.classV}" 
+                                                        iconName="utility:light_bulb" 
+                                                        size="x-small"/>
+                                        <span>
+                                            <lightning:formattedNumber value="{!(v.summaryObj.volumeSummary - v.summaryObj.volumePrevSummary)}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </td>
+                                    <td class="slds-text-align_center tip1" style="background-color: #f0f0f0; color: #080707; font-size:14px;">
+                                        <lightning:icon class="{!v.classS}" 
+                                                        iconName="utility:light_bulb" 
+                                                        size="x-small"/>
+                                        <span>
+                                            <lightning:formattedNumber value="{!(v.summaryObj.salesSummary - v.summaryObj.salesPrevSummary)}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </td>
+                                    <td class="slds-text-align_center tip3" style="background-color: #f0f0f0; color: #080707; font-size:14px;">
+                                        <lightning:icon class="{!v.classT}" 
+                                                        iconName="utility:light_bulb" 
+                                                        size="x-small"/>
+                                        <span>
+                                            <lightning:formattedNumber value="{!(v.summaryObj.tptSummary - v.summaryObj.tptPrevSummary)}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </span>
+                                    </td>
+                                    <td class="slds-text-align_center tip4" style="background-color: #f0f0f0; color: #080707; font-size:14px;">
+                                        <lightning:icon class="{!v.classP}"
+                                                        iconName="utility:light_bulb" 
+                                                        size="x-small"/>
+                                        <span>
+                                            <lightning:formattedNumber value="{!(v.summaryObj.tptPSummary - v.summaryObj.tptPPrevSummary)}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="2"/>
+                                        </span>
+                                    </td>
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:if isTrue = "{!v.showTPT}">
+                                        <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                        <b><lightning:formattedNumber value="{!v.summaryObj.volumePrevSummary}"  minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                    </td>
+                                    <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                        <b><lightning:formattedNumber value="{!v.summaryObj.volumeSummary}"  minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                    </td>
+                                    <aura:if isTrue="{!v.isUnitsLessThanZero}">
+                                        <td class="slds-text-align_right slds-text-color_error" style="background-color: #f0f0f0;">
+                                            <b><lightning:formattedNumber value="{!v.summaryObj.volumeTrendingSummary}" style="percent"  minimumFractionDigits="0" maximumFractionDigits="2"/></b>
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                                <b><lightning:formattedNumber value="{!v.summaryObj.volumeTrendingSummary}" style="percent"  minimumFractionDigits="0" maximumFractionDigits="2"/></b>
+                                            </td>
+                                        </aura:set>
+                                    </aura:if>
+                                    <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                        <b><lightning:formattedNumber value="{!v.summaryObj.salesPrevSummary}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                    </td>
+                                    <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                        <b><lightning:formattedNumber value="{!v.summaryObj.salesSummary}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                    </td>
+                                    <aura:if isTrue="{!v.isSalesLessThanZero}">
+                                        <td class="slds-text-align_right slds-text-color_error" style="background-color: #f0f0f0;">
+                                            <b><lightning:formattedNumber value="{!v.summaryObj.salesTrendingSummary}" style="percent" minimumFractionDigits="0" maximumFractionDigits="2"/></b>
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                                <b><lightning:formattedNumber value="{!v.summaryObj.salesTrendingSummary}" style="percent" minimumFractionDigits="0" maximumFractionDigits="2"/></b>
+                                            </td>
+                                        </aura:set>
+                                    </aura:if>
+                                        <aura:set attribute ="else">
+                                    <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                        <b><lightning:formattedNumber value="{!v.summaryObj.volumePrevSummary}"  minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                    </td>
+                                    <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                        <b><lightning:formattedNumber value="{!v.summaryObj.volumeSummary}"  minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                    </td>
+                                    <aura:if isTrue="{!v.isUnitsLessThanZero}">
+                                        <td class="slds-text-align_right slds-text-color_error" style="background-color: #f0f0f0;">
+                                            <b><lightning:formattedNumber value="{!v.summaryObj.volumeTrendingSummary}" style="percent"  minimumFractionDigits="0" maximumFractionDigits="2"/></b>
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                                <b><lightning:formattedNumber value="{!v.summaryObj.volumeTrendingSummary}" style="percent"  minimumFractionDigits="0" maximumFractionDigits="2"/></b>
+                                            </td>
+                                        </aura:set>
+                                    </aura:if>
+                                    <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                        <b><lightning:formattedNumber value="{!v.summaryObj.salesPrevSummary}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                    </td>
+                                    <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                        <b><lightning:formattedNumber value="{!v.summaryObj.salesSummary}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                    </td>
+                                    <aura:if isTrue="{!v.isSalesLessThanZero}">
+                                        <td class="slds-text-align_right slds-text-color_error" style="background-color: #f0f0f0;">
+                                            <b><lightning:formattedNumber value="{!v.summaryObj.salesTrendingSummary}" style="percent" minimumFractionDigits="0" maximumFractionDigits="2"/></b>
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                                <b><lightning:formattedNumber value="{!v.summaryObj.salesTrendingSummary}" style="percent" minimumFractionDigits="0" maximumFractionDigits="2"/></b>
+                                            </td>
+                                        </aura:set>
+                                    </aura:if>
+                                    <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                        <b><lightning:formattedNumber value="{!v.summaryObj.tptPrevSummary}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                    </td>
+                                    <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                        <b><lightning:formattedNumber value="{!v.summaryObj.tptSummary}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                    </td>
+                                    <aura:if isTrue="{!v.isTPTLessThanZero}">
+                                        <td class="slds-text-align_right slds-text-color_error" style="background-color: #f0f0f0;">
+                                            <b><lightning:formattedNumber value="{!v.summaryObj.tptTrendingSummary}" style="percent" minimumFractionDigits="0" maximumFractionDigits="2"/></b>
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                                <b><lightning:formattedNumber value="{!v.summaryObj.tptTrendingSummary}" style="percent" minimumFractionDigits="0" maximumFractionDigits="2"/></b>
+                                            </td>
+                                        </aura:set>
+                                    </aura:if>
+                                    <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                        <b><lightning:formattedNumber value="{!v.summaryObj.tptPPrevSummary}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="2"/></b>
+                                    </td>
+                                    <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                        <b><lightning:formattedNumber value="{!v.summaryObj.tptPSummary}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="2"/></b>
+                                    </td>
+                                    <aura:if isTrue="{!v.isTPTPercentLessThanZero}">
+                                        <td class="slds-text-align_right slds-text-color_error" style="background-color: #f0f0f0;">
+                                            <b><lightning:formattedNumber value="{!v.summaryObj.tptPTrendingSummary}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="2"/></b>
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #080707;">
+                                                <b><lightning:formattedNumber value="{!v.summaryObj.tptPTrendingSummary}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="2"/></b>
+                                            </td>
+                                        </aura:set>
+                                    </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <aura:iteration items="{!v.responseList}" var="item" indexVar="index">
+                                    <c:Vision_DRLSales_Products_MyDivisionChildCmp isINTChecked = "{!v.showTPT}" singleRec="{!item}" rowIndex="{!index+1}" parent="{!this}"/>
+                                </aura:iteration>
+                            </tbody>
+                            
+                        </table>
+                        <!--<aura:if isTrue= "{!v.showOthersBttn}">
+                                    <div class="slds-align_absolute-center slds-p-around_xxx-small">
+                                        <button class="slds-button slds-button_neutral" onclick = "{! c.showAllRecords }">Others</button>
+                                    </div>
+                                </aura:if>-->
+                    </div>
+            </div>
+        </aura:if>
+        <aura:if isTrue = "{!v.showBoolean}">
+        	<aura:if isTrue="{!v.showChart}">
+            <div class="slds-box slds-m-bottom_x-small slds-m-top_x-small" style="border: 2px solid #cfcfcf;height: 535px;">
+                <aura:if isTrue="{!v.responseList.length !=0}">
+                    <div class="slds-box slds-align_absolute-center" aura:id="summaryBlock" style="padding:15px; margin: 0px 10px;background-color:#f0f0f0; font-size: 20px;">
+                        <b>Summary</b>
+                    </div>
+                </aura:if>
+                <div class="slds-grid">
+                     <aura:if isTrue ="{!v.showTPT}">
+                          <div class="slds-col slds-size_1-of-2" style="padding: 8px;">
+                            <canvas aura:id="andeeChart5" id="andeeChart1235" height="15" width="28"/>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2" style="padding: 8px;">
+                            <canvas aura:id="andeeChart6" id="andeeChart1236" height="15" width="28"/>
+                        </div>
+                         <aura:set attribute ="else">
+                    <div class="slds-col slds-size_1-of-4" style="padding: 8px;">
+                        <canvas aura:id="andeeChart1" id="andeeChart1231" height="480" width="500"/>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4" style="padding: 8px;">
+                        <canvas aura:id="andeeChart2" id="andeeChart1232" height="480" width="500"/>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4" style="padding: 8px;">
+                        <canvas aura:id="andeeChart3" id="andeeChart1233" height="480" width="500"/>
+                    </div>
+                    <div class="slds-col slds-size_1-of-4" style="padding: 8px;">
+                        <canvas aura:id="andeeChart4" id="andeeChart1234" height="480" width="500"/>
+                    </div>
+                         </aura:set>
+                    </aura:if>
+                </div>
+            </div>
+            <aura:iteration items="{!v.allAccountsChartData}" var="item" indexVar="index">
+                <c:Vision_DRL_Sales_Report_Graphs isINTChecked="{!v.showTPT}" data="{!item}" index="{!index}" headers="{!v.headers}" comparison="{!v.comparison}" xAxisLabelsSummary="{!v.xAxisLabelsSummary}" keySet = "{!v.keySet}" keySetPrev= "{!v.keySetPrev}"/>
+            </aura:iteration>
+            <!--<aura:iteration items="{!v.customerIds}" var="item" indexVar="index">
+                <c:Vision_DRL_Sales_Report_Graphs customerId="{!item}" index="{!index}" comparison="{!v.comparison}" selections="{!v.selections}"/>
+            </aura:iteration>-->
+            <aura:if isTrue="{!v.showMoreButton}">
+                <div class="slds-align_absolute-center">
+                    <lightning:button label="Show More Charts" title="Show More Charts" onclick="{! c.getMoreChartsData }"/>
+                </div>
+            </aura:if>
+        </aura:if>
+        </aura:if>
+    </div>
+</aura:component>

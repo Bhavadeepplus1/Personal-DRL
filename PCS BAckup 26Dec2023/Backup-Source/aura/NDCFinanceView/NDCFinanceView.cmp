@@ -1,0 +1,354 @@
+<aura:component controller="Phoenix_NDCFinanceView" implements="force:lightningQuickActionWithoutHeader,force:appHostable,force:hasRecordId,force:hasSObjectName" access="global" >
+	<aura:attribute name="recordId" type="String" />
+    <aura:attribute name="scmData" type="List" />
+    <aura:attribute name="bidNumber" type="string"/>
+    <aura:attribute name="templateType" type="string"/>
+    <aura:attribute name="bidName" type="string"  />
+    <aura:attribute name="title" type="String" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+     <aura:attribute name="totalDRlMargin"  type="Decimal" />
+    <aura:attribute name="isClicked" type="boolean" default="false" />
+    <aura:attribute name="EstimatedDaysFieldValues" type="List" default="0,7,15,20,30,45,60,75,90,120" />
+    <aura:attribute name="SCMApprovalMap" type="Map" /> 
+    <aura:attribute name="SCMApprovalQtyMap" type="Map" /> 
+    <aura:attribute name="EstimatedDaysMap" type="Map" /> 
+    <aura:attribute name="calculatedSCMQty" type="List" />
+    <aura:attribute name="SCMReJMap" type="Map" /> 
+    <aura:attribute name="SCMCommentsMap" type="Map" /> 
+    <aura:attribute name="initailOrderVolumeMap" type="Map" /> 
+    <aura:attribute name="initailOrderCommentsMap" type="Map" /> 
+    <aura:attribute name="isSCMApproved" type="boolean" default="false" />
+    <!--added by har for approvals-->
+     <aura:attribute name="isSCMApprovePerson" type="boolean" /> 
+      <!--added by har for approvals-->
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <aura:attribute name="scmRejactionReasonValues" type="List" default="FG Quality Issue, API Quality Issue, Raw Material/KSM Quality issue, Packing Material Quality Issue, API Supply Delay, Raw Material/KSM Supply issue, Packing Material Supply Issue, Manufacturing Delay, FG capacity constrained, API capacity constrained, Low FG Inventory on Hand, Others"/>
+    <aura:method name="scmRefresh" action="{!c.doInit}" />
+    <aura:method name="onloadSCM" action="{!c.onLoadingSCM}" />
+    <aura:attribute name="CurrenSalesTotal" type="Decimal" />
+    <aura:attribute name="CurrentTPMarginTotal" type="Decimal" />
+     <aura:attribute name="ProposedSalesTotal" type="Decimal" />
+    <aura:attribute name="ProposedTPMarginTotal" type="Decimal" />
+    <aura:attribute name="VolumeVarianceTotal" type="Decimal" />
+    <aura:attribute name="PriceVarianceTotal" type="Decimal" />
+    <aura:attribute name="DifferenceSalesTotal" type="Decimal" />
+    <aura:attribute name="DifferenceMarginTotal" type="Decimal" />
+    <aura:attribute name="ssahitTotal" type="Decimal" />
+    <aura:attribute name="TotalDRLShareTotal" type="Decimal" />
+    <aura:attribute name="DRLShareImpactTotal" type="Decimal" />
+    <aura:attribute name="TPGMBeforeTotal" type="Decimal" />
+    <aura:attribute name="TPGMAfterTotal" type="Decimal" />
+    <aura:attribute name="bidRecord" type="Object" />
+    <aura:attribute name="noOfCons" type="Integer" default="0"/>
+    
+    <aura:html tag="style">
+        .tableDiv{
+        height : auto !important;
+        overflow : scroll !important;
+        }
+    </aura:html>
+    <aura:if isTrue="{!v.isSpinnerLoad}">
+            <div class="backgroundInverse">
+                <lightning:spinner alternativeText="Loading" variant="brand" />
+            </div>
+        </aura:if>
+   <lightning:card>
+   <aura:set attribute="title">
+            <lightning:icon iconName="custom:custom90" size="small"/>&nbsp;&nbsp;
+            {! v.title }
+  </aura:set> 
+  <aura:set attribute="actions">
+      <aura:if isTrue="{!(v.scmData.length > 0 )}">
+      <lightning:button label="Export" onclick="{!c.downloadCsv}"/>
+      </aura:if>
+      <lightning:button label="Back" onclick="{! c.onClose}" />
+      <aura:if isTrue="{!and(v.isSCMApprovePerson==true,and(not(v.scmData[0].finalSCMApproval), and(v.scmData[0].bidRecord.Phoenix_Approval_Status__c  == 'SCM &amp; Marketing',v.scmData[0].bidRecord.Phoenix_Approval_Status__c  != 'Draft')))}" >
+          <lightning:button  label="Proceed" onclick="{! c.onApprovalSubmit}" />
+      </aura:if>
+     <!-- <aura:if isTrue="{!and(v.isSCMApprovePerson==true,and(not(v.scmData[0].finalSCMApproval, v.scmData[0].bidRecord.Phoenix_Approval_Status__c  == 'SCM &amp; Marketing')))}" >
+          <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:8%">
+              <lightning:select label ='SCM Approval (Mark all as)'
+                                aura:id="headerSCMApproval"
+                                onchange="{!c.onApprovalChange}"
+                                >
+                  <option value="None">None</option>
+                  <option value="Y- Only Current Monthly Demand Approved">Y- Only Current Monthly Demand Approved</option>
+                  <option value="Y- Current + Inc Demand Approved">Y- Current + Inc Demand Approved</option>
+                  <option value="N- Not Approved">N- Not Approved</option>
+              </lightning:select>
+          </div>
+          
+          
+      </aura:if>-->
+      
+  </aura:set>
+    <!--center><div class="slds-border_bottom slds-border_top slds-m-right_small slds-m-left_small" ><h1 style="font-size:1.5rem; font-weight:350;color:gray">SCM View</h1></div></center-->
+    <div aura:id="mainDiv" class=" slds-m-right_small slds-m-left_small">
+        <aura:if isTrue="{!v.scmData.length > 0}" >
+        <aura:if isTrue="{!v.isClicked}">
+            <div class="slds-align_absolute-center slds-m-top_small slds-m-bottom_small">        
+                <lightning:button variant="neutral" label="Cancel" onclick="{! c.refreshSCM}" />      
+                <lightning:button variant="brand" label="Save" onclick="{! c.saveClick }" />
+            </div>
+        </aura:if>
+        
+        <div class="tableDiv slds-m-top_small slds-m-bottom_small" style="height:100vh;">
+        
+            <table class="ndcTable slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-scrollable slds-scrollable_x" style="width:150px">
+                <thead>
+                    <tr> 
+                        <th class="slds-truncate slds-cell-wrap" >NDC</th>
+                         <th class="slds-truncate slds-cell-wrap">SAP Number</th>
+                        <th class="slds-truncate slds-cell-wrap zindexPrd">Product Name</th>
+                        <th class="slds-truncate slds-cell-wrap zindexPkg">Pkg Size</th>
+                         <th class="slds-truncate slds-cell-wrap zindex">Product Family</th>
+                        <th class="slds-truncate slds-cell-wrap">Case Pack</th>
+                        <th class="slds-truncate slds-cell-wrap">MOQ</th>
+                        <th class="slds-truncate slds-cell-wrap">Compare To (Brand Name)</th>
+                        <th class="slds-truncate slds-cell-wrap">Product Director</th>
+                        <aura:if isTrue="{!v.bidRecord.Phoenix_is_OTC_Bid__c==False}" >
+                            <th class="slds-truncate slds-cell-wrap">Orange Book Rating</th>
+                        </aura:if>
+                        <th class="slds-truncate slds-cell-wrap">Old Throughput Cost</th>
+                        <th class="slds-truncate slds-cell-wrap">Throughput Cost Per Pack</th>
+                         <th class="slds-truncate slds-cell-wrap">WAC</th>
+                         <th class="slds-truncate slds-cell-wrap">Doses</th>
+                        <th class="slds-truncate slds-cell-wrap">SSA Hit</th>
+                        <th class="slds-truncate slds-cell-wrap">LE Price Per Pack (Qtr)</th>
+                        <th class="slds-truncate slds-cell-wrap">Current Bottles</th>
+                        <!--<th >Current Doses</th>-->
+                        <th class="slds-truncate slds-cell-wrap">Current Sales(Finance)
+                            <aura:if isTrue="{!v.noOfCons != 0}">
+                                <b title="Current Sales=(Current Bottles*Current Deadnet)-(Medicaid &amp; Returns*Current Bottles)&#013;Note: If we have members, we are calculating each member's Current Sales individually and the sum to get overall Current Sales for NDC.">({!v.noOfCons})</b>
+                            </aura:if>
+                        </th>
+                        <th class="slds-truncate slds-cell-wrap">Current TP Margin $$$</th>
+                        <th class="slds-truncate slds-cell-wrap">Current TP Margin %</th>
+                         <th class="slds-truncate slds-cell-wrap">Current ASP</th>
+                        <th class="slds-truncate slds-cell-wrap">Proposed Bottles</th>
+                        <!--<th>Proposed Doses</th>-->
+                        <th class="slds-truncate slds-cell-wrap">Proposed Sales</th>
+                        <th class="slds-truncate slds-cell-wrap">Proposed TP Margin $$$</th>
+                        <th class="slds-truncate slds-cell-wrap">Proposed TP Margin %</th>
+                        <th class="slds-truncate slds-cell-wrap">Proposed ASP</th>
+                        <th class="slds-truncate slds-cell-wrap">Budgeted ASP (Qtr)</th>
+                        <th class="slds-truncate slds-cell-wrap">Proposed % to Budget</th>
+                        <th class="slds-truncate slds-cell-wrap">Difference Bottles</th>
+                         <!--<th>Difference Doses</th>-->
+                         <th class="slds-truncate slds-cell-wrap">Volume Variance</th>
+                        <th class="slds-truncate slds-cell-wrap">Price Variance</th>
+                        <th class="slds-truncate slds-cell-wrap">Difference Sales</th>
+                        <th class="slds-truncate slds-cell-wrap">Difference Margin</th>
+                        <th class="slds-truncate slds-cell-wrap">Difference ASP % Change</th>
+                        <aura:if isTrue="{!(v.bidRecord.Phoenix_Bid_Type__c != 'Volume Review Only')}" >
+                            <th class="slds-truncate slds-cell-wrap">Finance Approval</th>
+                            <th class="slds-truncate slds-cell-wrap">Finance Comments</th>
+                        </aura:if>
+                        <th class="slds-truncate slds-cell-wrap">Comm. Exps %</th>
+                        <th class="slds-truncate slds-cell-wrap">Commercial Cost</th>
+                        <th class="slds-truncate slds-cell-wrap">Profit Available For Distribution</th>
+                        <th class="slds-truncate slds-cell-wrap">PS Partner 1</th>
+                        <th class="slds-truncate slds-cell-wrap">PS % -Partner 1</th>
+                        <th class="slds-truncate slds-cell-wrap">Profit Share To Partner 1</th>
+                        <th class="slds-truncate slds-cell-wrap">PS Partner 2</th>
+                        <th class="slds-truncate slds-cell-wrap">PS % -Partner 2</th>
+                        <th class="slds-truncate slds-cell-wrap">Profit Share To Partner 2</th>
+                        <th class="slds-truncate slds-cell-wrap">Total Profit Share</th>
+                        <th class="slds-truncate slds-cell-wrap">Total Value Profit Share</th>
+                        <th class="slds-truncate slds-cell-wrap">Royalty Partner Name</th>
+                        <th class="slds-truncate slds-cell-wrap">Royalty %</th>
+                        <th class="slds-truncate slds-cell-wrap">Royalty Per Unit</th>
+                        <th class="slds-truncate slds-cell-wrap">Total Value Royalty</th>
+                        <th class="slds-truncate slds-cell-wrap">DRL Share Per Unit</th>
+                        <th class="slds-truncate slds-cell-wrap">Total DRL Share</th>
+                         <th class="slds-truncate slds-cell-wrap">DRL Margin %</th>
+                          <!--<aura:if isTrue="{!v.templateType =='Walgreens'}" >-->
+                             <th class="slds-truncate slds-cell-wrap">Current Royalty</th>
+                        <th class="slds-truncate slds-cell-wrap">Current Profit Available For Distribution</th>
+                        <th class="slds-truncate slds-cell-wrap">Current Profit Share To Partner 1</th>
+                        <th class="slds-truncate slds-cell-wrap">Current Profit Share To Partner 2</th>
+                        <th class="slds-truncate slds-cell-wrap">Current DRL Share</th>
+                        <th class="slds-truncate slds-cell-wrap">DRL Share Impact </th>
+                        <th class="slds-truncate slds-cell-wrap">TP/GM Impact Before PS + SSA Hit</th>
+                        <th class="slds-truncate slds-cell-wrap">TP/GM Impact After PS + SSA Hit</th>
+                        <!--</aura:if>-->
+                    </tr>
+                    
+                </thead>
+                <tbody>
+                    
+                    <aura:iteration items="{!v.scmData}" var="data">
+                        <tr>
+                            <th scope="row">{!data.ndc} </th>
+                            <!--<th scope="row" >
+                            <span class="slds-grid slds-grid_align-spread">
+                   			 <span class="" title="NDC">{!data.ndc}</span>
+                			</span>
+                            </th>-->
+                             <th scope="row">{!data.sapNumber} </th>
+                            <th scope="row">{!data.productName} </th>
+                            <th scope="row" class="slds-text-align--right"><lightning:formattedNumber value="{!data.pkgSize}" maximumFractionDigits="2"/> </th>
+                             <th scope="row">
+                                 <!-- Added by Naseer to replace Product Family with Lookup-->
+                                 <aura:if isTrue="{!data.productFamilyId != null}">
+                                     <lightning:formattedUrl value="{!'/' + data.productFamilyId}"
+                                                             label="{!data.productFamilyName}" target="_self" />
+                                     <aura:set attribute="else">
+                                         {!data.productFamily}
+                                     </aura:set>
+                                 </aura:if>
+                                 <!--<aura:if isTrue="{!data.productFamilyName != null}">
+                                     <lightning:formattedUrl value="{!'/' + data.productFamilyId}"
+                                                             label="{!data.productFamilyName}" target="_self" />
+                                 </aura:if>-->
+                                 <!-- End -->
+                                 <!--{!data.productFamily} -->
+                            </th>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.casePack}" maximumFractionDigits="2"/> </td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.moq}" maximumFractionDigits="2"/> </td>
+                           
+                            <td>{!data.comparetobrandName} </td>
+                             <td>{!data.productDirector} </td>
+                            <aura:if isTrue="{!v.bidRecord.Phoenix_is_OTC_Bid__c==False}" > 
+                            <td>{!data.orangebookRating} </td>
+                            </aura:if>
+                			<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.oldthroughputCost}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.throughputCost}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.wac}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.doses}"/> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.ssahit}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.latestestimate}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.monthlyDemand}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>
+                            <!--<td><lightning:formattedNumber value="{!data.currentDoses}" maximumFractionDigits="2"/> </td>-->
+                            <!-- currentsalesFinance -->
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.currentsalesFinance}"  style="currency" minimumFractionDigits="0" maximumFractionDigits="0" currencyCode="USD"/> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.currentTPMargin}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD"/> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.currentTPMarginprecent}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.currentASPorDose}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+ 							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.proposedBottles}" minimumFractionDigits="0" maximumFractionDigits="0"/> </td>
+                            <!--<td><lightning:formattedNumber value="{!data.proposedDoses}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>-->
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.proposedSales}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.proposedTPMargin}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.proposedTPMarginpercent}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+                            <!--<td><lightning:formattedNumber value="{!data.proposedASPorDose}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>-->
+                            <td class="slds-text-align_right">
+                                <div style="{!lessthan(data.proposedASPorDose,data.lowestPriceORSKU)?'color:red':''}">
+                                    <lightning:formattedNumber title="{!lessthan(data.proposedASPorDose,data.lowestPriceORSKU)?'This Price is less than Lowest Price/SKU':''}" 
+                                                               value="{!data.proposedASPorDose}" style="currency" currencyCode="USD"/>
+                                </div>
+                            </td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.proposedBudgetASP}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.ProposedpercenttoBudget}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.differenceBottles}" maximumFractionDigits="2"/> </td>
+							<!--<td><lightning:formattedNumber value="{!data.differenceDoses}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>-->
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.differenceVolume}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD"/> </td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.differencePrice}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                   	        <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.differenceSales}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.differenceMargin}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.differenceASPPercenttoChange}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+                            <aura:if isTrue="{!(v.bidRecord.Phoenix_Bid_Type__c != 'Volume Review Only')}" >
+                                <td>{!data.financeApproval}</td>
+                                <td>{!data.financeComments}</td>
+                            </aura:if>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.commercialExpression}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.commercialCost}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.profitavailableDistribution}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+							<td>{!data.psPartner}</td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.pspartnerPercent}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.profitsharetoPartner}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+							<td>{!data.psPartnertwo}</td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.psPartnertwopercent}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.profitsharetoPartnertwo}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.totalprofitShare}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD"/> </td>
+                           <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.valuetotalprofitShare}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD"/> </td>
+							<td>{!data.royalitypartnerName}</td>
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.royalitypercent}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.royality}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.valueroyality}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD"/> </td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.drlShare}" maximumFractionDigits="2" style="currency" currencyCode="USD"/> </td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.totaldrlShare}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD"/> </td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.drlMargin}" maximumFractionDigits="2" style="percent-fixed" /> </td>
+							<!--<aura:if isTrue="{!v.templateType =='Walgreens'}" >-->
+                            <td class="slds-text-align--right"><lightning:formattedNumber value="{!data.currentRoyality}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.profitAvailability}" maximumFractionDigits="2" style="currency" currencyCode="USD" /></td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.currentProfitPartnerOne}" maximumFractionDigits="2" style="currency" currencyCode="USD" /></td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.currentProfitPartnerTwo}" maximumFractionDigits="2" style="currency" currencyCode="USD" /></td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.currentDRLShare}" maximumFractionDigits="2" style="currency" currencyCode="USD" /></td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.drlShareImpact}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /></td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.annualizedTPImpact}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /></td>
+							<td class="slds-text-align--right"><lightning:formattedNumber value="{!data.annualizedGMImpact}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencyCode="USD" /></td>
+
+                            <!--</aura:if>-->
+
+                        </tr>
+                    </aura:iteration>       
+                    <tr>
+                        <th scope="row"></th>
+                        <th scope="row"></th>
+                        <th scope="row"></th>
+                        <th scope="row"></th>            
+                        <th scope="row">Total</th>
+                        <td></td><td></td><td></td><td></td>
+                        <aura:if isTrue="{!v.bidRecord.Phoenix_is_OTC_Bid__c==False}" >
+                            <td></td>
+                        </aura:if>
+                        
+                        <td></td><td></td><td></td><td></td>
+                      <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.ssahitTotal}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD"/> </td>
+                        <aura:if isTrue="{!(v.bidRecord.Phoenix_Bid_Type__c != 'Volume Review Only')}" >
+                            <td></td><td></td>
+                        </aura:if>
+                      <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.CurrenSalesTotal}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD"/> </td>
+                      <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.CurrentTPMarginTotal}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD"/> </td>
+                        <aura:if isTrue="{!and(v.CurrentTPMarginTotal != null, and(v.CurrenSalesTotal != null, v.CurrenSalesTotal != 0))}">
+                            <td class="slds-text-align_right"><lightning:formattedNumber  value="{!(v.CurrentTPMarginTotal/v.CurrenSalesTotal)}" style="percent"  minimumFractionDigits="2" maximumFractionDigits="2"/></td>
+                            <aura:set attribute="else" >
+                                <td></td>
+                            </aura:set>
+                        </aura:if>
+                        
+                   
+                        <td></td><td></td>
+                      <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.ProposedSalesTotal}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD"/> </td>
+                      <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.ProposedTPMarginTotal}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD"/> </td>
+                        <aura:if isTrue="{!and(v.ProposedTPMarginTotal != null, and(v.ProposedSalesTotal != null, v.ProposedSalesTotal != 0))}">
+                            <td class="slds-text-align_right"><lightning:formattedNumber  value="{!(v.ProposedTPMarginTotal/v.ProposedSalesTotal)}" style="percent"  minimumFractionDigits="2" maximumFractionDigits="2"/></td>
+                            <aura:set attribute="else" >
+                                <td></td>
+                            </aura:set>
+                        </aura:if>
+                        <td></td><td></td><td></td><td></td>
+                      <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.VolumeVarianceTotal}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD"/> </td>
+                      <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.PriceVarianceTotal}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD"/> </td>
+                      <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.DifferenceSalesTotal}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD"/> </td>
+                      <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.DifferenceMarginTotal}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD"/> </td>
+						<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                      <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.TotalDRLShareTotal}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD"/> </td>
+                        <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.totalDRlMargin}" minimumFractionDigits="2" maximumFractionDigits="0"  style="percent-fixed" /> </td>
+                        <td></td><td></td><td></td><td></td><td></td>
+                      <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.DRLShareImpactTotal}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD"/> </td>
+                      <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.TPGMBeforeTotal}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD"/> </td>
+                     <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.TPGMAfterTotal}" minimumFractionDigits="0" maximumFractionDigits="0"  style="currency" currencyCode="USD"/> </td>
+
+
+
+                    </tr>
+                    
+
+                </tbody>
+                
+                
+            </table>
+            
+        
+        </div>
+            <aura:set attribute="else">
+                <center><div style="margin-top:150px;"><h1 style="font-size:1.3rem; font-weight:350;color:gray">There are no line items for this bid</h1></div></center>
+            </aura:set>
+            </aura:if>
+    </div>
+    </lightning:card>
+
+</aura:component>

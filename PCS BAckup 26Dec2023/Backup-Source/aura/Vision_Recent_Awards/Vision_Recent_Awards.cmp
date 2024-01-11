@@ -1,0 +1,256 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" controller="Vision_Product_Tracker"
+                access="global">
+    <aura:attribute name="recordId" type="Id"/> 
+    <aura:attribute name="NoData" type="boolean" default="false" />
+    <aura:attribute name="recentAwards" type="List" />
+    <aura:attribute name="recentDecreases" type="List" />
+    <aura:attribute name="ProductLosses" type="List" />
+    <aura:attribute name="unsucessBid" type="List" />
+    <aura:attribute name="FYSales" type="String" />
+    <aura:attribute name="FYImpact" type="String" />
+    <aura:attribute name="FYProdLoss" type="String" />
+    <aura:attribute name="annualSalesRecent" type="Decimal" />
+    <aura:attribute name="FYSalesRecent" type="Decimal" />
+    <aura:attribute name="annualSalesrecentDec" type="Decimal" />
+    <aura:attribute name="FYSalesrecentDec" type="Decimal" /> 
+    <aura:attribute name="annualSalesProdLossTotal" type="Decimal" />
+    <aura:attribute name="FYSalesrecentProdLossTotal" type="Decimal" /> 
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Last 12 Months Vs. Previous 12 Months', 'value': 'last12monthsvsprevious12months'},
+                                                        {'label': 'Last Quarter Vs. Previous Quarter', 'value': 'lastquartervspreviousquarter'},
+                                                        {'label': 'Last Month Vs. Previous Month', 'value': 'lastmonthvspreviousmonth'},
+                                                        {'label': 'FYTD Vs. Previous FYTD', 'value': 'fytdvspreviousfytd'},
+                                                        ]"/>
+    <aura:attribute name="showReport" type="boolean" default="false" />
+    <lightning:tabset>
+         
+        <lightning:tab label="Bid Analysis">
+           <c:Bid_Analysis recordId = "{!v.recordId}"/>
+        </lightning:tab>
+     <!--   <lightning:tab label="Recent Primary Awards"  >
+            <div class="slds-align_absolute-center" style="font-size:16px; color: black;">
+                <b>Recent Primary Awards</b> 
+            </div>
+         
+        <div aura:id="mainDiv" style="margin-top:10px;" class=" slds-m-right_small slds-m-left_small">     
+                <aura:if isTrue="{!v.NoData}">
+                    <aura:if isTrue="{!v.recentAwards.length==0}">
+                        <lightning:card >
+                            <center>
+                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                    <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                    </span>
+                                    <h2>No data found.</h2>
+                                </div>
+                            </center>
+                        </lightning:card>
+                        <aura:set attribute="else">   
+                             <div aura:id="mainDiv" style="height:auto;max-height:250px;overflow:auto;margin-top:10px;"
+                     class=" slds-m-right_small slds-m-left_small ">
+                            <table class="customTable slds-scrollable_y" border="1" >                               
+                                
+                                <tr id="styleids">
+                                     <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>S.No</p></b></th>    
+                                    <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>Product Name</p></b></th>
+                                    <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>Annual Sales</p></b></th>
+                                    <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>{!v.FYSales}</p></b></th>
+                                    <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p># Of Months</p></b></th>
+                                    
+                                    
+                                </tr>
+                                <aura:iteration items="{!v.recentAwards}" var="bid" indexVar="sNo">
+                                    
+                                    <tr id="styleids">
+                                       <td class="rows slds-text-align_center">{!sNo+1}</td>
+
+                                        <td class="rows">{!bid.RecentPrimaryAwards}</td>
+                                        <td class="rows slds-text-align_right"><lightning:formattedNumber value="{!bid.annualSales}" style="currency" currencyCode="USD"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        <td class="rows slds-text-align_right"><lightning:formattedNumber value="{!bid.FYSales}" style="currency" currencyCode="USD"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        <td class="rows slds-text-align_right">{!bid.NoOfMonths}</td>
+                                        
+                                    </tr>
+                                </aura:iteration>
+                                
+                                <tr id="grandtotal">
+                                      <td class="rows"></td>
+                                    <td class="rows"><b><p>Grand Total</p></b></td>
+                                    <td class="rows slds-text-align_right"><b><lightning:formattedNumber value="{!v.annualSalesRecent}" style="currency" currencyCode="USD"  minimumFractionDigits="0" maximumFractionDigits="0"/></b></td>
+                                    <td class="rows slds-text-align_right"><b><lightning:formattedNumber value="{!v.FYSalesRecent}" style="currency" currencyCode="USD"  minimumFractionDigits="0" maximumFractionDigits="0"/> </b></td>
+                                    <td class="rows slds-text-align_right"></td>
+                                    
+                                </tr>
+                            </table>
+                            </div>
+                        </aura:set>
+                    </aura:if>
+                </aura:if>
+            </div>
+        </lightning:tab>
+        
+        <lightning:tab label="Recent Decreases">
+            <div class="slds-align_absolute-center" style="font-size:20px; color: black;">
+                <b>Recent Decreases</b> 
+            </div>
+            <div aura:id="mainDiv" style="margin-top:10px;" class=" slds-m-right_small slds-m-left_small">     
+                <aura:if isTrue="{!v.NoData}">
+                    <aura:if isTrue="{!v.recentDecreases.length==0}">
+                        <lightning:card >
+                            <center>
+                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                    <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                    </span>
+                                    <h2>No data found.</h2>
+                                </div>
+                            </center>
+                        </lightning:card>
+                        <aura:set attribute="else">   
+                             <div aura:id="mainDiv" style="height:auto;max-height:250px;overflow:auto;margin-top:10px;"
+                     class=" slds-m-right_small slds-m-left_small ">
+                            <table class="customTable slds-scrollable_y" border="1" >                               
+                                
+                                <tr id="styleids">
+                                      <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>S.No</p></b></th>    
+
+                                    <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>Product Name</p></b></th>
+                                    <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>Annual Sales Reduction</p></b></th>
+                                    <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>FY21 Impact</p></b></th>
+                                    <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p># Of Months</p></b></th>
+                                    
+                                </tr>
+                                <aura:iteration items="{!v.recentDecreases}" var="bid" indexVar="sNo">
+                                    
+                                    <tr id="styleids">
+                                       <td class="rows slds-text-align_center">{!sNo+1}</td>
+
+                                        <td class="rows">{!bid.RecentDecreases}</td>
+                                        <td class="rows slds-text-align_right"><lightning:formattedNumber value="{!bid.annualSalesrecentDec}" style="currency" currencyCode="USD"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        <td class="rows slds-text-align_right"><lightning:formattedNumber value="{!bid.FYImpactrecentDec}" style="currency" currencyCode="USD"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        <td class="rows slds-text-align_right">{!bid.NoOfMonthsrecentDec}</td>
+                                        
+                                    </tr>
+                                </aura:iteration>
+                                
+                                <tr id="grandtotal">
+                                      <td class="rows"></td>
+                                    <td class="rows"><b><p>Grand Total</p></b></td>
+                                    <td class="rows slds-text-align_right"><b><lightning:formattedNumber value="{!v.annualSalesrecentDec}" style="currency" currencyCode="USD"  minimumFractionDigits="0" maximumFractionDigits="0"/></b></td>
+                                    <td class="rows slds-text-align_right"><b><lightning:formattedNumber value="{!v.FYSalesrecentDec}" style="currency" currencyCode="USD"  minimumFractionDigits="0" maximumFractionDigits="0"/> </b></td>
+                                    <td class="rows slds-text-align_right"></td>
+                                    
+                                </tr>
+                            </table>
+                            </div>
+                        </aura:set>
+                    </aura:if>
+                </aura:if>
+            </div>
+        </lightning:tab>
+        <lightning:tab label="Product Losses">
+            <div class="slds-align_absolute-center" style="font-size:20px; color: black;">
+                <b>Product Losses</b> 
+            </div>
+            <div aura:id="mainDiv" style="margin-top:10px;" class=" slds-m-right_small slds-m-left_small"> 
+                <aura:if isTrue="{!v.NoData}">
+                    <aura:if isTrue="{!v.ProductLosses.length==0}">
+                        <lightning:card >
+                            <center>
+                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                    <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                    </span>
+                                    <h2>No data found.</h2>
+                                </div>
+                            </center>
+                        </lightning:card>
+                        <aura:set attribute="else">   
+                             <div aura:id="mainDiv" style="height:auto;max-height:250px;overflow:auto;margin-top:10px;"
+                     class=" slds-m-right_small slds-m-left_small ">
+                            <table class="customTable slds-scrollable_y" style="height:0px;" border="1" >                               
+                                
+                                <tr id="styleids">
+                                     <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>S.No</p></b></th>    
+                                    <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>Product Name</p></b></th>
+                                    <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>Annual Sales Impact</p></b></th>
+                                    <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>FY21 Sales</p></b></th>
+                                    <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p># Of Months</p></b></th>
+                                    
+                                </tr>
+                                <aura:iteration items="{!v.ProductLosses}" var="bid" indexVar="sNo">
+                                    
+                                    <tr id="styleids">
+                                        <td class="rows slds-text-align_center">{!sNo+1}</td>
+                                        <td class="rows">{!bid.productLosses}</td>
+                                        <td class="rows slds-text-align_right"><lightning:formattedNumber value="{!bid.annualSalesProdLoss}" style="currency" currencyCode="USD"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        <td class="rows slds-text-align_right"><lightning:formattedNumber value="{!bid.FYSalesImpactProdLoss}" style="currency" currencyCode="USD"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        <td class="rows slds-text-align_right">{!bid.NoOfMonthsProdLoss}</td>
+                                        
+                                    </tr>
+                                </aura:iteration>
+                                
+                                <tr id="grandtotal">
+                                    <td class="rows"></td>
+                                    <td class="rows"><b><p>Grand Total</p></b></td>
+                                    <td class="rows slds-text-align_right"><b><lightning:formattedNumber value="{!v.annualSalesProdLossTotal}" style="currency" currencyCode="USD"  minimumFractionDigits="0" maximumFractionDigits="0"/> </b></td>
+                                    <td class="rows slds-text-align_right"><b><lightning:formattedNumber value="{!v.FYSalesrecentProdLossTotal}" style="currency" currencyCode="USD"  minimumFractionDigits="0" maximumFractionDigits="0"/></b></td>
+                                    <td class="rows slds-text-align_right"></td>
+                                    
+                                </tr>
+                            </table>
+                            </div>
+                            </aura:set>
+                    </aura:if>
+                </aura:if>
+            </div>
+        </lightning:tab>
+        <lightning:tab label="Unsuccessful Bids - Primary">
+            <div class="slds-align_absolute-center" style="font-size:20px; color: black;">
+                <b>Unsuccessful Bids - Primary</b> 
+            </div>
+            <div aura:id="mainDiv" style="margin-top:10px;" class=" slds-m-right_small slds-m-left_small">     
+                <aura:if isTrue="{!v.NoData}">
+                    <aura:if isTrue="{!v.unsucessBid.length==0}">
+                        <lightning:card >
+                            <center>
+                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                    <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                    </span>
+                                    <h2>No data found.</h2>
+                                </div>
+                            </center>
+                        </lightning:card>
+                        <aura:set attribute="else">   
+                             <div aura:id="mainDiv" style="height:auto;max-height:250px;overflow:auto;margin-top:10px;"
+                     class=" slds-m-right_small slds-m-left_small ">
+                            <table class="customTable slds-scrollable_y" border="1" >                               
+                                
+                                <tr id="styleids">
+                                     <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>S.No</p></b></th>    
+                                    <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>Product Name</p></b></th>
+                                    <th class="slds-truncate slds-m-left_small "  style="font-size:14px"><b><p>Comments</p></b></th>
+                                    
+                                    
+                                </tr>
+                                <aura:iteration items="{!v.unsucessBid}" var="bid" indexVar="sNo">
+                                    
+                                    <tr id="styleids">
+                                         <td class="rows slds-text-align_center">{!sNo+1}</td>
+                                        <td class="rows">{!bid.productFamily}</td>
+                                        <td class="rows ">{!bid.comments}</td>
+                                        
+                                        
+                                    </tr>
+                                </aura:iteration>
+                                
+                            </table>
+                            </div>
+                        </aura:set>
+                    </aura:if>
+                </aura:if>
+            </div>
+        </lightning:tab> -->
+    </lightning:tabset>
+</aura:component>

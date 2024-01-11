@@ -1,0 +1,287 @@
+<aura:component controller="Phoenix_PHSControllerClass" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="lineInstance" type="Phoenix_PHS_Price_Change_Line__c" default="{
+                                                                                         'sobjectType' : 'Phoenix_PHS_Price_Change_Line__c',
+                                                                                         'Phoenix_PHS_Price_Change__c': '',
+                                                                                         'Phoenix_Product_Name__c':'',
+                                                                                         'ProductName__c': '',
+                                                                                         'Phoenix_Material_Code__c' : '',
+                                                                                         'Phoenix_NDC_11__c': '',
+                                                                                         'Phoenix_Provisional_PHS_Price__c' : '',
+                                                                                         'Phoenix_Old_PHS_Price__c': '',
+                                                                                         'Phoenix_New_PHS_Price__c': '',
+                                                                                         'Phoenix_Change_in_Price__c': '',
+                                                                                         'Phoenix_Last_90_days_PHS_Units__c':'',
+                                                                                         'Phoenix_Sales_Difference__c': '',
+                                                                                         'Price_in_Apexus_Sub_Ceiling_Contract__c': '',
+                                                                                         'Phoenix_Diff_in_Apexus_Sub_Ceiling_Price__c': '',
+                                                                                         'Phoenix_Price_Start_Date__c': '',
+                                                                                         'Phoenix_Price_End_Date__c' : '',
+                                                                                         'Phoenix_Remarks__c': '',
+                                                                                         'Phoenix_Finance_Approval__c': '',
+                                                                                         'Phoenix_Finance_Approval_Remarks__c': ''
+                                                                                         }"/>
+    <aura:attribute name="rowIndex" type="String" />
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="productList" type="Product2" />
+    <aura:attribute name="productListDuplicates" type="Product2" />
+    <aura:attribute name="enableEdit" type="boolean" default="true" />
+    <aura:attribute name="ApprovalStatus" type="String" />
+    
+    
+    <!-- Attributes that can be set while component calling-->
+    <aura:attribute name="objectName" type="string" default="" required="true" />
+    <aura:attribute name="fieldName" type="string" default="" required="true" />
+    <aura:attribute name="value" type="String" default="" description="To pre-populate a value" />
+    <aura:attribute name="recordCount" type="string" default="5" description="Records visible at once"/>
+    <aura:attribute name="iconName" type="string" default="standard:drafts" description="complete icon name eg. standard:account" />
+    <aura:attribute name="label" type="string" default="" description="Label will be displayed above input Box" />
+    <aura:attribute name="placeholder" type="string" default="Select Product" description="placeholder for input Box" />
+    
+    <!-- Internal Use Attributes -->
+    <aura:attribute name="searchString"   type="string" access="private" default="" description="String to search"/>
+    <aura:attribute name="selectedRecord" type="Object" access="private" default="" description="selected Record Details" />
+    <aura:attribute name="recordsList" type="List" access="private" description="List of Records having data" />
+    <aura:attribute name="recordsListDuplicates" type="List" access="private" description="List of Records having data(duplicate of recordsList)" />
+    <aura:attribute name="message"   type="String" access="private" default="" />
+    
+    
+    <aura:attribute name="ProvisionalPriceEditMode" type="boolean" default="false" />
+    <aura:attribute name="StartDateEditMode" type="boolean" default="false" />
+    <aura:attribute name="EndDateEditMode" type="boolean" default="false" />
+    <aura:attribute name="RemarksEditMode" type="boolean" default="false" />
+    <aura:attribute name="financeEditMode" type="boolean" default="false" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:registerEvent name="WACChangeEvent" type="c:WACValueChangeEvent"/>
+    
+    <aura:registerEvent name="DeleteRowEvt" type="c:DeleteRowEvt"/> 
+    <aura:registerEvent name="AddRowEvt" type="c:AddNewRowEvt"/> 
+    <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+        <tr>
+            <td scope="row" style="text-align: center;">
+                <lightning:button variant="neutral" iconName="utility:delete" iconPosition="left" onclick="{!c.removeRow}"/>
+            </td>
+            <td>
+                <div class="slds-p-left_xxx-small slds-p-right_xxx-small">
+                    <div class="slds-combobox_container">
+                        <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open" aura:id="resultsDiv" aria-expanded="true" aria-haspopup="listbox" role="combobox">
+                            <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                                <div aura:id="lookup-pill" class="{! 'slds-pill-container ' + if(v.selectedRecord == '','slds-hide','') }">
+                                    <!-- Selected Value Pill -->
+                                    <lightning:pill class="fullWidth" label="{!v.selectedRecord.Name}" name="{!v.selectedRecord.Id}" onremove="{! c.removeItem }">
+                                        <aura:set attribute="media">
+                                            <lightning:icon iconName="custom:custom33" size="x-small" alternativeText="icon" />
+                                        </aura:set>
+                                    </lightning:pill>
+                                </div>
+                                <div aura:id="lookupField" class="{! if(v.selectedRecord == '','slds-show','slds-hide') }">
+                                    <!-- Icon, Search Bar, Search Icon -->
+                                    <!--<lightning:icon class="slds-combobox__input-entity-icon" iconName="custom:custom33" size="large" alternativeText="icon"/>-->
+                                    <lightning:input aura:id="inputLookup" class="inputBox" placeholder="{!v.placeholder}" onblur="{!c.blurEvent}" onkeyup="{!c.searchRecords}" onfocus="{!c.showRecords}" onclick="{!c.showRecords}" value="{!v.searchString}" autocomplete="off" variant="label-hidden" id="combobox-id-1" />
+                                    <lightning:icon class="slds-input__icon" iconName="utility:search" size="x-small" alternativeText="search"/>
+                                    <lightning:spinner class="slds-hide" aura:id="Spinner" alternativeText="Loading" size="small" variant="brand"/>
+                                </div>
+                            </div>
+                            <!-- Dropdown List -->
+                            <div id="listbox-id-1" class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid" style="max-height: 150px;">
+                                <ul class="slds-listbox slds-listbox_vertical recordListBox" role="presentation">
+                                    <aura:if isTrue="{!empty(v.message)}" >
+                                        <!-- To display Drop down List -->
+                                        <aura:iteration items="{!v.recordsList}" var="rec" >
+                                            <li id="{!rec.Id}" class="slds-listbox__item eachItem" onmousedown="{!c.selectItem}">
+                                                <div class="slds-media slds-listbox__option_entity">
+                                                    <lightning:icon iconName="custom:custom33" size="small" alternativeText="icon" />
+                                                    <span class="verticalAlign slds-truncate">{!rec.Name}</span>
+                                                </div>
+                                            </li>
+                                        </aura:iteration>
+                                        <!-- To display Error Message -->
+                                        <aura:set attribute="else">
+                                            <li class="slds-listbox__item">
+                                                <span class="slds-media slds-listbox__option_entity">{!v.message}</span>
+                                            </li>
+                                        </aura:set>
+                                    </aura:if>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--<lightning:recordEditForm objectApiName="Phoenix_PHS_Price_Change_Line__c">
+                 <lightning:inputField fieldName="Phoenix_Product_Name__c" value="{!v.lineInstance.Phoenix_Product_Name__c}"  onchange="{!c.handleChange}" variant="label-hidden" />
+                </lightning:recordEditForm>-->
+            </td>
+            <td>
+                {!v.lineInstance.Phoenix_Material_Code__c}
+            </td>
+            <aura:if isTrue="{!v.lineInstance.Phoenix_NDC_11__c != null}">
+                <td>
+                    {!v.lineInstance.Phoenix_NDC_11__c}
+                </td>
+                <aura:set attribute="else">
+                    <td></td>
+                </aura:set>
+            </aura:if>
+            <td ondblclick="{!c.inlineEditProvisionalPrice}">
+                <span class="slds-grid slds-grid_align-spread">
+                    <!-- show input and output section based on boolean flag -->
+                    <aura:if isTrue="{!v.ProvisionalPriceEditMode == false}">
+                        <span>
+                            <lightning:formattedNumber value="{!v.lineInstance.Phoenix_Provisional_PHS_Price__c}" style="currency" currencyCode="USD" />
+                        </span>
+                        <button onclick="{!c.inlineEditProvisionalPrice}"
+                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                tabindex="0">
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                     style="position: absolute; top: 0px;width:max-content;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputCurrency class="slds-input inputWidth"
+                                                              labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                              aura:id="inputProvisionalPrice" blur="{!c.closeProvisionalPriceBox}"
+                                                              change="{!c.onProvisionalPriceChange}"
+                                                              value="{!v.lineInstance.Phoenix_Provisional_PHS_Price__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+            <td ondblclick="{!c.inlineEditStartDate}">
+                <span class="slds-grid slds-grid_align-spread">
+                    <!-- show input and output section based on boolean flag -->
+                    <aura:if isTrue="{!v.StartDateEditMode == false}">
+                        <span>
+                        	<lightning:formattedDateTime value="{!v.lineInstance.Phoenix_Price_Start_Date__c}" year="numeric" month="numeric" day="numeric" timeZone="UTC" />
+                        </span>
+                        <button onclick="{!c.inlineEditStartDate}"
+                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                tabindex="0">
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                     style="position: absolute; top: 0px;width:max-content;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputDate aura:id="inputStartDate"
+                                                          class="field"
+                                                          change="{!c.onStartDateChange}"
+                                                          value="{!v.lineInstance.Phoenix_Price_Start_Date__c}" 
+                                                          displayDatePicker="true" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+            <td ondblclick="{!c.inlineEditEndDate}">
+                <span class="slds-grid slds-grid_align-spread">
+                    <!-- show input and output section based on boolean flag -->
+                    <aura:if isTrue="{!v.EndDateEditMode == false}">
+                        <span>
+                        	<lightning:formattedDateTime value="{!v.lineInstance.Phoenix_Price_End_Date__c}" year="numeric" month="numeric" day="numeric" timeZone="UTC" />
+                        </span>
+                        <button onclick="{!c.inlineEditEndDate}"
+                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                tabindex="0">
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                     style="position: absolute; top: 0px;width:max-content;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputDate aura:id="inputEndDate"
+                                                          class="field"
+                                                          change="{!c.onEndDateChange}"
+                                                          value="{!v.lineInstance.Phoenix_Price_End_Date__c}" 
+                                                          displayDatePicker="true" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+            <td ondblclick="{!c.inlineEditRemarks}">
+                <span class="slds-grid slds-grid_align-spread">
+                    <!-- show input and output section based on boolean flag -->
+                    <aura:if isTrue="{!v.RemarksEditMode == false}">
+                        <span>{!v.lineInstance.Phoenix_Remarks__c}</span>
+                        <button onclick="{!c.inlineEditRemarks}"
+                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                tabindex="0">
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                        <!-- Inline Edit Section in else case-->
+                        <aura:set attribute="else">
+                            <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                     style="position: absolute; top: 0px;width:100px;">
+                                <div class="slds-popover__body">
+                                    <div class="slds-form-element slds-grid slds-wrap">
+                                        <div class="slds-form-element__control slds-grow">
+                                            <ui:inputText class="slds-input inputWidth"
+                                                          labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                          aura:id="inputRemarks" blur="{!c.closeRemarksBox}"
+                                                          change="{!c.onRemarksChange}"
+                                                          value="{!v.lineInstance.Phoenix_Remarks__c}" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span id="form-end" tabindex="0"></span>
+                            </section>
+                        </aura:set>
+                    </aura:if>
+                </span>
+            </td>
+        </tr>
+        <aura:set attribute="else">
+            <tr>
+                <td>
+                    <lightning:formattedUrl value="{!'/' + v.selectedRecord.Id}"  label="{!v.selectedRecord.Name}" target="_blank" />
+                </td>
+                <td>
+                    {!v.lineInstance.Phoenix_Material_Code__c}
+                </td>
+                <aura:if isTrue="{!v.lineInstance.Phoenix_NDC_11__c != null}">
+                    <td>
+                        {!v.lineInstance.Phoenix_NDC_11__c}
+                    </td>
+                    <aura:set attribute="else">
+                        <td></td>
+                    </aura:set>
+                </aura:if>
+                <td>
+                    <lightning:formattedNumber value="{!v.lineInstance.Phoenix_Provisional_PHS_Price__c}" style="currency" currencyCode="USD" />
+                </td>
+                <td>
+                    <lightning:formattedDateTime value="{!v.lineInstance.Phoenix_Price_Start_Date__c}" timeZone="UTC" />
+                </td>
+                <td>
+                    <lightning:formattedDateTime value="{!v.lineInstance.Phoenix_Price_End_Date__c}" timeZone="UTC" />
+                </td>
+                <td ondblclick="{!c.inlineEditRemarks}">
+                    {!v.lineInstance.Phoenix_Remarks__c}
+                </td>
+            </tr>
+        </aura:set>
+    </aura:if>
+</aura:component>

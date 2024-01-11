@@ -1,0 +1,1548 @@
+<aura:component controller="Phoenix_WalgreensCls" implements="flexipage:availableForAllPageTypes,force:hasRecordId,force:appHostable,lightning:isUrlAddressable" access="global">     
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>    
+    <aura:attribute name="objInfoForPicklistValues" type="account" default="{sobjectType : 'Phoenix_Bid_Line_Item__c'}" description="object information to fetch picklist values"/>
+    <aura:attribute name="ratingPicklistOpts" type="string[]" description="store picklist options values"/>
+    <aura:attribute name="showSaveCancelBtn" type="boolean"/>
+    <aura:attribute name="showErrorClass" type="boolean" default="false"/> 
+    <aura:attribute name="sNo" type="string" />
+    <aura:attribute name="lineItemId" type="String" />
+    <!-- Start Future NPR-->
+    <aura:attribute name="productId" type="String" />
+    <aura:attribute name="displayFutureDisplay" type="boolean" default="false" />
+    <!-- END Future NPR-->
+    <aura:attribute name="CISUEditMode" type="boolean" default="false" />
+    <aura:attribute name="isReBid" type="boolean"  />
+    <!-- new attributes for New Product Launch -->
+    <aura:attribute name="EstimatedDaysFieldValues" type="List" default="0,7,15,20,30,45,60,75,90,120" />
+    <aura:attribute name="EstDaysEditMode" type="boolean" default="false" />
+    <aura:attribute name="CurrentSupplierEditMode" type="boolean" default="false" />
+    <aura:attribute name="CSUPEditMode" type="boolean" default="false" />
+    <aura:attribute name="OpeningOrderEditMode" type="boolean" default="false" />
+    <aura:attribute name="CSPEditMode" type="boolean" default="false" />
+    
+    <!-- upto here -->
+    <aura:attribute name="CDSUEditMode" type="boolean" default="false" />
+    <aura:attribute name="PISUditMode" type="boolean" default="false" />
+    <aura:attribute name="PDSUEditMode" type="boolean" default="false" />
+    <aura:attribute name="WDPIEditMode" type="boolean" default="false" />
+    <aura:attribute name="GDPEditMode" type="boolean" default="false" />
+    <aura:attribute name="PCBPSEditMode" type="boolean" default="false" />
+    <aura:attribute name="FAPCEditMode" type="boolean" default="false" />
+    <aura:attribute name="PCREditMode" type="boolean" default="false" />
+    <aura:attribute name="PPUREditMode" type="boolean" default="false" />
+    <aura:attribute name="ISOVEditMode" type="boolean" default="false" /> 
+    <aura:attribute name="ISOCEditMode" type="boolean" default="false" /> 
+    <aura:attribute name="BudASPEditMode" type="boolean" default="false" />
+    <aura:attribute name="SalesNotesEditMode" type="boolean" default="false" />
+    <aura:attribute name="SCMNotesEditMode" type="boolean" default="false" />
+    <aura:attribute name="PriNotesEditMode" type="boolean" default="false" />
+    <aura:attribute name="MarkNotesEditMode" type="boolean" default="false" />
+    <aura:attribute name="PCBPEditMode" type="boolean" default="false" />
+    <aura:attribute name="isSpinner" type="boolean" default="false" />
+    <aura:attribute name="rebateTypeEdit" type="boolean" default="false" />
+    <aura:attribute name="feeTypeEdit" type="boolean" default="false" />
+    <aura:attribute name="MarketApprovalEditMode" type="boolean" default="false" />
+    <aura:attribute name="ContractApprovalEditMode" type="boolean" default="false" />
+    <aura:attribute name="ContractCommentsEditMode" type="boolean" default="false" />
+    <aura:attribute name="OverrideUnitsEditMode" type="boolean" default="false" />
+    <aura:attribute name="singleRec" type="sobject"/>
+    <aura:attribute name="isSpecificCust" type="boolean" default="false"/>
+    <aura:attribute name="templateType" type="string" default=""/>
+    <aura:attribute name="bidType" type="string" default=""/>
+    <aura:attribute name="loggedInUserName" type="string" default=""/>
+    <aura:attribute name="BidAprrovalStatus" type="string" default=""/>
+    <aura:attribute name="isMarketingApprovePerson" type="string" />
+    <aura:attribute name="isContractsApprovePerson" type="string" />
+    <aura:attribute name="isAccpetable" type="boolean"  />
+    <aura:attribute name="isNotAccpetable" type="boolean"  />
+    <aura:attribute name="ItemsLength" type="Decimal"/> <aura:attribute name="GPRebate" type="Decimal"/> 
+    <!-- New Product Launch Totals Attributes-->
+    <aura:attribute name="OpeningOrderTotal" type="Decimal" />
+    <aura:attribute name="OpeningOrderNetSalesTotal" type="Decimal" />
+    <aura:attribute name="OpeningOrderTPTTotal" type="Decimal" />
+    <aura:attribute name="OpeningOrderTPTPercTotal" type="Decimal" />
+    <!-- New Product Launch Attributes-->
+    <aura:attribute name="CDSUTotal" type="Decimal"/>
+    <aura:attribute name="CISUTotal" type="Decimal"/>
+    <aura:attribute name="PISUTotal" type="Decimal"/>
+    <aura:attribute name="PDSUTotal" type="Decimal"/>
+    <aura:attribute name="actualsales" type="Decimal"/>    
+    <aura:attribute name="netSalesIntTotal" type="Decimal" />
+    <aura:attribute name="LCostTotal" type="Decimal" />
+    <aura:attribute name="indTp" type="Decimal" />
+    <aura:attribute name="TPTDollorTotal" type="Decimal" /> 
+    <aura:attribute name="TPMarginPercent" type="Decimal" /> 
+    
+    <aura:attribute name="IndirectTP" type="Decimal" />
+    <aura:attribute name="IndirectTPPercent" type="Decimal" />
+    <aura:attribute name="ThptMrgnDTotal" type="Decimal" />
+    <aura:attribute name="intDeadNetTotal" type="Decimal" />   
+    <aura:attribute name="ReBidListAll" type="List" />
+    <aura:attribute name="togglehover" type="boolean" default="false"/>
+    <aura:attribute name="isModalOpen" type="Boolean" default="false" />
+    <aura:attribute name="tableRef" type="String"/>
+    <aura:registerEvent name="calcEvent" type="c:TotalCalculationEvt"/>
+    <aura:registerEvent name="lightningEvent" type="c:RefreshBidLineItemCmpEvt"/>
+    <!--Pricing History Analytics- Attributes-START -->
+    <aura:registerEvent name="lightningEvent1" type="c:Phoenix_BidPricingHistoryEvt"/>
+    <aura:attribute name="displayBidHist" type="String" default="false"/>
+    <aura:attribute name="displayProdNPRHist" type="String" default="false"/>
+    <aura:attribute name="displayIMS" type="String" default="false"/>
+    <aura:attribute name="displayHistPricing" type="String" default="false"/>
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="bidLineItemId" type="String" />
+    <aura:attribute name="bidRecordParent" type="sObject"  />
+    <!--Pricing History Analytics- Attributes END-->
+    <aura:attribute name="isGoalseekModalOpen" type="Boolean" default="false" />
+    <aura:attribute name="expectDdeadnet" type="Decimal" />
+    <aura:attribute name="expectCustmerDdeadnet" type="Decimal" />
+    <aura:attribute name="RequiredPrice" type="Decimal" />
+    <aura:attribute name="errMsg" type="String" access="global"/>
+    <aura:attribute name="err" type="boolean" default="false" />
+    <aura:attribute name="ShowSaveButton" type="boolean" default="false" />
+    <!--Product Positions Attributes-->
+    <aura:attribute name="PositionsEditMode" type="boolean" default="false" />
+    <aura:attribute name="isPositionsModalOpen" type="boolean" default="false" />
+    <aura:attribute name="customerId" type="String" />
+    <aura:attribute name="LinepositionColumns" type="List" />
+    <aura:attribute type="List" name="LinepositionsList" />
+    <aura:attribute name="LineselectedPosistions" type="list" />
+    <aura:attribute name="selectedRows" type="list" default="" />
+    <!--End of Product Positions Attributes-->
+    <!-- Deligation attributes -->
+    <aura:attribute name="isdeligationApprover" type="Boolean" default="false" />
+    <aura:attribute name="deligatedUserName" type="String" default="" />
+    <aura:attribute name="ismarketingDeligator" type="boolean" default="false" />
+    
+    <!-- units totals -->
+    <aura:attribute name="overrideunits" type="Decimal"/>
+    <aura:attribute name="totalSCMQty" type="Decimal"/>
+    <!-- end-->
+    <aura:attribute name="Deadnet" type="decimal"  />
+    <aura:if isTrue="{!v.isSpinner}">
+        <div class="">
+            <lightning:spinner alternativeText="Loading" variant="brand" />
+        </div>
+    </aura:if>
+    <aura:if isTrue="{!v.isGoalseekModalOpen}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            
+            <div class="slds-modal__container" style="width:50% ! important;">
+                
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closeGoalseekPopup}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 class="slds-text-heading_medium slds-hyphenate"><b>Goal Seek</b></h2>      
+                </header>
+                <div class="slds-modal__content slds-p-around_medium" >
+                    <div class="slds-grid">
+                        <!-- <div class="slds-col slds-size_1-of-3">
+                            <lightning:input type="number" formatter="currency" step="0.01" class="lableInput" name="input1" label="Expected Internal Dead Net Price" value="{!v.expectDdeadnet}" onchange="{!c.calcGoalSeek}"/>
+                        </div><br/>
+                       -->
+                        <div class="slds-col slds-size_1-of-3">
+                            <lightning:input type="number" formatter="currency" step="0.01" class="lableInput" name="input2" label="Expected Dead Net Price" value="{!v.expectDdeadnet}" onchange="{!c.calcCustDeadNetGoalSeek}"/>
+                        </div>
+                        
+                        
+                        <div class="slds-col slds-size_1-of-3 slds-m-left_small slds-m-top_xxx-small">
+                            Required Price
+                            <div>
+                                <lightning:formattedNumber value="{!v.RequiredPrice}" style="currency" currencyCode="USD" maximumFractionDigits="2"/>
+                            </div>  
+                            <aura:if isTrue="{!v.err}">
+                                <div class="slds-section">
+                                    <ui:message title="" severity="error"  >
+                                        <strong style="color:red">{!v.errMsg}</strong>
+                                    </ui:message>
+                                </div>
+                            </aura:if>
+                        </div>  
+                        
+                    </div>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closeGoalseekPopup }"/>
+                    <aura:if isTrue = "{!v.ShowSaveButton}">
+                        <lightning:button variant="neutral"
+                                          label="Save"
+                                          title="Save"
+                                          onclick="{!c.onCISUChange }"/>
+                    </aura:if>
+                    
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+    <!--Bid Histroy Analytics Modal Popup-START-->
+    <aura:if isTrue="{!v.displayBidHist}">
+        <c:Phoenix_BidPricingHistory tableRef="{!v.tableRef}" recordId="{!v.recordId}" displayBidHist = "{!v.displayBidHist}" bidLineItemId="{!v.bidLineItemId}"/>                                                                
+    </aura:if>
+    <!--Bid Histroy Analytics Modal Popup-END-->
+    
+    <!--Historical Pricing Analytics Modal Popup-START-->
+    <aura:if isTrue="{!v.displayHistPricing}">
+        <c:Phoenix_HistPricingAnalytics tableRef="{!v.tableRef}" recordId="{!v.recordId}" displayHistPricing = "{!v.displayHistPricing}" bidLineItemId="{!v.bidLineItemId}"/>                                                                
+    </aura:if>
+    <!--Historical Pricing Analytics Modal Popup-END-->
+    
+    <!--NPR Product Histroy Analytics Modal Popup-START-->
+    <aura:if isTrue="{!v.displayProdNPRHist}">
+        <c:Phoenix_NPRHistory tableRef="{!v.tableRef}" recordId="{!v.recordId}" displayProdNPRHist = "{!v.displayProdNPRHist}" bidLineItemId="{!v.bidLineItemId}"/>                                                                
+    </aura:if>
+    <!--NPR Product Histroy Analytics Modal Popup-END-->
+    
+    <!--IMS Market Share Analytics Modal Popup-START-->
+    <aura:if isTrue="{!v.displayIMS}">
+        <c:Phoenix_IMSMaketShare tableRef="{!v.tableRef}" recordId="{!v.recordId}" displayIMS = "{!v.displayIMS}" bidLineItemId="{!v.bidLineItemId}"/>                                                                
+    </aura:if>
+    <!--IMS Market Share Analytics Modal Popup-END-->
+    <!--Future NPR Modal Popup-START-->
+    <aura:if isTrue="{!v.displayFutureDisplay}">
+        <c:Phoenix_FutureNPRData productId ="{!v.productId}" lineItemId="{!v.lineItemId}" tableRef="{!v.tableRef}" displayFutureDisplay="{!v.displayFutureDisplay}"/>
+    </aura:if>
+    <!--Future NPR  Modal Popup-END-->
+    
+    <aura:if isTrue="{!v.isModalOpen}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            
+            <div class="slds-modal__container" style="width:100% ! important;">
+                
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{!c.closePopup}"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <aura:if isTrue="{! not(empty(v.ReBidListAll))}">
+                        <h2 class="slds-text-heading_medium slds-hyphenate"><b>Previous Prices</b></h2>
+                    </aura:if>
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                <div class="slds-modal__content slds-p-around_medium" >
+                    
+                    <aura:if isTrue="{! not(empty(v.ReBidListAll))}">
+                        <table class="slds-table slds-table_cell_buffered slds-max-medium-table_stacked-horizontal slds-table_bordered" style="border:1px solid #eaeaea;">
+                            <thead>
+                                
+                                <tr class="slds-text-title">
+                                    
+                                    <th scope="col" class="slds-cell-wrap "> <div class="slds-truncate" title="Bid"> Bid </div>  </th>
+                                    <th scope="col" class="slds-cell-wrap "> <div class="slds-truncate" title="Created Date">Created Date</div>  </th>
+                                    <th scope="col" class="slds-cell-wrap "> <div class="slds-truncate" title="Bid Status"> Bid Status</div>  </th>
+                                    <th scope="col" class="slds-cell-wrap "><div class="slds-truncate"  title="Guidance Price">Guidance Price</div></th>
+                                    <th scope="col" class="slds-cell-wrap "> <div class="slds-truncate" title="Proposed Indirect Contract Price (Sales Price)">Proposed Indirect Contract Price (Sales Price)</div> </th>      
+                                    <th scope="col" class="slds-cell-wrap "> <div class="slds-truncate" title="Proposed Indirect Contract Price (Marketing)">Proposed Indirect Contract Price (Marketing)</div> </th>      
+                                    
+                                </tr>
+                            </thead> 
+                            <tbody>
+                                <aura:iteration items="{!v.ReBidListAll}" var="prodItem" indexVar="itemIndex">
+                                    <tr>
+                                        <td class="slds-cell-wrap" scope="col"> <a href="{!'/'+prodItem.Phoenix_Bid__c}" target="_blank">{!prodItem.Phoenix_Bid__r.Name}</a></td> 
+                                        <td class="slds-cell-wrap" scope="col"><lightning:formattedDateTime value="{!prodItem.Phoenix_Bid__r.CreatedDate}"/></td>
+                                        <td class="slds-cell-wrap" scope="col">{!prodItem.Phoenix_Bid__r.Phoenix_Approval_Status__c}</td>
+                                        <td class="slds-cell-wrap slds-text-align_right"  scope="col"><lightning:formattedNumber value="{!prodItem.Phoenix_Guidance_Price__c}" style="currency" maximumFractionDigits="2" currencyCode="USD"></lightning:formattedNumber></td>
+                                        <td class="slds-cell-wrap slds-text-align_right"  scope="col"><lightning:formattedNumber value="{!prodItem.Phoenix_ProposedContract_Bid_Price_Sales__c}" style="currency" currencyCode="USD"></lightning:formattedNumber> </td>
+                                        <td class="slds-cell-wrap slds-text-align_right" scope="col"><lightning:formattedNumber value="{!prodItem.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD"></lightning:formattedNumber> </td>
+                                        
+                                    </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                        <aura:set attribute="else">
+                            <p style="text-align:center">No previous prices found.</p>  
+                        </aura:set>
+                    </aura:if>
+                </div>
+                <!--/div-->
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Cancel"
+                                      title="Cancel"
+                                      onclick="{! c.closePopup }"/>
+                    
+                </footer>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        
+    </aura:if > 
+    <!--StartProductPosition Model-->
+    <aura:if isTrue="{!v.isPositionsModalOpen}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                 aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            
+            <div class="slds-modal__container">
+                
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" onclick="{!c.closePositionsPopup}"
+                                          alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                    
+                    <h2 class="slds-text-heading_medium slds-hyphenate"><b>Product Positions</b></h2>
+                    
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                <div class="slds-modal__content slds-p-around_medium">
+                    <P>
+                        <aura:if isTrue="{!not(empty(v.LinepositionsList))}">
+                            <lightning:datatable aura:id="PoslineLevelTable" data="{! v.LinepositionsList }"
+                                                 columns="{! v.LinepositionColumns }" keyField="Name"
+                                                 selectedRows="{! v.LineselectedPosistions }" />
+                            <aura:set attribute="else">
+                                <center>
+                                    <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                                         role="alert" style="width:50%;">
+                                        <span class="slds-icon_container slds-m-right_x-small"
+                                              title="Please add line items to view the table">
+                                            <lightning:icon iconName="utility:info" alternativeText="info"
+                                                            size="x-small" variant="inverse" />
+                                        </span>
+                                        <h2> No Records Found</h2>
+                                    </div>
+                                </center>
+                            </aura:set>
+                        </aura:if>
+                    </P>
+                </div>
+                <!--/div-->
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" label="Cancel" title="Cancel"
+                                      onclick="{! c.closePositionsPopup }" />
+                    <lightning:button variant="brand" label="Save" title="Save" onclick="{! c.savePositions }" />
+                    
+                </footer>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+        
+    </aura:if>
+    <!--End Product positions Mode-->
+    
+    <tr>
+        
+        <!--<aura:if isTrue="{!and(or(v.BidAprrovalStatus=='Draft', and(or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'),v.isMarketingApprovePerson==v.singleRec.Phoenix_Product_Director__c)),v.singleRec.Phoenix_Marketing_Final_Approval__c!=true)}">-->
+        <aura:if isTrue="{!and(or(v.BidAprrovalStatus=='Draft', and(or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'),or(v.isMarketingApprovePerson==v.singleRec.Phoenix_Product_Director__c,or(v.deligatedUserName==v.singleRec.Phoenix_Product_Director__c,v.isdeligationApprover)))),v.singleRec.Phoenix_Marketing_Final_Approval__c!=true)}">
+            <th scope="row" class="{! v.showErrorClass == true ? 'slds-cell-edit slds-has-error' : 'slds-cell-edit'}">
+                <aura:if isTrue="{!v.BidAprrovalStatus=='Draft'}">
+                    <a name="{!v.lineItemId}" onclick="{!c.deleteLineItem}">
+                        <lightning:icon iconName="utility:delete" alternativeText="delete" size="x-small" />
+                    </a>
+                    
+                </aura:if>
+                
+            </th>
+            <th scope="row" class="{! v.showErrorClass == true ? 'slds-cell-edit slds-has-error' : 'slds-cell-edit'}">
+                <span class="slds-grid slds-grid_align-spread">
+                    <span class="" title="NDC">{!v.singleRec.Phoenix_NDC__c}</span>
+                </span>
+            </th>
+            <th scope="row" >{!v.singleRec.Phoenix_Product_Code1__c}</th>
+            <th scope="row" >
+                <!--Added by Naseer to replace Product Family with Lookup-->
+                <lightning:formattedUrl value="{!'/' + v.singleRec.Product_Family__c}"
+                                        label="{!v.singleRec.Product_Family_Name__c}" target="_self" />
+                <!--End-->
+                <!--{!v.singleRec.Phoenix_Product_Family__c}-->
+            </th>
+            
+            
+            <th scope="row" class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Pkg_Size__c}"/></th>
+            
+            <th scope="row" >
+                <span class="slds-grid slds-grid_align-spread">
+                    <span class="" title="Product">
+                        <lightning:formattedUrl value="{!'/' + v.singleRec.Phoenix_Product__r.Id}"  label="{!v.singleRec.Phoenix_Product__r.Name}" target="_self" />  
+                    </span>
+                </span>
+            </th>
+            <!-- logic for Re-Bid functionality- starts-->
+            <aura:if isTrue="{!v.isReBid}">
+                <td>  <a href="{!'/'+v.singleRec.Phoenix_Previous_Bid__c}" target="_blank">{!v.singleRec.Phoenix_Previous_Bid__r.Name}</a></td>
+                <td> <a onclick="{!c.showSelectedproducts}">{!v.singleRec.Phoenix_Previous_LineItem__r.Name}</a></td>
+            </aura:if>
+            <!-- logic for Re-Bid functionality- ends-->
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Case_Pack__c}"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_MOQ1__c}" maximumFractionDigits="2"/></td>
+            <td>{!v.singleRec.Phoenix_Compare_To_Brand_Name1__c}</td>
+            <td>{!v.singleRec.Phoenix_Product_Director__c}</td>
+            <td>{!v.singleRec.Phoenix_Orange_Book_Rating1__c}</td>
+            <td class="slds-text-align_right">
+                <lightning:formattedNumber value="{!v.singleRec.Phoenix_Throughput_cost__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/>
+            </td>
+            <td class="slds-text-align_right">
+                <lightning:formattedNumber value="{!v.singleRec.Phoenix_WAC__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+            <!-- <td>{!v.singleRec.Phoenix_IMS_Market_Share__c}</td> -->
+            <aura:if isTrue="{!v.singleRec.Phoenix_REMS__c}" >
+                <td style="color:red">Yes</td>
+                <aura:set attribute="else">
+                    <td>No</td>
+                </aura:set>
+            </aura:if>
+            <aura:if isTrue="{!v.bidType !='New Product Launch'}">
+                <td>	
+                    <div class="slds-grid" style="width:200px">	
+                        <div class="slds-grid slds-has-flexi-truncate">	
+                            <p class="slds-truncate" title="{!v.singleRec.Phoenix_Current_Position__c}">{!v.singleRec.Phoenix_Current_Position__c}</p>	
+                        </div>	
+                    </div>
+                </td> 
+            </aura:if>
+            <td class="" ondblclick="{!c.inlineEditPositions}">
+                <span class="slds-grid slds-grid_align-spread">
+                    <aura:if isTrue="{!v.PositionsEditMode == false}">
+                        <span>
+                            <div class="slds-grid" style="width:200px">
+                                <div class="slds-grid slds-has-flexi-truncate">
+                                    <p class="slds-truncate" title="{!v.singleRec.Phoenix_Proposed_Position__c}">
+                                        {!v.singleRec.Phoenix_Proposed_Position__c}
+                                    </p>
+                                    <!-- <div aura:id="lookup-pill" class="slds-pill-container">
+                                <aura:iteration items="{!v.LineselectedPosistions}" var="sr">
+                                    <lightning:pill class="slds-m-around_xx-small" label="{!sr}" name="{!sr}" onremove="{! c.clear }">                                        
+                                    </lightning:pill>
+                                </aura:iteration>
+                                </div>-->
+                                </div>
+                            </div>
+                        </span>
+                        <button onclick="{!c.inlineEditPositions}"
+                                class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                tabindex="0">
+                            <lightning:icon iconName="utility:edit" size="xx-small" />
+                        </button>
+                    </aura:if>
+                </span>
+                
+                <!--<div class="slds-grid" style="width:200px">	
+                    <div class="slds-grid slds-has-flexi-truncate">	
+                        <p class="slds-truncate">{!v.singleRec.Phoenix_Proposed_Position__c}</p>	
+                    </div>	
+                </div>-->
+            </td>
+            <aura:if isTrue="{!v.bidType !='New Product Launch'}">
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Indirect_Selling_Unit__c}"/></td>  
+                <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_12_Months_IndirectSaleUnit__c}"/></td> 
+                <td class="slds-text-align--right" ondblclick="{!c.inlineEditOverrideUnits}">
+                    <span class="slds-grid slds-grid_align-spread">
+                        <aura:if isTrue="{!v.OverrideUnitsEditMode == false}">
+                            <span  ><lightning:formattedNumber value="{!v.singleRec.Phoenix_Override_Current_Units__c}" maximumFractionDigits="0"/></span>
+                            <button onclick="{!c.inlineEditOverrideUnits}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                                <lightning:icon iconName="utility:edit" size="xx-small" />
+                            </button>
+                            <aura:set attribute="else">
+                                <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content;">
+                                    <div class="slds-popover__body">
+                                        <div class="slds-form-element slds-grid slds-wrap">
+                                            <div class="slds-form-element__control slds-grow">
+                                                <ui:inputNumber class="slds-input inputWidth"
+                                                                labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                aura:id="OverrideUnits"
+                                                                blur="{!c.closeOverrideUnits}"
+                                                                change="{!c.onCISUChange}"                                                      
+                                                                value="{!v.singleRec.Phoenix_Override_Current_Units__c}" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span id="form-end" tabindex="0"></span>
+                                </section>
+                            </aura:set>
+                        </aura:if>
+                    </span>
+                </td>
+            </aura:if>
+            <aura:if isTrue="{!and(v.bidType !='Price Change',and(v.bidType !='Customer Rebate Change',v.bidType !='Sales Out Rebate'))}">
+               <aura:if isTrue="{!v.singleRec.Phoenix_SCM_Final_Approval__c == false}">             
+                <td ondblclick="{!c.inlineEditPISUnit}" class="slds-text-align_right">
+                    <span class="slds-grid slds-grid_align-spread">
+                        <!-- show input and output section based on boolean flag -->
+                        <aura:if isTrue="{!v.PISUditMode == false}">
+                            <span ><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Indirect_Selling_Unit__c}" maximumFractionDigits="0"/></span>
+                            <button onclick="{!c.inlineEditPISUnit}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                                <lightning:icon iconName="utility:edit" size="xx-small" />
+                            </button>
+                            <!-- Inline Edit Section in else case-->
+                            <aura:set attribute="else">
+                                <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content">
+                                    <div class="slds-popover__body">
+                                        <div class="slds-form-element slds-grid slds-wrap">
+                                            <div class="slds-form-element__control slds-grow">
+                                                <ui:inputNumber class="slds-input inputWidth"
+                                                                labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                aura:id="inputPISUnitId"
+                                                                blur="{!c.closePISUBox}"
+                                                                change="{!c.onCISUChange}"                                                      
+                                                                value="{!v.singleRec.Phoenix_Proposed_Indirect_Selling_Unit__c}" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span id="form-end" tabindex="0"></span>
+                                </section>
+                            </aura:set>
+                        </aura:if>
+                    </span>
+                </td>
+                 <aura:set attribute="else" >
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Indirect_Selling_Unit__c}"/></td>
+                    </aura:set>
+                  </aura:if> 
+            </aura:if>
+            <aura:if isTrue="{!and(and(v.bidType!='Price Change',v.bidType!='New Product Launch'),and(v.bidType!='Sales Out Rebate',v.bidType!='Customer Rebate Change'))}">
+                <aura:if isTrue="{!and(and(v.singleRec.Phoenix_SCM_Approval_Y_N__c!='N- Not Approved',v.singleRec.Phoenix_SCM_Final_Approval__c==true),not(empty(v.singleRec.Phoenix_SCM_Approval_Y_N__c)))}">
+                    <td class="slds-text-align_right">
+                        <div style="{!lessthan(v.singleRec.Phoenix_Total_SCM_Approved_Qty__c,v.singleRec.Phoenix_Final_Total_Selling_Unit__c)?'color:red':''}"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Total_SCM_Approved_Qty__c}" maximumFractionDigits="0" minimumFractionDigits="0" /></div>
+                    </td>
+                    <aura:set attribute="else">
+                        <td></td>
+                    </aura:set>
+                </aura:if></aura:if>
+            <aura:if isTrue="{!v.bidType !='New Product Launch'}">
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Indirect_Price__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            </aura:if>
+            <aura:if isTrue="{!and(v.bidType !='Volume Review Only',v.bidType !='Sales Out Rebate')}">
+                <td ondblclick="{!c.inlineEditGuidancePrice}" class="slds-text-align_right">
+                    <span class="slds-grid slds-grid_align-spread">
+                        <!-- show input and output section based on boolean flag -->
+                        <aura:if isTrue="{!v.GDPEditMode == false}">
+                            <span class=""  ><lightning:formattedNumber value="{!v.singleRec.Phoenix_Guidance_Price__c}" style="currency" currencyCode="USD"/></span>
+                            <button onclick="{!c.inlineEditGuidancePrice}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                                <lightning:icon iconName="utility:edit" size="xx-small" />
+                            </button>
+                            <!-- Inline Edit Section in else case-->
+                            <aura:set attribute="else">
+                                <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px">
+                                    <div class="slds-popover__body">
+                                        <div class="slds-form-element slds-grid slds-wrap">
+                                            <div class="slds-form-element__control slds-grow">
+                                                <ui:inputCurrency class="slds-input inputWidth guidancePrice"
+                                                                  labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                  aura:id="inputGDPId"
+                                                                  blur="{!c.closeGDPBox}"
+                                                                  change="{!c.onCISUChange}"                                                           
+                                                                  value="{!v.singleRec.Phoenix_Guidance_Price__c}" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span id="form-end" tabindex="0"></span>
+                                </section>
+                            </aura:set>
+                        </aura:if>
+                    </span>
+                </td>
+            </aura:if>
+            <aura:if isTrue="{!and(v.bidType !='Volume Review Only',v.bidType !='Sales Out Rebate')}">
+                <aura:if isTrue="{!v.loggedInUserName!=v.isMarketingApprovePerson}">
+                    <aura:if isTrue="{!v.bidType !='Volume Review Only'}">
+                        <td ondblclick="{!c.inlineEditPCBPS}" class="slds-text-align_right">
+                            <span class="slds-grid slds-grid_align-spread">
+                                <!-- show input and output section based on boolean flag -->
+                                <aura:if isTrue="{!v.PCBPSEditMode == false}">
+                                    <span class=""  >
+                                        <!-- <div style="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'color:red':''}">
+                                            <lightning:formattedNumber title="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'Dead Net is less than Lowest Price/SKU':''}" value="{!v.singleRec.Phoenix_ProposedContract_Bid_Price_Sales__c}" style="currency" currencyCode="USD"/>
+                                        </div>-->
+                                        <lightning:formattedNumber  value="{!v.singleRec.Phoenix_ProposedContract_Bid_Price_Sales__c}" style="currency" currencyCode="USD"/>
+                                        
+                                        <!--  <a name="{!v.lineItemId}" onclick="{!c.openGoalseek}" title="Goal Seek">
+                                            <lightning:icon iconName="utility:watchlist" alternativeText="delete" size="x-small" />
+                                        </a>-->
+                                    </span>
+                                    <button onclick="{!c.inlineEditPCBPS}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                                        <lightning:icon iconName="utility:edit" size="xx-small" />
+                                    </button>
+                                    <!-- Inline Edit Section in else case-->
+                                    <aura:set attribute="else">
+                                        <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content">
+                                            <div class="slds-popover__body">
+                                                <div class="slds-form-element slds-grid slds-wrap">
+                                                    <div class="slds-form-element__control slds-grow">
+                                                        <ui:inputCurrency class="slds-input inputWidth SalesPrice"
+                                                                          labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                          aura:id="inputPCBPSId"
+                                                                          blur="{!c.closePCBPSBox}"
+                                                                          change="{!c.onCISUChange}"                                                      
+                                                                          value="{!v.singleRec.Phoenix_ProposedContract_Bid_Price_Sales__c}" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span id="form-end" tabindex="0"></span>
+                                        </section>
+                                    </aura:set>
+                                </aura:if>
+                            </span>
+                        </td>
+                    </aura:if>
+                    
+                    <aura:set attribute="else">
+                        <td class="slds-text-align_right">
+                            <!-- <div style="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'color:red':''}">
+                                <lightning:formattedNumber title="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'Dead Net is less than Lowest Price/SKU':''}" value="{!v.singleRec.Phoenix_ProposedContract_Bid_Price_Sales__c}" style="currency" currencyCode="USD"/>
+                            </div>-->
+                            <lightning:formattedNumber  value="{!v.singleRec.Phoenix_ProposedContract_Bid_Price_Sales__c}" style="currency" currencyCode="USD"/>
+                            
+                            
+                        </td>
+                    </aura:set>
+                </aura:if>  
+                <aura:if isTrue="{!v.bidType !='New Product Launch'}">    
+                    <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Reduction__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+                </aura:if>
+                <aura:if isTrue="{!v.bidType =='New Product Launch'}">
+                    <!--    <td ondblclick="{!c.inlineCurrentSupplier}">
+                            <span class="slds-grid slds-grid_align-spread">
+                                <aura:if isTrue="{!v.CSUPEditMode == false}">
+                                    <span class="">{!v.singleRec.Phoenix_Current_Supplier__c}</span>
+                                    <button onclick="{!c.inlineCurrentSupplier}"
+                                            class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                            tabindex="0">
+                                        <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit" />
+                                    </button>
+                                    <aura:set attribute="else">
+                                        <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                                 style="position: absolute; top: 0px;width: max-content">
+                                            <div class="slds-popover__body">
+                                                <div class="slds-form-element slds-grid slds-wrap">
+                                                    <div class="slds-form-element__control slds-grow">
+                                                        <ui:inputText class="slds-input inputWidth"
+                                                                      labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                      aura:id="inputCSUPId" blur="{!c.closeCURSUP}"
+                                                                      change="{!c.onCISUChange}"
+                                                                      value="{!v.singleRec.Phoenix_Current_Supplier__c}" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span id="form-end" tabindex="0"></span>
+                                        </section>
+                                    </aura:set>
+                                </aura:if>
+                            </span>
+                        </td>-->
+                    
+                    <td class="slds-text-align_right"> <lightning:formattedNumber value="{!v.singleRec.Brand_WAC__c}"
+                                                                                  style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+                    
+                    
+                    <td class="slds-text-align_right">
+                        <lightning:formattedNumber value="{!v.singleRec.Phoenix_Brand_WAC_Per__c}" style="percent-fixed"
+                                                   maximumFractionDigits="2" />
+                    </td>
+                </aura:if>
+                
+                <!--  <aura:if isTrue="{!v.loggedInUserName==v.singleRec.Phoenix_Product_Director__c}">
+                    <aura:if isTrue="{!v.bidType !='Volume Review Only'}">
+                        <td ondblclick="{!c.inlineEditPCBP}" class="slds-text-align_right"> 
+                            <span class="slds-grid slds-grid_align-spread">
+                                 show input and output section based on boolean flag 
+                                <aura:if isTrue="{!v.PCBPEditMode == false}">
+                                    <a name="{!v.lineItemId}" onclick="{!c.openGoalseek}" title="Goal Seek">
+                                        <lightning:icon iconName="utility:campaign" alternativeText="delete" size="x-small" />
+                                    </a>
+                                    <span class="slds-text-align_right"  >
+                                        <div style="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'color:red':''}">
+                                            <lightning:formattedNumber title="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'Dead Net is less than Lowest Price/SKU':''}" value="{!v.singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD"/>
+                                        </div>                                        
+                                    </span>
+                                    <button onclick="{!c.inlineEditPCBP}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                                        <lightning:icon iconName="utility:edit" size="xx-small" />
+                                    </button>
+                                    Inline Edit Section in else case
+                                    <aura:set attribute="else">
+                                        <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content">
+                                            <div class="slds-popover__body">
+                                                <div class="slds-form-element slds-grid slds-wrap">
+                                                    <div class="slds-form-element__control slds-grow">
+                                                        <ui:inputNumber class="slds-input inputWidth MarketingPrice"
+                                                                        labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                        aura:id="inputPCBPId"
+                                                                        blur="{!c.closePCBPBox}"
+                                                                        change="{!c.onCISUChange}"                                                      
+                                                                        value="{!v.singleRec.Phoenix_ProposedContractBidPriceMktng__c}" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span id="form-end" tabindex="0"></span>
+                                        </section>
+                                    </aura:set>
+                                </aura:if>
+                            </span>
+                        </td>
+                        <aura:set attribute="else">
+                            <td class="slds-text-align_right">
+                                <div style="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'color:red':''}">
+                                    <lightning:formattedNumber title="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'Dead Net is less than Lowest Price/SKU':''}" value="{!v.singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD"/>
+                                </div>
+                                
+                            </td> 
+                        </aura:set>
+                    </aura:if>
+                    <aura:set attribute="else">
+                        <td class="slds-text-align_right">
+                            <div style="{!lessthan(v.singleRec.Phoenix_ProposedContractBidPriceMktng__c,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'color:red':''}">
+                                <lightning:formattedNumber title="{!lessthan(v.singleRec.Phoenix_ProposedContractBidPriceMktng__c,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'This Price is lessthan Lowest Price/SKU':''}" value="{!v.singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD"/>
+                            </div>
+                            <lightning:formattedNumber  value="{!v.singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD"/>
+                        </td> 
+                    </aura:set>
+                </aura:if>-->
+                
+                
+                <!-- <aura:if isTrue="{!v.loggedInUserName==v.singleRec.Phoenix_Product_Director__c}">-->
+                <aura:if isTrue="{!or(v.loggedInUserName==v.singleRec.Phoenix_Product_Director__c,or(v.deligatedUserName==v.singleRec.Phoenix_Product_Director__c,or(v.isMarketingApprovePerson==v.singleRec.Phoenix_Product_Director__c,v.isdeligationApprover)))}">
+                    <aura:if isTrue="{!and(v.bidType !='Volume Review Only',v.bidType !='Sales Out Rebate')}">
+                        <td ondblclick="{!c.inlineEditPCBP}" class="slds-text-align_right"> 
+                            <span class="slds-grid slds-grid_align-spread">
+                                <!-- show input and output section based on boolean flag -->
+                                <aura:if isTrue="{!v.PCBPEditMode == false}">
+                                    <a name="{!v.lineItemId}" onclick="{!c.openGoalseek}" title="Goal Seek">
+                                        <lightning:icon iconName="utility:campaign" alternativeText="delete" size="x-small" />
+                                    </a>
+                                    <span class="slds-text-align_right"  >
+                                                      &nbsp;  <lightning:icon iconName="utility:info" class="infoColor" title="{!('% of WAC: '+v.singleRec.wacPercent +' || % of Current Contract Price: '+v.singleRec.currentContractPrice)}" size="x-small"/>  &nbsp; 
+
+                                        <span style="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'color:red':''}">
+                                            <lightning:formattedNumber title="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'Dead Net is less than Lowest Price/SKU or Approved Lowest Price/SKU':''}" value="{!v.singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD"/>
+                                        </span>                                        
+                                    </span>
+                                    <button onclick="{!c.inlineEditPCBP}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                                        <lightning:icon iconName="utility:edit" size="xx-small" />
+                                    </button>
+                                    <!-- Inline Edit Section in else case-->
+                                    <aura:set attribute="else">
+                                        <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content">
+                                            <div class="slds-popover__body">
+                                                <div class="slds-form-element slds-grid slds-wrap">
+                                                    <div class="slds-form-element__control slds-grow">
+                                                        <ui:inputNumber class="slds-input inputWidth MarketingPrice"
+                                                                        labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                        aura:id="inputPCBPId"
+                                                                        blur="{!c.closePCBPBox}"
+                                                                        change="{!c.onCISUChange}"                                                      
+                                                                        value="{!v.singleRec.Phoenix_ProposedContractBidPriceMktng__c}" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span id="form-end" tabindex="0"></span>
+                                        </section>
+                                    </aura:set>
+                                </aura:if>
+                            </span>
+                        </td>
+                        <aura:set attribute="else">
+                            <td class="slds-text-align_right">
+                                <div style="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'color:red':''}">
+                                    <lightning:formattedNumber title="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'Dead Net is less than Lowest Price/SKU or Approved Lowest Price/SKU':''}" value="{!v.singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD"/>
+                                </div>
+                                
+                            </td> 
+                        </aura:set>
+                    </aura:if>
+                    <aura:set attribute="else">
+                        <td class="slds-text-align_right">
+                            <!--<div style="{!lessthan(v.singleRec.Phoenix_ProposedContractBidPriceMktng__c,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'color:red':''}">
+                                <lightning:formattedNumber title="{!lessthan(v.singleRec.Phoenix_ProposedContractBidPriceMktng__c,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'This Price is lessthan Lowest Price/SKU':''}" value="{!v.singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD"/>
+                            </div>-->
+                   <span>  &nbsp;  <lightning:icon iconName="utility:info" class="infoColor" title="{!('% of WAC: '+v.singleRec.wacPercent +' || % of Current Contract Price: '+v.singleRec.currentContractPrice)}" size="x-small"/>  &nbsp; 
+                            <lightning:formattedNumber  value="{!v.singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD"/>
+                      </span>  </td> 
+                    </aura:set>
+                </aura:if></aura:if>
+            
+            <!--
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Customer_Dead_net__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Direct_CD_Per_Unit__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            -->
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Indirect_CD_Per__c}" style="percent-fixed" currencyCode="USD" maximumFractionDigits="2" /></td>
+            
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_INDIRECT_CD__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            <!-- New Field RDC -->
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_RDC_NLC__c}" style="percent-fixed" currencyCode="USD" maximumFractionDigits="2" /></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_RDC_NLC_Per_Unit_in__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            
+            <td><lightning:formattedNumber value="{!v.singleRec.Phoenix_Contract_Mngment_Fee_Wholesaler__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Contract_Mngmnt_Fee_Wholesaler__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            <!--
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Per_Unit_Rebate__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            -->
+            <!-- New Coluns for Rebate $ -->
+            <!--<td class="slds-text-align_right"><lightning:formattedNumber  value="{!v.singleRec.Phoenix_Proposed_Current_Rebate__c}" style="percent-fixed" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+            -->
+            
+            <aura:if isTrue="{!v.bidType !='Sales Out Rebate'}">
+                <td ondblclick="{!c.inlineEditProCurRebate}">    
+                    
+                    <span class="slds-grid slds-grid_align-spread">
+                        <aura:if isTrue="{!v.PCREditMode == false}">
+                            <span class="">
+                                <aura:if isTrue="{!not(empty(v.singleRec.Phoenix_Proposed_Current_Rebate__c))}">
+                                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Current_Rebate__c}"
+                                                               style="percent-fixed" maximumFractionDigits="2" />
+                                    <aura:set attribute="else">
+                                        <lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Rebate__c}"
+                                                                   style="percent-fixed" maximumFractionDigits="2" />
+                                    </aura:set>
+                                </aura:if>
+                            </span>
+                            <button onclick="{!c.inlineEditProCurRebate}"
+                                    class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                    tabindex="0">
+                                <lightning:icon iconName="utility:edit" size="xx-small" />
+                            </button>
+                            <aura:set attribute="else">
+                                <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                         style="position: absolute; top: 0px;width:max-content;">
+                                    <div class="slds-popover__body">
+                                        <div class="slds-form-element slds-grid slds-wrap">
+                                            <div class="slds-form-element__control slds-grow">
+                                                <ui:inputNumber class="slds-input inputWidth"
+                                                                labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                aura:id="inputPCRId" blur="{!c.closeProCurRebateBox}"
+                                                                change="{!c.onCISUChange}"
+                                                                value="{!v.singleRec.Phoenix_Proposed_Current_Rebate__c}" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span id="form-end" tabindex="0"></span>
+                                </section>
+                            </aura:set>
+                        </aura:if>
+                    </span>
+                </td>
+            </aura:if>
+            <!-- <aura:if isTrue="{!v.bidType !='Customer Rebate Change'}">
+               <td>={!v.singleRec.Phoenix_Current_Rebate__c}</td></aura:if>
+            -->
+            <!--
+            <aura:if isTrue="{!v.bidType !='Customer Rebate Change'}">
+          <td class="slds-text-align_right">  
+        <aura:if isTrue="{!not(empty(v.singleRec.Phoenix_Proposed_Current_Rebate__c))}">
+                                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Current_Rebate__c}"
+                                                               style="percent-fixed" maximumFractionDigits="2" />
+                                    <aura:set attribute="else">
+                                        <lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Rebate__c}"
+                                                                   style="percent-fixed" maximumFractionDigits="2" />
+            </aura:set>
+            </aura:if></td>
+              </aura:if>   
+            
+            
+             till here-->
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Customer_Rebates1__c}" style="currency"  maximumFractionDigits="2"/></td>
+            
+            
+            <td class="slds-text-align--right"> 
+                <div style="{!v.isAccpetable ?'color:green':!v.isNotAccpetable ?'color:red': ''}">
+                    <lightning:formattedNumber  title="{!v.isAccpetable ?'Internal Dead Net Price is greater than LE+10 %(LE) (or) BASP+10% of BASP':!v.isNotAccpetable ?'Internal Dead Net Price is less than LE-10 %(LE) (or) BASP-10% of BASP': ''}" value="{!v.singleRec.Phoenix_Internal_Dead_Net_Price__c}" style="currency" currencyCode="USD"/>
+                </div>
+            </td>
+            <td class="slds-text-align_right"><lightning:formattedNumber  value="{!v.singleRec.Indirect_TP__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Indirect_TP__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber  value="{!v.singleRec.Phoenix_Estimated_Medicaid_Returns__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber  value="{!v.singleRec.Phoenix_Net_Sales_Internal__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber  value="{!v.singleRec.Phoenix_Th_Put_Margin__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_TP_Margin__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+            
+            <aura:if isTrue="{!v.bidType =='New Product Launch'}">
+                <td class="slds-text-align_right" ondblclick="{!c.inlineOpeningOrder}">
+                    <span class="slds-grid slds-grid_align-spread">
+                        <aura:if isTrue="{!v.OpeningOrderEditMode == false}">
+                            <span class="">
+                                <aura:if isTrue="{!not(empty(v.singleRec.Phoenix_Opening_Order__c))}">
+                                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Opening_Order__c}"
+                                                               maximumFractionDigits="2" />
+                                    <aura:set attribute="else">
+                                        <lightning:formattedNumber value="{!v.singleRec.Phoenix_Opening_Order__c}"
+                                                                   maximumFractionDigits="2" />
+                                    </aura:set>
+                                </aura:if>
+                            </span>
+                            <button onclick="{!c.inlineOpeningOrder}"
+                                    class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                    tabindex="0">
+                                <lightning:icon iconName="utility:edit" size="xx-small" />
+                            </button>
+                            <aura:set attribute="else">
+                                <section tabindex="0" class="slds-popover slds-popover_edit" role="dialog"
+                                         style="position: absolute; top: 0px;width:max-content;">
+                                    <div class="slds-popover__body">
+                                        <div class="slds-form-element slds-grid slds-wrap">
+                                            <div class="slds-form-element__control slds-grow">
+                                                <ui:inputNumber class="slds-input inputWidth"
+                                                                labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                aura:id="OpeningOrderId" blur="{!c.closeOpeningOrder}"
+                                                                change="{!c.onCISUChange}"
+                                                                value="{!v.singleRec.Phoenix_Opening_Order__c}" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span id="form-end" tabindex="0"></span>
+                                </section>
+                            </aura:set>
+                        </aura:if>
+                    </span>
+                </td>
+                <td class="slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Opening_Order_Net_sales__c}" style="currency"
+                                               currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0" />
+                </td>
+                <td class="slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Opening_Order_TPT__c}" style="currency"
+                                               currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0" />
+                </td>
+                <td class="slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Opening_Order_TPT_Per__c}" style="percent-fixed"
+                                               maximumFractionDigits="2" />
+                </td>
+            </aura:if>
+            
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Budgeted_ASP1__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_to_Budget__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Latest_Estimate__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_as_of_Latest_Estimate__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Lowest_Price_SKU__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Approved_Lowest_Price_SKU__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+            
+            <aura:if isTrue="{!and(and(v.bidType !='Customer Rebate Change',v.bidType !='New Product Launch'),and(v.bidType!='Price Change',v.bidType!='Sales Out Rebate'))}">
+                <!-- <aura:if isTrue="{!v.loggedInUserName!=v.isMarketingApprovePerson}">
+                <td ondblclick="{!c.inlineEditISOV}" class="slds-text-align_right">
+                    <span class="slds-grid slds-grid_align-spread">              
+                        <aura:if isTrue="{!v.ISOVEditMode == false}">
+                            <span class=""  ><lightning:formattedNumber value="{!v.singleRec.Phoenix_Initial_Stocking_Order_Volume__c}"/></span>
+                            <button onclick="{!c.inlineEditISOV}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                                <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit"/>
+                            </button>                  
+                            <aura:set attribute="else">
+                                <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content">
+                                    <div class="slds-popover__body">
+                                        <div class="slds-form-element slds-grid slds-wrap">
+                                            <div class="slds-form-element__control slds-grow">
+                                                <ui:inputNumber class="slds-input inputWidth"
+                                                                labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                aura:id="inputISOVId"
+                                                                blur="{!c.closeISOVBox}"
+                                                                change="{!c.onCISUChange}"                                                      
+                                                                value="{!v.singleRec.Phoenix_Initial_Stocking_Order_Volume__c}" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span id="form-end" tabindex="0"></span>
+                                </section>
+                            </aura:set>
+                        </aura:if>
+                    </span>
+                </td>-->
+                
+                <aura:if isTrue="{!and(and(v.bidType!='Price Change',v.bidType!='New Product Launch'),and(v.bidType!='Sales Out Rebate',v.bidType!='Customer Rebate Change'))}">
+                    <aura:if isTrue="{!and(and(v.singleRec.Phoenix_SCM_Approval_Y_N__c!='N- Not Approved',v.singleRec.Phoenix_SCM_Final_Approval__c==true),not(empty(v.singleRec.Phoenix_SCM_Approval_Y_N__c)))}">
+                        <!-- <td class="slds-text-align_right">
+                            <div style="{!lessthan(v.singleRec.Phoenix_Total_SCM_Approved_Qty__c,v.singleRec.Phoenix_Final_Total_Selling_Unit__c)?'color:red':''}"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Total_SCM_Approved_Qty__c}"/></div>
+                        </td>-->
+                        <td class="slds-text-align_right">{!v.singleRec.Phoenix_Estimated_Lead_Time_Days__c}</td>
+                        <!-- <td>{!v.singleRec.Phoenix_SCM_Rejection_Reason1__c}</td>-->
+                        <td>{!v.singleRec.Phoenix_SCM_Approval_Y_N__c}</td>
+                        <td>{!v.singleRec.Phoenix_SCM_Notes__c}</td>
+                        <aura:set attribute="else">
+                            <td></td><!--<td></td> <td></td>--><td></td><td></td>
+                        </aura:set>
+                    </aura:if>  
+                    <aura:set attribute="else">
+                        <td></td><!--<td></td> <td></td>--><td></td><td></td>
+                    </aura:set>
+                </aura:if>
+            </aura:if>
+            <aura:if isTrue="{!v.bidType =='New Product Launch'}">
+                <td ondblclick="{!c.inlineEditEstDays}">
+                    <span class="slds-grid slds-grid_align-spread">
+                        <aura:if isTrue="{!v.EstDaysEditMode == false}">
+                            <span class=""  >{!v.singleRec.Phoenix_Estimated_Lead_Time_Days__c}</span>
+                            <button onclick="{!c.inlineEditEstDays}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                                <lightning:icon iconName="utility:edit" size="xx-small" />
+                            </button>
+                            <aura:set attribute="else">
+                                <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width:max-content;">
+                                    <div class="slds-popover__body">
+                                        <div class="slds-form-element slds-grid slds-wrap">
+                                            <div class="slds-form-element__control slds-grow">
+                                                <lightning:select name="EstmatedDays"
+                                                                  aura:id="inputEstDaysId"
+                                                                  onblur="{!c.closeEstDaysBox}"
+                                                                  onchange="{!c.onCISUChange}"
+                                                                  >
+                                                    <option value="{!v.singleRec.Phoenix_Estimated_Lead_Time_Days__c}">{!v.singleRec.Phoenix_Estimated_Lead_Time_Days__c}</option>
+                                                    <aura:iteration items="{!v.EstimatedDaysFieldValues}" var="days">
+                                                        <aura:if isTrue="{!(days != v.singleRec.Phoenix_Estimated_Lead_Time_Days__c)}">
+                                                            <option value="{!days}">{!days}</option>
+                                                        </aura:if>
+                                                    </aura:iteration>
+                                                </lightning:select>                                          
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span id="form-end" tabindex="0"></span>
+                                </section>
+                            </aura:set>
+                        </aura:if>
+                    </span>
+                </td> 
+                <td ondblclick="{!c.inlineEditISOC}">
+                    <span class="slds-grid slds-grid_align-spread">              
+                        <aura:if isTrue="{!v.ISOCEditMode == false}">
+                            <span class=""  >{!v.singleRec.Phoenix_Initial_Stocking_Order_Comments__c}</span>
+                            <button onclick="{!c.inlineEditISOC}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                                <lightning:icon iconName="utility:edit" size="xx-small" alternativeText="edit"/>
+                            </button>                  
+                            <aura:set attribute="else">
+                                <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content">
+                                    <div class="slds-popover__body">
+                                        <div class="slds-form-element slds-grid slds-wrap">
+                                            <div class="slds-form-element__control slds-grow">
+                                                <ui:inputText class="slds-input inputWidth"
+                                                              labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                              aura:id="inputISOCId"
+                                                              blur="{!c.closeISOCBox}"
+                                                              change="{!c.onCISUChange}"                                                      
+                                                              value="{!v.singleRec.Phoenix_Initial_Stocking_Order_Comments__c}" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span id="form-end" tabindex="0"></span>
+                                </section>
+                            </aura:set>
+                        </aura:if>
+                    </span>
+                </td>     
+            </aura:if>
+            <aura:if isTrue="{!v.loggedInUserName!=v.isMarketingApprovePerson}">
+                <td ondblclick="{!c.inlineEditSalesNotes}">
+                    <span class="slds-grid slds-grid_align-spread">
+                        <!-- show input and output section based on boolean flag -->
+                        <aura:if isTrue="{!v.SalesNotesEditMode == false}">
+                            <span class=""  >{!v.singleRec.Phoenix_Sales_Notes__c}</span>
+                            <button onclick="{!c.inlineEditSalesNotes}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                                <lightning:icon iconName="utility:edit" size="xx-small" />
+                            </button>
+                            <!-- Inline Edit Section in else case-->
+                            <aura:set attribute="else">
+                                <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content">
+                                    <div class="slds-popover__body">
+                                        <div class="slds-form-element slds-grid slds-wrap">
+                                            <div class="slds-form-element__control slds-grow">
+                                                <ui:inputText class="slds-input inputWidth"
+                                                              labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                              aura:id="inputSalesNoteId"
+                                                              blur="{!c.closeSalesNotesBox}"
+                                                              change="{!c.onCISUChange}"                                                      
+                                                              value="{!v.singleRec.Phoenix_Sales_Notes__c}" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span id="form-end" tabindex="0"></span>
+                                </section>
+                            </aura:set>
+                        </aura:if>
+                    </span>
+                </td>
+                <aura:set attribute="else">
+                    <td>{!v.singleRec.Phoenix_Sales_Notes__c}</td>
+                </aura:set>
+            </aura:if>
+            <!-- <aura:if isTrue="{!v.loggedInUserName==v.singleRec.Phoenix_Product_Director__c}">-->
+            <aura:if isTrue="{!or(v.loggedInUserName==v.singleRec.Phoenix_Product_Director__c,or(v.deligatedUserName==v.singleRec.Phoenix_Product_Director__c,or(v.isMarketingApprovePerson==v.singleRec.Phoenix_Product_Director__c,v.isdeligationApprover)))}">
+                <aura:if isTrue="{!v.bidType !='Volume Review Only'}">
+                    <td ondblclick="{!c.inlineEditMarketingApproval}">
+                        <span class="slds-grid slds-grid_align-spread">
+                            <aura:if isTrue="{!v.MarketApprovalEditMode == false}">
+                                <span class=""  >{!v.singleRec.Phoenix_Marketing_Approval__c}</span>
+                                <button onclick="{!c.inlineEditMarketingApproval}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                                    <lightning:icon iconName="utility:edit" size="xx-small" />
+                                </button>
+                                <aura:set attribute="else">
+                                    <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content">
+                                        <div class="slds-popover__body">
+                                            <div class="slds-form-element slds-grid slds-wrap">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <lightning:select name="MarketApproval"
+                                                                      aura:id="inputMarketApprovalId"
+                                                                      onblur="{!c.closeMarketApprovalBox}"
+                                                                      onchange="{!c.onCISUChange}"
+                                                                      >
+                                                        <option value="{!v.singleRec.Phoenix_Marketing_Approval__c}">{!v.singleRec.Phoenix_Marketing_Approval__c}</option>
+                                                        <aura:if isTrue="{!(v.singleRec.Phoenix_Marketing_Approval__c != 'Approved')}" >
+                                                            <option value="Approved">Approved</option>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!(v.singleRec.Phoenix_Marketing_Approval__c != 'Not Approved')}" >
+                                                            <option value="Not Approved">Not Approved</option>
+                                                        </aura:if>
+                                                    </lightning:select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span id="form-end" tabindex="0"></span>
+                                    </section>
+                                </aura:set>
+                            </aura:if>
+                        </span>
+                    </td>
+                </aura:if>
+                <td ondblclick="{!c.inlineEditMarketingNotes}">
+                    <span class="slds-grid slds-grid_align-spread">
+                        <aura:if isTrue="{!v.MarkNotesEditMode == false}">
+                            <span class=""  >{!v.singleRec.Phoenix_Marketing_Notes__c}</span>
+                            <button onclick="{!c.inlineEditMarketingNotes}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                                <lightning:icon iconName="utility:edit" size="xx-small" />
+                            </button>
+                            <aura:set attribute="else">
+                                <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content">
+                                    <div class="slds-popover__body">
+                                        <div class="slds-form-element slds-grid slds-wrap">
+                                            <div class="slds-form-element__control slds-grow">
+                                                <ui:inputText class="slds-input inputWidth"
+                                                              labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                              aura:id="inputMarketNotesId"
+                                                              blur="{!c.closeMarketNotesBox}"
+                                                              change="{!c.onCISUChange}"                                                      
+                                                              value="{!v.singleRec.Phoenix_Marketing_Notes__c}" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span id="form-end" tabindex="0"></span>
+                                </section>
+                            </aura:set>
+                        </aura:if>
+                    </span>
+                </td>
+                <aura:set attribute="else">
+                    <aura:if isTrue="{!v.bidType !='Volume Review Only'}">
+                        <td> {!v.singleRec.Phoenix_Marketing_Approval__c}</td>
+                    </aura:if>
+                    <td>{!v.singleRec.Phoenix_Marketing_Notes__c}</td>
+                </aura:set>
+            </aura:if>
+            <aura:if isTrue="{!v.bidType !='Volume Review Only'}">
+                <aura:if isTrue="{!v.singleRec.Phoenix_Final_Finance_Approval__c==true}">
+                    <td>{!v.singleRec.Phoenix_Finance_Approval__c}</td>
+                    <td>{!v.singleRec.Phoenix_Finance_Comments__c}</td>
+                    <aura:set attribute="else">
+                        <td></td><td></td>
+                    </aura:set>
+                </aura:if>
+                
+            </aura:if>
+            <td> {!v.singleRec.Phoenix_Contract_Approval__c}</td>
+            <td>{!v.singleRec.Phoenix_Contract_Comments__c}</td>
+            
+            <td>{!v.singleRec.Phoenix_WAC_Check__c}</td>
+            
+            <aura:if isTrue="{!or(v.bidType =='RFP Bids',v.bidType =='Product Addition')}">
+                <!--   <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_IOD_Qty__c}" style="decimal" maximumFractionDigits="2"/></td>
+            --></aura:if>
+        </aura:if>
+        
+        <!-- <aura:if isTrue="{!not(and(or(v.BidAprrovalStatus=='Draft', and(v.isMarketingApprovePerson==v.singleRec.Phoenix_Product_Director__c,or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'))),v.singleRec.Phoenix_Marketing_Final_Approval__c!=true))}">-->
+        <aura:if isTrue="{!not(and(or(v.BidAprrovalStatus=='Draft', and(or(v.isMarketingApprovePerson==v.singleRec.Phoenix_Product_Director__c,or(v.deligatedUserName==v.singleRec.Phoenix_Product_Director__c,v.isdeligationApprover)),or(v.BidAprrovalStatus=='SCM &amp; Marketing',v.BidAprrovalStatus=='Marketing'))),v.singleRec.Phoenix_Marketing_Final_Approval__c!=true))}">
+            <th scope="row" class="{! v.showErrorClass == true ? 'slds-cell-edit slds-has-error' : 'slds-cell-edit'}">
+                
+            </th>
+            <th scope="row" class="{! v.showErrorClass == true ? 'slds-cell-edit slds-has-error' : 'slds-cell-edit'}">
+                <span class="slds-grid slds-grid_align-spread">
+                    <span class="" title="NDC">{!v.singleRec.Phoenix_NDC__c}</span>
+                </span>
+            </th>
+            <th scope="row" >{!v.singleRec.Phoenix_Product_Code1__c}</th>
+            <th scope="row" >
+                <!--Added by Naseer to replace Product Family with Lookup-->
+                <lightning:formattedUrl value="{!'/' + v.singleRec.Product_Family__c}"
+                                        label="{!v.singleRec.Product_Family_Name__c}" target="_self" />
+                <!--End-->
+                <!--{!v.singleRec.Phoenix_Product_Family__c}-->
+            </th>
+            
+            
+            <th scope="row" class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Pkg_Size__c}"/></th>
+            
+            <th scope="row" >
+                <span class="slds-grid slds-grid_align-spread">
+                    <span class="" title="Product">
+                        <lightning:formattedUrl value="{!'/' + v.singleRec.Phoenix_Product__r.Id}"  label="{!v.singleRec.Phoenix_Product__r.Name}" target="_self" />  
+                    </span>
+                </span>
+            </th>
+            <!-- logic for Re-Bid functionality- starts-->
+            <aura:if isTrue="{!v.isReBid}">
+                <td>  <a href="{!'/'+v.singleRec.Phoenix_Previous_Bid__c}" target="_blank">{!v.singleRec.Phoenix_Previous_Bid__r.Name}</a></td>
+                <td> <a onclick="{!c.showSelectedproducts}">{!v.singleRec.Phoenix_Previous_LineItem__r.Name}</a></td>
+                
+            </aura:if>
+            <!-- logic for Re-Bid functionality- ends-->
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Case_Pack__c}"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_MOQ1__c}" maximumFractionDigits="2"/></td>
+            <td>{!v.singleRec.Phoenix_Compare_To_Brand_Name1__c}</td>
+            <td>{!v.singleRec.Phoenix_Product_Director__c}</td>
+            <td class="slds-text-align_right">{!v.singleRec.Phoenix_Orange_Book_Rating1__c}</td>
+            <td class="slds-text-align_right">
+                <lightning:formattedNumber value="{!v.singleRec.Phoenix_Throughput_cost__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/>
+            </td>
+            <td class="slds-text-align_right">
+                <lightning:formattedNumber value="{!v.singleRec.Phoenix_WAC__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/>
+            </td>
+            
+            <!--<td>{!v.singleRec.Phoenix_IMS_Market_Share__c}</td>-->
+            <aura:if isTrue="{!v.singleRec.Phoenix_REMS__c}" >
+                <td style="color:red">Yes</td>
+                <aura:set attribute="else">
+                    <td>No</td>
+                </aura:set>
+            </aura:if>
+            <aura:if isTrue="{!v.bidType !='New Product Launch'}">
+                <td>	
+                    <div class="slds-grid" style="width:200px">	
+                        <div class="slds-grid slds-has-flexi-truncate">	
+                            <p class="slds-truncate" title="{!v.singleRec.Phoenix_Current_Position__c}">{!v.singleRec.Phoenix_Current_Position__c}</p>	
+                        </div>	
+                    </div>
+                </td>
+            </aura:if>
+            
+            <td class="">              
+                <div class="slds-grid" style="width:200px">	
+                    <div class="slds-grid slds-has-flexi-truncate">	
+                        <p class="slds-truncate">{!v.singleRec.Phoenix_Proposed_Position__c}</p>	
+                    </div>	
+                </div>
+            </td>
+            <aura:if isTrue="{!v.bidType !='New Product Launch'}">
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Indirect_Selling_Unit__c}"/></td>
+                <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_12_Months_IndirectSaleUnit__c}"/></td> 
+                <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Override_Current_Units__c}"/></td>           
+            </aura:if>
+            <aura:if isTrue="{!and(v.bidType !='Price Change',and(v.bidType !='Customer Rebate Change',v.bidType !='Sales Out Rebate'))}">
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Indirect_Selling_Unit__c}"/></td>
+                
+            </aura:if>
+            <aura:if isTrue="{!and(and(v.bidType!='Price Change',v.bidType!='New Product Launch'),and(v.bidType!='Sales Out Rebate',v.bidType!='Customer Rebate Change'))}">
+                <aura:if isTrue="{!and(and(v.singleRec.Phoenix_SCM_Approval_Y_N__c!='N- Not Approved',v.singleRec.Phoenix_SCM_Final_Approval__c==true),not(empty(v.singleRec.Phoenix_SCM_Approval_Y_N__c)))}">
+                    <td class="slds-text-align_right">
+                        <div style="{!lessthan(v.singleRec.Phoenix_Total_SCM_Approved_Qty__c,v.singleRec.Phoenix_Final_Total_Selling_Unit__c)?'color:red':''}"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Total_SCM_Approved_Qty__c}" maximumFractionDigits="0" minimumFractionDigits="0"/></div>
+                    </td>
+                    <aura:set attribute="else">
+                        <td></td>
+                    </aura:set>
+                </aura:if>
+            </aura:if>
+            <aura:if isTrue="{!v.bidType !='New Product Launch'}">
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Indirect_Price__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            </aura:if>
+            <aura:if isTrue="{!and(v.bidType !='Volume Review Only',v.bidType !='Sales Out Rebate')}">
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Guidance_Price__c}" style="currency" maximumFractionDigits="2" currencyCode="USD"/></td>
+            </aura:if>
+            <aura:if isTrue="{!and(v.bidType !='Volume Review Only',v.bidType !='Sales Out Rebate')}">
+                <td class="slds-text-align_right">
+                    <!-- <div style="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'color:red':''}">
+                        <lightning:formattedNumber title="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'Dead Net is less than Lowest Price/SKU':''}" value="{!v.singleRec.Phoenix_ProposedContract_Bid_Price_Sales__c}" style="currency" currencyCode="USD"/>
+                    </div>-->
+                    <lightning:formattedNumber  value="{!v.singleRec.Phoenix_ProposedContract_Bid_Price_Sales__c}" style="currency" currencyCode="USD"/>
+                    
+                    
+                </td>
+                <aura:if isTrue="{!v.bidType !='New Product Launch'}">
+                    <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Reduction__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+                </aura:if>
+                <aura:if isTrue="{!v.bidType =='New Product Launch'}">
+                    <!--   <td>{!v.singleRec.Phoenix_Current_Supplier__c}</td>-->
+                    <td class="slds-text-align_right">
+                        <lightning:formattedNumber value="{!v.singleRec.Brand_WAC__c}" style="currency" currencyCode="USD"
+                                                   maximumFractionDigits="2" />
+                    </td>
+                    <td class="slds-text-align_right">
+                        <lightning:formattedNumber value="{!v.singleRec.Phoenix_Brand_WAC_Per__c}"  style="percent-fixed"
+                                                   maximumFractionDigits="2" />
+                    </td>
+                </aura:if>
+                
+                <!--       <td class="slds-text-align_right">
+                    <div style="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'color:red':''}">
+                        <lightning:formattedNumber title="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'Dead Net is less than Lowest Price/SKU':''}" value="{!v.singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD" />
+                    </div>
+                </td>-->
+                <!-- <td class="slds-text-align_right">
+                    <div style="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'color:red':''}">
+                        <lightning:formattedNumber title="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'Dead Net is less than Lowest Price/SKU':''}" value="{!v.singleRec.Phoenix_Wholesaler_Diff_Price_Indirect__c}" style="currency" currencyCode="USD" />
+                    </div>
+                </td>-->
+                <td class="slds-text-align_right">
+                                       <span> &nbsp;  <lightning:icon iconName="utility:info" class="infoColor" title="{!('% of WAC: '+v.singleRec.wacPercent +' || % of Current Contract Price: '+v.singleRec.currentContractPrice)}" size="x-small"/>  &nbsp; 
+
+                    <span style="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'color:red':''}">
+                        <lightning:formattedNumber title="{!lessthan(v.Deadnet,v.singleRec.Phoenix_Lowest_Price_SKU__c)?'Dead Net is less than Lowest Price/SKU or Approved Lowest Price/SKU':''}" value="{!v.singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD" />
+                    </span>
+                    </span>
+                </td>
+                
+            </aura:if>
+            <!-- <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Customer_Dead_net__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Direct_CD_Per_Unit__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            --><!-- New Field RDC -->
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Indirect_CD_Per__c}" style="percent-fixed" currencyCode="USD" maximumFractionDigits="2" /></td> <td class="slds-text-align_right">
+            <lightning:formattedNumber value="{!v.singleRec.Phoenix_INDIRECT_CD__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_RDC_NLC__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_RDC_NLC_Per_Unit_in__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            
+            <td><lightning:formattedNumber value="{!v.singleRec.Phoenix_Contract_Mngment_Fee_Wholesaler__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Contract_Mngmnt_Fee_Wholesaler__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            <!--
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Per_Unit_Rebate__c}" style="currency" currencyCode="USD" maximumFractionDigits="2" /></td>
+            -->
+            <!-- New Coluns for Rebate $ 
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Current_Rebate__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+          -->
+            <td class="slds-text-align_right">
+                <aura:if isTrue="{!not(empty(v.singleRec.Phoenix_Proposed_Current_Rebate__c))}">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_Current_Rebate__c}"
+                                               style="percent-fixed" maximumFractionDigits="2" />
+                    <aura:set attribute="else">
+                        <lightning:formattedNumber value="{!v.singleRec.Phoenix_Current_Rebate__c}"
+                                                   style="percent-fixed" maximumFractionDigits="2" />
+                    </aura:set>
+                </aura:if></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber  value="{!v.singleRec.Phoenix_Customer_Rebates1__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+            
+            <td class="slds-text-align--right"> 
+                <div style="{!v.isAccpetable ?'color:green':!v.isNotAccpetable ?'color:red': ''}">
+                    <lightning:formattedNumber title="{!v.isAccpetable ?'Internal Dead Net Price is greater than LE+10 %(LE) (or) BASP+10% of BASP':!v.isNotAccpetable ?'Internal Dead Net Price is less than LE-10 %(LE) (or) BASP-10% of BASP': ''}" value="{!v.singleRec.Phoenix_Internal_Dead_Net_Price__c}" style="currency" currencyCode="USD"/>
+                </div>
+            </td>
+            <td class="slds-text-align_right"><lightning:formattedNumber  value="{!v.singleRec.Indirect_TP__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Indirect_TP__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber  value="{!v.singleRec.Phoenix_Estimated_Medicaid_Returns__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber  value="{!v.singleRec.Phoenix_Net_Sales_Internal__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            
+            <td class="slds-text-align_right"><lightning:formattedNumber  value="{!v.singleRec.Phoenix_Th_Put_Margin__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_TP_Margin__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+            
+            <aura:if isTrue="{!v.bidType =='New Product Launch'}">
+                <td class="slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Opening_Order__c}"
+                                               maximumFractionDigits="2" />
+                </td>
+                <td class="slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Opening_Order_Net_sales__c}" style="currency"
+                                               currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0" />
+                </td>
+                <td class="slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Opening_Order_TPT__c}" style="currency"
+                                               currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0" />
+                </td>
+                <td class="slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.singleRec.Phoenix_Opening_Order_TPT_Per__c}" style="percent-fixed"
+                                               maximumFractionDigits="2" />
+                </td>
+            </aura:if>
+            
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Budgeted_ASP1__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_to_Budget__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Latest_Estimate__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Proposed_as_of_Latest_Estimate__c}" style="percent-fixed"  maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Lowest_Price_SKU__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Approved_Lowest_Price_SKU__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+            
+            <aura:if isTrue="{!and(and(v.bidType !='Customer Rebate Change',v.bidType !='New Product Launch'),and(v.bidType!='Price Change',v.bidType!='Sales Out Rebate'))}">
+                <!--   <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Initial_Stocking_Order_Volume__c}"/></td>
+                -->
+                <!-- <td>{!v.singleRec.Phoenix_Initial_Stocking_Order_Comments__c}</td>-->
+                <aura:if isTrue="{!and(and(v.bidType!='Price Change',v.bidType!='New Product Launch'),and(v.bidType!='Sales Out Rebate',v.bidType!='Customer Rebate Change'))}">
+                    <aura:if isTrue="{!and(and(v.singleRec.Phoenix_SCM_Approval_Y_N__c!='N- Not Approved',v.singleRec.Phoenix_SCM_Final_Approval__c==true),not(empty(v.singleRec.Phoenix_SCM_Approval_Y_N__c)))}">
+                        <!-- <td class="slds-text-align_right">
+                            <div style="{!lessthan(v.singleRec.Phoenix_Total_SCM_Approved_Qty__c,v.singleRec.Phoenix_Final_Total_Selling_Unit__c)?'color:red':''}"><lightning:formattedNumber value="{!v.singleRec.Phoenix_Total_SCM_Approved_Qty__c}"/></div>
+                        </td>-->
+                        <td class="slds-text-align_right">{!v.singleRec.Phoenix_Estimated_Lead_Time_Days__c}</td>
+                        <!-- <td>{!v.singleRec.Phoenix_SCM_Rejection_Reason1__c}</td>-->
+                        <td>{!v.singleRec.Phoenix_SCM_Approval_Y_N__c}</td>
+                        <td>{!v.singleRec.Phoenix_SCM_Notes__c}</td>
+                        <aura:set attribute="else">
+                            <td></td><!--<td></td><td></td>--><td></td><td></td> 
+                        </aura:set>
+                    </aura:if>
+                    <aura:set attribute="else">
+                        <td></td><!--<td></td> <td></td>--><td></td><td></td>
+                    </aura:set>
+                    
+                </aura:if>
+            </aura:if>
+            <aura:if isTrue="{!v.bidType =='New Product Launch'}">
+                <td>{!v.singleRec.Phoenix_Estimated_Lead_Time_Days__c}</td>
+                <td>{!v.singleRec.Phoenix_Initial_Stocking_Order_Comments__c}</td>
+            </aura:if>
+            <td>{!v.singleRec.Phoenix_Sales_Notes__c}</td>
+            <aura:if isTrue="{!v.bidType !='Volume Review Only'}">
+                <td>{!v.singleRec.Phoenix_Marketing_Approval__c}</td>
+            </aura:if>
+            <td >{!v.singleRec.Phoenix_Marketing_Notes__c}</td>
+            <aura:if isTrue="{!v.bidType !='Volume Review Only'}">
+                <aura:if isTrue="{!v.singleRec.Phoenix_Final_Finance_Approval__c==true}">
+                    <td>{!v.singleRec.Phoenix_Finance_Approval__c}</td>
+                    <td>{!v.singleRec.Phoenix_Finance_Comments__c}</td>
+                    <aura:set attribute="else">
+                        <td></td><td></td>
+                    </aura:set>
+                </aura:if>
+            </aura:if>
+            
+            <td> {!v.singleRec.Phoenix_Contract_Approval__c}</td>
+            <td>{!v.singleRec.Phoenix_Contract_Comments__c}</td>
+            
+            <td>{!v.singleRec.Phoenix_WAC_Check__c}</td>
+            <aura:if isTrue="{!or(v.bidType =='RFP Bids',v.bidType =='Product Addition')}">
+                <!--   <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.singleRec.Phoenix_IOD_Qty__c}" style="decimal" maximumFractionDigits="2"/></td>
+            --></aura:if>
+        </aura:if>
+        
+        <!--Analytics Components related Icons START-->
+        
+        <td>
+            <lightning:button variant="base" label="BH" title="BH" onclick="{!c.displayBidHist}" name="{!v.singleRec.Id}"/>
+            <lightning:button variant="base" label="NH" title="NH" onclick="{!c.displayProdNPRHist}" name="{!v.singleRec.Id}"/>
+            <lightning:button variant="base" label="MS" title="MS" onclick="{!c.displayIMSMarketShare}" name="{!v.singleRec.Id}"/>
+            <lightning:button variant="base" label="PT" title="PT" onclick="{!c.displayHistoricalPricing}" name="{!v.singleRec.Id}"/>
+            <lightning:button variant="base" label="FR" title="FR" onclick="{!c.displayFutureRecords}" name="{!v.singleRec.Id}" />
+        </td>  
+        <!--Analytics Components related Icons END-->
+        
+    </tr>
+    <aura:if isTrue="{!v.sNo==v.ItemsLength}">
+        <tr>
+            <th scope="row"></th><th scope="row"></th>
+            <th scope="row" ></th><th scope="row" ></th>            
+            <th scope="row"></th>
+            <th scope="row" >Total</th>
+            <!-- logic for Re-Bid functionality- starts-->
+            <aura:if isTrue="{!v.isReBid}">
+                <td></td>
+                <td></td>                
+            </aura:if>
+            <!-- logic for Re-Bid functionality- ends-->
+            <!--<td ></td> -->
+            
+            <td ></td>
+            <td></td>
+            <td></td>
+            <td ></td>
+            <td></td>
+            <td></td>            
+            <td></td>           
+            <td ></td>
+            <!-- new column added-->
+            <aura:if isTrue="{!v.bidType !='New Product Launch'}">
+                <td></td>
+            </aura:if>
+            <td></td>
+            <aura:if isTrue="{!v.bidType !='New Product Launch'}">
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.CISUTotal}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.actualsales}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td> 
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.overrideunits}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td> 
+            </aura:if>
+            <aura:if isTrue="{!and(v.bidType !='Price Change',and(v.bidType !='Customer Rebate Change',v.bidType !='Sales Out Rebate'))}">
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.PISUTotal}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>            
+            </aura:if>
+            <aura:if isTrue="{!and(and(v.bidType !='Customer Rebate Change',v.bidType !='New Product Launch'),and(v.bidType!='Price Change',v.bidType!='Sales Out Rebate'))}">
+                <aura:if isTrue="{!and(and(v.singleRec.Phoenix_SCM_Approval_Y_N__c!='N- Not Approved',v.singleRec.Phoenix_SCM_Final_Approval__c==true),not(empty(v.singleRec.Phoenix_SCM_Approval_Y_N__c)))}">
+                    <td class="slds-text-align_right"><lightning:formattedNumber value = "{!v.totalSCMQty}"/></td>
+                    <aura:set attribute="else">
+                        <td></td>
+                    </aura:set>  
+                </aura:if>
+                
+            </aura:if>
+            <aura:if isTrue="{!v.bidType !='New Product Launch'}">
+                <td></td>
+            </aura:if>
+            <aura:if isTrue="{!and(v.bidType !='Volume Review Only',v.bidType !='Sales Out Rebate')}">
+                
+            </aura:if>
+            <aura:if isTrue="{!and(v.bidType !='Volume Review Only',v.bidType !='Sales Out Rebate')}">
+                <td></td>
+                <td></td>    
+                <aura:if isTrue="{!v.bidType !='New Product Launch'}">
+                    <td ></td>
+                </aura:if>
+                <aura:if isTrue="{!v.bidType =='New Product Launch'}">
+                    <!-- <td></td>  --> 
+                    <td></td><td></td>
+                </aura:if>
+                <td ></td>
+            </aura:if>
+            <td></td><td></td>
+            <td ></td>
+            <td ></td>
+            <td></td>
+            <td ></td>
+            <td ></td><td ></td>
+            <td ></td>
+            <!-- <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.intDeadNetTotal}" style="currency" currencyCode="USD"/></td>
+                   <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.IndirectTP}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                   <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.IndirectTPPercent}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+     -->                   
+            <td ></td><td ></td><td ></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.netSalesIntTotal}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.TPTDollorTotal}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.TPMarginPercent}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+            <!--<td ></td>-->
+            <aura:if isTrue="{!v.bidType =='New Product Launch'}">
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.OpeningOrderTotal}"/> </td>
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.OpeningOrderNetSalesTotal}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!v.OpeningOrderTPTTotal}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                <td class="slds-text-align--right"><lightning:formattedNumber value="{!v.OpeningOrderTPTPercTotal}" style="percent-fixed" minimumFractionDigits="2"/></td>
+            </aura:if>
+            
+            <td ></td>
+            <td ></td>
+            <td></td>
+            <td ></td>
+            <td ></td>
+            <td ></td>
+            <aura:if isTrue="{!and(and(v.bidType !='Customer Rebate Change',v.bidType !='New Product Launch'),and(v.bidType!='Price Change',v.bidType!='Sales Out Rebate'))}">
+                
+                <td></td>
+                <td></td><td></td><!-- <td></td><td></td><td></td>-->
+            </aura:if>
+            <aura:if isTrue="{!v.bidType =='New Product Launch'}">
+                <td ></td>
+            </aura:if>
+            <td></td>
+            <aura:if isTrue="{!v.bidType !='Volume Review Only'}">
+                <td></td><td></td>
+            </aura:if>
+            <td ></td>
+            <aura:if isTrue="{!v.bidType !='Volume Review Only'}">
+                <td></td><td></td>
+                
+            </aura:if>
+            <td> </td>
+            <td></td>
+            <td></td>
+            <aura:if isTrue="{!or(v.bidType =='RFP Bids',v.bidType =='Product Addition')}">
+                <!-- <td></td>-->
+            </aura:if>      
+            <!--Analytics Components related Icons START-->
+            <td></td>  
+            <!--Analytics Components related Icons END-->
+            
+            
+        </tr> 
+    </aura:if>
+</aura:component>

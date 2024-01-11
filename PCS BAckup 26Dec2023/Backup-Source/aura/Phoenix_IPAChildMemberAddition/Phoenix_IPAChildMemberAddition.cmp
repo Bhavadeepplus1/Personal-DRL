@@ -1,0 +1,164 @@
+<aura:component controller="IPAMemberAdditionCls" access="global">
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+ 
+    <aura:handler name="onchange" event="l_lookup:OnChange" action="{!c.handleChange}"/> 
+      <aura:attribute name="bidRecord" type="sobject" description="To hold all objects" />
+    <aura:attribute name="showSpinner" type="boolean"/>
+    <aura:attribute name="sNo" type="string" />
+    <aura:attribute name="bidId" type="String" />
+     <aura:attribute name="accountRecord" type="sobject"/>
+     <aura:attribute name="accountId" type="string"/>
+      <aura:attribute name="Active" type="string" default="Active"/>
+    <aura:attribute name="ipaFlag" type="boolean" default="true"/>
+      <aura:attribute name="ipaAccountId" type="string"/>
+     <aura:attribute name="contactRecord" type="sobject"/>
+    <aura:attribute name="singleRec" type="sobject"/>
+     <aura:attribute name="GPOEditMode" type="boolean" default="false" />
+    <aura:attribute name="WholesalerEditMode" type="boolean" default="false" />
+     <aura:attribute name="LocationEditMode" type="boolean" default="false" />
+     <aura:attribute name="DEAEditMode" type="boolean" default="false" />
+    <aura:attribute name="HINEditMode" type="boolean" default="false" />
+     <aura:attribute name="GLNEditMode" type="boolean" default="false" />
+     <aura:attribute name="GPOvalues" type="list" />
+      <aura:attribute name="StateValues" type="list" />
+    <aura:attribute name="parentFieldLabel" type="string" />
+    <aura:attribute name="childFieldLabel" type="string"/>
+     <aura:attribute name="parentList" type="list" default="[]" description=""/>
+    <aura:attribute name="childList" type="list" default="[]"/>
+    <aura:attribute name="pickListMap" type="map"/>
+    <aura:attribute name="disabledChildField" type="boolean" default="true"/>
+    
+   
+    
+    <aura:registerEvent name="lightningEvent" type="c:IPAMemberAdditionEvt"/> 
+    <aura:html tag="style">
+    .slds-form-element__label{
+        display:none;
+        }
+        </aura:html>
+    
+    <tr>
+        <td class="slds-cell-wrap" scope="row">
+            
+            <a name="{!v.sNo}" onclick="{!c.deleteItem}">
+                <lightning:icon iconName="utility:delete" alternativeText="delete" size="x-small" />
+            </a>
+        </td>
+        <td  class="slds-cell-wrap" scope="row">
+             <td><lightning:formattedDateTime value="{!v.singleRec.Phoenix_RCA_Change_Date__c}"/></td> 
+        </td>
+        
+        <td  class="slds-cell-wrap" scope="row">
+            <l_lookup:Lookup objectType="Account"  aura:id="accountLookup" 
+                             selectedRecordId="{!v.singleRec.Phoenix_Customer__c}" 
+                             placeHolder="Search Customers"
+                            /> 
+        </td>
+      <!-- <td class="slds-cell-wrap" scope="row">
+            {!v.accountRecord.Street_Address_1__c}
+        </td>
+        <td class="slds-cell-wrap" scope="col">
+            {!v.accountRecord.State__c}
+        </td>
+        <td  class="slds-cell-wrap" scope="col">
+            {!v.accountRecord.City__c}
+        </td>
+        <td class="slds-cell-wrap" scope="row">
+            {!v.accountRecord.Zip__c}
+        </td>-->
+          <td class="slds-cell-wrap" scope="row">
+          <lightning:input type="text"  value="{!v.singleRec.Phoenix_Street_Name__c}" />
+        </td>
+         <td class="slds-cell-wrap" scope="row">
+          <lightning:input type="text"  value="{!v.singleRec.Phoenix_City__c}" />
+        </td>
+          <td class="slds-cell-wrap" scope="row">
+            <lightning:select aura:id="StateValue" value="{!v.singleRec.Phoenix_State__c}">
+           		  <option value=" ">-None-</option>
+                <aura:iteration items="{!v.StateValues}" var="val">
+                <option value="{!val}">{!val}</option>
+            </aura:iteration>
+        </lightning:select>
+          
+        </td>
+        
+         <td class="slds-cell-wrap" scope="row">
+          <lightning:input type="text"  value="{!v.singleRec.Phoenix_Zip__c}" />
+        </td>
+        
+          <td class="slds-cell-wrap" scope="row">
+          <lightning:input type="text"  value="{!v.singleRec.Phoenix_DEA__c}" />
+        </td>
+         <td class="slds-cell-wrap" scope="row">
+          <lightning:input type="text"  value="{!v.singleRec.Phoenix_HIN__c}" />
+        </td>
+         <td class="slds-cell-wrap" scope="row">
+          <lightning:input type="text"  value="{!v.singleRec.Phoenix_GLN__c}" />
+        </td>
+      
+      
+        
+       
+        
+         <td class="slds-cell-wrap" scope="row">
+            <lightning:select aura:id="GPOValue" value="{!v.singleRec.Phoenix_New_GPO__c}">
+           		  <option value=" ">-None-</option>
+                <aura:iteration items="{!v.GPOvalues}" var="gpo">
+                <option value="{!gpo}">{!gpo}</option>
+            </aura:iteration>
+        </lightning:select>
+          
+        </td>
+         <td class="slds-cell-wrap" scope="row">
+             <lightning:select aura:id="parentField" value="{!v.singleRec.Phoenix_Wholesaler__c}" onchange="{!c.parentFieldChange}">
+           		 <aura:iteration items="{!v.parentList}" var="value">
+                    <option value="{!value}">{!value}</option>
+                </aura:iteration>
+        </lightning:select>
+              
+        </td>
+        <td class="slds-cell-wrap" scope="row">
+             <lightning:select aura:id="wholesalerLocation" value="{!v.singleRec.Phoenix_Wholesaler_Location__c}" disabled="{!v.disabledChildField}">
+           		    <aura:iteration items="{!v.childList}" var="value">
+                    <option value="{!value}">{!value}</option>
+                </aura:iteration>
+        </lightning:select>
+             
+        </td>
+        
+        <td class="slds-cell-wrap" scope="row">
+            <l_lookup:Lookup aura:id="IPAaccountLookup" objectType="Account" 
+                             selectedRecordId="{!v.singleRec.Phoenix_Parent_IPA_Customer__c}" 
+                             queryCondition="Phoenix_Is_IPA_Account__c =true"
+                             placeHolder="Search Customers"/>  
+        </td>
+         <td class="slds-cell-wrap" scope="row">
+            <l_lookup:Lookup aura:id="contractLookup" objectType="Phoenix_Contract__c" 
+                             selectedRecordId="{!v.singleRec.Phoenix_RCA_Agreement__c}" 
+                             additionalField="Phoenix_Customer__c"
+                             primarySearchField="Name"
+                             queryCondition="{!'Phoenix_Customer__c=\'' + v.ipaAccountId + '\'' +' and '+ 'Phoenix_Contract_Status__c=\'' + v.Active + '\'' +' and '+ 'Phoenix_Is_IPA_Contract__c=true'}"
+                             
+                           
+                             placeHolder="Search Contracts"/>  
+        </td>
+        <td class="slds-cell-wrap" scope="row">
+            <l_lookup:Lookup  aura:id="contactLookup" objectType="Contact" 
+                             selectedRecordId="{!v.singleRec.Phoenix_Contact__c}" 
+                             queryCondition="{! 'AccountId=\'' + v.accountId + '\'' }"
+/> 
+        </td>
+        <td class="slds-cell-wrap" scope="row">
+            {!v.contactRecord.Email	}
+        </td>
+        <td class="slds-cell-wrap" scope="row">
+            {!v.contactRecord.Phone}     
+        </td>
+        <td class="slds-cell-wrap" scope="row">
+            {!v.contactRecord.Phoenix_Phone_External__c}       
+        </td>
+      
+        
+        
+    </tr>	
+</aura:component>

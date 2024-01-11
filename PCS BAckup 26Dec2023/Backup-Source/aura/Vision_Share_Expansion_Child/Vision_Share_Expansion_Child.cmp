@@ -1,0 +1,1249 @@
+<aura:component controller="Vision_ShareExpansion_cntl" access="global"
+                implements="force:hasRecordId,force:appHostable,lightning:isUrlAddressable"> 
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="accId" type="string"/>
+    <aura:attribute name="accObj" type="Account"/>
+    <aura:attribute name="isSpinner" type="boolean" default="false"/>
+    <aura:attribute name="shareItem" type="object"/>
+    <aura:attribute name="indexVal" type="Integer"/>
+    <aura:attribute name="showNdcs" type="boolean" default="false"/>
+    <aura:attribute name="ndcList" type="List"/>
+    <aura:attribute name="prodFamName" type="String"/>
+    <aura:attribute name="totalVolEU" type="Integer" default="0"/>
+    <aura:attribute name="totalVolEA" type="Integer" default="0"/>
+    <aura:attribute name="targetVol" type="Integer" default="0"/>
+    <aura:attribute name="totalVal" type="Integer" default="0"/>
+    <aura:attribute name="proposedVal" type="Integer" default="0"/>
+    <aura:attribute name="showAddCommentsOnRej" type="boolean" default="false"/>
+    <aura:attribute name="internalTargetDate" type="String"/>
+    <aura:attribute name="changedId" type="string"/>
+    <aura:attribute name="rejectionComment" type="String"/>
+    <aura:attribute name="isOtcProdFam" type="boolean" default="false"/>
+    <aura:attribute name="disableCreateBtn" type="boolean" default="false"/>
+    
+    <aura:attribute name="dateOptions" type="List" default="[
+                                                            { 'label' : 'RFP', 'value': 'RFP'},
+                                                            { 'label' : 'Product Addition', 'value': 'Product Addition'},
+                                                            { 'label' : 'Price Change', 'value': 'Price Change'},
+                                                            { 'label' : 'Volume Review', 'value': 'Volume Review'},
+                                                            { 'label' : 'Customer Rebate Change', 'value': 'Customer Rebate Change'},
+                                                            { 'label' : 'Short Dated OTB', 'value': 'Short Dated OTB'},
+                                                            { 'label' : 'Good Dated OTB', 'value': 'Good Dated OTB'}
+                                                            ]"/>
+    <aura:attribute name="bidType" type="String" default="Product Addition"/>
+    
+    <!-- Attributes for Contract view  Starts-->
+    
+    <aura:attribute name="showContracts" type="Boolean" default="false" />
+    <aura:attribute name="isContractSelectionNeeded" type="Boolean" default="false" />
+    <aura:attribute name="isAddProductsSelectionNeeded" type="Boolean" default="false" />
+    <aura:attribute name="bidCustomerId" type="String" />
+    
+    <aura:attribute name="contratcsList" type="Phoenix_Contract__c[]"/>
+    <aura:attribute name="selectedContratcsIdList" type="List"/>
+    <aura:attribute name="productsList" type="Product2[]"/>
+    <aura:attribute name="isSpinnerLoad" type="Boolean" default="false"/>
+    <aura:attribute name="navigateToComponent" type="Boolean" default="false"/>
+    
+    <aura:attribute name="selectedRowsCount" type="Integer" default="0"/>
+    <aura:attribute name="selectedCntrcts" type="List"/>
+    
+    <aura:attribute name="listOfAllAccounts" type="list"/> 
+    <aura:attribute name="PaginationList" type="list"/> 
+    <aura:attribute name="startPage" type="Integer" />
+    <aura:attribute name="endPage" type="Integer"/>
+    <aura:attribute name="totalRecordsCountCV" type="Integer"/>
+    <aura:attribute name="pageSizeCV" type="Integer" default="100" description="number of records to be display on per page"/>
+    <aura:attribute name="currentPage" type="integer" default="1"/>
+    <aura:attribute name="totalPagesCount" type="integer"/>
+    <aura:attribute name="bNoRecordsFound" type="boolean"/>
+    <aura:attribute name="searchValue" type="string" default=''/>
+    <aura:attribute name="allContractsChecked" type="boolean" default='false'/>
+    <aura:attribute name="selectedContId" type="list" />
+    
+    <aura:attribute name="isFirstPage" type="boolean" default="false"/>
+    <aura:attribute name="isLastPage" type="boolean" default="false"/>
+    <aura:attribute name="isSelectedNo" type="integer" default="1"/>
+    
+    <aura:attribute name="showCxTemplateSelection" type="boolean" default="false"/>
+    <aura:attribute name="allDataCV" type="List" />
+    <aura:attribute name="filteredData" type="List" />
+    
+    <aura:attribute name="showDraftView" type="boolean" default='true'/>
+    <aura:attribute name="templateType" type="string"/>
+    <!-- Attributes for Contract view Ends -->
+    
+    <aura:attribute name="conString" type="string"/> 
+    
+    <!--Contract Model section-->
+    <aura:attribute name="showModal" type="boolean" default="false"/>
+    <aura:attribute name="mycolumns" type="List"/>
+    
+    
+    <aura:html tag="style">
+        <aura:if isTrue="{!v.showContracts}">
+            .slds-modal__container{
+            max-width: 90rem !important;
+            width:90% !important;
+            }
+        </aura:if>
+        
+        .slds-button slds-button_brand{
+        padding: initial; !important;
+        }
+        .slds-modal__content
+        {
+        overflow-x:auto;
+        background-color: white !important;
+        box-shadow: none !important;
+        }
+        .slds-modal__close {
+        display:none !important;
+        }
+        .slds-button__icon slds-button__icon_left{
+        margin-left: 6px; !important;
+        }
+        
+        .slds-modal__content slds-p-around_large{
+        width:100%; !important;
+        }
+    </aura:html>
+    
+    <aura:if isTrue="{!v.showContracts}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" 
+                 aria-modal="true" aria-describedby="modal-content-id-1" 
+                 class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container" style="width:95% !important;padding-bottom:0px;padding-top: 0px;padding-left:0px;padding-right:0px;">
+                <div class="modal-header slds-modal__header" style="padding-right: 5px; padding-top: 10px; padding-bottom: 10px; padding-left: 10px;">
+                    <h2  class="slds-modal__title slds-hyphenate"
+                        style="color:#675e5e">
+                        <p style="font-size:21px;"><b>Select Contracts</b></p> 
+                    </h2>
+                </div>
+                <aura:if isTrue="{!not(v.navigateToComponent)}">
+                    <div class="slds-p-around--medium" style="background-color:white;padding-bottom: 11px; padding-left: 11px;padding:0px;">
+                        <div class="slds-p-around_large" style="width: -webkit-fill-available;padding:5px;">
+                            <div class="slds-p-around_small ">
+                                <div class="slds-grid slds-wrap">
+                                    
+                                    <div class="slds-col slds-size_7-of-12">
+                                        
+                                        <span onkeypress="{!c.keyCheckContracts}" class="padding-right">
+                                            <lightning:input variant="label-hidden" placeholder="Search Contracts..."
+                                                             type="search" aura:id="cntInput"/>
+                                        </span></div>
+                                    <div class="slds-col slds-size_1-of-12 ">    <span class="slds-p-left_large">
+                                        <lightning:button label="Search" variant="brand"
+                                                          onclick="{! c.searchContracts }" iconName="utility:search"/>
+                                        </span></div>
+                                    <div class="slds-col slds-size_4-of-12 slds-p-left_medium">    
+                                        <lightning:input class="slds-size_1-of-4 slds-p-left_medium slds-p-top_xx-small showcontwrap"
+                                                         label="Show All Contracts"
+                                                         name="input1" type="checkbox"
+                                                         checked="{!v.allContractsChecked}"
+                                                         aura:id="tgleCntrct" onchange="{!c.showAllContracts}"/>
+                                    </div>
+                                    
+                                </div>
+                                <aura:if isTrue="{!not(empty(v.PaginationList))}">  
+                                    <div class="slds-m-top_medium">
+                                        <div>
+                                            <!--span class="slds-badge slds-badge_lightest" style="display:inline-block;">
+                                            Selected Contracts:  {! v.selectedRowsCount }
+                                        </span-->
+                                        </div>
+                                    </div>
+                                </aura:if>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <aura:if isTrue="{!not(empty(v.PaginationList))}"> 
+                        <div id="tableDiv" class="slds-p-around_small modal-body scrollable slds-modal__content slds-p-around--medium" data-scoped-scroll="true" style="background-color:#f3f2f2;padding:0px;">
+                            <table class="maintable slds-table slds-table_bordered slds-table_cell-buffer">
+                                <thead>
+                                    <tr class="">
+                                        <!--header checkbox for select all-->
+                                        <th style="width:3.25rem;" class="slds-text-align_right slds-text-title_caps">
+                                            <div class="slds-form-element">
+                                                <div class="slds-form-element__control">
+                                                    <label class="slds-checkbox">
+                                                        <ui:inputCheckbox disabled="{!v.totalRecordsCountCV == 0}"
+                                                                          aura:id="selectAllId"
+                                                                          change="{!c.selectAllCheckboxes}"/>
+                                                        <span class="slds-checkbox_faux"></span>
+                                                        <span class="slds-form-element__label"></span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th scope="row" class="slds-cell-wrap " >
+                                            <div class="slds-truncate slds-p-around_xxx-small" title="Name">Name</div>
+                                        </th>
+                                        <th scope="row" class="slds-cell-wrap " >
+                                            <div class="slds-truncate slds-p-around_xxx-small" title="Customer">Customer</div>
+                                        </th>
+                                        <th scope="row" class="slds-cell-wrap " >
+                                            <div class="slds-truncate slds-p-around_xxx-small" title="Internal Description">Internal Description</div>
+                                        </th>
+                                        <th scope="row" class="slds-cell-wrap ">
+                                            <div class="slds-truncate slds-p-around_xxx-small" title="External Description">External Description</div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.PaginationList}" var="obj">
+                                        <tr >
+                                            <td scope="row" class="slds-text-align_right" style="width:3.25rem;">
+                                                <div class="slds-form-element">
+                                                    <div class="slds-form-element__control">
+                                                        <label class="slds-checkbox">
+                                                            <ui:inputCheckbox text="{!obj.Id}"
+                                                                              value="{!obj.isChecked}"
+                                                                              change="{!c.checkboxSelect}"
+                                                                              />
+                                                            <span class="slds-checkbox_faux"></span>
+                                                            <span class="slds-form-element__label text"></span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td scope="row">
+                                                <div class="slds-truncate" title="{!obj.Phoenix_Contract_Number__c}">
+                                                    <lightning:formattedUrl value="{!'/' + obj.Id}"  label="{!obj.Phoenix_Contract_Number__c}" target="_self" />  
+                                                </div>
+                                            </td> 
+                                            <td scope="row">
+                                                <div class="slds-truncate" title="{!obj.Phoenix_Customer__r.Name}">
+                                                    <lightning:formattedUrl value="{!'/' + obj.Phoenix_Customer__c}"  label="{!obj.Phoenix_Customer__r.Name}" target="_self" />  
+                                                </div>
+                                            </td>
+                                            <td scope="row">
+                                                <div class="slds-truncate" title="{!obj.Phoenix_Contract_Internal_Description__c}">
+                                                    {!obj.Phoenix_Contract_Internal_Description__c}
+                                                </div>
+                                            </td>
+                                            <td scope="row">
+                                                <div class="slds-truncate" title="{!obj.Phoenix_Contract_External_Description__c}">
+                                                    {!obj.Phoenix_Contract_External_Description__c}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </div>
+                        <aura:set attribute="else">
+                            <div class="slds-p-around_small modal-body scrollable slds-modal__content slds-p-around--medium" data-scoped-scroll="true" style="background-color:#f3f2f2;padding:0px;">
+                                
+                                <center>
+                                    <div class="slds-m-bottom_small  slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                        <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                            <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                        </span>
+                                        <h2> No Contracts Found</h2>
+                                    </div>
+                                </center>
+                            </div>
+                        </aura:set>
+                    </aura:if>
+                </aura:if>
+                <div class="modal-footer slds-modal__footer slds-p-vertical_small" style="background-color:white;">
+                    <aura:if isTrue="{!not(empty(v.PaginationList))}">
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col">
+                                <div class="slds-float_left  slds-p-top_x-small">
+                                </div>
+                            </div>
+                            <div class="slds-col">
+                                <div class="slds-align_absolute-center">
+                                    <lightning:button label="First"
+                                                      name="first"
+                                                      iconName="utility:left"
+                                                      iconPosition="left"
+                                                      disabled="{!v.isFirstPage}"
+                                                      onclick="{! c.navigation }"/>
+                                    <lightning:button name="previous"
+                                                      iconName="utility:chevronleft"
+                                                      iconPosition="left"
+                                                      disabled="{!v.isFirstPage}"
+                                                      onclick="{! c.navigation }"/>
+                                    
+                                    <span class="slds-p-horizontal_x-small">
+                                        <a onclick="{!c.processMeCV}" name="1"
+                                           class="{! (v.isFirstPage) ? 'selected' : ''}">1</a>
+                                    </span>
+                                    <span class="slds-p-horizontal_xxx-small">
+                                        <a>...</a>
+                                    </span>
+                                    <aura:iteration items="{!v.pageList}" var="item">
+                                        <span class="slds-p-horizontal_x-small">
+                                            <a onclick="{!c.processMeCV}" name="{!item}"
+                                               class="{!(v.currentPage == item) ? 'selected' : ''}">{!item}</a>
+                                        </span>
+                                    </aura:iteration>
+                                    <span class="slds-p-horizontal_xxx-small">
+                                        <a>...</a>
+                                    </span>
+                                    <span class="slds-p-horizontal_x-small">
+                                        <a onclick="{!c.processMeCV}" name="{!v.totalPagesCount}"
+                                           class="{! (v.isLastPage) ? 'selected' : ''}">{!v.totalPagesCount}</a>
+                                    </span>
+                                    
+                                    <lightning:button name="next"
+                                                      iconName="utility:chevronright"
+                                                      iconPosition="right"
+                                                      onclick="{!c.navigation}"
+                                                      disabled="{!(v.endPage + 1) >= v.totalRecordsCountCV}" />
+                                    <lightning:button label="Last"
+                                                      name="last"
+                                                      iconName="utility:right"
+                                                      iconPosition="right"
+                                                      onclick="{! c.navigation }"        
+                                                      disabled="{!or(v.currentPage == v.totalPagesCount,v.isLastPage)}" />
+                                </div>
+                            </div>
+                            
+                            <div class="slds-col">
+                                <aura:if isTrue="{!v.isAddProductsSelectionNeeded}">
+                                    <lightning:button variant="neutral" label="Back" onclick="{!c.moveToAddProductsView}" />
+                                </aura:if> 
+                                <lightning:button variant="neutral" label="Cancel" onclick="{!c.closeModal}" />
+                                <lightning:button variant="brand" label="Next" disabled="{!v.selectedRowsCount==0}"
+                                                  onclick="{!c.saveDetails}" />
+                            </div>
+                        </div>
+                        <aura:set attribute="else">
+                            <div class="" style="background-color:white;">
+                                <aura:if isTrue="{!v.isAddProductsSelectionNeeded}">
+                                    <lightning:button variant="neutral" label="Back" onclick="{!c.moveToAddProductsView}" />
+                                </aura:if> 
+                                <lightning:button variant="neutral" label="Cancel" onclick="{!c.closeModal}" />
+                                <aura:if isTrue="{!v.isAddProductsSelectionNeeded}">
+                                    <lightning:button variant="brand" label="Next" onclick="{!c.fetchProducts}" />
+                                </aura:if>
+                            </div>
+                        </aura:set>
+                    </aura:if>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.isSpinner}">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium" style="background-Color: white; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+    
+    <tr>
+        <th scope="row" style="padding-left:8px; z-index:1 !important">
+            <center>
+                <aura:if isTrue="{!v.shareItem.statusString == 'Sent to BRIGHT'}">
+                    <lightning:icon class="{!v.shareItem.statusString == 'Sent to BRIGHT' ? 'showGreen' : 'showRed'}" 
+                                    title="{!v.shareItem.statusString}"
+                                    iconName="utility:light_bulb" 
+                                    size="x-small"/>
+                    <aura:set attribute="else">
+                        <lightning:icon class="{!v.shareItem.statusString == 'Sent to OPPORTUNITY' ? 'showOrange' : 'showRed'}" 
+                                        title="{!v.shareItem.statusString != null ? v.shareItem.statusString : 'New'}"
+                                        iconName="utility:light_bulb" 
+                                        size="x-small"/>
+                    </aura:set>
+                </aura:if>
+            </center>
+        </th>
+        <td class="" scope="row">
+            <aura:if isTrue="{!or(v.shareItem.expnList[0].Vision_Old_Task_Type__c == undefined,v.shareItem.expnList[0].Vision_Old_Task_Type__c == v.shareItem.expnList[0].Task_Type__c)}">
+                {!v.shareItem.expnList[0].Task_Type__c}
+                <aura:set attribute="else">
+                    <div class="slds-grid alignSameLine">
+                        <span style="font-style:italic;font-size:10px;color:red" title="{!'Old Task Type: '+v.shareItem.expnList[0].Vision_Old_Task_Type__c}">(Updated)</span>
+                        &nbsp;
+                        {!v.shareItem.expnList[0].Task_Type__c}
+                    </div>
+                </aura:set>
+            </aura:if>
+        </td>
+        <td class="" scope="row">
+            <!-- <aura:if isTrue="{!v.shareItem.statusString == 'New'}"> -->
+            <a onclick="{!c.showContracts}">{!v.shareItem.expnList[0].Vision_Product_Family__c}</a>
+            <!-- <aura:set attribute="else">
+                {!v.shareItem.expnList[0].Vision_Product_Family__c}
+            </aura:set>
+             </aura:if> -->
+        </td>
+        <td class="" scope="row">
+            {!v.shareItem.statusString}
+        </td>
+        <td class="slds-text-align__right ellipsis" scope="row" title="{!v.shareItem.oppName}">
+            <aura:if isTrue="{!v.shareItem.oppId}">
+                <a href="{!'/'+v.shareItem.oppId}"
+                   target="_blank">{!v.shareItem.oppName}
+                </a>
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td>
+        <td class="slds-text-align--right" scope="row">
+            <lightning:formattedNumber value="{!v.shareItem.expnList[0].Baseline_Volume__c}" 
+                                       type="number"
+                                       maximumFractionDigits="0"
+                                       minimumFractionDigits="0"/>
+        </td>
+        <td class="slds-text-align--right" scope="row">
+            <lightning:formattedNumber value="{!v.shareItem.expnList[0].Baseline_Dollar__c}" 
+                                       style="currency" 
+                                       currencyCode="USD"
+                                       minimumFractionDigits="0"
+                                       maximumFractionDigits="0" />
+        </td>
+        <td class="slds-text-align--right" scope="row">
+            <aura:if isTrue="{!or(v.shareItem.expnList[0].Vision_Old_Target_Volume__c == undefined,v.shareItem.expnList[0].Vision_Old_Target_Volume__c == v.shareItem.expnList[0].Target_Volume__c)}">
+                <lightning:formattedNumber value="{!v.shareItem.expnList[0].Target_Volume__c}" type="number"
+                                           maximumFractionDigits="0" minimumFractionDigits="0"/>
+                <aura:set attribute="else">
+                    <div class="slds-grid alignSameLine">
+                        <span style="font-style:italic;font-size:10px;color:red" title="{!'Old Target Volume: '+v.shareItem.expnList[0].Vision_Old_Target_Volume__c}">(Updated)</span>
+                        &nbsp;
+                        <lightning:formattedNumber value="{!v.shareItem.expnList[0].Target_Volume__c}" type="number"
+                                                   maximumFractionDigits="0" minimumFractionDigits="0"/>
+                    </div>
+                </aura:set>
+            </aura:if>
+            
+        </td>
+        <td class="slds-text-align--right" scope="row">
+            <aura:if isTrue="{!or(v.shareItem.expnList[0].Vision_Old_Target_Dollar__c == undefined,v.shareItem.expnList[0].Vision_Old_Target_Dollar__c == v.shareItem.expnList[0].Target_Dollar__c)}">
+                <lightning:formattedNumber value="{!v.shareItem.expnList[0].Target_Dollar__c}" 
+                                           style="currency" currencyCode="USD"
+                                           minimumFractionDigits="0" maximumFractionDigits="0" />
+                <aura:set attribute="else">
+                    <div class="slds-grid alignSameLine">
+                        <span style="font-style:italic;font-size:10px;color:red" title="{!'Old Target Dollar: '+v.shareItem.expnList[0].Vision_Old_Target_Dollar__c}">(Updated)</span>
+                        &nbsp;
+                        <lightning:formattedNumber value="{!v.shareItem.expnList[0].Target_Dollar__c}" 
+                                                   style="currency" currencyCode="USD"
+                                                   minimumFractionDigits="0" maximumFractionDigits="0" />
+                    </div>
+                </aura:set>
+            </aura:if>
+            
+        </td>
+        <td class="slds-text-align--left ellipsis" style="word-wrap: break-word"
+            title="{!v.shareItem.expnList[0].Task_Comment__c}" scope="row">
+            {!v.shareItem.expnList[0].Task_Comment__c}
+        </td>
+        <td class="slds-text-align--right" scope="row">
+            <ui:outputDate format="dd-MMM-yyyy" value="{!v.shareItem.expnList[0].CreatedDate}"/>
+        </td>
+        <!-- <td class="slds-text-align__right" scope="row">GCP_Created_Date__c
+            <ui:outputDate format="dd-MMM-yyyy" value="{!v.shareItem.expnList[0].Plan_End_Date__c}"/>
+        </td> -->
+        
+    </tr>
+    
+    <aura:if isTrue="{!v.showNdcs}">
+        <div role="dialog" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container" style="">
+                <!-- Modal/Popup Box Header Starts here max-width:1000px;width:1000px;
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.showNdcList }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    
+                </header>
+                Modal/Popup Box Body Starts here-->
+                <div class="slds-modal__content slds-p-around_medium" style="" id="modal-content-id-1">
+                    <center>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{!v.shareItem.expnList[0].Vision_Product_Family__c}</h2>
+                    </center>
+                    <aura:if isTrue="{!v.showCxTemplateSelection}">
+                        <div style="width:250px;">
+                            <div>
+                                <lightning:select aura:id="bidTemplate" onchange="{! c.handleChangeInBidTemplate }"
+                                                  label="Bid Template" required="true">
+                                    <option value="{!v.templateType}">{!v.templateType}</option>
+                                    <aura:if isTrue="{!v.accObj.Phoenix_Customer_Class_Bid_Template__c == 'Direct or Indirect'}">
+                                        <aura:if isTrue="{!(v.templateType != 'Direct')}" >
+                                            <option value="Direct">Direct</option>
+                                        </aura:if>
+                                        <aura:if isTrue="{!(v.templateType != 'Indirect')}" >
+                                            <option value="Indirect">Indirect</option>
+                                        </aura:if>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.accObj.Phoenix_Customer_Class_Bid_Template__c == 'ROS'}">
+                                        <aura:if isTrue="{!(v.templateType != 'ROS')}" >
+                                            <option value="ROS">ROS</option>
+                                        </aura:if>
+                                        <aura:if isTrue="{!(v.templateType != 'Indirect')}" >
+                                            <option value="Indirect">Indirect</option>
+                                        </aura:if>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.accObj.Phoenix_Customer_Class_Bid_Template__c == 'Humana'}">
+                                        <aura:if isTrue="{!(v.templateType != 'Direct')}" >
+                                            <option value="Direct">Direct</option>
+                                        </aura:if>
+                                        <aura:if isTrue="{!(v.templateType != 'Humana Indirect retail')}" >
+                                            <option value="Humana Indirect retail">Humana Indirect retail</option>
+                                        </aura:if>
+                                        <aura:if isTrue="{!(v.templateType != 'Humana Indirect CII')}" >
+                                            <option value="Humana Indirect CII">Humana Indirect CII</option>
+                                        </aura:if>
+                                    </aura:if>
+                                    <aura:if isTrue="{!or(v.accObj.Phoenix_Customer_Class_Bid_Template__c == 'ABC Progen',v.accObj.Phoenix_Customer_Class_Bid_Template__c == 'ABC Pharmagen')}">
+                                        <aura:if isTrue="{!(v.templateType != 'ABC Progen')}" >
+                                            <option value="ABC Progen">ABC Progen</option>
+                                        </aura:if>
+                                        <aura:if isTrue="{!(v.templateType != 'ABC Pharmagen')}" >
+                                            <option value="ABC Pharmagen">ABC Pharmagen</option>
+                                        </aura:if>
+                                    </aura:if>
+                                </lightning:select>
+                            </div>
+                            <div style="margin-top:5px;">
+                                <lightning:button variant="brand"
+                                                  label="Save &amp; Next"
+                                                  title="Continue"
+                                                  onclick="{!c.saveTemplate}"/>
+                            </div>
+                        </div>
+                        <aura:set attribute="else">
+                            <div class="slds-grid">
+                                <div class="slds-col slds-size_1-of-2">
+                                    <div>Contracts : {!v.conString}</div>
+                                    <aura:if isTrue="{!or(or(or(v.accObj.Phoenix_Customer_Class_Bid_Template__c == 'ABC Progen', v.accObj.Phoenix_Customer_Class_Bid_Template__c == 'ABC Pharmagen'),
+                                                     or(v.accObj.Phoenix_Customer_Class_Bid_Template__c == 'Direct or Indirect', v.accObj.Phoenix_Customer_Class_Bid_Template__c == 'ROS')),v.accObj.Phoenix_Customer_Class_Bid_Template__c == 'Humana')}">
+                                        <div>Bid Template : {!v.templateType}</div>
+                                    </aura:if>
+                                </div> 
+                                <div class="slds-col slds-size_1-of-2" style="text-align:right;padding-right:25px;margin-bottom:10px;">
+                                    <span>Total Target Value($) (EU) : <b><lightning:formattedNumber value="{!(v.totalVal*v.targetVol)}" title="Target Price * Total Target Volume"
+                                                                                                     style="currency" currencyCode="USD"
+                                                                                                     maximumFractionDigits="0" minimumFractionDigits="0"/></b>
+                                        &nbsp;&nbsp;Total Target Volume (EU) : <b><lightning:formattedNumber value="{!v.targetVol}" 
+                                                                                                             type="number"
+                                                                                                             maximumFractionDigits="0"
+                                                                                                             minimumFractionDigits="0"/></b></span>
+                                </div>
+                            </div>
+                            
+                            <div style="{!greaterthanorequal(v.ndcList.length,8) ? 'height:550px;overflow:auto;' : 'overflow:auto;'}">
+                                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                                    <table aura:id="LineTable" 
+                                           class="maintable fixedtable slds-table slds-table_col-bordered 
+                                                  slds-no-row-hover slds-table_cell-buffer slds-table_bordered 
+                                                  slds-table-bordered slds-border_left slds-border_right">
+                                        <thead class="headerOfTable">
+                                            <tr>
+                                                <th width="25px;" colspan="2">
+                                                    Accepted?
+                                                </th>
+                                                <th width="50px;">
+                                                    &nbsp;
+                                                </th>
+                                                <th width="50px;">
+                                                    Status
+                                                </th>
+                                                <th width="50px;">
+                                                    Opportunity
+                                                </th>
+                                                <th style="padding-left:8px;">
+                                                    Product Name
+                                                </th>
+                                                <th>
+                                                    NDC
+                                                </th>
+                                                <th class="slds-text-align_right">
+                                                    Pkg Size
+                                                </th>
+                                                <th class="slds-text-align_right">
+                                                    Panorama Target Price
+                                                </th>
+                                                
+                                                <aura:if isTrue="{!v.isOtcProdFam}">
+                                                    <th class="slds-text-align--right" 
+                                                        style="">Current Units</th>
+                                                    <th class="slds-text-align--right" 
+                                                        style="">Total Units</th>
+                                                    <th class="slds-text-align--right"
+                                                        style="">Proposed Share %</th>
+                                                    <th class="slds-text-align--right"
+                                                        style="">Total Proposed DRL Units</th>
+                                                    <aura:set attribute="else">
+                                                        
+                                                        <aura:if isTrue="{!or(v.templateType=='Econdisc',v.templateType == 'Net Indirect Pricing')}">
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">3 Months Annualized&nbsp;Current Direct&nbsp;Selling&nbsp;Units</th>
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">3 Months Annualized&nbsp;Current Indirect&nbsp;Selling&nbsp;Units</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!or(v.templateType=='Humana Indirect retail',v.templateType=='Humana Indirect CII')}">
+                                                            <th class="slds-text-align--right" style="" width="100px;">3 months Annualized Total Selling Units</th>
+                                                            <th class="slds-text-align--right" style="" width="100px;">Proposed Indirect Selling Units(EA)<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!or(or(v.templateType=='Indirect',v.templateType=='Direct and Indirect'),
+                                                                         or(v.templateType=='Walgreens',or(or(v.templateType=='ABC Progen',v.templateType=='ABC Pharmagen'),
+                                                                         or(v.templateType=='Econdisc',or(v.templateType== 'Costco',or(v.templateType== 'Sams Club',
+                                                                         or(v.templateType== 'Net Indirect Pricing',v.templateType== 'Government Pricing')))))))}">
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">Current&nbsp;Indirect Selling&nbsp;Unit</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'Direct'}">
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">Current&nbsp;Direct Selling&nbsp;Unit</th>
+                                                        </aura:if>
+                                                        
+                                                        <aura:if isTrue="{!or(or(v.templateType == 'Direct',v.templateType == 'Direct and Indirect'),or(v.templateType == 'Econdisc',v.templateType == 'Net Indirect Pricing'))}">
+                                                            <th class="slds-text-align--right" style="" width="100px;">Proposed Direct Selling Units(EA)<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!or(or(v.templateType=='Indirect',v.templateType=='Direct and Indirect'),
+                                                                         or(v.templateType=='Walgreens',or(or(v.templateType=='ABC Progen',v.templateType=='ABC Pharmagen'),
+                                                                         or(v.templateType=='Econdisc',or(v.templateType== 'Costco',or(v.templateType== 'Sams Club',
+                                                                         or(v.templateType== 'Net Indirect Pricing',v.templateType== 'Government Pricing')))))))}">
+                                                            <th class="slds-text-align--right" style="" width="100px;">Proposed Indirect Selling Units(EA)<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'ClarusOne'}">
+                                                            
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">3 Months Annualized OS&nbsp;And&nbsp;RAD&nbsp;Units</th>
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">3 Months Annualized WMT&nbsp;Direct&nbsp;Units</th>
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">3 Months Annualized WMT&nbsp;Indirect&nbsp;Units</th>
+                                                            
+                                                            
+                                                            <th class="slds-text-align--right" 
+                                                                style="">Proposed OS Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right" 
+                                                                style="">Proposed RAD Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right" 
+                                                                style="">Proposed WMT Units(EA)<br/>(Current+Incremental)</th>
+                                                            <!-- <th class="slds-text-align__right" 
+                                                                style="">Proposed Total Units(EA)<br/>(Current+Incremental)</th> -->
+                                                        </aura:if>
+                                                        
+                                                        <aura:if isTrue="{!v.templateType == 'Econdisc'}">
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Direct Esi Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Indirect Esi Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Direct Kroger Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Indirect Kroger Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Direct Rx Outreach Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Indirect Rx Outreach Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Direct Supervalu Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Indirect Supervalu Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Direct Cigna Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Indirect Cigna Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Direct Cordant Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Indirect Cordant Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Direct Accerodo Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Indirect Accerodo Units(EA)<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'RXSS'}">
+                                                            
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">Current Wholesaler&nbsp;Units</th>
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">Current Anda&nbsp;Units</th>                                       
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">Current Retail Direct&nbsp;Units</th>
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">Current Retail Indirect&nbsp;Units</th>
+                                                            
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Smith Drug Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Anda Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Direct Ahold/Delhaize Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Direct Gaint Eagle Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Total Retail Indirect Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Direct Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Indirect Units(EA)<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'BASE/DSH'}">
+                                                            
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">3 Months Annualized Current BASE&nbsp;Selling&nbsp;Units</th>
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">3 Months Annualized Current DSH&nbsp;Selling&nbsp;Units</th>
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">3 Months Annualized Current Auto&nbsp;Sub&nbsp;Selling&nbsp;Units</th>
+                                                            
+                                                            <th class="slds-text-align--right" 
+                                                                style="">Proposed Base Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Dsh Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Autosub Units(EA)<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                        <aura:if isTrue="{!v.templateType == 'ROS'}">
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">3&nbsp;Months Annualized CVS&nbsp;Direct Selling&nbsp;Unit</th>
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">3&nbsp;Months Annualized CVS&nbsp;Indirect Selling&nbsp;Unit</th> 
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">3&nbsp;Months Annualized Cardinal Selling&nbsp;Unit</th>                                        
+                                                            <th class="slds-text-align--right slds-truncate slds-cell-wrap">3&nbsp;Months Annualized Major Selling&nbsp;Unit</th>
+                                                            <th class="slds-text-align--right" 
+                                                                style="">Proposed CVS Direct Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed CVS Indirect Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Cardinal Units(EA)<br/>(Current+Incremental)</th>
+                                                            <th class="slds-text-align--right"
+                                                                style="">Proposed Major Units(EA)<br/>(Current+Incremental)</th>
+                                                        </aura:if>
+                                                    </aura:set>
+                                                </aura:if>
+                                                <th class="slds-text-align_right">
+                                                    Proposed Volume(EU)
+                                                </th>
+                                                <!-- <th class="slds-text-align_right">
+                                                    Lowest Price SKU
+                                                </th> -->
+                                                <th class="slds-text-align_right">
+                                                    Proposed Value(EU)
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <aura:iteration items="{!v.ndcList}" var="shareItemObj" 
+                                                            indexVar="sNo">
+                                                <tr class="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New') ? 'disabledRow' : ''}">
+                                                    <td scope="row">
+                                                        <div class="slds-truncate" data-record-id="{!shareItemObj.Id}">
+                                                            <lightning:input type="toggle" variant="label-hidden" 
+                                                                             checked="{!shareItemObj.Vision_isAccepted__c}" 
+                                                                             messageToggleActive="Yes" messageToggleInactive="No"
+                                                                             onchange="{!c.isAcceptedChanged}" 
+                                                                             disabled="{!shareItemObj.Task_Status__c != 'New'}"/>
+                                                        </div>
+                                                    </td>
+                                                    <td scope="row">
+                                                        <div class="slds-truncate" data-record-id="{!shareItemObj.Id}" style="cursor:pointer;" onclick="{!c.addRejectionComment}">
+                                                            <lightning:icon iconName="utility:comments" size="small" alternativeText="Rejection Comment" title="Rejection Comment"/>
+                                                        </div>
+                                                    </td>
+                                                    <td style="padding-left:8px;" scope="row">
+                                                        <center>
+                                                            <lightning:icon class="showGreen" 
+                                                                            title="Cooling Period"
+                                                                            iconName="utility:light_bulb" 
+                                                                            size="x-small"/>&nbsp;
+                                                            <lightning:icon style="cursor: pointer;"
+                                                                            class="showRed"
+                                                                            title="{!shareItemObj.Task_Status__c}"
+                                                                            iconName="utility:priority" 
+                                                                            size="x-small"/>
+                                                        </center>
+                                                    </td>
+                                                    <td>
+                                                        {!shareItemObj.Task_Status__c}
+                                                        <aura:if isTrue="{!shareItemObj.Task_Status__c == 'dropped'}">
+                                                            &nbsp;&nbsp;<lightning:icon iconName="utility:comments" size="x-small" title="{!'Dropped Comment: '+shareItemObj.Vision_Dropped_Comments__c}"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td class="" style="padding-left:8px;" scope="row">
+                                                        <aura:if isTrue="{!shareItemObj.ProductOpportunity__c}">
+                                                            <a href="{!'/'+shareItemObj.ProductOpportunity__r.Opportunity__r.Id}"
+                                                               target="_blank">{!shareItemObj.ProductOpportunity__r.Opportunity__r.Name}
+                                                            </a>
+                                                            <aura:set attribute="else">
+                                                                N/A
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td class="" style="padding-left:8px;" scope="row">
+                                                        <a href="{!'/'+shareItemObj.Vision_Product__c}"
+                                                           target="_blank" onmouseout="{!c.handleMouseLeave}"
+                                                           onmouseover="{!c.handleMouseEnter}">{!shareItemObj.Vision_Product__r.Name}
+                                                        </a><!--<Lightning:helptext content="{!'Contracts : '+shareItemObj.Vision_Reference_Contracts__c}"/>-->
+                                                    </td>
+                                                    <td>
+                                                        {!shareItemObj.Vision_Product__r.Phoenix_NDC_11__c}
+                                                    </td>
+                                                    <td class="slds-text-align--right">
+                                                        <lightning:formattedNumber value="{!shareItemObj.Vision_Product__r.Phoenix_Pkg_Size__c}"/>
+                                                    </td>
+                                                    <aura:if isTrue="{!or(shareItemObj.Target_Price__c == undefined, shareItemObj.Target_Price__c == null)}">
+                                                        <td style="text-align: right;">$0.00</td>
+                                                        <aura:set attribute="else">
+                                                            <td style="text-align: right;">
+                                                                <aura:if isTrue="{!or(shareItemObj.Vision_Old_Target_Price__c == undefined,shareItemObj.Vision_Old_Target_Price__c == shareItemObj.Target_Price__c)}">
+                                                                    <lightning:formattedNumber style="currency" value="{!shareItemObj.Target_Price__c}"
+                                                                                               maximumFractionDigits="6" minimumFractionDigits="2"/>
+                                                                    <aura:set attribute="else">
+                                                                        <div class="slds-grid alignSameLine">
+                                                                            <span style="font-style:italic;font-size:10px;color:red" title="{!'Old Price: '+shareItemObj.Vision_Old_Target_Price__c}">(Updated)</span>
+                                                                            <!-- <lightning:icon size="x-small" iconName="utility:info" title="{!'Target Price Has been updated. Old Price : '+shareItemObj.Vision_Old_Target_Price__c}"/>-->
+                                                                            &nbsp;
+                                                                            <!-- <div class="slds-col slds-text-align_right" style="font-color:orange !important;">  -->
+                                                                            <lightning:formattedNumber style="currency" value="{!shareItemObj.Target_Price__c}"
+                                                                                                       maximumFractionDigits="6" minimumFractionDigits="2"/>
+                                                                            
+                                                                        </div>
+                                                                    </aura:set>
+                                                                </aura:if>
+                                                            </td>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!v.isOtcProdFam}">
+                                                        <td class="slds-text-align--right">
+                                                            <lightning:formattedNumber value="{!shareItemObj.X3_Months_Annualized_Direct_Selling_Unit__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                        </td>
+                                                        <td class="slds-text-align--right">
+                                                            <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                             onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                             value="{!shareItemObj.Vision_Proposed_Volume__c}" />
+                                                            
+                                                        </td>
+                                                        <td class="slds-text-align--right">
+                                                            <lightning:input type="number" class="rightAlignCss" variant="label-hidden" formatter="percent-fixed"
+                                                                             onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                             value="{!shareItemObj.Vision_Proposed_Share_Percentage__c}" step="0.01" max="100"
+                                                                             messageWhenRangeOverflow="Please enter less than 100%"/>
+                                                        </td>
+                                                        <td class="slds-text-align--right">
+                                                            <lightning:formattedNumber value="{!((shareItemObj.Vision_Proposed_Volume__c * shareItemObj.Vision_Proposed_Share_Percentage__c)/100)}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                        </td>
+                                                        <aura:set attribute="else">
+                                                            
+                                                            <aura:if isTrue="{!or(v.templateType=='Econdisc',v.templateType == 'Net Indirect Pricing')}">
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3_Months_Annualized_Direct_Selling_Unit__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3Months_Annualized_Indirect_Selling_Uni__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!or(v.templateType=='Humana Indirect retail',v.templateType=='Humana Indirect CII')}">
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3Months_Annualized_Indirect_Selling_Uni__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Proposed_Indirect_Selling_Units__c}" />
+                                                                    
+                                                                </td>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!or(or(v.templateType=='Indirect',v.templateType=='Direct and Indirect'),
+                                                                             or(v.templateType=='Walgreens',or(or(v.templateType=='ABC Progen',v.templateType=='ABC Pharmagen'),
+                                                                             or(v.templateType=='Econdisc',or(v.templateType== 'Net Indirect Pricing',v.templateType== 'Government Pricing')))))}">
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3Months_Annualized_Indirect_Selling_Uni__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!v.templateType == 'Direct'}">
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3_Months_Annualized_Direct_Selling_Unit__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!or(v.templateType =='Sams Club',v.templateType == 'Costco')}">
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3Months_Annualized_Indirect_Selling_Uni__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!or(or(v.templateType == 'Direct',v.templateType == 'Direct and Indirect'),or(v.templateType == 'Econdisc',v.templateType == 'Net Indirect Pricing'))}">
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Proposed_Direct_Selling_Units__c}" />
+                                                                </td>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!or(or(v.templateType=='Indirect',v.templateType=='Direct and Indirect'),
+                                                                             or(v.templateType=='Walgreens',or(or(v.templateType=='ABC Progen',v.templateType=='ABC Pharmagen'),
+                                                                             or(v.templateType=='Econdisc',or(v.templateType== 'Costco',or(v.templateType== 'Sams Club',
+                                                                             or(v.templateType== 'Net Indirect Pricing',v.templateType== 'Government Pricing')))))))}">
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Proposed_Indirect_Selling_Units__c}" />
+                                                                    
+                                                                </td>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!v.templateType == 'ClarusOne'}">
+                                                                
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3_Months_Annualized_OS_And_RAD_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3_Months_Annualized_WMT_Direct_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3_Months_Annualized_WMT_Indirect_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_OS_Units__c}" />
+                                                                    
+                                                                </td>
+                                                                
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_RAD_Units__c}" />
+                                                                    
+                                                                </td>
+                                                                
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_WMT_Units__c}" />
+                                                                    
+                                                                </td>
+                                                                <!--<td scope="row" class="slds-text-align_right">
+                                                                    <lightning:formattedNumber value="{!v.totalProposedUnits}" 
+                                                                                               minimumFractionDigits ="0"
+                                                                                               maximumFractionDigits ="0"/></td>-->
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!v.templateType == 'BASE/DSH'}">
+                                                                
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3MonthAnnualCurrent_BASE_Selling_unit__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3MonthAnnualCurrentDSHSellingUnit__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3MonthAnnualCurrentAutoSubSellingUnit__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_BASE_Units__c}" />
+                                                                    
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_DSH_Units__c}" />
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_AutoSub_Units__c}" />
+                                                                </td>
+                                                                
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!v.templateType == 'ROS'}">
+                                                                
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3Months_AnnualizedCVS_DirectSelling_Uni__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3Months_Annualized_Cardinal_Selling_Uni__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3MonthsAnnualizedCVSIndirectSelling_uni__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.X3_Months_Annualized_Major_Selling_Unit__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_CVS_Direct_Units__c}" />
+                                                                    
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_CVS_Indirect_Units__c}" />
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Cardinal_Units__c}" />
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Major_Units__c}" />
+                                                                </td>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!v.templateType == 'RXSS'}">
+                                                                
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.Current_Wholesaler_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.Vision_Current_Anda_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.Current_Retail_Direct_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:formattedNumber value="{!shareItemObj.Current_Retail_Indirect_Units__c}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                                                </td>
+                                                                
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Smith_Drug_Units__c}" />
+                                                                    
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Anda_Units__c}" />
+                                                                    
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_DirectAholdDelhaizeUnits__c}" />
+                                                                    
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Direct_Gaint_Eagle_Units__c}" />
+                                                                    
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_TotalRetailIndirectUnits__c}" />
+                                                                    
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Proposed_Direct_Selling_Units__c}" />
+                                                                    
+                                                                </td>
+                                                                <td class="slds-text-align--right">
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Proposed_Indirect_Selling_Units__c}" />
+                                                                    
+                                                                </td>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!v.templateType == 'Econdisc'}">
+                                                                <td>
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Direct_ESI_Units__c}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Indirect_ESI_Units__c}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Direct_Kroger_Units__c}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Indirect_Kroger_Units__c}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Direct_Rx_Outreach_Units__c}"/>
+                                                                </td>
+                                                                
+                                                                <td>
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_IndirectRxOutreach_Units__c}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Direct_Supervalu_Units__c}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Indirect_Supervalu_Units__c}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Direct_Cigna_Units__c}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Indirect_Cigna_Units__c}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Direct_Cordant_Units__c}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Indirect_Cordant_Units__c}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Direct_Accerodo_Units__c}"/>
+                                                                </td>
+                                                                <td>
+                                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                                     value="{!shareItemObj.Vision_Proposed_Indirect_Accerodo_Units__c}"/>
+                                                                </td>
+                                                                <!-- <td>
+                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                     value="{!shareItemObj.Proposed_Direct_Selling_Units__c}"/>
+                                                </td>
+                                                <td>
+                                                    <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                                     onchange="{!c.updateGrandTotal}" disabled="{!!and(shareItemObj.Vision_isAccepted__c ,shareItemObj.Task_Status__c=='New')}"
+                                                                     value="{!shareItemObj.Proposed_Indirect_Selling_Units__c}"/>
+                                                </td> -->
+                                                            </aura:if>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                    <td class="slds-text-align_right" width="100px;" title="Pkg Size * Total Proposed Units(EA)">
+                                                        <lightning:formattedNumber value="{!shareItemObj.Vision_Total_Proposed_Units_EU__c}"/>
+                                                    </td>
+                                                    
+                                                    <!-- <td class="slds-text-align_right">
+                                                        <lightning:formattedNumber value="{!shareItemObj.Vision_Product__r.Phoenix_Lowest_Price_SKU__c}"
+                                                                                   style="currency" currencyCode="USD"
+                                                                                   minimumFractionDigits="2"
+                                                                                   maximumFractionDigits="2"/>
+                                                    </td> -->
+                                                    <td class="slds-text-align_right" title="Panorama Target Price * Proposed Volume(EU)">
+                                                        <lightning:formattedNumber value="{!shareItemObj.Vision_Proposed_Value_EA__c}"
+                                                                                   style="currency" currencyCode="USD"
+                                                                                   minimumFractionDigits="0"
+                                                                                   maximumFractionDigits="0"/>
+                                                    </td>
+                                                </tr>
+                                            </aura:iteration>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <div class="slds-grid" style="margin-top:10px;">
+                                <div class="slds-col slds-size_1-of-2" style="">
+                                    <div class="slds-grid">
+                                        <div class="slds-col slds-size_1-of-3" style="padding-top:8px;">
+                                            Internal Target Date : 
+                                        </div>
+                                        <div class="slds-col slds-size_2-of-3" style="">
+                                            <ui:inputDate aura:id="internalTargetDate" class="slds-input"
+                                                          value="{!v.internalTargetDate}" displayDatePicker="true"
+                                                          change="{!c.internalTargetDateChaged}"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-col slds-size_1-of-2" style="text-align:right;padding-top:8px;">
+                                    <div class="slds-grid">
+                                        <div class="slds-col slds-size_3-of-4">
+                                            Total Proposed Volume(EU) : 
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-4">
+                                            <b><lightning:formattedNumber value="{!v.totalVolEU}" type="number"
+                                                                          maximumFractionDigits="0"
+                                                                          minimumFractionDigits="0"/></b>
+                                        </div>
+                                    </div>
+                                    <div class="slds-grid">
+                                        <div class="slds-col slds-size_3-of-4">
+                                            Total Proposed Volume(EA) : 
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-4">
+                                            <b><lightning:formattedNumber value="{!v.totalVolEA}" type="number"
+                                                                          maximumFractionDigits="0"
+                                                                          minimumFractionDigits="0"/></b>
+                                        </div>
+                                    </div>
+                                    <div class="slds-grid">
+                                        <div class="slds-col slds-size_3-of-4">
+                                            Total Proposed Value(EU) : 
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-4">
+                                            <b><lightning:formattedNumber value="{!v.proposedVal}" 
+                                                                          style="currency" currencyCode="USD"
+                                                                          minimumFractionDigits="0"
+                                                                          maximumFractionDigits="0"/></b>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="text-align:right;margin-top:10px;">
+                                <lightning:button variant="neutral" label="Close" title="Close"
+                                                  onclick="{! c.showNdcList }"/>
+                                <lightning:button variant="brand" label="Create Opportunity"
+                                                  title="Opportunity" onclick="{!c.createOpty}"
+                                                  disabled="{!v.disableCreateBtn}"/>
+                            </div>
+                        </aura:set>
+                    </aura:if>
+                </div>
+                <!-- <aura:if isTrue="{!!v.showCxTemplateSelection}">
+                    
+                    <footer class="slds-modal__footer">
+                    </footer>
+                </aura:if> -->
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+    <aura:if isTrue="{!v.showAddCommentsOnRej}">
+        <div role="dialog" class="slds-modal slds-fade-in-open ">
+            <div class="slds-modal__container" style="max-width:800px;width:800px;">
+                <!-- Modal/Popup Box Header Starts here-->
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeCommentSection }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close"/>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Rejection Comment</h2>
+                </header>
+                <!--Modal/Popup Box Body Starts here-->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <lightning:textarea value="{!v.rejectionComment}" variant="label-hidden"
+                                        onchange="{!c.rejectionCommentChanged}" aura:id="rejReason"
+                                        placeholder="Please Enter the Rejection Reason..."/>
+                </div>
+                <!--Modal/Popup Box Footer Starts here-->
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral"
+                                      label="Close"
+                                      title="Close"
+                                      onclick="{! c.closeCommentSection }"/>
+                    <lightning:button variant="brand"
+                                      label="Add Comment"
+                                      title="Add Comment"
+                                      onclick="{!c.updateRejectionComment}"/>
+                </footer>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+</aura:component>

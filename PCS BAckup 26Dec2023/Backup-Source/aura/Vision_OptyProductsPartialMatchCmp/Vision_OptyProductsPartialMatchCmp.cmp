@@ -1,0 +1,1153 @@
+<aura:component controller="Vision_OpportunityCreator" implements="flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="prodItem" type="object"/>
+    <aura:attribute name="prodOptyObj" type="object"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="AccTemplate" type="String"/>
+    <aura:attribute name="isSearchProd" type="boolean" default="false"/>
+    <aura:attribute name="isSpinnerLoad" type="Boolean" default="false"/>
+    <aura:attribute name="isShowprdOtyAnnualData" type="Boolean" default="false"/>
+    <aura:handler name="onchange" event="l_lookup:OnChange" action="{!c.handleChange}"/>
+    <aura:attribute name="annualUnitsData" type="Object" />
+    <aura:attribute name="prodObj" type="object"/>
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="loadingMessage" type="String"/>
+    <aura:attribute name="indVar" type="Integer"/>
+    <aura:attribute name="productsExclQury" type="String" />
+    <aura:attribute name="selectedProdId" type="String"/>
+    <aura:attribute name="listOfSearchResults" type="List"/>
+    <aura:attribute name="searchResultMessage" type="String"/>
+    <aura:attribute name="discType" type="string"/>
+    <aura:attribute name="existingProducts" type="List" default="[]"/>
+    <aura:attribute name="isShowDirectUnits" type="boolean" default="false" />
+    <aura:attribute name="isShowInDirectUnits" type="boolean" default="false" />
+    <aura:attribute name="refreshScreen" type="boolean"/>
+    <aura:attribute name="prodList" type="List"/>
+    <aura:attribute name="smallSpinner" type="boolean" default="false"/>
+    <aura:registerEvent name="sampleCmpEvent" type="c:Vision_OptyProductsChildToParentEvnt" />
+    <aura:attribute name="smallSpinnerWhileMatch" type="boolean" default="false"/>
+    <aura:attribute name="totalProposedUnits" type="Integer" default="0"/>
+    <aura:attribute name="isValidPkgSize" type="boolean" default="true"/>
+    <aura:attribute name="useNewFields" type="boolean" default="true"/>
+    <aura:attribute name="incorrectListSize" type="Integer"/>
+    
+    <aura:attribute Name="VisionProposedVolume" type="String"/>
+    <aura:attribute Name="ProposedDirectSellingUnits" type="String"/>
+    <aura:attribute Name="ProposedIndirectSellingUnits" type="String"/>
+    <aura:attribute Name="VisionProposedOSUnits" type="String"/>
+    <aura:attribute Name="VisionProposedRADUnits" type="String"/>
+    <aura:attribute Name="VisionProposedWMTUnits" type="String"/>
+    <aura:attribute Name="VisionProposedBASEUnits" type="String"/>
+    <aura:attribute Name="VisionProposedDSHUnits" type="String"/>
+    <aura:attribute Name="VisionProposedAutoSubUnits" type="String"/>
+    <aura:attribute Name="VisionProposedSmithDrugUnits" type="String"/>
+    <aura:attribute Name="VisionProposedAndaUnits" type="String"/>
+    <aura:attribute Name="VisionProposedDirectAholdDelhaizeUnits" type="String"/>
+    <aura:attribute Name="VisionProposedDirectGaintEagleUnits" type="String"/>
+    <aura:attribute Name="VisionProposedTotalRetailIndirectUnits" type="String"/>
+    <aura:attribute Name="VisionProposedDirectESIUnits" type="String"/>
+    <aura:attribute Name="VisionProposedIndirectESIUnits" type="String"/>
+    <aura:attribute Name="VisionProposedDirectKrogerUnits" type="String"/>
+    <aura:attribute Name="VisionProposedIndirectKrogerUnits" type="String"/>
+    <aura:attribute Name="VisionProposedDirectRxOutreachUnits" type="String"/>
+    <aura:attribute Name="VisionProposedIndirectRxOutreachUnits" type="String"/>
+    <aura:attribute Name="VisionProposedDirectSupervaluUnits" type="String"/>
+    <aura:attribute Name="VisionProposedIndirectSupervaluUnits" type="String"/>
+    <aura:attribute Name="VisionProposedDirectCignaUnits" type="String"/>
+    <aura:attribute Name="VisionProposedIndirectCignaUnits" type="String"/>
+    <aura:attribute Name="VisionProposedDirectCordantUnits" type="String"/>
+    <aura:attribute Name="VisionProposedDirectAccerodoUnits" type="String"/>
+    <aura:attribute Name="VisionProposedIndirectAccerodoUnits" type="String"/>
+    <aura:attribute Name="VisionProposedIndirectCordantUnits" type="String"/>
+    <aura:attribute Name="VisionTotalProposedUnitsEU" type="String"/>
+    <aura:attribute Name="VisionProposedValueEA" type="String"/>
+    <aura:attribute Name="VisionProposedCVSDirectUnits" type="String"/>
+    <aura:attribute Name="VisionProposedCVSIndirectUnits" type="String"/>
+    <aura:attribute Name="VisionProposedCardinalUnits" type="String"/>
+    <aura:attribute Name="VisionProposedMajorUnits" type="String"/>
+    <aura:attribute name="autoCalcUnits" type="boolean"/>
+    <aura:attribute name="isOtcProdFam" type="boolean" default="false"/>
+    <aura:attribute name="showDots" type="boolean" default="false"/>
+    <aura:attribute name="hideUploadedDiscrepancy" type="boolean"/>
+    <aura:registerEvent name="visionPartialMatchEvent" type="c:Vision_OptyProductsPartialMatchEvent"/>
+    <aura:attribute name="hideDrlItems" type="boolean"/>
+    
+    <tr>
+        <th scope="row" style="padding: 4px 0px;text-align: center">
+            <aura:if isTrue="{!v.prodOptyObj.Vision_inActive__c}">
+                <lightning:icon iconName="utility:lock" size="x-small" title="Duplicate has been sent to Matched, Hence this item is locked"/>
+                <aura:set attribute="else">  
+                    <lightning:input type="checkbox" class=""
+                                     name="{!v.indVar}" aura:id="checkbox"
+                                     checked="{!v.prodOptyObj.isSelected}"
+                                     onchange="{!c.checkBoxChangeHandler}" 
+                                     variant="label-hidden"/>
+                </aura:set>
+            </aura:if>
+        </th>
+        <aura:if isTrue="{!or(v.prodOptyObj.Is_GPI_Pack_Size_Matched__c ==  true, or(v.prodOptyObj.Is_GSN_Pack_Size_Matched__c == true, v.prodOptyObj.Is_GCN_Pack_Size_Matched__c == true))}">
+            <th scope="row" style="padding: 4px 0px;">
+                <aura:if isTrue="{!v.prodOptyObj.Is_GCN_Pack_Size_Matched__c == true}">
+                    <lightning:icon class="green" title="GCN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.prodOptyObj.Is_GCN_Matched__c == true}">
+                            <lightning:icon class="orange" title="GCN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            <aura:set attribute="else" >
+                                <lightning:icon class="red" title="GCN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </th>
+            <th scope="row" style="padding: 4px 0px;">
+                <aura:if isTrue="{!v.prodOptyObj.Is_GSN_Pack_Size_Matched__c == true}">
+                    <lightning:icon class="green" title="GSN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.prodOptyObj.Is_GSN_Matched__c == true}">
+                            <lightning:icon class="orange" title="GSN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            <aura:set attribute="else" >
+                                <lightning:icon class="red" title="GSN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </th>
+            <th scope="row" style="padding: 4px 0px;">
+                <aura:if isTrue="{!v.prodOptyObj.Is_GPI_Pack_Size_Matched__c == true}">
+                    <lightning:icon class="green" title="GPI" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.prodOptyObj.Is_GPI_Matched__c == true}">
+                            <lightning:icon class="orange" title="GPI" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            <aura:set attribute="else" >
+                                <lightning:icon class="red" title="GPI" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </th>
+            <th scope="row" style="padding: 4px 0px;">
+                <aura:if isTrue="{!v.prodOptyObj.noNDC == true}">
+                    <lightning:icon class="gray" title="NDC" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.prodOptyObj.Is_NDC_Matched__c == true}">
+                            <lightning:icon class="green" title="NDC" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            <aura:set attribute="else" >
+                                <lightning:icon class="red" title="NDC" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </th>
+            <th scope="row" style="padding: 4px 0px;">
+                <aura:if isTrue="{!v.prodOptyObj.noSKU == true}">
+                    <lightning:icon class="gray" title="SKU" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.prodOptyObj.Is_SKU_Matched__c == true}">
+                            <lightning:icon class="green" title="SKU" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            <aura:set attribute="else" >
+                                <lightning:icon class="red" title="SKU" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </th>
+            <aura:set attribute="else">
+                <th scope="row" style="padding: 4px 0px;">
+                    <aura:if isTrue="{!v.prodOptyObj.noGCN == true}">
+                        <lightning:icon class="gray" title="GCN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                        <aura:set attribute="else">
+                            <aura:if isTrue="{!v.prodOptyObj.Is_GCN_Matched__c == true}">
+                                <lightning:icon class="orange" title="GCN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                <aura:set attribute="else" >
+                                    <lightning:icon class="red" title="GCN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                </aura:set>
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+                </th>
+                <th scope="row" style="padding: 4px 0px;">
+                    <aura:if isTrue="{!v.prodOptyObj.noGSN == true}">
+                        <lightning:icon class="gray" title="GSN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                        <aura:set attribute="else">
+                            <aura:if isTrue="{!v.prodOptyObj.Is_GSN_Matched__c == true}">
+                                <lightning:icon class="orange" title="GSN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                <aura:set attribute="else" >
+                                    <lightning:icon class="red" title="GSN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                </aura:set>
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+                </th>
+                <th scope="row" style="padding: 4px 0px;">
+                    <aura:if isTrue="{!v.prodOptyObj.noGPI == true}">
+                        <lightning:icon class="gray" title="GPI" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                        <aura:set attribute="else">
+                            <aura:if isTrue="{!v.prodOptyObj.Is_GPI_Matched__c == true}">
+                                <lightning:icon class="orange" title="GPI" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                <aura:set attribute="else" >
+                                    <lightning:icon class="red" title="GPI" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                </aura:set>
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+                </th>
+                <th scope="row" style="padding: 4px 0px;">
+                    <aura:if isTrue="{!v.prodOptyObj.noNDC == true}">
+                        <lightning:icon class="gray" title="NDC" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                        <aura:set attribute="else">
+                            <aura:if isTrue="{!v.prodOptyObj.Is_NDC_Matched__c == true}">
+                                <lightning:icon class="green" title="NDC" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                <aura:set attribute="else" >
+                                    <lightning:icon class="red" title="NDC" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                </aura:set>
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+                </th>
+                <th scope="row" style="padding: 4px 0px;">
+                    <aura:if isTrue="{!v.prodOptyObj.noSKU == true}">
+                        <lightning:icon class="gray" title="SKU" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                        <aura:set attribute="else">
+                            <aura:if isTrue="{!v.prodOptyObj.Is_SKU_Matched__c == true}">
+                                <lightning:icon class="green" title="SKU" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                <aura:set attribute="else" >
+                                    <lightning:icon class="red" title="SKU" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                </aura:set>
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+                </th>
+            </aura:set>
+        </aura:if>
+        <th scope="row" style="padding: 4px 0px;">
+            <aura:if isTrue="{!v.prodOptyObj.Vision_Bid_on_Highest_Pack_Size__c == true}">
+                <lightning:icon class="green" title="BID ON HIGHEST PACK SIZE" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                <aura:set attribute="else">
+                    <lightning:icon class="red" title="BID ON HIGHEST PACK SIZE" iconName="utility:light_bulb" size="x-small"/>&nbsp;    
+                </aura:set>
+            </aura:if>
+        </th>
+        <th scope="row" style="padding: 4px 0px;">
+            <aura:if isTrue="{!v.prodOptyObj.Vision_Bid_on_Alternative_Pack_Size__c == true}">
+                <lightning:icon class="green" title="BID ON ALTERNATIVE PACK SIZE" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                <aura:set attribute="else">
+                    <lightning:icon class="red" title="BID ON ALTERNATIVE PACK SIZE" iconName="utility:light_bulb" size="x-small"/>&nbsp;    
+                </aura:set>
+            </aura:if>
+        </th>
+        <th scope="row" style="padding: 4px 0px;">
+            <aura:if isTrue="{!v.prodOptyObj.noUsage == true}">
+                <lightning:icon class="green" title="NO USAGE" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                <aura:set attribute="else">
+                    <lightning:icon class="red" title="NO USAGE" iconName="utility:light_bulb" size="x-small"/>&nbsp;    
+                </aura:set>
+            </aura:if>
+        </th>
+        <th scope="row" style="padding: 4px 0px;">
+            <aura:if isTrue="{!v.prodOptyObj.isDuplicate == true}">
+                <lightning:icon class="green" title="DUPLICATE PRODUCT MATCHING" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                <aura:set attribute="else">
+                    <lightning:icon class="red" title="DUPLICATE PRODUCT MATCHING" iconName="utility:light_bulb" size="x-small"/>&nbsp;    
+                </aura:set>
+            </aura:if>
+        </th>
+        <th scope="row">
+            <aura:if isTrue="{!v.isSearchProd}">
+                <div aura:id="searchRes" class="slds-form-element slds-lookup slds-is-close"
+                     data-select="single">
+                    <span>
+                        <div style="width: 400px;" class="slds-truncate slds-grid">
+                            <div class="slds-col slds-size_4-of-5" style="width:370px;">
+                                <lightning:select aura:id="selectProd" variant="label-hidden" class="selectPlan"
+                                                  value="{!v.prodOptyObj.Product__c}" onchange="{!c.updateWithSelectedProd}">
+                                    <option value="Select A Prod">-- Select A Product --</option>
+                                    <aura:iteration items="{!v.prodList}" var="item">
+                                        <option text="{!item.label}" value="{!item.value}" selected="{!item.value == v.prodOptyObj.Product__c ? 'true' : 'false'}"/>
+                                    </aura:iteration>
+                                </lightning:select>
+                            </div>
+                            <div class="slds-col slds-size_1-of-5" style="text-align:right;width:30px;">
+                                <aura:if isTrue="{!v.smallSpinner}">
+                                    <img class="loader" src="/img/loading.gif" width="25" height="25" />
+                                    <aura:set attribute="else">
+                                        <lightning:icon iconName="utility:close" size="x-small" title="Close Search"
+                                                        onclick="{!c.closeSearch}" style="cursor:pointer;"/>
+                                    </aura:set>
+                                </aura:if>
+                            </div>
+                        </div>
+                    </span>
+                </div>
+                <aura:set attribute="else">
+                    <div style="width: 400px;" class="slds-truncate slds-grid">
+                         <div style="width: 340px;" class="slds-truncate slds-grid" title="{!v.prodObj.fullName}">
+                        <div class="slds-col slds-size_4-of-5" style="width:370px;" ondblclick="{!c.openSearch}" >
+                            &nbsp;<a href="{!'/'+v.prodObj.Id}" target="_blank">{!v.prodObj.Name}</a>
+                        </div>
+                        </div>
+                         <div style="width: 10px;" class="slds-truncate slds-grid">
+                              <aura:if isTrue="{!v.showDots}">
+                                  <b>....</b>
+                             </aura:if>
+                        </div>
+                        <aura:if isTrue="{!!v.prodOptyObj.Vision_inActive__c}">
+                            <div style="width: 50px;" class="slds-truncate slds-grid">
+                                <div class="slds-col slds-size_1-of-5" style="text-align:right;width:30px;">
+                                    <aura:if isTrue="{!v.smallSpinner}">
+                                        <img class="loader" src="/img/loading.gif" width="20" height="20" />
+                                        <aura:set attribute="else">
+                                            <lightning:icon iconName="utility:search" size="x-small" title="Select Another Product" onclick="{!c.openSearch}" style="cursor:pointer;"/>&nbsp;&nbsp;
+                                            <span class="dot">{!v.prodOptyObj.Vision_Number_Items__c != null ? v.prodOptyObj.Vision_Number_Items__c : 0}</span>
+                                        </aura:set>
+                                    </aura:if>
+                                </div>
+                            </div>
+                        </aura:if>
+                    </div>
+                </aura:set>
+            </aura:if>
+        </th>
+        <th scope="row">
+            <aura:if isTrue="{!!v.prodOptyObj.Vision_inActive__c}">
+                <div class="slds-truncate" style="cursor:pointer;">
+                    <div class="slds-grid">
+                        <aura:if isTrue="{!v.smallSpinnerWhileMatch}">
+                            <div class="slds-col">
+                                <img class="loader" src="/img/loading.gif" width="20" height="20" />
+                            </div>
+                            <aura:set attribute="else">
+                                <div class="slds-col">
+                                    <lightning:icon title="Move To Match"  onclick="{!c.moveToMatch}"
+                                                    iconName="standard:return_order_line_item" size="small"/>
+                                </div>
+                            </aura:set>
+                        </aura:if>
+                        <div class="slds-col" title="Select Proposed Units Type" style="">
+                            <!-- <lightning:input type="checkbox" label="Use New Units"
+                                             value="{!v.useNewFields}" checked="{!v.useNewFields}"/> -->
+                            <lightning:input type="toggle" value="{!v.useNewFields}" disabled="{!!v.isValidPkgSize}"
+                                             checked="{!v.useNewFields}" messageToggleActive="New Units" 
+                                             messageToggleInactive="Uploaded Units" class="toggleButton"/>
+                        </div>
+                    </div>
+                </div>
+            </aura:if>
+        </th>
+        <aura:if isTrue="{!!v.hideUploadedDiscrepancy}">	
+            <aura:if isTrue="{!v.prodOptyObj.Vision_Is_NDC_Provided__c}">
+                <td><div class="slds-truncate" title="{!v.prodOptyObj.NDC_11__c}">{!v.prodOptyObj.NDC_11__c}</div> </td>
+                <aura:set attribute="else">
+                    <td></td> 
+                </aura:set> 
+            </aura:if>
+            <aura:if isTrue="{!v.prodOptyObj.Vision_Is_SKU_Provided__c}">
+                <td><div class="slds-truncate" title="{!v.prodOptyObj.SKU_Number__c}">{!v.prodOptyObj.SKU_Number__c}</div></td>
+                <aura:set attribute="else"> 
+                    <td></td>
+                </aura:set>
+            </aura:if>
+            <aura:if isTrue="{!v.prodOptyObj.Vision_Is_GCN_Provided__c}">
+                <td><div class="slds-truncate" title="{!v.prodOptyObj.GCN_Generic_Code_Number__c}">{!v.prodOptyObj.GCN_Generic_Code_Number__c}</div></td>
+                <aura:set attribute="else"> 
+                    <td></td>  
+                </aura:set>  
+            </aura:if>
+            <aura:if isTrue="{!v.prodOptyObj.Vision_Is_GPI_Provided__c}">
+                <td><div class="slds-truncate" title="{!v.prodOptyObj.GPI_Generic_Product_Identifier__c}">{!v.prodOptyObj.GPI_Generic_Product_Identifier__c}</div></td>
+                <aura:set attribute="else">
+                    <td></td>  
+                </aura:set>
+            </aura:if>
+            <aura:if isTrue="{!v.prodOptyObj.Vision_Is_GSN_Provided__c}">
+                <td><div class="slds-truncate" title="{!v.prodOptyObj.GSN__c}">{!v.prodOptyObj.GSN__c}</div>   </td>
+                <aura:set attribute="else">
+                    <td></td>  
+                </aura:set>
+            </aura:if>
+            <aura:if isTrue="{!v.prodOptyObj.Vision_Is_Pack_Size_Provided__c}">
+                <td><div class="slds-truncate" title="{!v.prodOptyObj.Vision_Disc_Pkg_Size__c}"> {!v.prodOptyObj.Vision_Disc_Pkg_Size__c}</div>   </td>
+                <aura:set attribute="else">
+                    <td></td>  
+                </aura:set>
+            </aura:if>
+            <aura:if isTrue="{!v.prodOptyObj.Strength__c}">
+                <td><div class="slds-truncate" title="{!v.prodOptyObj.Strength__c}"> {!v.prodOptyObj.Strength__c}</div>   </td>
+                <aura:set attribute="else">
+                    <td></td>  
+                </aura:set>
+            </aura:if>
+            <td>
+                <div class="slds-truncate" title="{!v.prodOptyObj.Product_Description__c}">{!v.prodOptyObj.Product_Description__c}</div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodOptyObj.Vision_Total_Annual_Units__c}">
+                    <div class="slds-truncate" title="{!v.prodOptyObj.Vision_Total_Annual_Units__c}">{!v.prodOptyObj.Vision_Total_Annual_Units__c}</div>
+                </div>
+            </td>
+        </aura:if>
+        
+       
+        <td>
+            {!v.discType}
+        </td>
+        <!-- <td>
+            <div class="slds-truncate" title="{!v.prodOptyObj.Vision_Disc_Pkg_Size__c}">{!v.prodOptyObj.Vision_Disc_Pkg_Size__c}</div>
+        </td> -->
+        <aura:if isTrue="{!!v.hideDrlItems}">
+            <td>
+                <div class="slds-truncate" title="{!v.prodObj.Phoenix_Pkg_Size__c}">{!v.prodObj.Phoenix_Pkg_Size__c}</div>
+            </td>
+            <td>
+                <div class="slds-truncate" title="{!v.prodOptyObj.Strength__c}">{!v.prodOptyObj.Strength__c}</div>
+            </td>
+            <td>
+                <div class="slds-truncate" title="{!v.prodOptyObj.GCN_Generic_Code_Number__c}">{!v.prodOptyObj.GCN_Generic_Code_Number__c}</div>
+            </td>
+            <td>
+                <div class="slds-truncate" title="{!v.prodOptyObj.GSN__c}">{!v.prodOptyObj.GSN__c}</div>
+            </td>
+            <td>
+                <div class="slds-truncate" title="{!v.prodOptyObj.GPI_Generic_Product_Identifier__c}">{!v.prodOptyObj.GPI_Generic_Product_Identifier__c}</div>
+            </td>
+            <td>
+                <div class="slds-truncate" title="{!v.prodOptyObj.NDC_11__c}">{!v.prodOptyObj.NDC_11__c}</div>
+            </td>
+            <td>
+                <div class="slds-truncate" title="{!v.prodOptyObj.SKU_Number__c}">{!v.prodOptyObj.SKU_Number__c}</div>
+            </td>
+            
+            <td>
+                <div class="slds-truncate" title="{!v.prodOptyObj.Product_Family__c}">{!v.prodOptyObj.Product_Family__c}</div>
+            </td>
+            
+            <td>
+                <div class="slds-truncate" title="{!v.prodOptyObj.Vision_Dosage_Form__c}">{!v.prodOptyObj.Vision_Dosage_Form__c}</div>
+            </td>
+        </aura:if>
+        <aura:if isTrue="{!v.isOtcProdFam}">
+            <td class="">
+                <div class="slds-grid">
+                    <aura:if isTrue="{!v.isValidPkgSize}">
+                        <div class="slds-col">
+                            <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Units__c}"/>
+                        </div>
+                    </aura:if>
+                    <div class="slds-col slds-text-align--right">
+                        <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                         value="{!v.VisionProposedVolume}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                    </div>
+                </div>
+            </td>
+            <td class="slds-text-align--right">
+                <lightning:input type="number" class="rightAlignCss" variant="label-hidden" formatter="percent-fixed"
+                                 value="{!v.prodOptyObj.Vision_Proposed_Share_Percentage__c}" step="0.01" max="100"
+                                 messageWhenRangeOverflow="Please enter less than 100%" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+            </td>
+            <td class="slds-text-align--right">
+                <lightning:formattedNumber value="{!((v.VisionProposedVolume * v.prodOptyObj.Vision_Proposed_Share_Percentage__c)/100)}" minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+            </td>
+            <aura:set attribute="else">
+                <aura:if isTrue="{!or(v.AccTemplate=='Humana Indirect retail',v.AccTemplate=='Humana Indirect CII')}">
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Proposed_Indirect_Selling_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.ProposedIndirectSellingUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                </aura:if>
+                <aura:if isTrue="{!or(or(v.AccTemplate == 'Direct',v.AccTemplate == 'Direct and Indirect'),or(v.AccTemplate == 'Econdisc',v.AccTemplate == 'Net Indirect Pricing'))}">
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Proposed_Direct_Selling_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.ProposedDirectSellingUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                </aura:if>
+                <aura:if isTrue="{!or(or(v.AccTemplate=='Indirect',v.AccTemplate=='Direct and Indirect'),or(v.AccTemplate=='Walgreens',or(or(v.AccTemplate=='ABC Progen',v.AccTemplate=='ABC Pharmagen'),
+                                 or(v.AccTemplate=='Econdisc',or(v.AccTemplate== 'Costco',or(v.AccTemplate== 'Sams Club',or(v.AccTemplate== 'Net Indirect Pricing',v.AccTemplate== 'Government Pricing')))))))}">
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Proposed_Indirect_Selling_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.ProposedIndirectSellingUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                </aura:if>
+                <aura:if isTrue="{!v.AccTemplate == 'ClarusOne'}">
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_OS_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedOSUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_RAD_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedRADUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_WMT_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedWMTUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                </aura:if>
+                <aura:if isTrue="{!v.AccTemplate == 'BASE/DSH'}">
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_BASE_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedBASEUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_DSH_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedDSHUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_AutoSub_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedAutoSubUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    
+                </aura:if>
+                <aura:if isTrue="{!v.AccTemplate == 'ROS'}">
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_CVS_Direct_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedCVSDirectUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_CVS_Indirect_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedCVSIndirectUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Cardinal_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedCardinalUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Major_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedMajorUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                </aura:if>
+                <aura:if isTrue="{!v.AccTemplate == 'RXSS'}">
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Smith_Drug_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedSmithDrugUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Anda_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedAndaUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_DirectAholdDelhaizeUnits__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedDirectAholdDelhaizeUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Direct_Gaint_Eagle_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedDirectGaintEagleUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_TotalRetailIndirectUnits__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedTotalRetailIndirectUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Proposed_Direct_Selling_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.ProposedDirectSellingUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="slds-text-align--right">
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Proposed_Indirect_Selling_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.ProposedIndirectSellingUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                </aura:if>
+                <aura:if isTrue="{!v.AccTemplate == 'Econdisc'}">
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Direct_ESI_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedDirectESIUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Indirect_ESI_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedIndirectESIUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Direct_Kroger_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedDirectKrogerUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Indirect_Kroger_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedIndirectKrogerUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Direct_Rx_Outreach_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedDirectRxOutreachUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_IndirectRxOutreach_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedIndirectRxOutreachUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Direct_Supervalu_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedDirectSupervaluUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Indirect_Supervalu_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedIndirectSupervaluUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Direct_Cigna_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedDirectCignaUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Indirect_Cigna_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedIndirectCignaUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Direct_Cordant_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedDirectCordantUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Indirect_Cordant_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedIndirectCordantUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Direct_Accerodo_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.Vision_Proposed_Direct_Accerodo_Units__c}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="slds-grid">
+                            <aura:if isTrue="{!v.isValidPkgSize}">
+                                <div class="slds-col">
+                                    <lightning:icon size="x-small" iconName="utility:info" title="{!'Uploaded Units : '+v.prodOptyObj.Vision_Proposed_Indirect_Accerodo_Units__c}"/>
+                                </div>
+                            </aura:if>
+                            <div class="slds-col slds-text-align--right">
+                                <lightning:input type="number" class="rightAlignCss" variant="label-hidden"
+                                                 onchange="{!c.updateProdWithNewPropUnits}"
+                                                 value="{!v.VisionProposedIndirectAccerodoUnits}" disabled="{!v.prodOptyObj.Vision_inActive__c}"/>
+                            </div>
+                        </div>
+                    </td>
+                </aura:if>
+                
+                <td scope="row" class="slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.totalProposedUnits}" 
+                                               minimumFractionDigits ="0"
+                                               maximumFractionDigits ="0"/></td>
+            </aura:set>
+        </aura:if>
+        
+        
+        <!--<aura:if isTrue="{!v.AccTemplate == 'ClarusOne'}">
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodOptyObj.Vision_Proposed_OS_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_OS_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodOptyObj.Vision_Proposed_RAD_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_RAD_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodOptyObj.Vision_Proposed_WMT_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_WMT_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+        </aura:if>
+        <aura:if isTrue="{!v.AccTemplate == 'BASE/DSH'}">
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_BASE_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_DSH_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_AutoSub_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+        </aura:if>
+        <aura:if isTrue="{!v.AccTemplate == 'RXSS'}">
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_Smith_Drug_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_Anda_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_DirectAholdDelhaizeUnits__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_Direct_Gaint_Eagle_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_TotalRetailIndirectUnits__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodOptyObj.Proposed_Direct_Selling_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Proposed_Direct_Selling_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodOptyObj.Proposed_Indirect_Selling_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Proposed_Indirect_Selling_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+        </aura:if>
+        <aura:if isTrue="{!v.AccTemplate == 'Econdisc'}">
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_Direct_ESI_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_Indirect_ESI_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_Direct_Kroger_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_Indirect_Kroger_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_Direct_Rx_Outreach_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_IndirectRxOutreach_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_Direct_Supervalu_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_Indirect_Supervalu_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_Direct_Cordant_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_Indirect_Cordant_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_Direct_Accerodo_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Proposed_Indirect_Accerodo_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodOptyObj.Proposed_Direct_Selling_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Proposed_Direct_Selling_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodOptyObj.Proposed_Indirect_Selling_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Proposed_Indirect_Selling_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+        </aura:if>
+        
+        <aura:if isTrue="{!v.isShowDirectUnits}">
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodOptyObj.Proposed_Direct_Selling_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Proposed_Direct_Selling_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+        </aura:if>
+        <aura:if isTrue="{!v.isShowInDirectUnits}">
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodOptyObj.Proposed_Indirect_Selling_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodOptyObj.Proposed_Indirect_Selling_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+        </aura:if>-->
+        <!--<td>
+        <div class="slds-truncate slds-text-align_right" title="{!v.prodOptyObj.Vision_Total_Annual_Units__c}">
+             <lightning:formattedNumber value="{!v.prodOptyObj.Vision_Total_Annual_Units__c}"></lightning:formattedNumber>
+           </div>
+          </td>-->
+        
+        <td>
+            <div class="slds-truncate slds-text-align_right" title="{!v.prodOptyObj.Vision_Guidance_Price__c}">
+                <lightning:formattedNumber style="currency" currencyCode="USD" value="{!v.prodOptyObj.Vision_Guidance_Price__c}"></lightning:formattedNumber>
+            </div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodOptyObj.Vision_UOM__c}">{!v.prodOptyObj.Vision_UOM__c}</div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodOptyObj.Vision_Customer_Comments__c}">{!v.prodOptyObj.Vision_Customer_Comments__c}</div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodOptyObj.Status__c}">{!v.prodOptyObj.Status__c}</div>
+        </td>
+        <!--<td>
+            <aura:if isTrue="{!v.prodOptyObj.Vision_Bid_on_Highest_Pack_Size__c == true}">
+                <div class="slds-truncate" title="Yes">Yes</div>
+                <aura:set attribute="else">
+                    <div class="slds-truncate" title="No">No</div>
+                </aura:set>
+            </aura:if>
+        </td>
+        <td>
+            <aura:if isTrue="{!v.prodOptyObj.Vision_Bid_on_Alternative_Pack_Size__c == true}">
+                <div class="slds-truncate" title="Yes">Yes</div>
+                <aura:set attribute="else">
+                    <div class="slds-truncate" title="No">No</div>
+                </aura:set>
+            </aura:if>
+        </td>-->
+        
+    </tr>
+</aura:component>

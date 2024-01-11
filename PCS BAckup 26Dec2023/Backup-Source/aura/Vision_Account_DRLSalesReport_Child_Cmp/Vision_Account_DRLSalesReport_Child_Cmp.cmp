@@ -1,0 +1,153 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    
+    <lightning:navigation aura:id="navService"/>
+    <aura:attribute name="pageReference" type="Object"/>
+    <aura:attribute name="salesdl" type="Decimal" />
+    <aura:attribute name="volume" type="Decimal" />
+    <aura:attribute name="tptdl" type="Decimal" />
+    <aura:attribute name="tptperc" type="Decimal" />
+    <aura:attribute name="singleRec" type="Object" />
+    <aura:attribute name="rowIndex" type="Integer" />
+    <aura:attribute name="classS" type="string" />
+    <aura:attribute name="classV" type="string" />
+    <aura:attribute name="classT" type="string" />
+    <aura:attribute name="classP" type="string" />
+    <aura:attribute name="isSalesLessThanZero" type="boolean" />
+    <aura:attribute name="isunitsLessThanZero" type="boolean" />
+    <aura:attribute name="isTPTLessThanZero" type="boolean" />
+    <aura:attribute name="isTPTPercentLessThanZero" type="boolean" />
+    <aura:attribute name="parent" type="Aura.Component"/>
+    <aura:attribute name="comparison" type="String" />
+    <aura:attribute name="isRxChecked" type="boolean" />
+    <aura:attribute name="isSRxChecked" type="boolean" />
+    <aura:attribute name="isOtcChecked" type="boolean" />
+    <aura:attribute name="isEXTChecked" type="boolean"/>
+     <aura:attribute name="ShowINT" type="boolean"/>
+    <aura:attribute name="showTPT" type="boolean"/>
+    <aura:attribute name="showItem" type="boolean"/>
+        <aura:attribute name="isAsc" type="boolean" default="true"/>
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+  <aura:iteration items="{!v.singleRec.childSalesList}" var="item" indexVar="index">
+   <aura:if isTrue ="{!v.showItem}">
+    <tr style ="background-color: #FFFFD9;">
+       
+        <td class="slds-text-align_center">{!index+1}</td>
+         
+        <td style="font-size: 14px; font-weight: bold;">
+          <!--<aura:if isTrue="{!item.custId != null}">-->
+            <a onclick="{!c.callParentMethod}">
+                <lightning:icon class="green" iconName="utility:graph" alternativeText="Go to Graph" size="x-small" title="{!'Redirected to Net Sales graph for ' + v.singleRec.custName}"/>
+            </a> &nbsp;
+              <aura:set attribute="else">
+                   <a onclick="{!c.callParentMethod}">
+                <lightning:icon class="green" iconName="utility:graph" alternativeText="Go to Graph" size="x-small" title="{!'Redirected to Net Sales graph for ' + v.singleRec.pfamily}"/>
+            </a> &nbsp;
+              </aura:set>
+            <!--</aura:if>-->
+            <!--<aura:if isTrue="{!item.custId != null}">-->
+                <!--<a onclick="{!c.redirectToProducts}">-->
+                    <lightning:buttonIcon variant="bare" class="green" iconName="utility:list" alternativeText="Redirect to Products" size="medium" title= "{!'Redirected to all products under ' + !item.custName}" value="{!item.custName}" onclick="{!c.redirectToProducts}"/>&nbsp;&nbsp;
+                <!--</a> &nbsp;&nbsp;-->
+                <!--<lightning:formattedUrl value="{!'/' + !item.custId}"  label="{!item.custName}" target="_blank" />-->
+            <lightning:formattedText  value="{!item.custName}" ></lightning:formattedText>
+                <aura:set attribute="else">
+                    {!v.singleRec.pfamily}
+                </aura:set>
+           <!-- </aura:if>-->
+        </td>
+        <aura:if isTrue ="{!v.isEXTChecked}">
+            <td class="slds-text-align_center tip2">
+                <lightning:icon class="{!item.classV}" 
+                                        iconName="utility:light_bulb" 
+                                        size="x-small"/>
+                <span>
+                    <lightning:formattedNumber value="{!(item.units - item.UnitsPrev)}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                </span>
+            </td>
+            <td class="slds-text-align_center tip1"><lightning:icon class="{!item.classS}" 
+                                        iconName="utility:light_bulb" 
+                                        size="x-small"/>
+                <span>
+                    <lightning:formattedNumber value="{!(item.salesdl - item.SalesDollarPrev)}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                </span>
+            </td>
+            <aura:set attribute ="else">
+                     <td class="slds-text-align_center tip2"><lightning:icon class="{!v.classV}" 
+                                        iconName="utility:light_bulb" 
+                                        size="x-small"/>
+                <span>
+                    <lightning:formattedNumber value="{!(item.units - v.singleRec.unitsPrev)}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                </span>
+           		 </td>
+                <td class="slds-text-align_center tip1"><lightning:icon class="{!v.classS}" 
+                                            iconName="utility:light_bulb" 
+                                            size="x-small"/>
+                    <span>
+                        <lightning:formattedNumber value="{!(item.salesdl - item.SalesDollarPrev)}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </span>
+                  </td>
+                  <td class="slds-text-align_center tip3"><lightning:icon class="{!v.classT}" 
+                                            iconName="utility:light_bulb" 
+                                            size="x-small"/>
+                    <span>
+                        <lightning:formattedNumber value="{!(item.tptdollar - item.TPTDollarPrev)}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </span>
+                	</td>
+                    <td class="slds-text-align_center tip4"><lightning:icon class="{!v.classP}"
+                                                iconName="utility:light_bulb" 
+                                                size="x-small"/>
+                        <span>
+                            <lightning:formattedNumber value="{!(item.tptpct - item.TPTPctPrev)}" style="percent-fixed" minimumFractionDigits="0" maximumFractionDigits="2"/>
+                        </span>
+                    </td>
+            </aura:set>
+        </aura:if>
+        <aura:if isTrue = "{!v.isEXTChecked}">
+            <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.UnitsPrev}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.units}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+        <td class="slds-text-align_right" style="{!(item.trendingVolume lt 0 ? 'color:red;text-align:right;' : 'color:black;')}"><lightning:formattedNumber value="{!item.trendingVolume}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.SalesDollarPrev}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.salesdl}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+       <td class="slds-text-align_right" style="{!(item.trendingSales lt 0 ? 'color:red;text-align:right;' : 'color:black;')}"><lightning:formattedNumber value="{!item.trendingSales}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+
+            <aura:set attribute ="else">
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.UnitsPrev}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.units}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+        <aura:if isTrue="{!v.isunitsLessThanZero}">
+            <td class="slds-text-align_right slds-text-color_error"><lightning:formattedNumber value="{!item.trendingVolume}" style="percent"  minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+            <aura:set attribute="else">
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.trendingVolume}" style="percent"  minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+            </aura:set>
+        </aura:if>
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.SalesDollarPrev}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.salesdl}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+        <aura:if isTrue="{!v.isSalesLessThanZero}">
+            <td class="slds-text-align_right slds-text-color_error">&nbsp;&nbsp;<lightning:formattedNumber value="{!item.trendingSales}" style="percent" minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+            <aura:set attribute="else">
+            	<td class="slds-text-align_right">&nbsp;&nbsp;<lightning:formattedNumber value="{!item.trendingSales}" style="percent" minimumFractionDigits="0" maximumFractionDigits="2"/></td>    
+            </aura:set>
+        </aura:if>
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.TPTDollarPrev}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.tptdollar}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+        <aura:if isTrue="{!v.isTPTLessThanZero}">
+            <td class="slds-text-align_right slds-text-color_error"><lightning:formattedNumber value="{!item.trendingTPT}" style="percent" minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+            <aura:set attribute="else">
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.trendingTPT}" style="percent" minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+            </aura:set>
+        </aura:if>
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.TPTPctPrev}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+        <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.tptpct}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+        <aura:if isTrue="{!v.isTPTPercentLessThanZero}">
+            <td class="slds-text-align_right slds-text-color_error"><lightning:formattedNumber value="{!item.trendingTPTPercent}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+            <aura:set attribute="else">
+                <td class="slds-text-align_right"><lightning:formattedNumber value="{!item.trendingTPTPercent}" style="percent-fixed"  minimumFractionDigits="0" maximumFractionDigits="2"/></td>
+            </aura:set>
+        </aura:if>
+            </aura:set>
+        </aura:if>
+        
+    </tr>
+   </aura:if>
+    </aura:iteration>
+</aura:component>

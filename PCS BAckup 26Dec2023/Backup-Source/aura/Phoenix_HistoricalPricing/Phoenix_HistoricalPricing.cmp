@@ -1,0 +1,311 @@
+<aura:component controller="Phoenix_HistoricalPricingCtrl" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="accountName" type="String" default=""/>
+    <aura:attribute name="productName" type="String" default=""/>
+     <aura:attribute name="accountId" type="String" default=""/>
+    <aura:attribute name="productId" type="String" default=""/>
+    <aura:attribute name="recordId" type="String" default=""/>
+    <aura:attribute name="isCustomerLink" type="boolean" default="false"/>
+    <aura:attribute name="isCustomerGroupLink" type="boolean" default="false"/>
+    <aura:attribute name="IsModalopen" type="boolean" default="false"/>
+    <aura:attribute name="noData" type="boolean" default="false"/>
+    
+    <aura:attribute name="historicalData" type="List" description="used to store the historical pricing of a given customer"/>
+    <aura:attribute name="historicalCusGroupData" type="List" description="used to store the historical pricing of a given customer group"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <div class="slds-box" style="background-color: white;" >  
+        
+        <div class="modal-header slds-modal__header"  style="padding-right: 5px; padding-top: 10px; padding-bottom: 10px; padding-left: 10px;">
+            
+            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate" style="color:#675e5e"><b>Historical Pricing</b></h2>
+            
+        </div>
+        <br/>
+        <br/>
+        <div align="left" draggable="false" style="margin-left: 10px;">
+            <div>   <a onclick="{!c.customerPricing}">Show customer related historical pricing</a></div>
+            
+            <div><a onclick="{!c.customerGroupPricing}">Show customer group related historical pricing</a></div>
+        </div>
+        <br/>
+        <br/>
+        
+        
+        
+        <aura:if isTrue="{!v.IsModalopen}">
+            
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                
+                <div class="slds-modal__container" style="width:70rem ! important; max-width: 70rem !important">
+                    <aura:if isTrue="{!v.isCustomerLink}">
+                        <!-- Modal/Popup Box Header Starts here-->
+                        <header class="slds-modal__header">
+                            <lightning:buttonIcon iconName="utility:close"
+                                                  onclick="{!c.closePopup}"
+                                                  alternativeText="close"
+                                                  variant="bare-inverse"
+                                                  class="slds-modal__close"/>
+                            <aura:if isTrue="{!not(empty(v.historicalData))}">
+                                <h2 class="slds-text-heading_medium slds-hyphenate"><b>Customer Historical Pricing</b></h2>
+                            </aura:if>
+                        </header>
+                        <!--Modal/Popup Box Body Starts here-->
+                        <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                        <div class="slds-modal__content slds-p-around_medium" >
+                            <aura:if isTrue="{!not(empty(v.historicalData))}">
+                                <div class="slds-scope" style="margin-bottom:15px">
+                                    <div class="slds-grid slds-wrap slds-text-align_center custom-container">
+                                        <div class="slds-size_1-of-2 slds-max-small-size_1-of-1 sapdata">
+                                            <b>Customer</b> : <a href="{!'/'+v.accountId}" target="_blank">{!v.accountName}</a>
+                                            
+                                        </div>
+                                        <div class="slds-size_1-of-2 slds-max-small-size_1-of-1 sapdata">
+                                            <b>Product</b> : <a href="{!'/'+v.productId}" target="_blank">{!v.productName}</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!v.noData}">
+                                <div align="center" draggable="false" >
+                                    No Data exists.
+                                    
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!not(empty(v.historicalData))}">
+                                <table
+                                       class="slds-table slds-table_cell_buffered slds-max-medium-table_stacked-horizontal slds-table_bordered"
+                                       style="border:1px solid #eaeaea;">
+                                    <thead>
+                                        
+                                        <tr class="slds-text-title">
+                                            
+                                            <th scope="col" class="slds-cell-wrap ">
+                                                <div class="slds-truncate" title="Price Effective Value From">
+                                                    Price Effective Value From
+                                                </div>
+                                            </th>
+                                            <th scope="col" class="slds-cell-wrap ">
+                                                <div class="slds-truncate" title="Contract Price">
+                                                    Contract Price
+                                                </div>
+                                            </th>
+                                            
+                                            <th scope="col" class="slds-cell-wrap ">
+                                                <div class="slds-truncate" title="Change from previous(%)">
+                                                    Change from previous(%)
+                                                </div>
+                                            </th>
+                                            
+                                            <th scope="col" class="slds-cell-wrap ">
+                                                <div class="slds-truncate" title="Dead Net(High GR)">
+                                                    Dead Net(High GR)
+                                                </div>
+                                            </th>
+                                            <th scope="col" class="slds-cell-wrap ">
+                                                <div class="slds-truncate" title="Change from previous(%)">
+                                                    Change from previous(%)
+                                                </div>
+                                            </th>
+                                            
+                                            
+                                        </tr>
+                                    </thead> 
+                                    <tbody>
+                                        <aura:iteration items="{!v.historicalData}" var="prodItem"
+                                                        indexVar="itemIndex">
+                                            <tr>
+                                                <td class="slds-cell-wrap " scope="col" >
+                                                    {!prodItem.npr.Phoenix_Price_Effective_Value_From__c}
+                                                </td> 
+                                                <td class="slds-cell-wrap " scope="col">
+                                                    {!prodItem.npr.Phoenix_Contract_Price__c}
+                                                </td>
+                                                
+                                                <td class="slds-cell-wrap " scope="col">
+                                                    <lightning:icon class="{!prodItem.fillColor}" iconName="{!prodItem.iconName}" size="small"></lightning:icon>
+                                                    {!prodItem.changePercent}
+                                                    
+                                                    
+                                                </td>
+                                                
+                                                <td class="slds-cell-wrap " scope="col">
+                                                    {!prodItem.npr.Phoenix_Dead_Net_High_GR__c}
+                                                </td>
+                                                
+                                                <td class="slds-cell-wrap " scope="col">
+                                                    <lightning:icon class="{!prodItem.fillColorDead}" iconName="{!prodItem.iconNameDead}" size="small"></lightning:icon>
+                                                    {!prodItem.changeDeadPercent}
+                                                    
+                                                    
+                                                </td>
+                                                
+                                            </tr>
+                                        </aura:iteration>
+                                    </tbody>
+                                </table>
+                                <!--aura:set attribute="else">
+                                                        <p style="text-align:center">Please Select Products to Display.</p>  
+                                                    </aura:set-->
+                            </aura:if>
+                        </div>
+                        <!--/div-->
+                        <!--Modal/Popup Box Footer Starts here-->
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral"
+                                              label="Close"
+                                              title="Close"
+                                              onclick="{! c.closePopup }"/>
+                            
+                        </footer>
+                    </aura:if>
+                    <aura:if isTrue="{!v.isCustomerGroupLink}">
+                        
+                        
+                        
+                        <!-- Modal/Popup Box Header Starts here-->
+                        <header class="slds-modal__header">
+                            <lightning:buttonIcon iconName="utility:close"
+                                                  onclick="{!c.closePopup}"
+                                                  alternativeText="close"
+                                                  variant="bare-inverse"
+                                                  class="slds-modal__close"/>
+                            <aura:if isTrue="{!not(empty(v.historicalData))}">
+                                <h2 class="slds-text-heading_medium slds-hyphenate"><b>Customer Group Historical Pricing</b></h2>
+                            </aura:if>
+                        </header>
+                        
+                        <!--Modal/Popup Box Body Starts here-->
+                        <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                        <div class="slds-modal__content slds-p-around_medium" >
+                            <aura:if isTrue="{!not(empty(v.historicalData))}">
+                            <div class="slds-scope" style="margin-bottom:15px">
+                                <div class="slds-grid slds-wrap slds-text-align_center custom-container">
+                                    <div class="slds-size_1-of-2 slds-max-small-size_1-of-1 sapdata">
+                                        <b> Customer</b> : <a href="{!'/'+v.accountId}" target="_blank">{!v.accountName}</a>
+                                        
+                                    </div>
+                                    <div class="slds-size_1-of-2 slds-max-small-size_1-of-1 sapdata">
+                                        <b>Product</b> : <a href="{!'/'+v.productId}" target="_blank">{!v.productName}</a>
+                                    </div>
+                                </div>
+                            </div>
+                            </aura:if>
+                            <aura:if isTrue="{!v.noData}">
+                                <div align="center" draggable="false" >
+                                    No Data exists.
+                                    
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!not(empty(v.historicalData))}">
+                                
+                                <table
+                                       class="slds-table slds-table_cell_buffered slds-max-medium-table_stacked-horizontal slds-table_bordered"
+                                       style="border:1px solid #eaeaea;">
+                                    <thead>
+                                        
+                                        <tr class="slds-text-title">
+                                            <th scope="col" class="slds-cell-wrap ">
+                                                <div class="slds-truncate" title="Customer">
+                                                    Customer Name
+                                                </div>
+                                            </th>
+                                            <th scope="col" class="slds-cell-wrap ">
+                                                <div class="slds-truncate" title="Price Effective Value From">
+                                                    Price Effective Value From
+                                                </div>
+                                            </th>
+                                            <th scope="col" class="slds-cell-wrap ">
+                                                <div class="slds-truncate" title="Contract Price">
+                                                    Contract Price
+                                                </div>
+                                            </th>
+                                            <th scope="col" class="slds-cell-wrap ">
+                                                <div class="slds-truncate" title="Change from previous(%)">
+                                                    Change from previous(%)
+                                                </div>
+                                            </th>
+                                            <th scope="col" class="slds-cell-wrap ">
+                                                <div class="slds-truncate" title="Dead Net(High GR)">
+                                                    Dead Net(High GR)
+                                                </div>
+                                            </th>
+                                            <th scope="col" class="slds-cell-wrap ">
+                                                <div class="slds-truncate" title="Change from previous(%)">
+                                                    Change from previous(%)
+                                                </div>
+                                            </th>
+                                            
+                                            
+                                        </tr>
+                                    </thead> 
+                                    <tbody>
+                                        <aura:iteration items="{!v.historicalData}" var="prodItem"
+                                                        indexVar="itemIndex">
+                                            <tr>
+                                                <td class="slds-cell-wrap" scope="col">
+                                                    <div class='sapdata'>
+                                                        <a href="{!'/'+ prodItem.npr.Phoenix_Account__c}" target="_blank">{!prodItem.npr.Phoenix_Account__r.Name}</a>
+                                                    </div>
+                                                    
+                                                </td> 
+                                                <td class="slds-cell-wrap " scope="col">
+                                                    {!prodItem.npr.Phoenix_Price_Effective_Value_From__c}
+                                                </td> 
+                                                <td class="slds-cell-wrap " scope="col">
+                                                    {!prodItem.npr.Phoenix_Contract_Price__c}
+                                                </td>
+                                                <td class="slds-cell-wrap " scope="col">
+                                                    <lightning:icon class="{!prodItem.fillColor}" iconName="{!prodItem.iconName}" size="small"></lightning:icon>
+                                                    {!prodItem.changePercent}  
+                                                    
+                                                    
+                                                </td>
+                                                <td class="slds-cell-wrap " scope="col">
+                                                    {!prodItem.npr.Phoenix_Dead_Net_High_GR__c}
+                                                </td>
+                                                <td class="slds-cell-wrap " scope="col">
+                                                    <lightning:icon class="{!prodItem.fillColorDead}" iconName="{!prodItem.iconNameDead}" size="small"></lightning:icon>
+                                                    {!prodItem.changeDeadPercent}
+                                                    
+                                                </td>
+                                            </tr>
+                                        </aura:iteration>
+                                    </tbody>
+                                </table>
+                                <!--aura:set attribute="else">
+                                                        <p style="text-align:center">Please Select Products to Display.</p>  
+                                                    </aura:set-->
+                            </aura:if>
+                        </div>
+                        <!--/div-->
+                        <!--Modal/Popup Box Footer Starts here-->
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral"
+                                              label="Close"
+                                              title="Close"
+                                              onclick="{! c.closePopup }"/>
+                            
+                        </footer>
+                        
+                        
+                    </aura:if>
+                </div>
+                
+                
+                
+                
+                
+                
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+        
+        
+        
+        
+    </div>
+    
+    
+    
+</aura:component>

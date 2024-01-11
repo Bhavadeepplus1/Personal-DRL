@@ -1,0 +1,170 @@
+<aura:component controller="VisionSKUSummaryCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="showSummaryPopup" type="boolean" />
+    <aura:attribute name="BidLineItemListAll" type="list" />
+    <aura:attribute name="familyList" type="list" />
+    <aura:attribute name="summaryList" type="list" />
+    <aura:attribute name="totalSummaryObj" type="Object" />
+    <aura:attribute name="approvedLineItems" type="Integer" />
+    <aura:attribute name="rejectedLineItems" type="Integer" />
+    <aura:attribute name="noActionLineItems" type="Integer" />
+    <aura:attribute name="userRelatedLineItems" type="list" />
+    <aura:attribute name="filteredBidLineItems" type="list" />
+    <aura:attribute name="productDirector" type="string" />
+    <aura:attribute name="bidRecord" type="sObject"  />
+    <aura:handler name = "init" value ="{!this}" action = "{!c.doInit}"/>
+    
+    <aura:if isTrue="{!v.showSummaryPopup}">
+        <div>
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_large">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{!c.showSummaryPopup}"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 class="slds-text-heading_medium slds-hyphenate">
+                            <b>Summary view of {!v.productDirector}'s SKUs</b>
+                        </h2>
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <!--div class="slds-scrollable" style="height: 100rem; width: 46rem"-->
+                    <div class="slds-modal__content slds-p-around_medium" >
+                        <div class="slds-box">
+                            <b><i>Total SKU's: {!v.filteredBidLineItems.length}</i></b>&nbsp;&nbsp;
+                            <b><i>Approved SKU's: {!v.approvedLineItems}</i></b>&nbsp;&nbsp;
+                            <b><i>Rejected SKU's: {!v.rejectedLineItems}</i></b>&nbsp;&nbsp;
+                            <b><i>No Action Taken SKU's: {!v.noActionLineItems}</i></b>
+                            <div style="min-height: 120px; max-height: 360px;overflow: auto;margin-top: 4px;">
+                                <aura:if isTrue="{!v.summaryList.length == 0}">
+                                    <center><div style="margin-top:60px;"><h1 style="font-size:1.3rem; font-weight:350;color:gray">No SKUs found. Only SKUs related to you (Product Director) will be displayed here.</h1></div></center>
+                                    <aura:set attribute="else">
+                                        <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="width: 100%; margin-bottom: 4px;font-size: 13px;padding: 0px;border: 1px solid black;">
+                                            <thead class="headerOfTable">
+                                                <tr>
+                                                    <th class="productHeaderSticky" style="background-color:#27708b;color: white;text-align: center;" rowspan="2">Product</th>
+                                                    <th class="mainHeaderSticky" colspan="5" style="background-color: rgb(171, 216, 202);text-align: center;border-left: 1px solid black;">Current</th>
+                                                    <th class="mainHeaderSticky" colspan="5" style="background-color: #80c1db;text-align: center;border-left: 1px solid black;">Proposed</th>
+                                                    <th class="mainHeaderSticky" colspan="6" style="background-color: #cedde1;text-align: center;border-left: 1px solid black;">SCM</th>
+                                                </tr>
+                                                <tr>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:rgb(226, 241, 237);text-align: center;border-left: 1px solid black;" width="6%">Units EA (EU)</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:rgb(226, 241, 237);text-align: center;" width="6%">Sales $</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:rgb(226, 241, 237);text-align: center;" width="6%">$ TPT Margin</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:rgb(226, 241, 237);text-align: center;" width="6%">% TPT Margin</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:rgb(226, 241, 237);text-align: center;" width="6%">Market Share</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:#d0e7f7;text-align: center;border-left: 1px solid black;" width="6%">Units EA (EU)</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:#d0e7f7;text-align: center;" width="6%">Sales $</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:#d0e7f7;text-align: center;" width="6%">$ TPT Margin</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:#d0e7f7;text-align: center;" width="6%">% TPT Margin</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:#d0e7f7;text-align: center;" width="6%">Market Share</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:#e6eef0;text-align: center;border-left: 1px solid black;" width="6%">Units EA (EU)</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:#e6eef0;text-align: center;" width="6%">Sales $</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:#e6eef0;text-align: center;" width="6%">$ TPT Margin</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:#e6eef0;text-align: center;" width="6%">% TPT Margin</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:#e6eef0;text-align: center;" width="6%">Market Share</th>
+                                                    <th class="headerSticky slds-truncate slds-cell-wrap" style="background-color:#e6eef0;text-align: center;" width="6%">Approval</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <th class="headerStickyTotal" style="background: #b5ccd2; font-weight: bold;"><b>Total</b></th>
+                                                    <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;border-left: 1px solid black;">
+                                                        <b><lightning:formattedNumber value="{!v.totalSummaryObj.currentUnitsEA}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        (<lightning:formattedNumber value="{!v.totalSummaryObj.currentUnitsEU}" minimumFractionDigits="0" maximumFractionDigits="0"/>)</b>
+                                                    </th>
+                                                    <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;">
+                                                        <b><lightning:formattedNumber value="{!v.totalSummaryObj.currentSales}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                                    </th>
+                                                    <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;">
+                                                        <b><lightning:formattedNumber value="{!v.totalSummaryObj.currentTPMargin}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                                    </th>
+                                                    <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;">
+                                                        <aura:if isTrue="{!v.totalSummaryObj.currentSales != 0}">
+                                                            <b><lightning:formattedNumber value="{!(v.totalSummaryObj.currentTPMargin/v.totalSummaryObj.currentSales)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                                        </aura:if>
+                                                    </th>
+                                                    <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;"></th>
+                                                    <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;border-left: 1px solid black;">
+                                                        <b><lightning:formattedNumber value="{!v.totalSummaryObj.proposedUnitsEA}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        (<lightning:formattedNumber value="{!v.totalSummaryObj.proposedUnitsEU}" minimumFractionDigits="0" maximumFractionDigits="0"/>)</b>
+                                                    </th>
+                                                    <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;">
+                                                        <b><lightning:formattedNumber value="{!v.totalSummaryObj.proposedSales}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                                    </th>
+                                                    <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;">
+                                                        <b><lightning:formattedNumber value="{!v.totalSummaryObj.proposedTPMargin}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                                    </th>
+                                                    <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;">
+                                                        <aura:if isTrue="{!v.totalSummaryObj.proposedSales != 0}">
+                                                            <b><lightning:formattedNumber value="{!(v.totalSummaryObj.proposedTPMargin/v.totalSummaryObj.proposedSales)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                                        </aura:if>
+                                                    </th>
+                                                    <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;"></th>
+                                                    <aura:if isTrue="{!or(v.bidRecord.Phoenix_Bid_Type__c == 'Price Change', v.bidRecord.Phoenix_Bid_Type__c == 'Customer Rebate Change', v.bidRecord.Phoenix_Bid_Type__c == 'OTC Price Change', v.bidRecord.Phoenix_Bid_Type__c == 'OTC Rebate Change', v.bidRecord.Phoenix_Bid_Type__c == 'Sales Out Rebate', v.bidRecord.Phoenix_Bid_Type__c == 'New Product Launch', v.bidRecord.Phoenix_Bid_Type__c == 'OTC OTB Good Dated', v.bidRecord.Phoenix_Bid_Type__c == 'OTC OTB Short Dated', v.bidRecord.Phoenix_Bid_Type__c == 'One Time Buy Good Dated Shelf Life for New Product Launch')}">
+                                                        <th class="headerStickyTotal" style="background: #b5ccd2; font-weight: bold;border-left: 1px solid black;">
+                                                            N/A
+                                                        </th>
+                                                        <th class="headerStickyTotal" style="background: #b5ccd2; font-weight: bold;">
+                                                            N/A
+                                                        </th>
+                                                        <th class="headerStickyTotal" style="background: #b5ccd2; font-weight: bold;">
+                                                            N/A
+                                                        </th>
+                                                        <th class="headerStickyTotal" style="background: #b5ccd2; font-weight: bold;">
+                                                            N/A
+                                                        </th>
+                                                        <th class="headerStickyTotal" style="background: #b5ccd2; font-weight: bold;">
+                                                            N/A
+                                                        </th>
+                                                        <th class="headerStickyTotal" style="background: #b5ccd2; font-weight: bold;">
+                                                            N/A
+                                                        </th>
+                                                        <aura:set attribute="else">
+                                                            <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;border-left: 1px solid black;">
+                                                                <b><lightning:formattedNumber value="{!v.totalSummaryObj.scmUnitsEA}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                (<lightning:formattedNumber value="{!v.totalSummaryObj.scmUnitsEU}" minimumFractionDigits="0" maximumFractionDigits="0"/>)</b>
+                                                            </th>
+                                                            <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;">
+                                                                <b><lightning:formattedNumber value="{!v.totalSummaryObj.scmSales}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                                            </th>
+                                                            <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;">
+                                                                <b><lightning:formattedNumber value="{!v.totalSummaryObj.scmTPMargin}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                                            </th>
+                                                            <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;">
+                                                                <aura:if isTrue="{!v.totalSummaryObj.scmSales != 0}">
+                                                                    <b><lightning:formattedNumber value="{!(v.totalSummaryObj.scmTPMargin/v.totalSummaryObj.scmSales)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                                                </aura:if>
+                                                            </th>
+                                                            <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;"></th>
+                                                            <th class="headerStickyTotal" style="text-align: right;background: #b5ccd2; font-weight: bold;"></th>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </tr>
+                                                <aura:iteration items="{!v.summaryList}" var="record">
+                                                    <c:VisionSummarySKUCmpChild record="{!record}" relatedList="{!record.relatedList}" bidRecord="{!v.bidRecord}" />
+                                                </aura:iteration>
+                                            </tbody>
+                                        </table>
+                                    </aura:set>
+                                </aura:if>
+                            </div>
+                        </div>
+                    </div>
+                    <!--/div-->
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.showSummaryPopup }"/>
+                        
+                    </footer>
+                </div>
+                
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+    </aura:if >
+</aura:component>

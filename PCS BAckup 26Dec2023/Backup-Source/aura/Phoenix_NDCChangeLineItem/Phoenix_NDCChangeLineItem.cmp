@@ -1,0 +1,819 @@
+<aura:component controller="Phoenix_NDCChangeEditor" implements="lightning:isUrlAddressable,force:hasRecordId,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithOutHeader" access="global">
+    <aura:attribute name="recordId" type="String"  />
+    
+    <lightning:navigation aura:id="navService"/> 
+    <aura:attribute name="mydata" type="Object" />
+    <aura:attribute name="leadValues" type="List" />
+    <aura:attribute name="bidNumber" type="string"  />
+    <aura:attribute name="bidName" type="string"  />
+    <aura:attribute name="searchText" type="String" />
+    <aura:attribute name="isOpen" type="boolean" default="false" />
+    <aura:attribute name="isNDCOffer" type="boolean" />
+    
+    <aura:attribute type="Boolean" name="sortAsc" />
+    <aura:attribute type="String" name="sortField" default="Name" />
+    <aura:attribute name="arrowDirection" type="string" default="arrowup" description="Use for change arrow sign direction on header based on click"/>
+    <aura:attribute name="filter" type="String" /> 
+    
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+      <aura:attribute name="IsSearch" type="boolean" default="false" />
+    <aura:attribute name="BidAprrovalStatus" type="string"  />
+    <aura:attribute name="loggedInUserName" type="string" default=""/>
+    <aura:attribute name="loggedInUserId" type="string" default=""/>
+      <aura:attribute name="vistexCompleted" type="boolean"  />
+    <aura:attribute name="isSCMApprovePerson" type="boolean"  />
+    <aura:attribute name="isFinanceApprovePerson" type="boolean"  />
+    
+    <aura:attribute name="isVistexApprovePerson" type="boolean"  />
+    <aura:attribute name="isContractsApprovePerson" type="boolean"  />
+    
+    
+    <aura:attribute name="NDCLineItemList" type="Phoenix_NDC_Change_Line_Item__c[]" description="store account records list"/>
+    <aura:attribute name="NDCLineItemListDuplicates" type="Phoenix_NDC_Change_Line_Item__c[]" description="store copy of line items list"/>
+    <aura:attribute name="showSaveCancelBtn" type="boolean" default="false" description="flag for rendered save and cancel buttons in aura:if "/>
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.doInit}" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="lightningEvent" event="c:RefreshIPALinesEvt" action="{!c.handleEvent}"/>
+    <lightning:tabset aura:id="Tabset" selectedTabId="EBLI">
+        <lightning:tab label="Input View" id="EBLI" onactive="{!c.doInit}"> 
+            <lightning:card iconName="custom:custom90" title="{!(v.bidNumber+' - '+v.bidName)}">
+                <aura:set attribute="actions">
+                    <lightning:formattedUrl value="{!'/'+'lightning/r/' + v.recordId+'/related/CombinedAttachments/view'}"
+                                            label="Offer Attachments" target="_blank" />&nbsp;&nbsp;                      
+                    <lightning:button variant="neutral" label="Back" title="Back" onclick="{! c.backToBid }"/>
+                    <lightning:button variant="neutral" label="Generate Offer Document" title="Generate Offer Document" onclick="{! c.openModel }" />
+                    <aura:if isTrue="{!(v.NDCLineItemList.length > 0 )}">
+                        <lightning:button label="Export" onclick="{!c.downloadCsv}"/>
+                    </aura:if>
+                    
+                    <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Supply Chain',v.NDCLineItemList.length > 0),and(v.isSCMApprovePerson==true,v.showSaveCancelBtn==false))}">
+                        <lightning:button variant="neutral" label="Submit" title="Submit" onclick="{! c.saveToProceedSCM }"/>
+                    </aura:if> 
+                    <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Finance',v.NDCLineItemList.length > 0),and(v.isFinanceApprovePerson==true,v.showSaveCancelBtn==false))}">
+                        <lightning:button variant="neutral" label="Submit" title="Submit" onclick="{! c.saveToProceedFinance }"/>
+                    </aura:if> 
+                    
+                    <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Contracts',v.NDCLineItemList.length > 0),and(or(v.isContractsApprovePerson==true,and(v.isVistexApprovePerson==true,v.vistexCompleted==false)),v.showSaveCancelBtn==false))}">
+                        <lightning:button variant="neutral" label="Submit" title="Submit" onclick="{! c.saveToProceedContracts }"/>
+                    </aura:if> 
+                    
+                    <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Customer\'s Update',v.NDCLineItemList.length > 0),and(or(v.isContractsApprovePerson==true,and(v.isVistexApprovePerson==true,v.vistexCompleted==false)),v.showSaveCancelBtn==false))}">
+                        <lightning:button variant="neutral" label="Submit" title="Submit" onclick="{! c.saveToProceedCustomer }"/>
+                    </aura:if> 
+                    <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Vistex Update',v.NDCLineItemList.length > 0),and(v.isVistexApprovePerson==true,v.showSaveCancelBtn==false))}">
+                        <lightning:button variant="neutral" label="Submit" title="Submit" onclick="{! c.saveToProceedVistex }"/>
+                    </aura:if> 
+                    
+                    
+                    
+                    
+                    <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Supply Chain',v.NDCLineItemList.length > 0),v.isSCMApprovePerson==true)}">
+                        <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:5%">
+                            
+                            <lightning:select label ='SCM Approval (Mark all as)'
+                                              aura:id="headerSCMApproval"
+                                              onchange="{!c.onSCMApprovalChange}"
+                                              >
+                                <option value="None">-None-</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Not Approved">Not Approved</option>
+                                
+                            </lightning:select>
+                        </div>
+                    </aura:if>
+                    
+                    
+                    <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Supply Chain',v.NDCLineItemList.length > 0),v.isSCMApprovePerson==true)}">
+                        <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:5%">
+                            
+                            <lightning:select label ='Lead Time(Mark all as))'
+                                              aura:id="headerLeadTime"
+                                              onchange="{!c.onLeadTimeChange}"
+                                              >
+                                <option value=" "> </option>
+                                <aura:iteration items="{!v.leadValues}" var="val">
+                                    <option value="{!val}">{!val}</option>
+                                </aura:iteration>
+                                
+                            </lightning:select>
+                        </div>
+                    </aura:if>
+                    
+                    <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Supply Chain',v.NDCLineItemList.length > 0),v.isSCMApprovePerson==true)}">
+                        <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:5%">
+                            
+                            
+                            <lightning:input type="text" label ='SCM Remarks(Mark all as)' aura:id="headerSCMRemarks"  onchange="{!c.onSCMRemarksChange}" />
+                            
+                            
+                        </div>
+                    </aura:if>
+                    
+                    <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Finance',v.NDCLineItemList.length > 0),v.isFinanceApprovePerson==true)}">
+                        
+                        <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:5%">
+                            <lightning:select label="Finance Approval (Mark all as)"
+                                              aura:id="headerFinanceApproval"
+                                              onchange="{!c.onFinanceApprovalChange}"
+                                              >
+                                <option value="None">-None-</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Not Approved">Not Approved</option>
+                            </lightning:select>
+                        </div>
+                    </aura:if>
+                     <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Finance',v.NDCLineItemList.length > 0),v.isFinanceApprovePerson==true)}">
+                        
+                        <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:5%">
+                        <lightning:input type="text" label ='Finance Remarks(Mark all as)' aura:id="headerFinanceRemarks"  onchange="{!c.onFinanceRemarksChange}" />
+
+                        </div>
+                    </aura:if>
+                    <!-- <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Contracts',v.NDCLineItemList.length > 0),v.isContractsApprovePerson==true)}">
+          <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:8%">
+
+                     <lightning:select label="Contracts Sent to Customer(Mark all as)"
+                                                      aura:id="headerContractApproval"
+                                                      onchange="{!c.onApprovalChange}"
+                                                      >
+                                        <option value="None">-None-</option>
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                      
+              </lightning:select></div>
+                    </aura:if>
+              
+                <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Customer\'s Update',v.NDCLineItemList.length > 0),v.isContractsApprovePerson==true)}">
+
+                                                            <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:8%">
+ <lightning:select label="Customer Approval (Mark all as)"
+                                                          aura:id="headerCustomerApproval"
+                                                          onchange="{!c.onCustomerApprovalChange}"
+                                                          >
+                                            <option value="None">-None-</option>
+                                            <option value="Approved">Approved</option>
+                                            <option value="Not Approved">Not Approved</option>	
+                                            <option value="Not Required">Not Required</option>
+                                        </lightning:select>
+                                                  </div>
+                                                  </aura:if>-->
+                     <aura:if isTrue="{!and(v.BidAprrovalStatus=='Vistex Update',and(v.NDCLineItemList.length > 0,v.isVistexApprovePerson==true))}">
+          <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:5%">
+
+                     <lightning:select label="Vistex Approval (Mark all as)"
+                                                      aura:id="headerVistexApproval"
+                                                      onchange="{!c.onApprovalVistexChange}"
+                                                      >
+                                        <option value="None">-None-</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Updated">Updated</option>
+                                       
+              </lightning:select></div>
+                    </aura:if>
+            <aura:if isTrue="{!and(v.BidAprrovalStatus=='Vistex Update',and(v.NDCLineItemList.length > 0,v.isVistexApprovePerson==true))}">
+
+                        
+                        <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:5%">
+                        <lightning:input type="text" label ='Vistex Remarks(Mark all as)' aura:id="headerVistexRemarks"  onchange="{!c.onVistexRemarksChange}" />
+
+                        </div>
+                    </aura:if>
+                    
+                </aura:set>
+                
+               <div class="slds-grid">
+                        <div class="slds-col slds-size_2-of-4 slds-m-right_small slds-m-left_small">
+                            <span onkeypress="{!c.keyCheck}" >
+                                <lightning:input value="{!v.searchText}" type="search"
+                                                 variant="label-hidden" placeholder="Search with Account, Contract, Product, NDC-11 and Material Code"
+                                                 aura:id="SearchBox" label="Search" onchange="{!c.onClear}"
+                                                 />
+                            </span>
+                        </div>
+                        <div class="slds-col slds-size_1-of-4 slds-p-left_x-small">
+                            <lightning:button variant="brand" type="Button" label="Search" onclick="{!c.onsearch}" />
+                        </div>
+                    </div>
+             
+                <br/>
+                <center>
+                    <aura:if isTrue="{!v.showSaveCancelBtn}">
+                        <!--button for save and cancel Record after Inline Edit-->
+                        <lightning:button label="Cancel" onclick="{!c.cancel}"/>&nbsp;
+                        
+                        <lightning:button variant="brand" label="Save"  onclick="{!c.Save}" disabled="{!v.NDCLineItemList.length == 0}"/>
+                    </aura:if> 
+                </center>
+                
+                
+                <!-- Test Starts -->
+                <aura:if isTrue="{!v.isSpinnerLoad}">
+                    <div class="backgroundInverse">
+                        <lightning:spinner alternativeText="Loading" variant="brand" />
+                    </div>
+                </aura:if>
+                <aura:if isTrue="{!v.isOpen}">
+                    <c:GenerateOfferDocument recordId="{!v.recordId}" isOpen="{!v.isOpen}" isNDCOffer='true'>
+                    </c:GenerateOfferDocument>
+                </aura:if>
+                
+                <aura:if isTrue="{!(v.NDCLineItemList.length > 0 )}">
+                   
+                    <!--Data Table-->
+                    <div aura:id="mainDiv" style="height:450px;overflow:auto;margin-top:10px;" class=" slds-m-right_small slds-m-left_small">
+                        <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                            <table aura:id="LineTable"  class="customtable slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                      
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByAccount}">  
+                                            <div class="slds-truncate" title="Account">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Account">Account</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Account__r.Name') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Account__r.Name') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByContract}">
+                                            <div class="slds-truncate" title="Contract">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Contract">Contract</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Contract__r.Name') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Contract__r.Name') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                         <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByCurrentProduct}">
+                                            <div class="slds-truncate" title="Current Product">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Current Product">Current Product</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Current_Product__r.Name') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Current_Product__r.Name') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                          <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByProposedProduct}">
+                                            <div class="slds-truncate" title="Proposed Product">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Proposed Product">Proposed Product</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Proposed_Product__r.Name') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Proposed_Product__r.Name') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                          <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByAwardedPosition}">
+                                            <div class="slds-truncate" title="Awarded Position">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Awarded Position">Awarded Position</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Awarded_Position__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Awarded_Position__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByContractDescription}">
+                                            <div class="slds-truncate" title="Contract Description">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Contract Description">Contract Description</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Contract_Internal_Description__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Contract_Internal_Description__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                      
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByCurrentProductNDC}">
+                                            <div class="slds-truncate" title="Current Product NDC">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Current Product NDC">Current Product NDC</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Current_Product_NDC__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Current_Product_NDC__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                       
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByCurrentProductPackSize}">
+                                            <div class="slds-truncate" title="Current Product Pack Size">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Current Product Pack Size">Current Product Pack Size</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Current_Product_Pack_Size__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Current_Product_Pack_Size__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByProposedProductNDC}">
+                                            <div class="slds-truncate" title="Proposed Product NDC">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Proposed Product NDC">Proposed Product NDC</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Proposed_Product_NDC__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Proposed_Product_NDC__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                      
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByProposedProductPackSize}">
+                                            <div class="slds-truncate" title="Proposed Product Pack Size">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Proposed Product Pack Size">Proposed Product Pack Size</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Proposed_Product_Pack_Size__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Proposed_Product_Pack_Size__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByContractPrice}">
+                                            <div class="slds-truncate" title="Contract Price">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Contract Price">Contract Price</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Contract_Price__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Contract_Price__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                      
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByAwardedQuantity}">
+                                            <div class="slds-truncate" title="Awarded Quantity">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Awarded Quantity">Awarded Quantity</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Awarded_Quantity__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Awarded_Quantity__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortBy3MonthsAnnualizedQuantity}">
+                                            <div class="slds-truncate" title="3 Months Annualized Quantity">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="3 Months Annualized Quantity">3 Months Annualized Quantity</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_3_Months_Annualized_Quantity__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_3_Months_Annualized_Quantity__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByActualQty12m}">
+                                            <div class="slds-truncate" title="Actual Qty 12m">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Actual Qty 12m">Actual Qty 12m</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Actual_Quantity_Last_12m__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Actual_Quantity_Last_12m__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByVarAwardedVs3mAnnualizedQty}">
+                                            <div class="slds-truncate" title="Var (Awarded v/s 3m Annualized Qty)">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Var (Awarded v/s 3m Annualized Qty)">Var (Awarded v/s 3m Annualized Qty)</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Var_Awarded_vs_3m_Annualized_Qty__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Var_Awarded_vs_3m_Annualized_Qty__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByVarAwardedVs12mActualQty}">
+                                            <div class="slds-truncate" title="Var (Awarded v/s 12m Actual Qty)">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Var (Awarded v/s 12m Actual Qty)">Var (Awarded v/s 12m Actual Qty)</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Var_Awarded_vs_12m_Actual_Qty__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Var_Awarded_vs_12m_Actual_Qty__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByMonthlyVarAwardedVs3mAnnualizedQty}">
+                                            <div class="slds-truncate" title="Monthly Var (Awarded v/s 3m Annualized Qty)">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Monthly Var (Awarded v/s 3m Annualized Qty)">Monthly Var (Awarded v/s 3m Annualized Qty)</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Monthly_Var_Awarded_v_s_3m_Annua__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Monthly_Var_Awarded_v_s_3m_Annua__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByMonthlyVarAwardedVs12mActualQty}">
+                                            <div class="slds-truncate" title="Monthly Var (Awarded v/s 12m Actual Qty)">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Monthly Var (Awarded v/s 12m Actual Qty)">Monthly Var (Awarded v/s 12m Actual Qty)</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Monthly_Var_Awarded_v_s_12m_Actu__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Monthly_Var_Awarded_v_s_12m_Actu__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                          <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortBySubmitterRemarks}">
+                                            <div class="slds-truncate" title="Submitter Remarksl">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Submitter Remarks">Submitter Remarks</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Submitter_Remarks__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Submitter_Remarks__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortBySCMApproval}">
+                                            <div class="slds-truncate" title="SCM Approval">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="SCM Approval">SCM Approval</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_SCM_Approval_Y_N__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_SCM_Approval_Y_N__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByLeadTimeSCM}">
+                                            <div class="slds-truncate" title="Lead Time (SCM)">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Lead Time (SCM)">Lead Time (SCM)</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Lead_Time__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Lead_Time__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortBySCMRemarks}">
+                                            <div class="slds-truncate" title="SCM Remarks">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="SCM Remarks">SCM Remarks</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Remarks__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Remarks__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByFinanceApproval}">
+                                            <div class="slds-truncate" title="Finance Approval">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Finance Approval">Finance Approval</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Finance_Approval__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Finance_Approval__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByFinanceRemarks}">
+                                            <div class="slds-truncate" title="Finance Remarks">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Finance Remarks">Finance Remarks</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Finance_Approval_Remarks__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Finance_Approval_Remarks__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByContractsSentToCustomer}">
+                                            <div class="slds-truncate" title="Contracts Sent to Customer">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Contracts Sent to Customer">Contracts Sent to Customer</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Contracts_Approval__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Contracts_Approval__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortBySentToCustomerDate}">
+                                            <div class="slds-truncate" title="Sent to Customer Date">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Sent to Customer Date">Sent to Customer Date</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Sent_to_Customer_Date__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Sent_to_Customer_Date__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByContractsRemarks}">
+                                            <div class="slds-truncate" title="Contracts Remarks">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Contracts Remarks">Contracts Remarks</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Contracts_Approval_Remarks__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Contracts_Approval_Remarks__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByCustomerApproval}">
+                                            <div class="slds-truncate" title="Customer Approval">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Customer Approval">Customer Approval</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Pheonix_Customer_Approval__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Pheonix_Customer_Approval__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByNewNDCEffectiveDate}"> 
+                                            <div class="slds-truncate" title="New NDC Effective Date">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="New NDC Effective Date">New NDC Effective Date</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_New_NDC_Effective_Date__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_New_NDC_Effective_Date__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByCustomerRemarks}">
+                                            <div class="slds-truncate" title="Customer Remarks">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Customer Remarks">Customer Remarks</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Customer_Acceptance_Remarks__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Customer_Acceptance_Remarks__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByVistexApproval}">
+                                            <div class="slds-truncate" title="Vistex Approval">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Vistex Approval">Vistex Approval</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Vistex_Final_Approval__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Vistex_Final_Approval__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByVistexApprovalRemarks}">
+                                            <div class="slds-truncate" title="Vistex Remarks">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="Vistex Remarks">Vistex Remarks</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Vistex_Approval_Remarks__c') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Vistex_Approval_Remarks__c') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                          <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByNPR}">
+                                            <div class="slds-truncate" title="NPR Record">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="NPR Record">NPR Record</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Phoenix_Current_NPR__r.Name') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Phoenix_Current_NPR__r.Name') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                          <th class="slds-truncate slds-cell-wrap" onclick="{!c.sortByNDCChangeLineReference}">
+                                            <div class="slds-truncate" title="NDC Change Line Reference">
+                                                <a href="javascript:void(0);"
+                                                   class="slds-th__action slds-text-link--reset">
+                                                    <span class="slds-assistive-text">Sort</span>
+                                                    <span class="slds-truncate" title="NDC Change Line Reference">NDC Change Line Reference</span>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection == 'arrowdown', v.sortField == 'Name') }">
+                                                        &nbsp; &#9660; </aura:if>
+                                                    <aura:if
+                                                             isTrue="{! and(v.arrowDirection != 'arrowdown', v.sortField == 'Name') }">
+                                                        &nbsp; &#9650; </aura:if>
+                                                </a>
+                                            </div>
+                                        </th>
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                    </tr>
+                                </thead>
+                                
+                                <tbody>
+                                    <!--### display all records of AccountList attribute one by one by aura:iteration ###-->
+                                    <aura:iteration items="{!v.NDCLineItemList}" var="item" indexVar="sNo">
+                                        <!-- Child Lightning Component --> 
+                                        <c:Phoenix_NDCChangeLineItemChild isVistexApprovePerson="{!v.isVistexApprovePerson}" 
+                                                                          isContractsApprovePerson="{!v.isContractsApprovePerson}" 
+                                                                          isSCMApprovePerson="{!v.isSCMApprovePerson}" 
+                                                                          isFinanceApprovePerson="{!v.isFinanceApprovePerson}"
+                                                                          loggedInUserName="{!v.loggedInUserName}"  
+                                                                          
+                                                                          BidAprrovalStatus="{!v.BidAprrovalStatus}"
+                                                                          singleRec="{!item}"
+                                                                          showSaveCancelBtn="{!v.showSaveCancelBtn}"
+                                                                          sNo="{!sNo + 1}" />
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <aura:set attribute="else">
+                        <lightning:card >
+                            <center>
+                                <aura:if isTrue="{!v.IsSearch}">
+                               
+                                       
+                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                    <span class="slds-icon_container slds-m-right_x-small" title="No search results found">
+                                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                    </span>
+                                    <h2>No search results found</h2>
+                                </div>
+                                     <aura:set attribute="else">
+                                          <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                    <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                    </span>
+                                    <h2>There are no line items for this NDC Change</h2>
+                                </div>
+                                    </aura:set>
+                                    
+                                        </aura:if>
+                            </center>
+                        </lightning:card>
+                        
+                     
+                    </aura:set>
+                </aura:if>
+                
+                <!-- <div class="modal-footer slds-modal__footer slds-align_absolute-center" role="banner">-->
+                <!--<lightning:button class="slds-m-top_medium" variant="neutral" label="Back" onclick="{!c.backToNDCChange}" disabled="{!v.disableBackButton}" /> -->
+                <!-- <lightning:button class="slds-m-top_medium" variant="brand" type="Button" label="Submit" onclick="{!c.Save}" disabled="{!v.NDCLineItemList.length == 0}" />-->
+                
+                <!-- Test Ends -->
+                <!--</div>-->
+            </lightning:card>
+        </lightning:tab>
+        <lightning:tab label="Rejected View" id="RejectedStatus" onactive="{!c.initRejectedStatus}">
+            <c:NDCRejectedLineItemsTab aura:id="RejectedStatusChildCmp"  recordId='{!v.recordId}'/>
+        </lightning:tab>
+    </lightning:tabset>
+</aura:component>

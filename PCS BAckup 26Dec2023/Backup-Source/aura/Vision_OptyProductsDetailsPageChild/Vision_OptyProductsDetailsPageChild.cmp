@@ -1,0 +1,1195 @@
+<aura:component controller="Vision_OpportunityCreator" implements="flexipage:availableForRecordHome,force:hasRecordId" access="global" >
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="prodItem" type="object"/>
+    <aura:attribute name="prd" type="Object"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="AccTemplate" type="String"/>
+    <aura:attribute name="isSearchProd" type="boolean" default="false"/>
+    <aura:attribute name="isSpinnerLoad" type="Boolean" default="false"/>
+    <aura:attribute name="isShowprdOtyAnnualData" type="Boolean" default="false"/>
+    <aura:handler name="onchange" event="l_lookup:OnChange" action="{!c.handleChange}"/>
+    <aura:attribute name="annualUnitsData" type="Object" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="loadingMessage" type="String"/>
+    <aura:attribute name="indVar" type="Integer"/>
+    <aura:attribute name="productsExclQury" type="String" />
+    <aura:attribute name="selectedProdId" type="String"/>
+    <aura:attribute name="listOfSearchResults" type="List"/>
+    <aura:attribute name="searchResultMessage" type="String"/>
+    <aura:attribute name="existingProducts" type="List" default="[]"/>
+    <aura:attribute name="isShowDirectUnits" type="boolean" default="false" />
+    <aura:attribute name="isShowInDirectUnits" type="boolean" default="false" />
+    <aura:registerEvent name="sampleCmpEvent" type="c:Vision_OptyProductsChildToParentEvnt" />
+    <aura:attribute name="smallSpinnerWhileMatch" type="boolean" default="false"/>
+     <aura:attribute name="hideUploadedItemsUnMatch" type="boolean" />
+    
+    <aura:if isTrue="{!v.showSpinner}">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open modalShadowRemove">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: White; border: 0;"> 
+                        <div>
+                            <img src="{!$Resource.LoadingProgress}" />  
+                        </div><br/>
+                        <aura:if isTrue="{!v.loadingMessage}">
+                            <div style="font-size:18px;color:black;">
+                                {!v.loadingMessage}
+                            </div>
+                            
+                        </aura:if>
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+    
+    
+    <aura:if isTrue="{!v.isShowprdOtyAnnualData}">
+        <div role="dialog" class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container"><!-- style="max-width:2000px;width:700px;height:100vh;"> -->
+                <lightning:buttonIcon iconName="utility:close"
+                                      onclick="{! c.closePopUpModal1 }"
+                                      alternativeText="close"
+                                      variant="bare-inverse"
+                                      class="slds-modal__close"/>
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div class="slds-box slds-text-align_center" style="background-color:rgb(243, 243, 243);padding:5px;padding-left:15px;margin-bottom:10px;font-weight:bold;">
+                        <h2 id="modal-heading-01" class="slds-text-heading_small slds-hyphenate">We have found that selected product and opportunity product's pack size is different. Please Review the Actuals and Expected volume changes below. </h2>
+                    </div>
+                    <div aura:id="mainDiv" style="height:auto;overflow:auto;">
+                        <div class="slds-box">
+                            <table class="slds-table slds-table_cell-buffer slds-table_bordered" >
+                                <thead>
+                                    <th>
+                                        &nbsp;
+                                    </th>
+                                    <th>
+                                        <div class="slds-truncate">PRODUCT DESCRIPTION</div>
+                                    </th>
+                                    <th>
+                                        <div class="slds-truncate">PKG SIZE</div>
+                                    </th>
+                                    <th>
+                                        <div class="slds-truncate">TOTAL ANNUAL USAGE</div>
+                                    </th>
+                                    <aura:if isTrue="{!v.isShowDirectUnits}">
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="Proposed DIRECT Units">PROPOSED DIRECT UNITS</div>
+                                        </th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.isShowInDirectUnits}">
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="Proposed INDIRECT Units">PROPOSED INDIRECT UNITS</div>
+                                        </th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.AccTemplate == 'ClarusOne'}">
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="Proposed OS Units">PROPOSED OS UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="Proposed RAD Units">PROPOSED RAD UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="Proposed WMT Units">PROPOSED WMT UNITS</div>
+                                        </th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.AccTemplate == 'Econdisc'}">
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED DIRECT ESI UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED INDIRECT ESI UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED DIRECT KROGER UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED INDIRECT KROGER UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED DIRECT RX OUTREACH UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED INDIRECT RX OUTREACH UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED DIRECT SUPERVALU UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED INDIRECT SUPERVALU UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED DIRECT CORDANT UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED INDIRECT CORDANT UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED DIRECT ACCERODO UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED INDIRECT ACCERODO UNITS</div>
+                                        </th>
+                                        
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="PROPOSED DIRECT UNITS">PROPOSED DIRECT UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="PROPOSED INDIRECT UNITS">PROPOSED INDIRECT UNITS</div>
+                                        </th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.AccTemplate == 'RXSS'}">
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED SMITH DRUG UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED ANDA UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED DIRECT AHOLD/DELHAIZE UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED DIRECT GAINT EAGLE UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED TOTAL RETAIL INDIRECT UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="Proposed DIRECT Units">PROPOSED DIRECT UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate" title="Proposed INDIRECT Units">PROPOSED INDIRECT UNITS</div>
+                                        </th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.AccTemplate == 'BASE/DSH'}">
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED BASE UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED DSH UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED AUTOSUB UNITS</div>
+                                        </th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.AccTemplate == 'ROS'}">
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED CVS Direct UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED CVS Indirect UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED Cardinal UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED Major UNITS</div>
+                                        </th>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.AccTemplate == 'OTC Customer'}">
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED SELLING UNITS</div>
+                                        </th>
+                                        <th scope="col">
+                                            <div class="slds-truncate">PROPOSED SHARE %</div>
+                                        </th>
+                                    </aura:if>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <b>Opportunity Product</b>
+                                        </td>
+                                        <td>
+                                            {!v.annualUnitsData.optyProdObj.Product_Description__c}
+                                        </td>
+                                        <td>
+                                            <div class="slds-truncate" title="{!v.annualUnitsData.optyProdObj.Pkg_Size__c}">{!v.annualUnitsData.optyProdObj.Pkg_Size__c}</div>
+                                        </td>
+                                        <aura:if isTrue="{!!v.AccTemplate == 'OTC Customer'}">
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.optyProdObj.Vision_Total_Annual_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Total_Annual_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.AccTemplate == 'OTC Customer'}">
+                                            <td>
+                                                <lightning:formattedNumber value="{!((v.annualUnitsData.optyProdObj.Vision_Proposed_Units__c * v.prodItem.Vision_Proposed_Share_Percentage__c)/100)}" 
+                                                                           minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    {!v.prodItem.Vision_Proposed_Share_Percentage__c} %
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.isShowDirectUnits}">
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.optyProdObj.Proposed_Direct_Selling_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Proposed_Direct_Selling_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.isShowInDirectUnits}">
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.optyProdObj.Proposed_Indirect_Selling_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Proposed_Indirect_Selling_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.AccTemplate == 'ClarusOne'}">
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.optyProdObj.Vision_Proposed_OS_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_OS_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.optyProdObj.Vision_Proposed_RAD_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_RAD_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.optyProdObj.Vision_Proposed_WMT_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_WMT_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.AccTemplate == 'BASE/DSH'}">
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_BASE_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_DSH_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_AutoSub_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.AccTemplate == 'RXSS'}">
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Smith_Drug_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Anda_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_DirectAholdDelhaizeUnits__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Direct_Gaint_Eagle_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_TotalRetailIndirectUnits__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.optyProdObj.Proposed_Direct_Selling_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Proposed_Direct_Selling_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.optyProdObj.Proposed_Indirect_Selling_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Proposed_Indirect_Selling_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.AccTemplate == 'Econdisc'}">
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Direct_ESI_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Indirect_ESI_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Direct_Kroger_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Indirect_Kroger_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Direct_Rx_Outreach_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_IndirectRxOutreach_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Direct_Supervalu_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Indirect_Supervalu_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Direct_Cordant_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Indirect_Cordant_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Direct_Accerodo_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Indirect_Accerodo_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.optyProdObj.Proposed_Direct_Selling_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Proposed_Direct_Selling_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.optyProdObj.Proposed_Indirect_Selling_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Proposed_Indirect_Selling_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.AccTemplate == 'ROS'}">
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_CVS_Direct_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_CVS_Indirect_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Cardinal_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.optyProdObj.Vision_Proposed_Major_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                    </tr>
+                                     <tr>
+                                        <td>
+                                            <b>Selected Product</b>
+                                        </td>
+                                         <td scope="row">
+                                             <div class="slds-truncate" title="{!v.annualUnitsData.prodObj.Name}">
+                                                 <a href="{!v.annualUnitsData.prodObj.Id}" target="_blank">{!v.annualUnitsData.prodObj.Name}</a>
+                                             </div>
+                                        </td>
+                                        <td>
+                                            <div class="slds-truncate" title="{!v.annualUnitsData.prodObj.Phoenix_Pkg_Size__c}">{!v.annualUnitsData.prodObj.Phoenix_Pkg_Size__c}</div>
+                                        </td>
+                                         <aura:if isTrue="{!!v.AccTemplate == 'OTC Customer'}">
+                                             <td>
+                                                 <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.expectedOptyProd.Vision_Total_Annual_Units__c}">
+                                                     <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Total_Annual_Units__c}"></lightning:formattedNumber>
+                                                 </div>
+                                             </td>
+                                         </aura:if>
+                                         <aura:if isTrue="{!v.AccTemplate == 'OTC Customer'}">
+                                             <td>
+                                                <lightning:formattedNumber value="{!((v.annualUnitsData.expectedOptyProd.Vision_Proposed_Units__c * v.prodItem.Vision_Proposed_Share_Percentage__c)/100)}" 
+                                                                           minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                            </td>
+                                             <td>
+                                                 <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Units__c}">
+                                                     <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Units__c}"></lightning:formattedNumber>
+                                                 </div>
+                                             </td>
+                                             <td>
+                                                 <div class="slds-truncate slds-text-align_right">
+                                                     {!v.prodItem.Vision_Proposed_Share_Percentage__c} %
+                                                 </div>
+                                             </td>
+                                         </aura:if>
+                                         <aura:if isTrue="{!v.isShowDirectUnits}">
+                                             <td>
+                                                 <lightning:formattedNumber value="{!((v.annualUnitsData.expectedOptyProd.Vision_Proposed_Units__c * v.prodOptyObj.Vision_Proposed_Share_Percentage__c)/100)}" 
+                                                                            minimumFractionDigits ="0" maximumFractionDigits ="0"/>
+                                             </td>
+                                             <td>
+                                                 <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.expectedOptyProd.Proposed_Direct_Selling_Units__c}">
+                                                     <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Proposed_Direct_Selling_Units__c}"></lightning:formattedNumber>
+                                                 </div>
+                                             </td>
+                                         </aura:if>
+                                         <aura:if isTrue="{!v.isShowInDirectUnits}">
+                                             <td>
+                                                 <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.expectedOptyProd.Proposed_Indirect_Selling_Units__c}">
+                                                     <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Proposed_Indirect_Selling_Units__c}"></lightning:formattedNumber>
+                                                 </div>
+                                             </td>
+                                         </aura:if>
+                                        <aura:if isTrue="{!v.AccTemplate == 'ClarusOne'}">
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_OS_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_OS_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_RAD_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_RAD_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_WMT_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_WMT_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.AccTemplate == 'BASE/DSH'}">
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_BASE_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_DSH_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_AutoSub_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.AccTemplate == 'RXSS'}">
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Smith_Drug_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Anda_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_DirectAholdDelhaizeUnits__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Direct_Gaint_Eagle_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_TotalRetailIndirectUnits__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.expectedOptyProd.Proposed_Direct_Selling_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Proposed_Direct_Selling_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.expectedOptyProd.Proposed_Indirect_Selling_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Proposed_Indirect_Selling_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.AccTemplate == 'Econdisc'}">
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Direct_ESI_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Indirect_ESI_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Direct_Kroger_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Indirect_Kroger_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Direct_Rx_Outreach_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_IndirectRxOutreach_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Direct_Supervalu_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Indirect_Supervalu_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Direct_Cordant_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Indirect_Cordant_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Direct_Accerodo_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Indirect_Accerodo_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.expectedOptyProd.Proposed_Direct_Selling_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Proposed_Direct_Selling_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right" title="{!v.annualUnitsData.expectedOptyProd.Proposed_Indirect_Selling_Units__c}">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Proposed_Indirect_Selling_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.AccTemplate == 'ROS'}">
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_CVS_Direct_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_CVS_Indirect_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Cardinal_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!v.annualUnitsData.expectedOptyProd.Vision_Proposed_Major_Units__c}"></lightning:formattedNumber>
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div style="text-align:right;padding-top:10px;">
+                        <lightning:button variant="neutral" label="Close" onclick="{!c.closePopUpModal1}"/>
+                        <lightning:button variant="brand" label="Save" onclick="{!c.saveOptyProduct}"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+    
+    <tr>
+        <aura:if isTrue="{!or(v.prodItem.Is_GPI_Pack_Size_Matched__c ==  true, v.prodItem.Is_GSN_Pack_Size_Matched__c == true, v.prodItem.Is_GCN_Pack_Size_Matched__c == true)}">
+            <th scope="row" style="padding: 4px 0px;">
+                <aura:if isTrue="{!v.prodItem.Is_GCN_Pack_Size_Matched__c == true}">
+                    <lightning:icon class="green" title="GCN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.prodItem.Is_GCN_Matched__c == true}">
+                            <lightning:icon class="orange" title="GCN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            <aura:set attribute="else" >
+                                <lightning:icon class="red" title="GCN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </th>
+            <th scope="row" style="padding: 4px 0px;">
+                <aura:if isTrue="{!v.prodItem.Is_GSN_Pack_Size_Matched__c == true}">
+                    <lightning:icon class="green" title="GSN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.prodItem.Is_GSN_Matched__c == true}">
+                            <lightning:icon class="orange" title="GSN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            <aura:set attribute="else" >
+                                <lightning:icon class="red" title="GSN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </th>
+            <th scope="row" style="padding: 4px 0px;">
+                <aura:if isTrue="{!v.prodItem.Is_GPI_Pack_Size_Matched__c == true}">
+                    <lightning:icon class="green" title="GPI" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.prodItem.Is_GPI_Matched__c == true}">
+                            <lightning:icon class="orange" title="GPI" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            <aura:set attribute="else" >
+                                <lightning:icon class="red" title="GPI" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </th>
+            <th scope="row" style="padding: 4px 0px;">
+                <aura:if isTrue="{!v.prodItem.noNDC == true}">
+                    <lightning:icon class="gray" title="NDC" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.prodItem.Is_NDC_Matched__c == true}">
+                            <lightning:icon class="green" title="NDC" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            <aura:set attribute="else" >
+                                <lightning:icon class="red" title="NDC" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </th>
+            <th scope="row" style="padding: 4px 0px;">
+                <aura:if isTrue="{!v.prodItem.noSKU == true}">
+                    <lightning:icon class="gray" title="SKU" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.prodItem.Is_SKU_Matched__c == true}">
+                            <lightning:icon class="green" title="SKU" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            <aura:set attribute="else" >
+                                <lightning:icon class="red" title="SKU" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </th>
+            <aura:set attribute="else">
+                <th scope="row" style="padding: 4px 0px;">
+                    <aura:if isTrue="{!v.prodItem.noGCN == true}">
+                        <lightning:icon class="gray" title="GCN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                        <aura:set attribute="else">
+                            <aura:if isTrue="{!v.prodItem.Is_GCN_Matched__c == true}">
+                                <lightning:icon class="orange" title="GCN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                <aura:set attribute="else" >
+                                    <lightning:icon class="red" title="GCN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                </aura:set>
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+                </th>
+                <th scope="row" style="padding: 4px 0px;">
+                    <aura:if isTrue="{!v.prodItem.noGSN == true}">
+                        <lightning:icon class="gray" title="GSN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                        <aura:set attribute="else">
+                            <aura:if isTrue="{!v.prodItem.Is_GSN_Matched__c == true}">
+                                <lightning:icon class="orange" title="GSN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                <aura:set attribute="else" >
+                                    <lightning:icon class="red" title="GSN" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                </aura:set>
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+                </th>
+                <th scope="row" style="padding: 4px 0px;">
+                    <aura:if isTrue="{!v.prodItem.noGPI == true}">
+                        <lightning:icon class="gray" title="GPI" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                        <aura:set attribute="else">
+                            <aura:if isTrue="{!v.prodItem.Is_GPI_Matched__c == true}">
+                                <lightning:icon class="orange" title="GPI" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                <aura:set attribute="else" >
+                                    <lightning:icon class="red" title="GPI" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                </aura:set>
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+                </th>
+                <th scope="row" style="padding: 4px 0px;">
+                    <aura:if isTrue="{!v.prodItem.noNDC == true}">
+                        <lightning:icon class="gray" title="NDC" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                        <aura:set attribute="else">
+                            <aura:if isTrue="{!v.prodItem.Is_NDC_Matched__c == true}">
+                                <lightning:icon class="green" title="NDC" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                <aura:set attribute="else" >
+                                    <lightning:icon class="red" title="NDC" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                </aura:set>
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+                </th>
+                <th scope="row" style="padding: 4px 0px;">
+                    <aura:if isTrue="{!v.prodItem.noSKU == true}">
+                        <lightning:icon class="gray" title="SKU" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                        <aura:set attribute="else">
+                            <aura:if isTrue="{!v.prodItem.Is_SKU_Matched__c == true}">
+                                <lightning:icon class="green" title="SKU" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                <aura:set attribute="else" >
+                                    <lightning:icon class="red" title="SKU" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                                </aura:set>
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+                </th>
+            </aura:set>
+        </aura:if>
+        <th scope="row" style="padding: 4px 0px;">
+            <aura:if isTrue="{!v.prodItem.Vision_Bid_on_Highest_Pack_Size__c == true}">
+                <lightning:icon class="green" title="BID ON HIGHEST PACK SIZE" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                <aura:set attribute="else">
+                    <lightning:icon class="red" title="BID ON HIGHEST PACK SIZE" iconName="utility:light_bulb" size="x-small"/>&nbsp;    
+                </aura:set>
+            </aura:if>
+        </th>
+        <th scope="row" style="padding: 4px 0px;">
+            <aura:if isTrue="{!v.prodItem.Vision_Bid_on_Alternative_Pack_Size__c == true}">
+                <lightning:icon class="green" title="BID ON ALTERNATIVE PACK SIZE" iconName="utility:light_bulb" size="x-small"/>&nbsp;
+                <aura:set attribute="else">
+                    <lightning:icon class="red" title="BID ON ALTERNATIVE PACK SIZE" iconName="utility:light_bulb" size="x-small"/>&nbsp;    
+                </aura:set>
+            </aura:if>
+        </th>
+        <!-- <th scope="row" class="removeLabelClass slds-form-element__label fixedCol" -->
+        <td class="removeLabelClass slds-form-element__label" data-row-index="{!v.indVar}" style="width: 500px;">
+            <aura:if isTrue="{!v.isSearchProd}">
+                <div onmouseleave="{!c.onblur}" aura:id="searchRes"
+                     class="slds-form-element slds-lookup slds-is-close"
+                     data-select="single" style="{!v.prodItem.Product__c ? 'width: 460px;':'width: 480px;'}">
+                    <span>
+                        <div class="slds-form-element">
+                            <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_right">
+                                <input id="searchBarInput" aura:id="searchBarInput"
+                                       class="searchInput slds-input" type="text"
+                                       placeholder="Search Active Bid Products..."
+                                       onkeyup="{!c.orderSearchKeyEntered}" value="{!v.prodItem.Product__r.Name}">
+                                </input>&nbsp;
+                                <aura:if isTrue="{!v.prodItem.Product__c}">
+                                    <lightning:icon iconName="utility:close" size="x-small" title="Close Search" onclick="{!c.closeSearch}" style="cursor:pointer;"/>
+                                </aura:if>
+                            </div>
+                        </div>
+                        <ul style="min-height:40px;margin-top:0px !important"
+                            class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds"
+                            role="listbox">
+                            <lightning:spinner class="slds-hide" variant="brand" size="small" aura:id="mySpinner"/>
+                            <center> {!v.searchResultMessage}</center>
+                            <aura:iteration items="{!v.listOfSearchResults}" var="singleRec">
+                                <li role="presentation"
+                                    class="slds-listbox__item"
+                                    onclick="{!c.selectedRecordFromSearch}"
+                                    data-id="{!singleRec.Id}">
+                                    <span id="listbox-option-unique-id-01"
+                                          class="slds-media slds-listbox__option slds-listbox__option_entity slds-listbox__option_has-meta"
+                                          role="option">
+                                        <span class="slds-media__body">  
+                                            <span class="slds-listbox__option-text slds-listbox__option-text_entity">
+                                                <b>{!singleRec.Name}</b><br/>
+                                                <span>Prod Code: {!singleRec.ProductCode}&nbsp;&nbsp;&nbsp;NDC: {!singleRec.Phoenix_NDC_11__c}</span>
+                                            </span>
+                                        </span>
+                                    </span>
+                                </li>
+                            </aura:iteration>
+                        </ul>
+                    </span>
+                </div>
+                <aura:set attribute="else">
+                    <div style="width: 500px;" class="slds-truncate slds-grid" title="{!v.prodItem.Product__r.Name}">
+                        <div class="slds-col slds-size_4-of-5" ondblclick="{!c.openSearch}">
+                            &nbsp;&nbsp;<a href="{!'/'+v.prodItem.Product__c}" target="_blank">{!v.prodItem.Product__r.Name}</a>
+                            <aura:if isTrue="{!v.prodItem.Vision_Uploaded_Pkg_Size__c}">
+                                &nbsp;&nbsp;<lightning:icon iconName="utility:change_record_type" class="red"
+                                                            size="x-small" title="Alternate Pack Size Product has been selected for this Item."/>
+                            </aura:if>
+                        </div>
+                        <div class="slds-col slds-size_1-of-5" style="text-align:right;">
+                            <lightning:icon iconName="utility:delete" size="x-small" title="Remove Product" onclick="{!c.removeProdLookup}" style="cursor:pointer;"/>
+                            &nbsp;<lightning:icon iconName="utility:search" size="x-small" title="Search new Product" onclick="{!c.openSearch}" style="cursor:pointer;"/>&nbsp;&nbsp;
+                        </div>
+                    </div>
+                </aura:set>
+            </aura:if>
+        </td>
+        
+        <td>
+            <aura:if isTrue="{!v.smallSpinnerWhileMatch}">
+                <div class="slds-col">
+                    <img class="loader" src="/img/loading.gif" width="20" height="20" />
+                </div>
+                <aura:set attribute="else">
+                    <aura:if isTrue="{!v.prodItem.Product__c}">
+                        <lightning:icon title="Move To Match"  onclick="{!c.moveToMatch}" class=""
+                                        iconName="standard:return_order_line_item" size="small" style="{!v.prodItem.Product__c ? 'cursor:pointer;' : ''}"/>
+                    </aura:if>
+                </aura:set>
+            </aura:if>
+        </td>
+        <aura:if isTrue="{!!v.hideUploadedItemsUnMatch}">	
+            <aura:if isTrue="{!v.prodItem.Vision_Is_NDC_Provided__c}">
+                <td><div class="slds-truncate" title="{!v.prodItem.NDC_11__c}">{!v.prodItem.NDC_11__c}</div> </td>
+                <aura:set attribute="else">
+                    <td></td> 
+                </aura:set> 
+            </aura:if>
+            <aura:if isTrue="{!v.prodItem.Vision_Is_SKU_Provided__c}">
+                <td><div class="slds-truncate" title="{!v.prodItem.SKU_Number__c}">{!v.prodItem.SKU_Number__c}</div></td>
+                <aura:set attribute="else"> 
+                    <td></td>
+                </aura:set>
+            </aura:if>
+            <aura:if isTrue="{!v.prodItem.Vision_Is_GCN_Provided__c}">
+                <td><div class="slds-truncate" title="{!v.prodItem.GCN_Generic_Code_Number__c}">{!v.prodItem.GCN_Generic_Code_Number__c}</div></td>
+                <aura:set attribute="else"> 
+                    <td></td>  
+                </aura:set>  
+            </aura:if>
+            <aura:if isTrue="{!v.prodItem.Vision_Is_GPI_Provided__c}">
+                <td><div class="slds-truncate" title="{!v.prodItem.GPI_Generic_Product_Identifier__c}">{!v.prodItem.GPI_Generic_Product_Identifier__c}</div></td>
+                <aura:set attribute="else">
+                    <td></td>  
+                </aura:set>
+            </aura:if>
+            <aura:if isTrue="{!v.prodItem.Vision_Is_GSN_Provided__c}">
+                <td><div class="slds-truncate" title="{!v.prodItem.GSN__c}">{!v.prodItem.GSN__c}</div>   </td>
+                <aura:set attribute="else">
+                    <td></td>  
+                </aura:set>
+            </aura:if>
+            <aura:if isTrue="{!v.prodItem.Vision_Is_Pack_Size_Provided__c}">
+                <td><div class="slds-truncate" title="{!v.prodItem.Vision_Disc_Pkg_Size__c}"> {!v.prodItem.Vision_Disc_Pkg_Size__c}</div>   </td>
+                <aura:set attribute="else">
+                    <td></td>  
+                </aura:set>
+            </aura:if>
+            <aura:if isTrue="{!v.prodItem.Strength__c}">
+                <td><div class="slds-truncate" title="{!v.prodItem.Strength__c}"> {!v.prodItem.Strength__c}</div>   </td>
+                <aura:set attribute="else">
+                    <td></td>  
+                </aura:set>
+            </aura:if>
+            <td>
+                <div class="slds-truncate" title="{!v.prodItem.Product_Description__c}">{!v.prodItem.Product_Description__c}</div>
+            </td>                                                
+        </aura:if>
+        
+        
+        <td>
+            <div class="slds-truncate slds-text-align_right" title="{!v.prodItem.Vision_Total_Annual_Units__c}">
+                <lightning:formattedNumber value="{!v.prodItem.Vision_Total_Annual_Units__c}"></lightning:formattedNumber>
+            </div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodItem.Pkg_Size__c}">
+                {!v.prodItem.Pkg_Size__c}
+                <aura:if isTrue="{!v.prodItem.Vision_Uploaded_Pkg_Size__c}">
+                    &nbsp;<lightning:helptext content="{!'Uploaded Pack Size : '+v.prodItem.Vision_Uploaded_Pkg_Size__c+', '+v.prodItem.Vision_Disc_Pkg_Size__c}"/>
+                </aura:if>
+            </div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodItem.Strength__c}">{!v.prodItem.Strength__c}</div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodItem.GCN_Generic_Code_Number__c}">{!v.prodItem.GCN_Generic_Code_Number__c}</div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodItem.GSN__c}">{!v.prodItem.GSN__c}</div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodItem.GPI_Generic_Product_Identifier__c}">{!v.prodItem.GPI_Generic_Product_Identifier__c}</div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodItem.NDC_11__c}">{!v.prodItem.NDC_11__c}</div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodItem.SKU_Number__c}">{!v.prodItem.SKU_Number__c}</div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodItem.Product_Family__c}">{!v.prodItem.Product_Family__c}</div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodItem.Vision_Dosage_Form__c}">{!v.prodItem.Vision_Dosage_Form__c}</div>
+        </td>
+        <aura:if isTrue="{!v.AccTemplate == 'OTC Customer'}">
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodItem.Vision_Proposed_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <!-- <lightning:input type="number" class="rightAlignCss" variant="label-hidden" formatter="percent-fixed"
+                                     value="{!v.prodOptyObj.Vision_Proposed_Share_Percentage__c}" step="0.01" max="100"
+                                     messageWhenRangeOverflow="Please enter less than 100%"/> -->
+                    {!v.prodItem.Vision_Proposed_Share_Percentage__c} %
+                </div>
+            </td>
+        </aura:if>
+        
+        <aura:if isTrue="{!v.AccTemplate == 'ClarusOne'}">
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodItem.Vision_Proposed_OS_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_OS_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodItem.Vision_Proposed_RAD_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_RAD_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodItem.Vision_Proposed_WMT_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_WMT_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+        </aura:if>
+        <aura:if isTrue="{!v.AccTemplate == 'BASE/DSH'}">
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_BASE_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_DSH_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_AutoSub_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+        </aura:if>
+        <aura:if isTrue="{!v.AccTemplate == 'RXSS'}">
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Smith_Drug_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Anda_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_DirectAholdDelhaizeUnits__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Direct_Gaint_Eagle_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_TotalRetailIndirectUnits__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodItem.Proposed_Direct_Selling_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodItem.Proposed_Direct_Selling_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodItem.Proposed_Indirect_Selling_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodItem.Proposed_Indirect_Selling_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+        </aura:if>
+        <aura:if isTrue="{!v.AccTemplate == 'Econdisc'}">
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Direct_ESI_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Indirect_ESI_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Direct_Kroger_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Indirect_Kroger_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Direct_Rx_Outreach_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_IndirectRxOutreach_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Direct_Supervalu_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Indirect_Supervalu_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Direct_Cordant_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Indirect_Cordant_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Direct_Accerodo_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Indirect_Accerodo_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodItem.Proposed_Direct_Selling_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodItem.Proposed_Direct_Selling_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodItem.Proposed_Indirect_Selling_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodItem.Proposed_Indirect_Selling_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+        </aura:if>
+        <aura:if isTrue="{!v.AccTemplate == 'ROS'}">
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_CVS_Indirect_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_CVS_Direct_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Cardinal_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+            <td>
+                <div class="slds-truncate slds-text-align_right">
+                    <lightning:formattedNumber value="{!v.prodItem.Vision_Proposed_Major_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+        </aura:if>
+        <aura:if isTrue="{!v.isShowDirectUnits}">
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodItem.Proposed_Direct_Selling_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodItem.Proposed_Direct_Selling_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+        </aura:if>
+        <aura:if isTrue="{!v.isShowInDirectUnits}">
+            <td>
+                <div class="slds-truncate slds-text-align_right" title="{!v.prodItem.Proposed_Indirect_Selling_Units__c}">
+                    <lightning:formattedNumber value="{!v.prodItem.Proposed_Indirect_Selling_Units__c}"></lightning:formattedNumber>
+                </div>
+            </td>
+        </aura:if>
+        <!--<td>
+            <div class="slds-truncate slds-text-align_right" title="{!v.prodItem.Vision_Total_Annual_Units__c}">
+                <lightning:formattedNumber style="currency" currencyCode="USD" value="{!v.prodItem.Vision_Total_Annual_Units__c}"></lightning:formattedNumber>
+            </div>
+        </td>-->
+        <td>
+            <div class="slds-truncate slds-text-align_right" title="{!v.prodItem.Vision_Guidance_Price__c}">
+                <lightning:formattedNumber style="currency" currencyCode="USD" value="{!v.prodItem.Vision_Guidance_Price__c}"></lightning:formattedNumber>
+            </div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodItem.Vision_UOM__c}">{!v.prodItem.Vision_UOM__c}</div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodItem.Vision_Customer_Comments__c}">{!v.prodItem.Vision_Customer_Comments__c}</div>
+        </td>
+        <td>
+            <div class="slds-truncate" title="{!v.prodItem.Status__c}">{!v.prodItem.Status__c}</div>
+        </td>
+       <!-- <td>
+            <aura:if isTrue="{!v.prodItem.Vision_Bid_on_Highest_Pack_Size__c == true}">
+                <div class="slds-truncate" title="Yes">Yes</div>
+                <aura:set attribute="else">
+                    <div class="slds-truncate" title="No">No</div>
+                </aura:set>
+            </aura:if>
+        </td>
+        <td>
+            <aura:if isTrue="{!v.prodItem.Vision_Bid_on_Alternative_Pack_Size__c == true}">
+                <div class="slds-truncate" title="Yes">Yes</div>
+                <aura:set attribute="else">
+                    <div class="slds-truncate" title="No">No</div>
+                </aura:set>
+            </aura:if>
+        </td>-->
+    </tr>
+    
+</aura:component>
