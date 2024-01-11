@@ -1,0 +1,292 @@
+<aura:component controller="Vision_COLO_Controller" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="familyMap" type="Object" />
+    <aura:attribute name="supplyIssue" type="Supply_Issue__c" />
+    <aura:attribute name="family" type="String" />
+    <aura:attribute name="relatedList" type="list" />
+    <aura:attribute name="expandFamily" type="boolean" />
+    <aura:attribute name="productsMap" type="Object" />
+    <aura:attribute name="familySummaryObj" type="Object" />
+    <aura:attribute name="supplyFamilyIssueMap" type="Object" />
+    <aura:attribute name="productsList" type="list" />
+    <aura:attribute name="scmRejectionReasons" type="String" default=""/>
+    <aura:attribute name="mitigationPlan" type="String" default=""/>
+    <aura:attribute name="updatedRejectionReasons" type="String" default=""/>
+    <aura:attribute name="updatedMitigationPlan" type="String" default=""/>
+    <aura:attribute name="showCharactersLeft" type="boolean" />
+    <aura:attribute name="showSCMRejectionCommentPopup" type="boolean" />
+    <aura:attribute name="showMitigationPlanPopup" type="boolean" />
+    <aura:attribute name="product" type="Object" />
+    <aura:attribute name="finalCOLO" type="Decimal" />
+    <aura:attribute name="uniqueCustomersCount" type="Integer" />
+    <aura:attribute name="selectedMonth" type="String" />
+    <aura:attribute name="familyIdMap" type="Object" />
+    <aura:attribute name="isMultipleMonthsSelected" type="boolean" />
+    <aura:attribute name="splittedMonths" type="list" />
+    <aura:attribute name="showDisplayPopup" type="boolean" />
+    <aura:attribute name="productDirectorId" type="String" />
+    <aura:attribute name="displayObjectList" type="list" />
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'Yes', 'value': 'Yes'},
+                                                        {'label': 'No', 'value': 'No'},
+                                                        {'label': 'None', 'value': ''},
+                                                        ]"/>
+    <aura:attribute name="capacityConstraint" type="boolean" default="false"/>
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <!--<aura:handler name="change" value="{!v.familyMap}" action="{!c.doInit}" />
+    <aura:handler name="change" value="{!v.familySummaryObj.capacityConstraint}" action="{!c.updateItems}" />
+    <aura:handler name="change" value="{!v.familySummaryObj.mitigationPlan}" action="{!c.updateItems}" />-->
+    <!--<aura:handler name="change" value="{!v.familySummaryObj.getWellDate}" action="{!c.updateItems}" />-->
+    
+    <aura:if isTrue="{!v.showDisplayPopup}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_x-small slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__content_headless" style="text-align: right;">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.showMultipleDisplayPopup }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="margin:auto;border-radius: 8px;padding:10px;font-size: 13px;">
+                    <div style="padding:5px;text-align: center; font-size: 18px;color:#3E3E3C;">
+                        <b>{!v.family} - {!v.selectedMonth}</b>
+                    </div> 
+                    <div style="padding: 12px 12px 0px 12px;justify-content: center;" class="slds-grid">
+                        <table class="slds-table slds-table_cell-buffer slds-no-row-hover slds-table_bordered" style="border: 1px solid #c8c8c8;" >
+                            <thead>
+                                <tr style="">
+                                    <th style="text-align: center;background-color: #8d55d5;color:white;">Month</th>
+                                    <th style="text-align: center;background-color: #8d55d5;color:white;">SCM Rejection Reasons</th>
+                                    <th style="text-align: center;background-color: #8d55d5;color:white;">Capacity Constraint</th>
+                                    <th style="text-align: center;background-color: #8d55d5;color:white;">Mitigation Plan(s)</th>
+                                    <th style="text-align: center;background-color: #8d55d5;color:white;">Get Well Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <aura:if isTrue="{!and(v.displayObjectList != null, v.displayObjectList.length != 0)}">
+                                    <aura:iteration items="{!v.displayObjectList}" var="item">
+                                        <tr>
+                                            <td style="text-align: center;">{!item.month}</td>
+                                            <td style="text-align: left;">
+                                                <aura:if isTrue="{!item.supplyIssue.SCM_Rejection_Reasons__c != null}">
+                                                    <div class="slds-cell-wrap" style="width: 80%;">{!item.supplyIssue.SCM_Rejection_Reasons__c}</div>
+                                                    <aura:set attribute="else">
+                                                        N/A
+                                                    </aura:set>
+                                                </aura:if>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <aura:if isTrue="{!item.supplyIssue.Capacity_Constraint__c != null}">
+                                                    {!item.supplyIssue.Capacity_Constraint__c}
+                                                    <aura:set attribute="else">
+                                                        N/A
+                                                    </aura:set>
+                                                </aura:if>
+                                            </td>
+                                            <td style="text-align: left;">
+                                                <aura:if isTrue="{!item.supplyIssue.Mitigation_Plan_s__c != null}">
+                                                    <div class="slds-cell-wrap" style="width: 80%;">{!item.supplyIssue.Mitigation_Plan_s__c}</div>
+                                                    <aura:set attribute="else">
+                                                        N/A
+                                                    </aura:set>
+                                                </aura:if>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <aura:if isTrue="{!item.formattedGetWellDate != null}">
+                                                    {!item.formattedGetWellDate}
+                                                    <aura:set attribute="else">
+                                                        N/A
+                                                    </aura:set>
+                                                </aura:if>
+                                            </td>
+                                        </tr>
+                                    </aura:iteration>
+                                    <aura:set attribute="else">
+                                        <aura:iteration items="{!v.splittedMonths}" var="month">
+                                            <tr>
+                                                <td style="text-align: center;">{!month}</td>
+                                                <td style="text-align: center;">N/A</td>
+                                                <td style="text-align: center;">N/A</td>
+                                                <td style="text-align: center;">N/A</td>
+                                                <td style="text-align: center;">N/A</td>
+                                            </tr>
+                                        </aura:iteration>
+                                    </aura:set>
+                                </aura:if>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="customButtonCSS" style="float:right;padding-bottom: 4px;padding-right: 12px;margin-top: 8px;">
+                        <div style="display: inline-block;">
+                            <lightning:button label="Close" onclick="{!c.showMultipleDisplayPopup}" variant="neutral"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if>    
+    <aura:if isTrue="{!v.showSCMRejectionCommentPopup}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_x-small slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__content_headless" style="text-align: right;">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.openSCMRejectionReasonsPopup }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="width: 550px;margin:auto;border-radius: 8px;padding:10px;font-size: 13px;">
+                    <div style="padding:5px;text-align: center; font-size: 18px;color:#3E3E3C;">
+                        <b>SCM Rejection Reasons</b>
+                    </div> 
+                    <div style="padding: 12px 12px 0px 12px;justify-content: center;" class="slds-grid">
+                        <lightning:input name="rejectionReasons"
+                                         label="Type SCM Rejection Reasons"
+                                         value="{!v.familySummaryObj.updatedRejectionReasons}"
+                                         placeholder="SCM Rejection Reasons"
+                                         onchange="{!c.onReasonChange}"
+                                         maxlength="60"
+                                         class="custom-width scmReasons"
+                                         />
+                    </div>
+                    <div style="margin:auto;padding-bottom: 12px;width: 100%;text-align: right;font-size: 12px;padding-right: 12px;padding-top: 2px;">{!(60 - v.familySummaryObj.updatedRejectionReasons.length)} character(s) remaining</div>
+                    <div class="customButtonCSS" style="float:right;padding-bottom: 4px;padding-right: 12px;">
+                        <div style="display: inline-block;margin-right: 8px;">
+                            <lightning:button label="Save" onclick="{!c.saveSCMRejectionReason}" variant="brand"/>
+                        </div>
+                        <div style="display: inline-block;">
+                            <lightning:button label="Close" onclick="{!c.openSCMRejectionReasonsPopup}" variant="neutral"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if>
+    <aura:if isTrue="{!v.showMitigationPlanPopup}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_x-small slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__content_headless" style="text-align: right;">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.openMitigationPlanPopup }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="width: 550px;margin:auto;border-radius: 8px;padding:10px;font-size: 13px;">
+                    <div style="padding:5px;text-align: center; font-size: 18px;color:#3E3E3C;">
+                        <b>Mitigation Plan(s) in Place</b>
+                    </div> 
+                    <div style="padding: 12px 12px 0px 12px;justify-content: center;" class="slds-grid">
+                        <lightning:input name="mitigationPlans"
+                                         label="Mitigation Plan(s)"
+                                         value="{!v.familySummaryObj.updatedMitigationPlan}"
+                                         placeholder="Mitigation Plan(s)"
+                                         onchange="{!c.onReasonChange}"
+                                         maxlength="60"
+                                         class="custom-width scmReasons"
+                                         />
+                    </div>
+                    <div style="margin:auto;padding-bottom: 12px;width: 100%;text-align: right;font-size: 12px;padding-right: 12px;padding-top: 2px;">{!(60 - v.familySummaryObj.updatedMitigationPlan.length)} character(s) remaining</div>
+                    <div class="customButtonCSS" style="float:right;padding-bottom: 4px;padding-right: 12px;">
+                        <div style="display: inline-block;margin-right: 8px;">
+                            <lightning:button label="Save" onclick="{!c.saveMitigationPlan}" variant="brand"/>
+                        </div>
+                        <div style="display: inline-block;">
+                            <lightning:button label="Close" onclick="{!c.openMitigationPlanPopup}" variant="neutral"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if>
+    <tr style="font-weight: bold; font-weight: 500;height: 64px;">
+        <td style="padding-left: 8px;">
+            {!v.family}
+            <aura:if isTrue="{!v.expandFamily}">
+                (<lightning:buttonIcon iconName="utility:minimize_window" variant="bare" class="iconCSS" size="small" onclick="{!c.expandFamilyList}" alternativeText="Hide Products" title="Hide Products" />)
+                <aura:set attribute="else">
+                    (<lightning:buttonIcon iconName="utility:add" class="iconCSS1" size="small" variant="bare" onclick="{! c.expandFamilyList }" alternativeText="Show Products" title="Show Products" />)
+                </aura:set>
+            </aura:if>
+        </td>
+        <td></td>
+        <td style="text-align: center;">
+            {!v.uniqueCustomersCount}
+        </td>
+        <td style="text-align: center;">
+            <lightning:formattedNumber value="{!v.supplyIssue.COLO_Adjusted__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+        </td>
+        <td style="text-align: center;">
+            <lightning:formattedNumber value="{!v.supplyIssue.TPT__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+        </td>
+        <td style="text-align: center;">
+            <aura:if isTrue="{!(v.supplyIssue.TPT__c/v.supplyIssue.COLO_Adjusted__c) != 'Infinity'}">
+                <lightning:formattedNumber value="{!(v.supplyIssue.TPT__c/v.supplyIssue.COLO_Adjusted__c)}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                <aura:set attribute="else">
+                    N/A
+                </aura:set>
+            </aura:if>
+        </td>	
+        <aura:if isTrue="{!v.isMultipleMonthsSelected}">
+            <td colspan="4">
+                <div style="color: white;border: 3px solid #8d55d5;text-align: center;background-color: #baa6d2;cursor: pointer;height: 40px;vertical-align: middle;line-height: 35px" onclick="{!c.showMultipleDisplayPopup}">
+                    Click here for month-wise details
+                    <!--<lightning:buttonIcon iconName="utility:comments" size="large" variant="bare" alternativeText="" title="Click to see SCM Rejection Reasons" onclick="{!c.showMultipleDisplayPopup}" />-->
+                </div>
+            </td>
+            <aura:set attribute="else">
+                <td style="width: 20%;">
+                    <div class="" style="text-align: center;">
+                        <div class="slds-truncate slds-cell-wrap" style="display: inline-block;text-align: center;width: 80%;">
+                            <p>{!v.supplyIssue.SCM_Rejection_Reasons__c}</p>
+                        </div>
+                        <div class="slds-col" style="display: inline-block;text-align: right;vertical-align: top;">
+                            <lightning:buttonIcon iconName="utility:edit" size="small" variant="bare" alternativeText="" title="Click to edit SCM Rejection Reasons" onclick="{!c.openSCMRejectionReasonsPopup}" />
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div style="vertical-align: top; color: #181818;display: inline-block;font-weight: 12px;padding-right: 6px;padding-top: 4px;">
+                        No
+                    </div>
+                    <div class="{!'custom-toggle ' + (v.supplyIssue.capacityConstraint ? 'active' : '')}" onclick="{!c.toggle}" aura:id="toggle" style="display: inline-block;margin-top: 2px;">
+                        <span class="toggle-switch"></span>
+                    </div>
+                    <div style="vertical-align: top; color: #181818;display: inline-block;font-weight: 12px;padding-left: 6px;padding-top: 4px;">
+                        Yes
+                    </div>
+                </td>
+                <td style="width: 20%;">
+                    <div class="" style="text-align: right;">
+                        <div class="slds-truncate slds-cell-wrap" style="display: inline-block;text-align: center;width: 80%;">
+                            <p>{!v.supplyIssue.Mitigation_Plan_s__c}</p>
+                        </div>
+                        <div class="slds-col" style="display: inline-block;text-align: right;vertical-align: top;">
+                            <lightning:buttonIcon iconName="utility:edit" size="small" variant="bare" alternativeText="" title="Mitigation Plan" onclick="{!c.openMitigationPlanPopup}" />
+                        </div>
+                    </div>
+                </td>
+                <td style="padding-right: 8px;">
+                    <div class="getWellDate" style="width: 130px;">
+                        <lightning:input type="date" name="GetWellDate" variant="label-hidden" value="{!v.supplyIssue.Get_Well_Date__c}" onchange="{!c.getWellDateChange}"/>
+                    </div>
+                </td>
+            </aura:set>
+        </aura:if>
+    </tr>
+    <aura:if isTrue="{!v.expandFamily}">
+        <aura:iteration items="{!v.productsList}" var="product">
+            <c:COLO_LackOfInventoryChild2 product="{!product}" productsMap="{!v.productsMap}"/>
+        </aura:iteration>
+    </aura:if>
+</aura:component>

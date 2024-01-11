@@ -1,0 +1,384 @@
+<aura:component controller="Phoenix_FinanceApprovalGrid" implements="force:lightningQuickActionWithoutHeader,force:appHostable,force:hasRecordId,force:hasSObjectName" access="global" >
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="datalist" type="List" />
+    <aura:attribute name="gridWrapper" type="Object" />
+    <aura:attribute name="title" type="String" />
+    <aura:attribute name="financeCommentsMap" type="Map" />
+    <aura:attribute name="financeApprovalMap" type="Map" />
+    <aura:attribute name="financeBUCommentsMap" type="Map" />
+    <aura:attribute name="financeBUApprovalMap" type="Map" />
+    <aura:attribute name="financeSrDirCommentsMap" type="Map" />
+    <aura:attribute name="financeSrDirApprovalMap" type="Map" />
+    <aura:attribute name="SrxApprovalMap" type="Map" />
+    <aura:attribute name="RxApprovalMap" type="Map" />
+    <aura:attribute name="OTCApprovalMap" type="Map" />
+  
+    <aura:attribute name="isClicked" type="boolean" default="false"/>
+    <aura:attribute name="isOTC" type="boolean" default="false"/>
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="true" />
+    <aura:attribute name="isTptGrid" type="boolean" default="false"/>
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <!--<aura:attribute name="scmRejactionReasonValues" type="List" default="FG Quality Issue, API Quality Issue, Raw Material/KSM Quality issue, Packing Material Quality Issue, API Supply Delay, Raw Material/KSM Supply issue, Packing Material Supply Issue, Manufacturing Delay, FG capacity constrained, API capacity constrained, Low FG Inventory on Hand, Others"/>-->
+    <aura:method name="scmRefresh" action="{!c.doInit}" />
+    <aura:method name="onloadSCM" action="{!c.onLoadingSCM}" />
+    
+    
+    <aura:html tag="style">
+        
+        
+        .tableDiv{
+        height : auto !important;
+        overflow : scroll !important;
+        }
+    </aura:html>
+    <lightning:card>
+        <aura:set attribute="title">
+            <lightning:icon iconName="custom:custom90" size="small"/>&nbsp;&nbsp;
+            {! v.title }
+        </aura:set> 
+        <aura:set attribute="actions">
+            <lightning:buttonGroup>
+              <!-- <div style="margin-right:8px;">
+                    <a href="javascript:void(0)" onclick="{!c.handleTptGrid}">
+                       <b>View Throughput Grid</b> 
+                    </a> 
+                </div>-->
+            <div style="margin-right:8px;"><lightning:button label="View Throughput Grid" onclick="{!c.handleTptGrid}" /> </div>
+             <aura:if isTrue="{!v.isTptGrid}">
+                  <!-- Modal/Popup Box starts here-->
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- Modal/Popup Box Header Starts here-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Throughput Grid</h2>
+                    </header>
+                    <!--Modal/Popup Box Body Starts here-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                        <img src="{!$Resource.TPTGridDeviationPlus1}"/>
+
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Close"
+                                          title="Close"
+                                          onclick="{! c.closeModel }"/>
+                        
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+                         
+             </aura:if>
+           
+                  <aura:if isTrue="{!v.isSpinnerLoad}">
+                    <div class="backgroundInverse">
+                        <lightning:spinner alternativeText="Loading" variant="brand" />
+                    </div>
+                </aura:if>
+            <aura:if isTrue="{!(v.gridWrapper.approvalGridList.length > 0 )}">
+                            <div style="margin-right:8px;">  <lightning:button label="Export" onclick="{!c.downloadCsv}"/></div>
+            </aura:if>
+            <div><lightning:button label="Back" onclick="{! c.onClose}" /></div>
+            </lightning:buttonGroup>
+            <aura:if isTrue="{!v.isClicked}">
+                
+                <lightning:button variant="neutral" label="Cancel" onclick="{! c.doInit}" />      
+                <lightning:button variant="brand" label="Save" onclick="{! c.saveClick }" />
+                
+            </aura:if>   
+            <aura:if isTrue="{!!v.isClicked}">
+                <aura:if isTrue="{!or(and(v.gridWrapper.isVPFinanceHead,not(v.gridWrapper.approvalGridList[0].Phoenix_isFinanceVPApproved__c)),or(or(and(v.gridWrapper.isMarketingSRxLead,not(v.gridWrapper.approvalGridList[0].Phoenix_isMarketingSrxLeadApproved__c)),and(v.gridWrapper.isMarketingHead,not(v.gridWrapper.approvalGridList[0].Phoenix_isMarketingHeadApproved__c))),or(and(v.gridWrapper.isMarketingRxLead,not(v.gridWrapper.approvalGridList[0].Phoenix_isMarketingRxLeadApproved__c)),and(v.gridWrapper.isMarketingOTCLead,not(v.gridWrapper.approvalGridList[0].Phoenix_IsOTCLeadApproved__c)))))}">
+                    <lightning:button   variant="brand" label="Submit" onclick="{! c.onApprovalSubmit}" />
+                </aura:if>
+            </aura:if>
+        </aura:set>
+        <!--center><div class="slds-border_bottom slds-border_top slds-m-right_small slds-m-left_small" ><h1 style="font-size:1.5rem; font-weight:350;color:gray">SCM View</h1></div></center-->
+        <div aura:id="mainDiv" class=" slds-m-right_small slds-m-left_small">
+            <aura:if isTrue="{!v.gridWrapper.approvalGridList.length > 0}" >
+              
+                <div class="tableDiv slds-m-top_small slds-m-bottom_small" style="height:100vh;">
+                    
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-scrollable slds-scrollable_x" style="width:150px">
+                        <thead>
+                            <tr> 
+                                <th >Product Family</th>
+                                <th >Quadrant</th>
+
+                                <th >Products below Lowest Price / SKU </th>
+                                <th >Annualized TP</th>
+                                <!--<th>Annualized TP Limit</th>-->
+                                <th >Annualized TP Impact</th>
+                                <th>Annualized TP Impact Limit</th>
+                                <th>TP%</th>
+                                <th >TP % Limit</th>
+                                <th >Annualized  GM</th>
+                                <!--<th>Annualized GM Limit</th>-->
+                                <th >Annualized GM  Impact</th>
+                                <th >Annualized GM Impact Limit</th>
+                                 <th >Revenue</th>
+                                <th >Revenue Limit</th>
+                                <th>GM%</th>
+                                <th>GM% Limit</th>
+                                <!--<th >SSA Impact</th>
+                                <th >SSA Impact Limit</th>-->
+                                <aura:if isTrue="{!v.isOTC==false}">
+                                <th>Marketing Lead Rx</th>
+                                <th>Marketing Lead SRx</th>
+                                </aura:if>
+                                <th>Marketing Lead OTC</th>
+                                <th >Marketing Lead Comments</th>
+                                <th >Marketing Head Approval</th>
+                                <th >Marketing Head Comments</th>
+                                <th >Sr Director / VP Finance Approval</th>
+                                <th >Sr Director / VP Finance Comments</th>
+                            </tr>
+                            
+                        </thead>
+                        <tbody>
+                            
+                            <aura:iteration items="{!v.gridWrapper.approvalGridList}" var="data">
+                                <tr>
+                                    <td >
+                                        <lightning:formattedUrl value="{!'/' + data.Product_Family__c}"
+                                                label="{!data.Phoenix_Product_Family__c}" target="_self" />
+                                    </td>
+                                    
+                                 <!--    <aura:if isTrue="{!data.Phoenix_Selected_Approval_Matrix__r.Phoenix_Quadrant__c}" >
+                                       <td><ui:outputText value="{!data.Phoenix_Selected_Approval_Matrix__r.Phoenix_Quadrant__c}"/></td>
+                                       
+                                   </aura:if>-->
+                                    
+                                  <td >
+                                      <aura:if isTrue="{!data.Phoenix_Selected_Approval_Matrix__c != null}">
+                                        <ui:outputText value="{!data.Phoenix_Selected_Approval_Matrix__r.Phoenix_Quadrant__c}"/>
+                                          <aura:set attribute="else">
+                                              Green
+                                          </aura:set>
+                                        </aura:if>
+                                  </td>
+                                    
+                                    
+                                    
+                                    <aura:if isTrue="{!data.Phoenix_Is_New_Low__c}" >
+                                       <td style = "background-color:Yellow">Yes</td>
+                                       <aura:set attribute="else">
+                                           <td>No</td>
+                                       </aura:set>
+                                   </aura:if>
+                                    <aura:if isTrue="{!data.Phoenix_Is_partner_product__c}" >
+                                        <td></td>
+                                         <td></td>
+                                         <td></td>
+                                         <td></td>
+                                         <td></td>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!data.Phoenix_Annualized_TP__c >0}">
+                                                <td class="slds-text-align_right"><lightning:formattedNumber value="{!data.Phoenix_Annualized_TP__c}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencycode="USD"/> </td>
+                                                <aura:set attribute="else">
+                                                    <td class="slds-text-align_right" style="background-color:yellow;"><lightning:formattedNumber value="{!data.Phoenix_Annualized_TP__c}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencycode="USD"/> </td>            
+                                                </aura:set> </aura:if>
+                                            <!--<td><ui:outputText value="{!data.Phoenix_Annualized_TP_Limit__c}" /> </td>--> 
+                                    <td class="slds-text-align_right"><lightning:formattedNumber value="{!data.Phoenix_Annualized_TP_Impact__c}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencycode="USD"/> </td>
+                                    <td class="slds-text-align_right">
+                                        <div style="{!data.Phoenix_Annualized_TP_Impact_Limit__c != null?'background-color:yellow':''}">
+                                        <ui:outputText value="{!data.Phoenix_Annualized_TP_Impact_Limit__c}"/>
+                                            </div>
+                                            </td>
+                                    <td class="slds-text-align_right"><lightning:formattedNumber value="{!data.Phoenix_TP__c}" maximumFractionDigits="2" style="percent-fixed"/></td>
+                                    <td class="slds-text-align_right">
+                                        <div style="{!data.Phoenix_TP_Limit__c != null?'background-color:yellow':''}">
+                                        <ui:outputText value="{!data.Phoenix_TP_Limit__c}"/>
+                                            </div>
+                                        </td>
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:if isTrue="{!data.Phoenix_Is_partner_product__c}" >
+                                        <aura:if isTrue="{!data.Phoenix_Annualized_GM__c >0}">
+                                            <td class="slds-text-align_right"><lightning:formattedNumber value="{!data.Phoenix_Annualized_GM__c}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencycode="USD"/> </td>
+                                            <aura:set attribute="else">
+                                                <td class="slds-text-align_right" style="background-color:yellow;"><lightning:formattedNumber value="{!data.Phoenix_Annualized_GM__c}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencycode="USD"/> </td>            
+                                            </aura:set> </aura:if>
+                                        <!--<td><ui:outputText value="{!data.Phoenix_Annualized_GM_Limit__c}"/> </td>-->
+                                        <td class="slds-text-align_right"><lightning:formattedNumber value="{!data.Phoenix_Annualized_GM_Impact__c}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencycode="USD"/> </td>	
+                                        <td class="slds-text-align_right">
+                                            <div style="{!data.Phoenix_Annualized_GM_Impact_Limit__c != null ?'background-color:yellow':''}">
+                                        <ui:outputText value="{!data.Phoenix_Annualized_GM_Impact_Limit__c}"/> 
+                                            </div>
+                                         </td>
+                                         <aura:set attribute="else">
+                                           <td></td>
+                                             <td></td>
+                                             <td></td>
+                                       </aura:set>
+                                    </aura:if>
+                                    <td class="slds-text-align_right"><lightning:formattedNumber value="{!data.Phoenix_Revenue__c}" minimumFractionDigits="0" maximumFractionDigits="0" style="currency" currencycode="USD"/> </td>
+                                    <td class="slds-text-align_right">
+                                        <div style="{!data.Phoenix_Revenue_Limit__c != null?'background-color:yellow':''}">
+                                        <ui:outputText value="{!data.Phoenix_Revenue_Limit__c}"/>
+                                            </div>
+                                    </td>
+                                    <aura:if isTrue="{!data.Phoenix_Is_partner_product__c}" >
+                                    <td class="slds-text-align_right"><lightning:formattedNumber value="{!data.Phoenix_GM__c}" maximumFractionDigits="2" style="percent-fixed"/> </td>
+                                    <td class="slds-text-align_right">
+                                        <div style="{!data.Phoenix_GM_Limit__c != null ?'background-color:yellow':''}">
+                                        <ui:outputText value="{!data.Phoenix_GM_Limit__c}"/>
+                                            </div>
+                                        </td>
+                                        <aura:set attribute="else">
+                                           <td></td>
+                                             <td></td>
+                                       </aura:set>
+                                    </aura:if>
+                                   <!-- <td><lightning:formattedNumber value="{!data.Phoenix_SSA_Impact__c}" maximumFractionDigits="2" style="currency" currencycode="USD"/> </td>
+                                    <td><ui:outputText value="{!data.Phoenix_SSA_Impact_Limit__c}"/></td>-->
+                                    <aura:if isTrue="{!v.isOTC==false}">
+                                        <aura:if isTrue="{!and(and(v.gridWrapper.isMarketingRxLead, data.Phoenix_isRx__c),not(data.Phoenix_isMarketingRxLeadApproved__c))}">
+                                            <td>
+                                                <lightning:select aura:id="selectRxApproval" name="{!data.Id}" onchange="{! c.onMarRXApprovalChange }" >
+                                                    <aura:if isTrue="{!and(data.Phoenix_Marketing_Lead_Rx__c != null, data.Phoenix_Marketing_Lead_Rx__c != '')}" >
+                                                        <option value="{!data.Phoenix_Marketing_Lead_Rx__c}">{!data.Phoenix_Marketing_Lead_Rx__c}</option>
+                                                    </aura:if>
+                                                    <option value="None">None</option>
+                                                    <aura:if isTrue="{!(data.Phoenix_Marketing_Lead_Rx__c != 'Approved')}">
+                                                        <option value="Approved">Approved</option>
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!(data.Phoenix_Marketing_Lead_Rx__c != 'Not Approved')}">
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </aura:if>
+                                                </lightning:select>
+                                            </td>
+                                            
+                                            <aura:set attribute="else">                                            
+                                                <td>{!data.Phoenix_Marketing_Lead_Rx__c}</td>
+                                            </aura:set>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(and(v.gridWrapper.isMarketingSRxLead, data.Phoenix_isSRX__c),not(data.Phoenix_isMarketingSrxLeadApproved__c))}">
+                                            <td>
+                                                <lightning:select aura:id="selectSRxApproval" name="{!data.Id}" onchange="{! c.onMarSRXApprovalChange }" >
+                                                    <aura:if isTrue="{!and(data.Phoenix_Marketing_Lead_SRx__c != null, data.Phoenix_Marketing_Lead_SRx__c != '')}" >
+                                                        <option value="{!data.Phoenix_Marketing_Lead_SRx__c}">{!data.Phoenix_Marketing_Lead_SRx__c}</option>
+                                                    </aura:if>
+                                                    <option value="None">None</option>
+                                                    <aura:if isTrue="{!(data.Phoenix_Marketing_Lead_SRx__c != 'Approved')}">
+                                                        <option value="Approved">Approved</option>
+                                                    </aura:if>
+                                                    <aura:if isTrue="{!(data.Phoenix_Marketing_Lead_SRx__c != 'Not Approved')}">
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </aura:if>
+                                                </lightning:select>
+                                            </td>
+                                            
+                                            <aura:set attribute="else">
+                                                <td>{!data.Phoenix_Marketing_Lead_SRx__c}</td>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(and(v.gridWrapper.isMarketingOTCLead, data.Phoenix_isOTC__c),not(data.Phoenix_IsOTCLeadApproved__c))}">
+                                        <td>
+                                            <lightning:select aura:id="selectOTCApproval" name="{!data.Id}" onchange="{! c.onMarOTCApprovalChange }" >
+                                                <aura:if isTrue="{!and(data.Phoenix_Marketing_Lead_OTC__c != null, data.Phoenix_Marketing_Lead_OTC__c != '')}" >
+                                                    <option value="{!data.Phoenix_Marketing_Lead_OTC__c}">{!data.Phoenix_Marketing_Lead_OTC__c}</option>
+                                                </aura:if>
+                                                <option value="None">None</option>
+                                                <aura:if isTrue="{!(data.Phoenix_Marketing_Lead_OTC__c != 'Approved')}">
+                                                    <option value="Approved">Approved</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!(data.Phoenix_Marketing_Lead_OTC__c != 'Not Approved')}">
+                                                    <option value="Not Approved">Not Approved</option>
+                                                </aura:if>
+                                            </lightning:select>
+                                        </td>
+                                       
+                                        <aura:set attribute="else">
+                                            <td>{!data.Phoenix_Marketing_Lead_OTC__c}</td>
+                                        </aura:set>
+                                    </aura:if>
+                                     <aura:if isTrue="{!or(and(and(v.gridWrapper.isMarketingOTCLead,data.Phoenix_isOTC__c), not(data.Phoenix_IsOTCLeadApproved__c)),or(and(and(v.gridWrapper.isMarketingSRxLead, data.Phoenix_isSRX__c),not(data.Phoenix_isMarketingSrxLeadApproved__c)),and(and(v.gridWrapper.isMarketingRxLead, data.Phoenix_isRx__c),not(data.Phoenix_isMarketingRxLeadApproved__c))))}">
+                                        <td>
+                                            <lightning:textarea aura:id="MarkteingLeadCmt" name="{!data.Id}" value="{!data.Phoenix_Business_Head_Comments__c}" onblur="{! c.onMrkLeadCommentChange }" />
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <td>{!data.Phoenix_Business_Head_Comments__c}</td>
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(and(v.gridWrapper.isMarketingHead,data.Phoenix_Mkt_Head_Req__c), not(data.Phoenix_isMarketingHeadApproved__c))}">
+                                        <td>
+                                            <lightning:select aura:id="select" name="{!data.Id}" onchange="{! c.onApprovalChange }" >
+                                                <aura:if isTrue="{!and(data.Phoenix_Approval__c != null, data.Phoenix_Approval__c != '')}" >
+                                                    <option value="{!data.Phoenix_Approval__c}">{!data.Phoenix_Approval__c}</option>
+                                                </aura:if>
+                                                <option value="None">None</option>
+                                                <aura:if isTrue="{!(data.Phoenix_Approval__c != 'Approved')}">
+                                                    <option value="Approved">Approved</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!(data.Phoenix_Approval__c != 'Not Approved')}">
+                                                    <option value="Not Approved">Not Approved</option>
+                                                </aura:if>
+                                            </lightning:select>
+                                        </td>
+                                        <td>
+                                            <lightning:textarea aura:id="comment" name="{!data.Id}" value="{!data.Phoenix_Comments__c}" onblur="{! c.onCommentChange }" />
+                                        </td>
+                                        <aura:set attribute="else">
+                                            <td>{!data.Phoenix_Approval__c}</td>
+                                            <td>{!data.Phoenix_Comments__c}</td>
+                                        </aura:set>
+                                    </aura:if>
+                                   
+                                   	<aura:if isTrue="{!and(and(v.gridWrapper.isVPFinanceHead,data.Phoenix_VP_Finance_Req__c), not(data.Phoenix_isFinanceVPApproved__c))}">
+                                    <td>
+                                        <lightning:select aura:id="selectSrDirApproval" name="{!data.Id}" onchange="{! c.onSrDirApprovalChange }" >
+                                            <aura:if isTrue="{!and(data.Phoenix_Sr_Director_VP__c != null, data.Phoenix_Sr_Director_VP__c != '')}" >
+                                                <option value="{!data.Phoenix_Sr_Director_VP__c}">{!data.Phoenix_Sr_Director_VP__c}</option>
+                                            </aura:if>
+                                            <option value="None">None</option>
+                                            <aura:if isTrue="{!(data.Phoenix_Sr_Director_VP__c != 'Approved')}">
+                                                <option value="Approved">Approved</option>
+                                            </aura:if>
+                                            <aura:if isTrue="{!(data.Phoenix_Sr_Director_VP__c != 'Not Approved')}">
+                                                <option value="Not Approved">Not Approved</option>
+                                            </aura:if>
+                                        </lightning:select>
+                                    </td>
+                                    <td>
+                                        <lightning:textarea aura:id="SrDirComment" name="{!data.Id}" value="{!data.Phoenix_Sr_Director_VP_Finance_Comments__c}" onblur="{! c.onSrDirCommentChange }" />
+                                    </td>
+                                        <aura:set attribute="else">
+                                            <td>{!data.Phoenix_Sr_Director_VP__c}</td>
+                                            <td>{!data.Phoenix_Sr_Director_VP_Finance_Comments__c}</td>
+                                        </aura:set>
+                                    </aura:if>
+                                    <!--<th scope="row" style="padding-bottom: 0.5%;">{!data.sapNumber} </th>-->
+                                    
+                                    <!-- <td><lightning:formattedNumber value="{!data.monthlyDemand}" maximumFractionDigits="2"/> </td>
+                            <td><lightning:formattedNumber value="{!data.additionalReq}" maximumFractionDigits="2"/> </td>
+                            <td><lightning:formattedNumber value="{!data.totalRevisedReq}" maximumFractionDigits="2"/> </td>
+                            <td><lightning:formattedNumber value="{!data.dollarValue}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                            <td><lightning:formattedNumber value="{!data.scmAprQty}" maximumFractionDigits="2"/></td>-->
+                                </tr>
+                            </aura:iteration>     
+                            
+                        </tbody>
+                        
+                        
+                    </table>
+                    
+                    
+                </div>
+                <aura:set attribute="else">
+                    <center><div style="margin-top:150px;"><h1 style="font-size:1.3rem; font-weight:350;color:gray">There are no line items for this bid</h1></div></center>
+                </aura:set>
+            </aura:if>
+        </div>
+    </lightning:card>
+    
+</aura:component>

@@ -1,0 +1,196 @@
+<aura:component controller="Phoenix_NDCChangeEditor" implements="force:appHostable,flexipage:availableForAllPageTypes,lightning:isUrlAddressable,force:hasRecordId,lightning:actionOverride" access="global">
+    <aura:attribute name="recordId" type="String"  />
+    <aura:attribute name="recordIdNew" type="String" />
+    <aura:attribute name="activeBidProductFamilies" type="product2[]" />
+    <aura:attribute name="currentFamilyOptions" type="String" />
+    <aura:attribute name="proposedFamilyOptions" type="String" />
+    <aura:attribute name="CurrentProductFamily" type="String" default='' />
+    <aura:attribute name="ProposedProductFamily" type="String" default='' />
+    <aura:attribute name="CurrentProductFamilyName" type="String" default='' />
+    <aura:attribute name="ProposedProductFamilyName" type="String" default='' />
+    <aura:attribute name="isNoteAccept" type="boolean" default="true" />
+    <aura:attribute name="disabled" type="boolean" default="true" />
+    <aura:attribute name="url" type="String"/>
+    <aura:attribute name="productList" type="Phoenix_NDC_Change_Product__c[]"/>
+    <aura:attribute name="loaded" type="Boolean" default="false" />
+    <aura:attribute name="ApprovalStatus" type="String" default='Draft' />
+    <aura:attribute name="disableEdit" type="boolean" default="true" />
+    <aura:attribute name="disableSave" type="boolean" default="false" />
+    <aura:attribute name="disableAddRow" type="boolean" default="true" />
+    
+    <aura:attribute name="pageReference" type="Object"/>
+    <aura:attribute name="onLoadData" type="list" />
+    <aura:attribute name="Name" type="String" default="" />
+    <aura:attribute name="Date" type="Date" default=""  />
+    <aura:attribute name="Description" type="String" default="" />
+    <aura:attribute name="disableButton" type="String" default = "false" />
+    <aura:attribute name="showChangeProducts" type="boolean"/>
+    <aura:attribute name="isProductsSelected" type="boolean" />
+    <aura:attribute name="isProductFamilyNotSelected" type="boolean" default="true" />
+    
+    <lightning:navigation aura:id="navService"/>    
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.reInit}" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="NDCChangeToLineItems" event="c:NDCChangeToLineItems" action="{!c.displayNDCLineItemScreen}"/>
+    <aura:handler name="productInstancesLength" event="c:NDCChangeEvent"
+                  action="{!c.disableHeaderFields}"/>
+    <aura:if isTrue="{! v.loaded }">
+        <lightning:spinner alternativeText="Loading" />
+    </aura:if>
+    <aura:if isTrue="{!v.isProductFamilyNotSelected}">
+        <div class="slds-box slds-theme_default slds-m-top_small" id="top">
+            <div class="slds-p-around_small slds-align_absolute-center" role="banner">
+                <h1 class="slds-modal__title slds-hyphenate slds-text-heading--medium">
+                    NDC Change
+                </h1>
+            </div>
+           <!-- <div class="slds-p-around_small slds-align_absolute-center" style="padding-left:0px;padding-right:0px;">
+                <table class="slds-p-around_small slds-align_absolute-center" style="padding:0px;">
+                    <tbody>
+                        <tr>
+                            <td><b>Note:</b></td>
+                            <td style="padding-left: 15px;">If there is any Price Change please submit the Bid from Bids Tab. This screen should only be used for NDC switches with the same pack size &amp; price. Check if the new NDCs are created in Bright &amp; if not, to contact an admin or superuser before proceeding.</td>
+                            <td style="padding-left: 10px;"><lightning:button  variant="brand" type="button" label="I Understand - Go ahead " onclick="{!c.acceptNote}" disabled="{!v.disableButton}" /></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>-->
+             <div class="slds-grid slds-wrap">
+                    <div class="slds-col  slds-grid slds-size_1-of-1 slds-m-left_small slds-p-bottom_x-small">
+                      	 <div  class="slds-col slds-size_1-of-12 slds-m-top_medium slds-m-left_small" style="margin-top: 1.6%;width: 7rem !important;">
+                             <b>Note: </b> 
+                        </div>
+                           <div class="slds-col slds-size_9-of-12 slds-m-top_large">
+                           If there is any Price Change please submit the Bid from Bids Tab. This screen should only be used for NDC switches with the same pack size &amp; price. Check if the new NDCs are created in Bright &amp; if not, to contact an admin or superuser before proceeding.    
+                        </div>
+                
+                           <div class="slds-col slds-size_2-of-12 slds-m-top_large sapdata">
+                              <lightning:button  variant="brand" type="button" label="I Understand - Go ahead " onclick="{!c.acceptNote}" disabled="{!v.disableButton}" /> 
+                        </div>
+                 </div></div>
+            <div class="slds-media__body slds-m-top-medium slds-border_top slds-border_bottom slds-border_right slds-border_left" >
+                <lightning:recordEditForm recordId="{!v.recordId}" aura:id="recordEditForm" onsuccess="{!c.handleSuccess}"
+                                          objectApiName="Phoenix_NDC_Change__c">
+                    <lightning:messages />
+                    <div class="slds-grid" >
+                        <div class="slds-col slds-size_1-of-2">
+                            <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+                                <div class="slds-col slds-size_4-of-5 slds-m-left_small">
+                                    <lightning:inputField fieldName="Phoenix_NDC_Change_Name__c" value="{!v.Name}" required="true" disabled="{!v.isNoteAccept}" />
+                                </div>
+                                <aura:set attribute="else">
+                                    <div class="slds-col slds-size_4-of-5 slds-m-left_small">
+                                        <lightning:inputField fieldName="Phoenix_NDC_Change_Name__c" value="{!v.Name}" required="true" disabled="true" />
+                                    </div>
+                                </aura:set>
+                            </aura:if>
+                            <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+                                <div class="slds-col slds-size_4-of-5 slds-m-left_small">
+                                    <lightning:inputField fieldName="Phoenix_Date__c" value="{!v.Date}" required="true" disabled="{!v.isNoteAccept}" />
+                                </div>
+                                <aura:set attribute="else">
+                                    <div class="slds-col slds-size_4-of-5 slds-m-left_small">
+                                        <lightning:inputField fieldName="Phoenix_Date__c" value="{!v.Date}" required="true" disabled="true" />
+                                    </div>
+                                </aura:set>
+                            </aura:if>
+                            <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+                                <div class="slds-col slds-size_4-of-5 slds-m-left_small">
+                                    <lightning:inputField fieldName="Phoenix_Description__c" value="{!v.Description}" required="true" disabled="{!v.isNoteAccept}" />
+                                </div>
+                                <aura:set attribute="else">
+                                    <div class="slds-col slds-size_4-of-5 slds-m-left_small">
+                                        <lightning:inputField fieldName="Phoenix_Description__c" value="{!v.Description}" required="true" disabled="true" />
+                                    </div>
+                                </aura:set>
+                            </aura:if>
+                            <div class="slds-col slds-size_4-of-5 slds-m-left_small slds-hide">
+                                <lightning:inputField fieldName="Phoenix_Approval_Status__c" value="{!v.ApprovalStatus}" required="true" />
+                            </div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <div class="slds-col slds-size_4-of-5 slds-m-left_small slds-hide">
+                                <lightning:inputField fieldName="Phoenix_Current_Product_Family__c" value="{!v.CurrentProductFamilyName}" required="true" disabled="{!v.isNoteAccept}" />
+                            </div>
+                            <div class="slds-col slds-size_4-of-5 slds-m-left_small slds-hide">
+                                <lightning:inputField fieldName="Current_Product_Family__c" value="{!v.CurrentProductFamily}" required="true" disabled="{!v.isNoteAccept}" />
+                            </div>
+                            <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+                                <div class="slds-col slds-size_4-of-5 slds-m-left_small slds-m-bottom_small">
+                                    <lightning:combobox aura:id="selectItem"
+                                                        placeholder="Choose Current Product Family"
+                                                        value="{!v.CurrentProductFamily}"
+                                                        onchange="{!c.handleSelectedCurrentProductFamily}"
+                                                        options="{!v.currentFamilyOptions}"
+                                                        label="Current Product Family"
+                                                        disabled="{!v.isNoteAccept}"
+                                                        required="true"
+                                                        />
+                                </div>
+                                <aura:set attribute="else">
+                                    <div class="slds-col slds-size_4-of-5 slds-m-left_small slds-m-bottom_small">
+                                        <lightning:combobox aura:id="selectItem"
+                                                            placeholder="Choose Current Product Family"
+                                                            value="{!v.CurrentProductFamily}"
+                                                            onchange="{!c.handleSelectedCurrentProductFamily}"
+                                                            options="{!v.currentFamilyOptions}"
+                                                            label="Current Product Family"
+                                                            disabled="true"
+                                                            required="true"
+                                                            />
+                                    </div>
+                                </aura:set>
+                            </aura:if>
+                            <div class="slds-col slds-size_4-of-5 slds-m-left_small slds-hide">
+                                <lightning:inputField fieldName="Phoenix_Proposed_Product_Family__c" value="{!v.ProposedProductFamilyName}" required="true" disabled="{!v.isNoteAccept}" />
+                            </div>
+                            <div class="slds-col slds-size_4-of-5 slds-m-left_small slds-hide">
+                                <lightning:inputField fieldName="Proposed_Product_Family__c" value="{!v.ProposedProductFamily}" required="true" disabled="{!v.isNoteAccept}" />
+                            </div>
+                            <!--<aura:if isTrue="{!v.CurrentProductFamily != ''}" >-->
+                            <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+                             <div class="slds-col slds-size_4-of-5 slds-m-left_small slds-m-bottom_small">
+                                 <lightning:combobox aura:id="selectItem"
+                                                     placeholder="Choose Proposed Product Family"
+                                                     value="{!v.ProposedProductFamily}"
+                                                     onchange="{!c.handleSelectedProposedProductFamily}"
+                                                     options="{!v.proposedFamilyOptions}"
+                                                     label="Proposed Product Family"
+                                                     disabled="{!v.disabled}"
+                                                     required="true"
+                                                     />
+                                </div>
+                                <aura:set attribute="else">
+                                    <div class="slds-col slds-size_4-of-5 slds-m-left_small slds-m-bottom_small">
+                                        <lightning:combobox aura:id="selectItem"
+                                                            placeholder="Choose Proposed Product Family"
+                                                            value="{!v.ProposedProductFamily}"
+                                                            onchange="{!c.handleSelectedProposedProductFamily}"
+                                                            options="{!v.proposedFamilyOptions}"
+                                                            label="Proposed Product Family"
+                                                            disabled="true"
+                                                            required="true"
+                                                            />
+                                    </div>
+                                </aura:set>
+                            </aura:if>
+                        </div>
+                    </div>
+                    <div class="modal-footer slds-modal__footer slds-align_absolute-center" role="banner">
+                        <lightning:button class="slds-m-top_small" variant="neutral" type="button" label="Cancel" onclick="{!c.goToNDCChangePage}" />
+                        <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+                            <lightning:button class="slds-m-top_small" variant="brand" type="button" label="Save &amp; Select Product" onclick="{!c.navigateToNDCChangeProducts}" disabled="{!v.disableSave}" />
+                            <lightning:button class="slds-m-top_small" variant="brand" type="button" label="Edit" onclick="{!c.enableEdit}" disabled="{!v.disableEdit}" />
+                            <aura:set attribute="else">
+                                <lightning:button class="slds-m-top_small" variant="brand" type="button" label="Save &amp; Select Product" disabled="true" />
+                            </aura:set>                            
+                        </aura:if>
+                    </div>
+                </lightning:recordEditForm>
+            </div>
+        </div>
+    </aura:if> 
+    <aura:if isTrue="{!v.showChangeProducts}" aura:id="changeProductsElement" >
+        <c:Phoenix_NDCChangeProducts ApprovalStatus="{!v.ApprovalStatus}" CurrentProductFamily="{!v.CurrentProductFamily}" ProposedProductFamily="{!v.ProposedProductFamily}" recordId="{!v.recordId}" recordIdNew="{!v.recordIdNew}" productList="{!v.productList}" disableAddRow="{!v.disableAddRow}"/>
+    </aura:if>
+</aura:component>

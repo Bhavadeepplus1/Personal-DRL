@@ -1,0 +1,773 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="record" type="list" />
+    <aura:attribute name="summaryList" type="list" />
+    <aura:attribute name="family" type="String" />
+    <aura:attribute name="index" type="integer" />
+    <aura:attribute name="totalAnnualImpact" type="integer" />
+    <aura:attribute name="totalBusinessImpact" type="integer" />
+    <aura:attribute name="showUserInputs" type="boolean" default="true"/>
+    <aura:attribute name="category" type="String" />
+    <aura:attribute name="bidRecord" type="Object" />
+    <aura:attribute name="familySummaryMap" type="Object" />
+    <aura:attribute name="summaryForLost" type="Object" />
+    <aura:attribute name="showTooltip" type="boolean" default="false" />
+    <aura:attribute name="isBidBusinessAnalysis" type="boolean" />
+    <aura:attribute name="top" type="string" default="-22px;"/>
+    <aura:attribute name="size" type="Integer"/>
+    <aura:attribute name="isLastRows" type="boolean" />
+    <aura:attribute name="expandFamily" type="boolean" />
+    
+    <aura:attribute name="parent" type="Aura.Component"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:if isTrue="{!v.category == 'Business Lost'}">
+        <tr style="font-weight: bold;background-color: #F3F3F3;">
+            <td style="padding: 4px 8px;">
+                <aura:if isTrue="{!v.record[1][0].showDropdown}">
+                    (<lightning:buttonIcon iconName="utility:minimize_window" variant="bare" class="iconCSS" size="small" onclick="{!c.showDropDown}" alternativeText="Hide Line Items" title="Show Products" />)
+                    <aura:set attribute="else">
+                        (<lightning:buttonIcon iconName="utility:add" class="iconCSS1" size="small" variant="bare" onclick="{! c.showDropDown }" alternativeText="Show Line Items" title="Hide Products" />)
+                    </aura:set>
+                </aura:if>
+                <lightning:formattedUrl value="{!'/'+v.record[1][0].customerId}" target="_blank" label="{!v.record[1][0].customer}"/>&nbsp;
+                (<i><b><lightning:formattedUrl value="{!'/' + v.record[1][0].bidRecord.Id}" label="Info" target="_blank" onmouseover="{!c.mouseOver}" onmouseout="{!c.mouseOut}" /></b></i>)
+                <aura:if isTrue="{!and(v.showTooltip, v.isBidBusinessAnalysis)}">
+                    <div class="{!v.isLastRows ? 'slds-popover slds-popover_tooltip slds-nubbin_left-bottom': 'slds-popover slds-popover_tooltip slds-nubbin_left-top'}" role="tooltip" id="help" style="{!'top:'+(v.top)+'width:auto;position:absolute;left:320px;max-width: 600px;'}">
+                        <div class="slds-popover__body" style="width: auto;">
+                            <tr style="border: 0;">
+                                <td style="border: 0;padding-left: 0px;">Bid No</td>
+                                <td style="border: 0;padding-left: 0px;">:</td>
+                                <td style="border: 0;"><i><b>{!v.record[1][0].bidRecord.Name}</b></i></td>
+                            </tr>
+                            <tr style="border: 0;">
+                                <td style="border: 0;padding-left: 0px;">Bid Name</td>
+                                <td style="border: 0;padding-left: 0px;">:</td>
+                                <td style="border: 0;"><i><b>{!v.record[1][0].bidRecord.Phoenix_Bid_Name__c}</b></i></td>
+                            </tr>
+                            <tr style="border: 0;">
+                                <td style="border: 0;padding-left: 0px;">Bid Type</td>
+                                <td style="border: 0;padding-left: 0px;">:</td>
+                                <td class="slds-cell-wrap" style="border: 0;"><i><b>{!v.record[1][0].bidRecord.Phoenix_Bid_Type__c}</b></i></td>
+                            </tr>
+                            <tr style="border: 0;">
+                                <td style="border: 0;padding-left: 0px;">Bid Owner</td>
+                                <td style="border: 0;padding-left: 0px;">:</td>
+                                <td style="border: 0;"><i><b>{!v.record[1][0].bidRecord.Phoenix_Bid_Owner__r.Name}</b></i></td>
+                            </tr>
+                            <tr style="border: 0;">
+                                <td style="border: 0;padding-left: 0px;">Bid Submitted Date</td>
+                                <td style="border: 0;padding-left: 0px;">:</td>
+                                <td style="border: 0;"><i><b>{!v.record[1][0].formattedSubmittedDate}</b></i></td>
+                            </tr>
+                            <tr style="border: 0;">
+                                <td style="border: 0;padding-left: 0px;">Bid Closed Date</td>
+                                <td style="border: 0;padding-left: 0px;">:</td>
+                                <td style="border: 0;"><i><b>{!v.record[1][0].formattedClosedDate}</b></i></td>
+                            </tr>
+                        </div>
+                    </div>
+                </aura:if>
+            </td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td style="text-align: center;">
+                <!--<aura:if isTrue="{!and(v.summaryForLost.totalPrice != null, v.summaryForLost.totalPrice != 0)}">
+                    <ui:outputCurrency value="{!v.summaryForLost.totalPrice}" format="$##,##,###,###.00"/>
+                    <aura:set attribute="else">
+                        $0
+                    </aura:set>
+                </aura:if>-->
+            </td>
+            <td style="text-align: center;">
+                <aura:if isTrue="{!v.summaryForLost.totalQty != null}">
+                    <lightning:formattedNumber value="{!v.summaryForLost.totalQty}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                </aura:if>
+            </td>
+            <td style="text-align: center;">
+                <lightning:formattedNumber value="{!v.summaryForLost.totalPreviousTotal}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+            </td>
+            <td style="text-align: center;">
+                <lightning:formattedNumber value="0" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+            </td>
+            <td style="text-align: center;">
+                <aura:if isTrue="{!and(v.summaryForLost.totalAnnualImpact != null, v.summaryForLost.totalAnnualImpact != 0)}">
+                    <span style="color: red;"><ui:outputCurrency value="{!v.summaryForLost.totalAnnualImpact}" format="$##,##,###,###"/></span>
+                    <aura:set attribute="else">
+                        $0
+                    </aura:set>
+                </aura:if>
+            </td>
+            <td style="text-align: center;">
+                <aura:if isTrue="{!and(v.summaryForLost.totalBusinessImpact != 0, v.summaryForLost.totalBusinessImpact != 'N/A')}">
+                    <span style="color: red;"><ui:outputCurrency value="{!v.summaryForLost.totalBusinessImpact}" format="$##,##,###,###"/></span>
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.summaryForLost.totalBusinessImpact == 'N/A'}">
+                            N/A
+                            <aura:set attribute="else">
+                                $0
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+            </td>
+            <td></td>
+        </tr>
+        <aura:if isTrue="{!v.record[1][0].showDropdown}">
+            <aura:iteration items="{!v.record[1]}" var="rec">
+                <tr>
+                    <td></td>
+                    <td><lightning:formattedUrl value="{!'/'+rec.productId}" target="_blank" label="{!rec.productName}"/></td>
+                    <td style="text-align: center;">{!rec.ndc}</td>
+                    <td>
+                        <aura:if isTrue="{!rec.contractId != null}">
+                            <lightning:formattedUrl value="{!'/'+rec.contractId}" target="_blank" label="{!rec.contract}"/>
+                        </aura:if>
+                    </td>
+                    <td style="text-align: center;">{!rec.removalEffectiveDate}</td>
+                    <td style="text-align: center;">
+                        <aura:if isTrue="{!rec.monthsRemaining != null}">
+                            <lightning:formattedNumber value="{!rec.monthsRemaining}" maximumFractionDigits="2"/>&nbsp; <span title="{!rec.date}">({!rec.dateUsed})</span>
+                        </aura:if>
+                    </td>
+                    <td style="text-align: center;">
+                        <aura:if isTrue="{!and(rec.previousIndirectPrice != null, rec.previousIndirectPrice != 0)}">
+                            <ui:outputCurrency value="{!rec.previousIndirectPrice}" format="$##,##,###,###.00"/>
+                            <aura:set attribute="else">
+                                $0
+                            </aura:set>
+                        </aura:if>
+                    </td>
+                    <td style="text-align: center;">
+                        <aura:if isTrue="{!rec.previousQty != null}">
+                            <lightning:formattedNumber value="{!rec.previousQty}" maximumFractionDigits="0" minimumFractionDigits="0"/>
+                        </aura:if>
+                    </td>
+                    <td style="text-align: center;">
+                        <lightning:formattedNumber value="{!rec.previousContractTotal}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <td style="text-align: center;">
+                        <lightning:formattedNumber value="0" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <td style="text-align: center;">
+                        <aura:if isTrue="{!and(rec.annualImpact != null, rec.annualImpact != 0)}">
+                            <span style="color: red;" title="{!rec.annualTitle}"><ui:outputCurrency value="{!rec.annualImpact}" format="$##,##,###,###"/></span>
+                            <aura:set attribute="else">
+                                $0
+                            </aura:set>
+                        </aura:if>
+                    </td>
+                    <td style="text-align: center;">
+                        <aura:if isTrue="{!and(rec.businessImpact != 0,  rec.businessImpact != 'N/A')}">
+                            <span style="color: red;" title="{!rec.businessTitle}"><ui:outputCurrency value="{!rec.businessImpact}" format="$##,##,###,###"/></span>
+                            <aura:set attribute="else">
+                                <aura:if isTrue="{!rec.businessImpact == 'N/A'}">
+                                    N/A
+                                    <aura:set attribute="else">
+                                        $0
+                                    </aura:set>
+                                </aura:if>
+                            </aura:set>
+                        </aura:if>
+                    </td>
+                    <td></td>
+                </tr>
+            </aura:iteration>
+        </aura:if>
+        <aura:set attribute="else">
+            <tr style="background: #f3f3f3; font-weight: bold;">
+                <td style="padding: 4px 8px;">
+                    <span style="padding: 4px 4px; color: Black;">{!v.record[0]}</span>
+                    <aura:if isTrue="{!v.record.showItem}">
+                        (<lightning:buttonIcon iconName="utility:minimize_window" class="iconCSS" variant="bare" onclick="{! c.handleClick2 }" alternativeText="Hide Products" title="Hide Products" />)
+                        
+                        <aura:set attribute="else">
+                            (<lightning:buttonIcon iconName="utility:add" variant="bare" class="iconCSS1" onclick="{! c.handleClick1 }" alternativeText="Show Products" title="Show Products" />)
+                            
+                        </aura:set>
+                    </aura:if>
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <aura:if isTrue="{!lessthan(v.summaryList[0], 0)}">
+                    <td style="text-align: center;color: red;">
+                        <lightning:formattedNumber value="{!v.summaryList[0]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <aura:set attribute="else">
+                        <td style="text-align: center;color: green;">
+                            <lightning:formattedNumber value="{!v.summaryList[0]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </td>
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!lessthan(v.summaryList[1], 0)}">
+                    <td style="text-align: center;color: red;">
+                        <lightning:formattedNumber value="{!v.summaryList[1]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <aura:set attribute="else">
+                        <td style="text-align: center;color: green;">
+                            <lightning:formattedNumber value="{!v.summaryList[1]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </td>
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!lessthan(v.summaryList[2], 0)}">
+                    <td style="text-align: center;color: red;">
+                        <lightning:formattedNumber value="{!v.summaryList[2]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <aura:set attribute="else">
+                        <td style="text-align: center;color: green;">
+                            <lightning:formattedNumber value="{!v.summaryList[2]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </td>
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!lessthan(v.summaryList[3], 0)}">
+                    <td style="text-align: center;color: red;">
+                        <lightning:formattedNumber value="{!v.summaryList[3]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <aura:set attribute="else">
+                        <td style="text-align: center;color: green;">
+                            <lightning:formattedNumber value="{!v.summaryList[3]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </td>
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!lessthan(v.summaryList[30], 0)}">
+                    <td style="text-align: center;color: red;">
+                        <lightning:formattedNumber value="{!v.summaryList[30]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <aura:set attribute="else">
+                        <td style="text-align: center;color: green;">
+                            <lightning:formattedNumber value="{!v.summaryList[30]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </td>
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!v.bidRecord.Phoenix_Customer_Type__c == 'ClarusOne'}">
+                    <td style="text-align: center;">
+                        <lightning:formattedNumber value="{!v.summaryList[11]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <td style="text-align: center;">
+                        <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                            <lightning:formattedNumber value="{!v.summaryList[12]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </aura:if>
+                    </td>
+                    <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                        <td style="text-align: center;">
+                            <lightning:formattedNumber value="{!v.summaryList[14]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </td>
+                    </aura:if>
+                    <td style="text-align: center;">
+                        <lightning:formattedNumber value="{!v.summaryList[21]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <td style="text-align: center;">
+                        <lightning:formattedNumber value="{!v.summaryList[22]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <td style="text-align: center;">
+                        <lightning:formattedNumber value="{!v.summaryList[13]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <td style="text-align: center;">
+                        <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                            <lightning:formattedNumber value="{!v.summaryList[14]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </aura:if>
+                    </td>
+                    <td style="text-align: center;">
+                        <lightning:formattedNumber value="{!v.summaryList[15]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <td style="text-align: center;">
+                        <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                            <lightning:formattedNumber value="{!v.summaryList[16]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </aura:if>
+                    </td>
+                    <td style="text-align: center;">
+                        <lightning:formattedNumber value="{!v.summaryList[23]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <td style="text-align: center;">
+                        <aura:if isTrue="{!v.category != 'Business Gained'}">
+                            <lightning:formattedNumber value="{!v.summaryList[17]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </aura:if>
+                    </td>
+                    <td style="text-align: center;">
+                        <lightning:formattedNumber value="{!v.summaryList[18]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <td style="text-align: center;"></td>
+                    <td style="text-align: center;"></td>
+                    <td style="text-align: center;"></td>
+                    <td style="text-align: center;"></td>
+                    <td style="text-align: center;"></td>
+                    <td style="text-align: center;"></td>
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.bidRecord.Phoenix_Customer_Type__c == 'RXSS'}">
+                            <td style="text-align: center;">
+                                <lightning:formattedNumber value="{!v.summaryList[11]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: center;">
+                                <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                                    <lightning:formattedNumber value="{!v.summaryList[12]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </aura:if>
+                            </td>
+                            <td style="text-align: center;">
+                                <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                                    <lightning:formattedNumber value="{!v.summaryList[14]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </aura:if>
+                            </td>
+                            <td style="text-align: center;">
+                                <lightning:formattedNumber value="{!v.summaryList[21]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: center;">
+                                <lightning:formattedNumber value="{!v.summaryList[22]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: center;">
+                                <lightning:formattedNumber value="{!v.summaryList[13]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: center;">
+                                <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                                    <lightning:formattedNumber value="{!v.summaryList[16]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </aura:if>
+                            </td>
+                            <td style="text-align: center;">
+                                <lightning:formattedNumber value="{!v.summaryList[23]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: center;">
+                                <lightning:formattedNumber value="{!v.summaryList[15]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: center;">
+                                <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                                    <lightning:formattedNumber value="{!v.summaryList[26]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </aura:if>
+                            </td>
+                            <td style="text-align: center;">
+                                <lightning:formattedNumber value="{!v.summaryList[24]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: center;">
+                                <lightning:formattedNumber value="{!v.summaryList[19]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: center;">
+                                <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                                    <lightning:formattedNumber value="{!v.summaryList[20]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </aura:if>
+                            </td>
+                            <td style="text-align: center;">
+                                <lightning:formattedNumber value="{!v.summaryList[25]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: center;">
+                                <aura:if isTrue="{!v.category != 'Business Gained'}">
+                                    <lightning:formattedNumber value="{!v.summaryList[17]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                </aura:if>
+                            </td>
+                            <td style="text-align: center;">
+                                <lightning:formattedNumber value="{!v.summaryList[18]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                            </td>
+                            <td style="text-align: center;">
+                            </td>
+                            <td style="text-align: center;">
+                            </td>
+                            <td style="text-align: center;">
+                            </td>
+                            <td style="text-align: center;">
+                            </td>
+                            <td style="text-align: center;">
+                            </td>
+                            <td style="text-align: center;">
+                            </td>
+                            <td style="text-align: center;">
+                            </td>
+                            <td style="text-align: center;">
+                            </td>
+                            <aura:set attribute="else">
+                                <aura:if isTrue="{!v.bidRecord.Phoenix_Customer_Type__c == 'ROS'}">
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.summaryList[11]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                                            <lightning:formattedNumber value="{!v.summaryList[12]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </aura:if>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.summaryList[21]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.summaryList[13]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                                            <lightning:formattedNumber value="{!v.summaryList[14]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </aura:if>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.summaryList[22]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.summaryList[15]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                                            <lightning:formattedNumber value="{!v.summaryList[16]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </aura:if>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.summaryList[23]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.summaryList[19]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                                            <lightning:formattedNumber value="{!v.summaryList[20]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </aura:if>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.summaryList[24]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <aura:if isTrue="{!v.category != 'Business Gained'}">
+                                            <lightning:formattedNumber value="{!v.summaryList[17]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                        </aura:if>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <lightning:formattedNumber value="{!v.summaryList[18]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                    </td>
+                                    <td style="text-align: center;">
+                                    </td>
+                                    <td style="text-align: center;">
+                                    </td>
+                                    <td style="text-align: center;">
+                                    </td>
+                                    <td style="text-align: center;">
+                                    </td>
+                                    <td style="text-align: center;">
+                                    </td>
+                                    <td style="text-align: center;">
+                                    </td>
+                                    <td style="text-align: center;">
+                                    </td>
+                                    <td style="text-align: center;">
+                                    </td>
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!v.bidRecord.Phoenix_Customer_Type__c == 'BASE/DSH'}">
+                                            <td style="text-align: center;">
+                                                <lightning:formattedNumber value="{!v.summaryList[11]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            </td>
+                                            <td style="text-align: center;"> 
+                                                <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                                                    <lightning:formattedNumber value="{!v.summaryList[12]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                </aura:if>
+                                            </td>
+                                            <td style="text-align: center;">                                              
+                                                <lightning:formattedNumber value="{!v.summaryList[21]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <lightning:formattedNumber value="{!v.summaryList[13]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                                                    <lightning:formattedNumber value="{!v.summaryList[14]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                </aura:if>
+                                            </td>
+                                            <td style="text-align: center;">                                              
+                                                <lightning:formattedNumber value="{!v.summaryList[22]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <lightning:formattedNumber value="{!v.summaryList[15]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                                                    <lightning:formattedNumber value="{!v.summaryList[16]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                </aura:if>
+                                            </td>
+                                            <td style="text-align: center;">                 
+                                                <lightning:formattedNumber value="{!v.summaryList[23]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <aura:if isTrue="{!v.category != 'Business Gained'}">
+                                                    <lightning:formattedNumber value="{!v.summaryList[17]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                </aura:if>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <lightning:formattedNumber value="{!v.summaryList[18]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                            </td>
+                                            <td style="text-align: center;">
+                                            </td>
+                                            <td style="text-align: center;">
+                                            </td>
+                                            <td style="text-align: center;">
+                                            </td>
+                                            <td style="text-align: center;">
+                                            </td>
+                                            <td style="text-align: center;">
+                                            </td>
+                                            <td style="text-align: center;">
+                                            </td>
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!or(v.bidRecord.Phoenix_Customer_Type__c == 'Net Indirect Pricing', v.bidRecord.Phoenix_Customer_Type__c == 'Direct and Indirect')}">
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.summaryList[11]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                                                            <lightning:formattedNumber value="{!v.summaryList[12]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.summaryList[21]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.summaryList[13]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <aura:if isTrue="{!or(v.ategory == 'Open Status', v.category == 'No Effect')}">
+                                                            <lightning:formattedNumber value="{!v.summaryList[14]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.summaryList[22]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <aura:if isTrue="{!v.category != 'Business Gained'}">
+                                                            <lightning:formattedNumber value="{!v.summaryList[17]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                        </aura:if>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.summaryList[18]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>
+                                                    <aura:set attribute="else">
+                                                        <aura:if isTrue="{!v.bidRecord.Phoenix_Customer_Type__c == 'Econdisc'}">
+                                                            <td style="text-align: center;">
+                                                                <lightning:formattedNumber value="{!v.summaryList[11]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                            </td>
+                                                            <td style="text-align: center;">
+                                                                <aura:if isTrue="{!or(v.category == 'Open Status', v.category == 'No Effect')}">
+                                                                    <lightning:formattedNumber value="{!v.summaryList[12]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                </aura:if>
+                                                            </td>
+                                                            <td style="text-align: center;">
+                                                                <lightning:formattedNumber value="{!v.summaryList[21]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                            </td>
+                                                            <td style="text-align: center;">
+                                                                <lightning:formattedNumber value="{!v.summaryList[13]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                            </td>
+                                                            <td style="text-align: center;">
+                                                                <aura:if isTrue="{!or(v.ategory == 'Open Status', v.category == 'No Effect')}">
+                                                                    <lightning:formattedNumber value="{!v.summaryList[14]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                </aura:if>
+                                                            </td>
+                                                            <td style="text-align: center;">
+                                                                <lightning:formattedNumber value="{!v.summaryList[22]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                            </td>
+                                                            <td style="text-align: center;">
+                                                                <aura:if isTrue="{!v.category != 'Business Gained'}">
+                                                                    <lightning:formattedNumber value="{!v.summaryList[17]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                </aura:if>
+                                                            </td>
+                                                            <td style="text-align: center;">
+                                                                <lightning:formattedNumber value="{!v.summaryList[18]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                            </td>
+                                                            <aura:set attribute="else">
+                                                                <aura:if isTrue="{!v.bidRecord.Phoenix_Customer_Type__c == 'OneTimeBuy'}">
+                                                                    <td style="text-align: center;">
+                                                                    </td>
+                                                                    <td style="text-align: center;">
+                                                                    </td>
+                                                                    <td style="text-align: center;">
+                                                                		<lightning:formattedNumber value="{!v.summaryList[21]}" minimumFractionDigits="0" maximumFractionDigits="0"/>        
+                                                                    </td>
+                                                                    <td style="text-align: center;">
+                                                                    </td>
+                                                                    <td style="text-align: center;">
+                                                                    </td>
+                                                                    <td style="text-align: center;">
+                                                                    </td>
+                                                                    <td style="text-align: center;">
+                                                                    </td>
+                                                                    <td style="text-align: center;">
+                                                                        <lightning:formattedNumber value="{!v.summaryList[18]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                    </td>
+                                                                    <aura:set attribute="else">
+                                                                        <td style="text-align: center;">
+                                                                            <aura:if isTrue="{!v.category != 'Business Gained'}">
+                                                                                <lightning:formattedNumber value="{!v.summaryList[17]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                            </aura:if>
+                                                                        </td>
+                                                                        <td style="text-align: center;">
+                                                                            <lightning:formattedNumber value="{!v.summaryList[18]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                        </td>
+                                                                    </aura:set>
+                                                                </aura:if>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </aura:set>
+                                                </aura:if>
+                                                <aura:if isTrue="{!v.bidRecord.Phoenix_Customer_Type__c == 'Direct'}">
+                                                    <td style="text-align: center;">
+                                                        <lightning:formattedNumber value="{!v.summaryList[18]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                    </td>
+                                                    <td style="text-align: center;">
+                                                    </td>
+                                                    <aura:set attribute="else">
+                                                        <aura:if isTrue="{!v.bidRecord.isOTCType}">
+                                                            <td style="text-align: center;">
+                                                            </td>
+                                                            <td style="text-align: center;">
+                                                            </td>
+                                                            <td style="text-align: center;">
+                                                            </td>
+                                                            <aura:set attribute="else">
+                                                                <aura:if isTrue="{!or(v.bidRecord.Phoenix_Customer_Type__c == 'Net Indirect Pricing', v.bidRecord.Phoenix_Customer_Type__c == 'Direct and Indirect')}">
+                                                                    <td style="text-align: center;">
+                                                                    </td>
+                                                                    <td style="text-align: center;">
+                                                                    </td>
+                                                                    <td style="text-align: center;">
+                                                                    </td>
+                                                                    <td style="text-align: center;">
+                                                                    </td>
+                                                                    <aura:set attribute="else">
+                                                                        <aura:if isTrue="{!v.bidRecord.Phoenix_Customer_Type__c == 'Econdisc'}">
+                                                                            <td style="text-align: center;">
+                                                                            </td>
+                                                                            <td style="text-align: center;">
+                                                                            </td>
+                                                                            <td style="text-align: center;">
+                                                                            </td>
+                                                                            <td style="text-align: center;">
+                                                                            </td>
+                                                                            <aura:set attribute="else">
+                                                                                <aura:if isTrue="{!v.bidRecord.Phoenix_Customer_Type__c == 'OneTimeBuy'}">
+                                                                                    <td style="text-align: center;">
+                                                                                    </td>
+                                                                                    <td style="text-align: center;">
+                                                                                    </td>
+                                                                                    <td style="text-align: center;">
+                                                                                    </td>
+                                                                                    <td style="text-align: center;">
+                                                                                    </td>
+                                                                                    <aura:set attribute="else">
+                                                                                        <aura:if isTrue="{!v.bidRecord.Phoenix_Customer_Type__c == 'Humana Indirect CII'}">
+                                                                                            <td style="text-align: center;">
+                                                                                            </td>
+                                                                                            <td style="text-align: center;">
+                                                                                            </td>
+                                                                                            <td style="text-align: center;">
+                                                                                            </td>
+                                                                                            <aura:set attribute="else">
+                                                                                                <td style="text-align: center;">
+                                                                                                    <lightning:formattedNumber value="{!v.summaryList[21]}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                                </td>
+                                                                                                <td style="text-align: center;">
+                                                                                                </td>
+                                                                                                <td style="text-align: center;">
+                                                                                                </td>
+                                                                                                <td style="text-align: center;">
+                                                                                                </td>
+                                                                                            </aura:set>
+                                                                                        </aura:if>
+                                                                                    </aura:set>
+                                                                                </aura:if>
+                                                                            </aura:set>
+                                                                        </aura:if>
+                                                                    </aura:set>
+                                                                </aura:if>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                            </aura:set>
+                        </aura:if>
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!v.bidRecord.Phoenix_Customer_Type__c == 'OneTimeBuy'}">
+                    <td style="text-align: center;">
+                    </td>
+                    <td style="text-align: center;">
+                    </td>
+                    <aura:set attribute="else">
+                        <td style="text-align: center;">
+                        </td>
+                        <td style="text-align: center;">
+                        </td>
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!lessthan(v.summaryList[4], 0)}">
+                    <td style="text-align: center;color: red;">
+                        <lightning:formattedNumber value="{!v.summaryList[4]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <aura:set attribute="else">
+                        <td style="text-align: center;color: green;">
+                            <lightning:formattedNumber value="{!v.summaryList[4]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </td>
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!lessthan(v.summaryList[5], 0)}">
+                    <td style="text-align: center;color: red;">
+                        <lightning:formattedNumber value="{!v.summaryList[5]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <aura:set attribute="else"> 
+                        <td style="text-align: center;color: green;">
+                            <lightning:formattedNumber value="{!v.summaryList[5]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </td>
+                    </aura:set>
+                </aura:if>
+                <td style="text-align: center;"> 
+                    <lightning:formattedNumber value="{!v.summaryList[9]}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                </td>
+                <td style="text-align: center;">
+                    <lightning:formattedNumber value="{!v.summaryList[10]}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                </td>
+                <aura:if isTrue="{!lessthan(v.summaryList[7], 0)}">
+                    <td style="text-align: center;color: red;">
+                        <lightning:formattedNumber value="{!v.summaryList[7]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <aura:set attribute="else">
+                        <td style="text-align: center;color: green;">
+                            <lightning:formattedNumber value="{!v.summaryList[7]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </td>
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!lessthan(v.summaryList[8], 0)}">
+                    <td style="text-align: center;color: red;">
+                        <lightning:formattedNumber value="{!v.summaryList[8]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <aura:set attribute="else">
+                        <td style="text-align: center;color: green;">
+                            <lightning:formattedNumber value="{!v.summaryList[8]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </td>
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!lessthan(v.summaryList[2], 0)}">
+                    <td style="text-align: center;color: red;">
+                        <lightning:formattedNumber value="{!v.summaryList[2]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <aura:set attribute="else">
+                        <td style="text-align: center;color: green;">
+                            <lightning:formattedNumber value="{!v.summaryList[2]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </td>
+                    </aura:set>
+                </aura:if>
+                <aura:if isTrue="{!lessthan(v.summaryList[6], 0)}">
+                    <td style="text-align: center;color: red;">
+                        <lightning:formattedNumber value="{!v.summaryList[6]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                    </td>
+                    <aura:set attribute="else">
+                        <td style="text-align: center;color: green;">
+                            <lightning:formattedNumber value="{!v.summaryList[6]}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        </td>
+                    </aura:set>
+                </aura:if>
+            </tr>
+            <aura:if isTrue="{!v.expandFamily}">
+                <aura:iteration items="{!v.record[1]}" var="data" indexVar="index">
+                    <c:VisionBidSummaryChild category="{!v.category}" bidRecord="{!v.bidRecord}" record="{!data}" previousTotal="{!v.previousTotal}" isBidBusinessAnalysis="{!v.isBidBusinessAnalysis}"/>
+                </aura:iteration>
+            </aura:if>
+        </aura:set>
+    </aura:if>
+</aura:component>

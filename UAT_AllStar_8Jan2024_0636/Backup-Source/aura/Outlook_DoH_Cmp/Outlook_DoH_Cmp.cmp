@@ -1,0 +1,165 @@
+<aura:component controller="Vision_Outlook_DoH_Report"  implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="DoHList" type="object"/> 
+    <aura:attribute name="lowInvRecords" type="List"/>
+    <aura:attribute name="highInvRecords" type="List"/>
+    <aura:attribute name="highValueRecords" type="List"/>
+    <aura:attribute name="pickList" type="List"/>    
+    <aura:attribute name="selectedId" type="String"/>  
+    <lightning:navigation aura:id="navigationService" />
+        <aura:attribute name="loaded" type="Boolean" />
+
+     <aura:if isTrue="{! v.loaded }">
+        
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+    <div class="slds-card" >
+        <div style="padding:2px;font-size:13px;width:300px;">
+            <lightning:select name="Department"  aura:id="depart" value="{!v.selectedId}"
+                              onchange="{! c.onSelectUser }" >
+                
+                <aura:iteration items="{!v.pickList}" var="picklist">
+                    <option value="{!picklist.userId}" selected="{!picklist.userId==v.selectedId}">{!picklist.userId} </option>
+                </aura:iteration>
+            </lightning:select>
+        </div>
+        
+        
+        <div style="padding:2px;font-size:12px;font-style: italic;">As per the data update of <aura:if isTrue="{!v.highInvRecords[0].Vision_GCP_Update_Date__c != null}">   
+            <b><lightning:formattedDateTime value="{!v.highInvRecords[0].Vision_GCP_Update_Date__c}"/></b>
+               <aura:set attribute="else">
+                    <aura:if isTrue="{!v.lowInvRecords[0].Vision_GCP_Update_Date__c != null}">  
+                          <b><lightning:formattedDateTime value="{!v.lowInvRecords[0].Vision_GCP_Update_Date__c}"/></b>
+                   <aura:set attribute="else">
+                            <b><lightning:formattedDateTime value="{!v.highValueRecords[0].Vision_GCP_Update_Date__c}"/></b>
+                        </aura:set>
+                   </aura:if>
+            </aura:set>
+            </aura:if>
+            </div>
+        <div style="padding:2px;font-size:13px">
+            <div class="slds-grid" style="max-width:300px;">
+                <div class="slds-col slds-size_1-of-2" style="padding-top:10px !important;">
+                    <b style="text-align:left">Low Inventory of top 5</b>  
+                </div>
+                <div class="slds-col slds-size_1-of-2"  align="right">
+                    
+                    <b style="text-align:right"><lightning:button variant="bare" label="View Details" onclick="{! c.redirectDoH }"  /><lightning:icon class="iconCSS my-icon" iconName="utility:chevronright" size="xx-small" /></b> </div>
+            </div>
+        </div>
+        <aura:if isTrue="{!v.lowInvRecords.length>0}">   
+            <div style="padding:2px;">
+                <div aura:id="mainDiv" style="max-height:430px;max-width:300px;overflow:auto;margin-top:2px;border-radius: 0.25rem;border: 1px solid #cfcfcf;">
+                    <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                        <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered slds-table--header-fixed">
+                            
+                            <tbody>
+                                <tr>
+                                    <th scope="col" width="100px" style="font-size:13px;color:white;background-color: #6900EF ;text-align:left;padding:0px !important;"><b>Product Description</b></th>
+                                    <th scope="col" width="25px" style="font-size:13px;color:white;background-color: #6900EF ;text-align:center;padding:0px !important;"><b>DoH</b></th>
+                                </tr>
+                                <aura:iteration items="{!v.lowInvRecords}" var="sdItem" indexVar="sNo">
+                                    <tr>
+                                        <td scope="col" class="fixed" title="{!sdItem.vision_gcp_package_description__c}" style="font-size:13px;text-align:left;padding:0px !important;">{!sdItem.vision_gcp_package_description__c}</td> 
+                                        <td class=""  style="text-align:center;padding:0px !important;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W8_DOH__c}" minimumFractionDigits="0" maximumFractionDigits="1"/></td>
+                                        
+                                    </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <aura:set attribute="else">
+                <div style="max-width:300px;">
+                    <i  style="padding-left:2px;padding-bottom:10px;font-size:12px">No records to display for Low Inventory</i>              
+                </div>
+            </aura:set>
+        </aura:if>
+        <div style="padding:2px;font-size:13px"> <div class="slds-grid" style="max-width:300px;">
+            <div class="slds-col slds-size_1-of-2" style="padding-top:10px !important;">
+                <b style="text-align:left">High Inventory of top 5</b>  
+            </div>
+            <div class="slds-col slds-size_1-of-2"  align="right">
+                
+                <b style="text-align:right"><lightning:button variant="bare" label="View Details" onclick="{! c.redirectDoH }"  /><lightning:icon class="iconCSS my-icon" iconName="utility:chevronright" size="xx-small" /></b> </div>
+            </div></div>
+        <aura:if isTrue="{!v.highInvRecords.length>0}">        
+            <div style="padding:2px;">
+                <div aura:id="mainDiv" style="max-height:430px;max-width:300px;overflow:auto;margin-top:2px;border-radius: 0.25rem;border: 1px solid #cfcfcf;">
+                    <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                        <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered slds-table--header-fixed">
+                            
+                            <tbody>
+                                <tr>
+                                    <th scope="col" width="100px" style="font-size:13px;color:white;background-color: #6900EF ;text-align:left;padding:0px !important;"><b>Product Description</b></th>
+                                    <th scope="col" width="25px" style="font-size:13px;color:white;background-color: #6900EF ;text-align:center;padding:0px !important;"><b>DoH</b></th>
+                                </tr>
+                                <aura:iteration items="{!v.highInvRecords}" var="sdItem" indexVar="sNo">
+                                    <tr>
+                                        <td scope="col" class="fixed" title="{!sdItem.vision_gcp_package_description__c}"  style="font-size:13px;text-align:left;padding:0px !important;">{!sdItem.vision_gcp_package_description__c}</td> 
+                                        <td class=""  style="text-align:center;padding:0px !important;"><lightning:formattedNumber value="{!sdItem.Vision_GCP_W8_DOH__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        
+                                    </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <aura:set attribute="else">
+                <div style="max-width:300px;">
+                    <i  style="padding-left:2px;padding-bottom:10px;font-size:12px">No records to display for High Inventory</i>              
+                </div>
+            </aura:set>
+        </aura:if>
+        
+        <div style="padding:2px;font-size:13px">  <div class="slds-grid" style="max-width:300px;">
+            <div class="slds-col slds-size_1-of-2" style="padding-top:10px !important;">
+                <b style="text-align:left;">High Value of top 5</b>  
+            </div>
+            <div class="slds-col slds-size_1-of-2"  align="right">
+                
+                <b style="text-align:right"><lightning:button variant="bare" label="View Details" onclick="{! c.redirectDoH }"  /><lightning:icon class="iconCSS my-icon" iconName="utility:chevronright" size="xx-small" /></b> </div>
+            </div></div>
+        <aura:if isTrue="{!v.highValueRecords.length>0}">          
+            <div style="padding:2px;">
+                <div aura:id="mainDiv" style="max-height:430px;max-width:300px;overflow:auto;margin-top:2px;border-radius: 0.25rem;border: 1px solid #cfcfcf;">
+                    <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                        <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered slds-table--header-fixed">
+                            
+                            <tbody>
+                                <tr>
+                                    <th scope="col" width="100px" style="font-size:13px;color:white;background-color: #6900EF ;text-align:left;padding:0px !important;"><b>Product Description</b></th>
+                                    <th scope="col" width="25px" style="font-size:13px;color:white;background-color: #6900EF ;text-align:center;padding:0px !important;"><b>Value</b></th>
+                                </tr>
+                                <aura:iteration items="{!v.highValueRecords}" var="sdItem" indexVar="sNo">
+                                    <tr>
+                                        <td scope="col" class="fixed" title="{!sdItem.vision_gcp_package_description__c}" style="font-size:13px;text-align:left;padding:0px !important;">{!sdItem.vision_gcp_package_description__c}</td> 
+                                        <td class=""  style="text-align:center;padding:0px !important;"><lightning:formattedNumber value="{!sdItem.Value_W8__c}" style="currency" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        
+                                    </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>  
+            <aura:set attribute="else">
+                <div style="max-width:300px;" class="slds-p-bottom_large">
+                    <i  style="padding-left:2px;padding-bottom:10px;font-size:12px">No records to display for High Value</i>              
+                </div>
+            </aura:set>
+        </aura:if>
+    </div> 
+</aura:component>

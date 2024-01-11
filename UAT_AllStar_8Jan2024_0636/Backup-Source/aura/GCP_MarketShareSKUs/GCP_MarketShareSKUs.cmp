@@ -1,0 +1,730 @@
+<aura:component controller="Phoenix_GCP_OptyTracker_Controller" access="global"
+                implements="force:hasRecordId,force:appHostable,lightning:isUrlAddressable">
+    <aura:attribute name="gcpLineItem" type="Phoenix_GCP_Opportunity_Tracker__c"/>
+    <aura:attribute name="accObj" type="Account"/>
+    <aura:attribute name="ndcList" type="list"/>
+    <aura:attribute name="actualList" type="list"/>
+    <aura:attribute name="isSelectedProd" type="boolean" default="false"/>
+    <aura:attribute name="showProducts" type="boolean" default="false"/>
+    <aura:attribute name="commentIndex" type="String"/>
+    <aura:attribute name="disableSave" type="boolean" default="false"/>
+    <aura:attribute name="prodPositionIndex" type="string"/>
+    
+    <aura:attribute name="selectedNdcs" type="List"/>
+    <aura:registerEvent name="Vision_ProdSelectionEvent100P" type="c:Vision_ProdSelectionEvent100P"/>
+    
+    <aura:attribute name="isModalOpen" type="boolean"/>
+    <aura:attribute name="selectedRecIdForAlert" type="String"/>
+    <aura:attribute name="alertedItemType" type="String"/>
+    <aura:attribute name="alertedNdcId" type="String"/>
+    <aura:attribute name="showAwardedPositions" type="boolean"/>
+    <aura:attribute name="isModifiedDateUpdated" type="boolean" default="false"/>
+    <aura:attribute name="getUpdatedGcpItem" type="boolean"/>
+    <aura:attribute name="tableRef" type="String"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <aura:attribute name="excludedId" type="String" default=""/>
+    
+    <div style="position:fixed;display:none;z-index:9999;top:5%;width:1000px;" id="excludePopup">
+        <div class="slds-popover slds-slide-from-top-to-bottom slds-float_right">
+            <div class="slds-popover__body" style="padding:10px;">
+                <div style="border-color:#9bebb3;backgound-color:#edfff1;text-align:center">
+                    <b>There are Customer Actuals available for the Selected product. Are you sure you want to Exclude?</b>
+                    <div>
+                        <lightning:button class="slds-button_destructive" title="Exclude" label="Exclude" onclick="{!c.excludeProd}"/>
+                        <lightning:button title="close" label="close" onclick="{!c.closeExcludeProd}"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <aura:if isTrue="{!v.accObj.Name == 'Red Oak Sourcing'}">
+        <div class="rosDefaultsBoxFam" style="width:950px;">
+            <div class="slds-grid">
+                <div class="slds-col slds-size_1-of-7" style="padding-top:5px;margin-left:10px;">CVS/Caremark(%):&nbsp;</div>
+                <div class="slds-col slds-size_1-of-7" style="">
+                    <lightning:input type="number" name="input7" class="labelCss"
+                                     formatter="percent-fixed" variant="label-hidden"
+                                     value="{!v.gcpLineItem.Vision_CVS_VolShare_Percent__c}"/>
+                </div>
+                <div class="slds-col slds-size_1-of-7" style="padding-top:5px;margin-left:10px;">Cardinal Health(%):&nbsp;</div>
+                <div class="slds-col slds-size_1-of-7" style="">
+                    <lightning:input type="number" name="input7" class="labelCss"
+                                     formatter="percent-fixed" variant="label-hidden"
+                                     value="{!v.gcpLineItem.Vision_Cardinal_VolShare_Percent__c}"/>
+                </div>
+                <div class="slds-col slds-size_1-of-7" style="padding-top:5px;margin-left:10px;">Cardinal Major(%):&nbsp;</div>
+                <div class="slds-col slds-size_1-of-7" style="">
+                    <lightning:input type="number" name="input7" class="labelCss"
+                                     formatter="percent-fixed" variant="label-hidden"
+                                     value="{!v.gcpLineItem.Vision_Major_VolShare_Percent__c}"/>
+                </div>
+                <div class="slds-col slds-size_1-of-7" style="margin-left:10px;">
+                    <lightning:button title="Save the percentage and calculate Volume" label="Save"
+                                      onclick="{!c.savePercentageROS}"/>
+                </div>
+            </div>
+        </div>
+    </aura:if>
+    <div aura:id="mainDiv" style="{!v.ndcList.length > 3 ? 'height:75vh;overflow:auto;margin-top:5px;' : 'overflow:auto;margin-top:5px;'}">
+        <div role="region" style="{!v.excludedId == '' ? '' : 'pointer-events: none;'}" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+            <table aura:id="LineTable" 
+                   class="cNameTable maintable fixedtable slds-table slds-table_col-bordered slds-no-row-hover slds-table_cell-buffer slds-table_bordered slds-table-bordered slds-border_left">
+                <thead aura:id="headerTable" class="headerOfTable">
+                    <tr>
+                        <th></th>
+                        <th></th>
+                        <th class="prodFamSticky" style="background-color: #a3c2c2;text-align:right !important;"></th>
+                        <th style="background-color: #a3c2c2;text-align:right !important;"></th>
+                        <th style="text-align:center;background-color:#D2B4DE;" colSpan="5">
+                            Total DRL Market Actuals <lightning:icon class="showBlack" iconName="utility:info_alt"
+                                                                     title="From Profitability" size="x-small"/>
+                        </th>
+                        <!-- <aura:if isTrue="{!v.accObj.Name == 'Red Oak Sourcing'}"> </aura:if> -->
+                        <th style="text-align:center;background-color:#D6EAF8;" colSpan="5">
+                            Customer Volume Estimate				
+                        </th>
+                        
+                        <th style="text-align:center;background-color:#ffffe0;" colSpan="3">
+                            DRL Customer Actuals
+                        </th>
+                        <aura:if isTrue="{!v.accObj.Vision_is_SRx_Account__c}">  
+                            <th style="text-align:center;" colSpan="3">Opportunity Value</th>
+                        </aura:if>
+                        <th>&nbsp;</th>
+                        <th style="text-align:center;" colSpan="8">User Inputs</th>
+                    </tr>
+                    <tr> 
+                        <th></th>
+                        <th style="text-align:center;">Action/Indications</th>
+                        <th class="slds-truncate slds-cell-wrap prodFamSticky" style="background-color: #669999;color:white;" 
+                            aura:id="zvalue">Product Name</th> 
+                        <th class="slds-truncate slds-cell-wrap" style="background-color: #669999;color:white;" 
+                            aura:id="">NDC</th> 
+                        <th class="slds-truncate slds-cell-wrap" style="text-align:center;background-color:#D2B4DE;">Vol(EU)</th>
+                        <th class="slds-truncate slds-cell-wrap" style="text-align:center;background-color:#D2B4DE;">Sales</th>
+                        <th class="slds-truncate slds-cell-wrap" style="text-align:center;background-color:#D2B4DE;">Price($/EU)</th>
+                        <th class="slds-truncate slds-cell-wrap" style="text-align:center;background-color:#D2B4DE;">TPT($)</th>
+                        <th class="slds-truncate slds-cell-wrap" style="text-align:center;background-color:#D2B4DE;">TPT%</th>
+                        <th class="slds-truncate estMrktShare" style="width:120px !important;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Method&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                        <th class="slds-truncate estMrktShare" style="width:120px !important;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;User Input(EA)&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                        <th class="slds-truncate estMrktShare" style="width:120px !important;">&nbsp;&nbsp;&nbsp;Bright&nbsp;Input(EA)&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                        
+                        <th class="slds-truncate estMrktShare" title="Vol(EU)*PkgSize">Total&nbsp;Volume(EU)</th>
+                        <!-- <aura:if isTrue="{!and(v.accObj.Name != 'Red Oak Sourcing',v.accObj.AccountNumber != '153363')}"> -->
+                        <th class="slds-truncate estMrktShare" style="width:120px !important;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Updated&nbsp;Date&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                        <th class="slds-truncate slds-cell-wrap custActs">Vol</th>
+                        <th class="slds-truncate slds-cell-wrap custActs">Sales</th>
+                        <th class="slds-truncate slds-cell-wrap custActs">Average Price</th>
+                        <aura:if isTrue="{!v.accObj.Vision_is_SRx_Account__c}">  
+                            <th class="slds-truncate optyClr">Share %&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                            <th class="slds-truncate optyClr">Volume</th>
+                            <th class="slds-truncate optyClr">Dollar $</th>
+                        </aura:if>
+                        <th class="slds-truncate slds-cell-wrap optyClr">Probability</th>
+                        <th class="slds-truncate slds-cell-wrap">Current Position</th>
+                        <aura:if isTrue="{!and(v.accObj.Name != 'Red Oak Sourcing',v.accObj.AccountNumber != '153363')}">  
+                            <th class="slds-truncate slds-cell-wrap">Cooling&nbsp;Period Days</th>
+                            <th class="slds-truncate slds-cell-wrap">Cooling&nbsp;Period Date</th> 
+                        </aura:if>
+                        <th class="slds-truncate slds-cell-wrap">Comments/ Insights</th>
+                        <aura:if isTrue="{!v.accObj.Vision_is_SRx_Account__c}">  
+                            <th class="slds-truncate"><span>Bid Status</span></th>
+                        </aura:if>
+                        <th class="slds-truncate"><span>Product Status</span></th>
+                        <th class="slds-truncate"><span>Product Constraint</span></th>
+                        <th class="slds-truncate"><span>Review products</span></th>
+                        <!-- <aura:set attribute="else">
+                                <aura:if isTrue="{!and(v.accObj.Name != 'Red Oak Sourcing',v.accObj.AccountNumber != '153363')}"> 
+                                    <th class="slds-truncate slds-cell-wrap"><span>Product Status</span></th> 
+                                    <th><span>Product Constraint</span></th>
+                                </aura:if>
+                            </aura:set>
+                        </aura:if> -->
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.ndcList}" var="ndcObj" indexVar="indx">
+                        <tr>
+                            <th scope="row">
+                                <lightning:input type="checkbox" value="{!ndcObj.isSelectedPrd}" checked="{!ndcObj.isSelectedPrd}" variant="label-hidden" onchange="{!c.prodSelected}"/>
+                            </th>
+                            <th scope="row" class="slds-text-align--center">
+                                <div class="slds-grid">
+                                    <div class="slds-col">
+                                        <aura:if isTrue="{!ndcObj.Vision_Cooling_Period_String__c != null}">
+                                            <lightning:icon class="{!or(ndcObj.Vision_Product_Status__c == 'True Opportunity',or(ndcObj.Vision_Product_Status__c == 'Awarded', ndcObj.Vision_Product_Status__c == 'In Bid')) ? 'showGreen' : 'showRed'}" 
+                                                            title="{!ndcObj.Vision_Cooling_Period_String__c}"
+                                                            iconName="utility:light_bulb" 
+                                                            size="x-small"/>
+                                            <aura:set attribute="else">
+                                                <lightning:icon title="Ready For Bid" class="showGreen" 
+                                                                iconName="utility:light_bulb" 
+                                                                size="x-small"/>
+                                            </aura:set>
+                                        </aura:if>
+                                    </div>
+                                    <div class="slds-col" style="cursor:pointer;"
+                                         data-record-id="{!ndcObj.Id}" onclick="{!c.openAlertForNdc}">
+                                        <lightning:icon title="Create Notification" iconName="utility:notification" altenativeText="Create Notification"
+                                                        size="x-small" class="{!ndcObj.Vision_isAlerted__c ? 'showGreen' : ''}" style="cursor:pointer;"/>
+                                    </div>
+                                    <div class="slds-col">
+                                        <aura:if isTrue="{!ndcObj.isOpenOrder}">
+                                            <img src="{!$Resource.Noopenorder}"  title="Open Orders on this Product" />
+                                            <aura:set attribute="else">
+                                                <img src="{!$Resource.OpenorderIcon1}"  title="No Open Orders on this Product" />
+                                            </aura:set>
+                                            
+                                            
+                                            
+                                        </aura:if>
+                                    </div>
+                                    <div class="slds-col">
+                                        <lightning:icon class="{!v.gcpLineItem.Vision_isShareExpansion__c ? 'showRed' : ''}"
+                                                        title="Share Expansion Candidate"
+                                                        iconName="utility:expand" 
+                                                        altenativeText="Share Expansion Candidate"
+                                                        size="x-small"/>
+                                    </div>
+                                    <aura:if isTrue="{!or(ndcObj.isRxBackOrder, ndcObj.isSRxBackOrder, ndcObj.isOTCBackOrder)}">
+                                        
+                                        <div class="slds-col">
+                                            <img src="{!$Resource.BackorderIcon1}"  title="Backorder on this NDC"  altenativeText="Backorder on this Product" />  
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!!v.isOtcAccount}">
+                                        <div class="slds-col" style="cursor:pointer;" title="Product Position"
+                                             data-record-id="{!ndcObj.Id}" onclick="{!c.openAwardedPositions}">
+                                            <lightning:icon class="{!ndcObj.Vision_doesPositionExists__c ? 'showGreen' : 'showRed'}" iconName="utility:ribbon" size="small"/>
+                                        </div>
+                                        <aura:set attribute="else">
+                                            <div class="slds-col" title="Product Position">
+                                                <aura:if isTrue="{!and(ndcObj.Vision_OTC_Product_Position__c != null,ndcObj.Vision_OTC_Product_Position__c > 0)}">
+                                                    <b><lightning:formattedNumber value="{!ndcObj.Vision_OTC_Product_Position__c}" style="percent-fixed" 
+                                                                                  maximumFractionDigits="0" minimumFractionDigits="0"/></b>
+                                                    <aura:set attribute="else">
+                                                        <lightning:icon class="" title="Product Position" iconName="utility:dash" size="x-small"/>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </div>
+                                        </aura:set>
+                                    </aura:if>
+                                    <div class="slds-col">
+                                        
+                                    </div>
+                                </div>
+                            </th>
+                            <th class="prodFamColSticky" scope="row" title="{!'NDC: '+ndcObj.Vision_Product__r.Phoenix_NDC_11__c+', PkgSize: '+ndcObj.Vision_Product__r.Phoenix_Pkg_Size__c}">
+                                <div>
+                                    <span style="display:inline;">&nbsp;&nbsp;&nbsp;<a href="{!'/'+ndcObj.Vision_Product__c}" target="_blank" rel="">{!ndcObj.Vision_Product__r.Name}</a></span>
+                                </div>
+                            </th>
+                            <td>
+                                {!ndcObj.Vision_Product__r.Phoenix_NDC_11__c}
+                            </td>
+                            <td class="slds-text-align--right" title="From GCP">
+                                <aura:if isTrue="{!ndcObj.Vision_DRL_Act_Volume_Eu__c != null}">
+                                    <lightning:formattedNumber value="{!ndcObj.Vision_DRL_Act_Volume_Eu__c}" 
+                                                               maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                    <aura:set attribute="else">
+                                        N/A
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <td class="slds-text-align--right" title="From GCP">
+                                <aura:if isTrue="{!ndcObj.Vision_Drl_Act_Sales__c != null}">
+                                    <lightning:formattedNumber value="{!ndcObj.Vision_Drl_Act_Sales__c}" 
+                                                               style="currency" 
+                                                               currencyCode="USD" 
+                                                               maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                    <aura:set attribute="else">
+                                        N/A
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <td class="slds-text-align--right" title="From GCP">
+                                <aura:if isTrue="{!ndcObj.Vision_Drl_Act_Price__c != null}">
+                                    <lightning:formattedNumber value="{!ndcObj.Vision_Drl_Act_Price__c}" 
+                                                               style="currency" 
+                                                               currencyCode="USD" 
+                                                               maximumFractionDigits="2" />
+                                    <aura:set attribute="else">
+                                        N/A
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <td class="slds-text-align--right" title="From GCP">
+                                <aura:if isTrue="{!ndcObj.Vision_DRL_Act_Tpt__c != null}">
+                                    <ui:outputCurrency value="{!ndcObj.Vision_DRL_Act_Tpt__c}" format="$##,##,###,###"/>
+                                    <aura:set attribute="else">
+                                        N/A
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <td class="slds-text-align--right" title="From GCP">
+                                <aura:if isTrue="{!ndcObj.Vision_Drl_Act_Tpt_Pct__c != null}">
+                                    <lightning:formattedNumber value="{!(ndcObj.Vision_Drl_Act_Tpt_Pct__c)*100}" 
+                                                               style="percent-fixed"  
+                                                               maximumFractionDigits="2" />
+                                    <aura:set attribute="else">
+                                        N/A
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <td>
+                                <lightning:select name="opptyProbChange" class="labelHideCss"
+                                                  aura:id="opptyProbChangeId"
+                                                  onchange="{!c.estimateVolUpdated}">
+                                    <option value="{!ndcObj.Vision_Estimate_Vol_Method__c}">
+                                        <aura:if isTrue="{!ndcObj.Vision_Estimate_Vol_Method__c == 'Full Line Volume'}">
+                                            Bright Input(EA)
+                                            <aura:set attribute="else">
+                                                {!ndcObj.Vision_Estimate_Vol_Method__c}
+                                            </aura:set>
+                                        </aura:if>
+                                    </option>
+                                    <aura:if isTrue="{!(ndcObj.Vision_Estimate_Vol_Method__c != 'User Input')}" >
+                                        <option value="{!indx+'~User Input'}">User Input</option>
+                                    </aura:if>
+                                    <aura:if isTrue="{!(ndcObj.Vision_Estimate_Vol_Method__c != 'Full Line Volume')}" >
+                                        <option value="{!indx+'~Full Line Volume'}">Bright Input(EA)</option>
+                                    </aura:if>
+                                </lightning:select>
+                            </td>
+                            <td class="slds-text-align--right">
+                                <lightning:input type="Number" value="{!ndcObj.Vision_User_Input_Estimate_Vol__c}" variant="label-hidden"
+                                                 onchange="{!c.updateSharedVols}" class="middleAlignInput"
+                                                 disabled="{!ndcObj.Vision_Estimate_Vol_Method__c != 'User Input'}"/>
+                            </td>
+                            
+                            <aura:if isTrue="{!or(v.accObj.Name == 'Red Oak Sourcing',v.accObj.AccountNumber == '153363')}">
+                                <aura:if isTrue="{!v.accObj.Name == 'Red Oak Sourcing'}">
+                                    <td><lightning:input type="Number" value="{!ndcObj.Vision_Estimate_Account_Total_Vol_EU__c}" variant="label-hidden"
+                                                         onchange="{!c.updateSharedVols}" class="middleAlignInput"
+                                                         disabled="{!ndcObj.Vision_Estimate_Vol_Method__c != 'Full Line Volume'}"/></td>
+                                    <aura:set attribute="else">
+                                        <td><lightning:formattedNumber value="{!ndcObj.Vision_Estimate_Account_Total_Vol_EU__c}"
+                                                                       maximumFractionDigits="0" minimumFractionDigits="0"/></td>
+                                    </aura:set>
+                                </aura:if>
+                                <aura:set attribute="else">
+                                    <td class="slds-text-align--right">
+                                        <lightning:input type="Number" value="{!ndcObj.Vision_Estimate_Account_Total_Vol_EU__c}" variant="label-hidden"
+                                                         onchange="{!c.updateSharedVols}" class="middleAlignInput"
+                                                         disabled="{!ndcObj.Vision_Estimate_Vol_Method__c != 'Full Line Volume'}"/>
+                                    </td>
+                                </aura:set>
+                            </aura:if>
+                            <!-- <aura:if isTrue="{!v.accObj.Name == 'Red Oak Sourcing'}">  </aura:if>-->
+                            <td class="slds-text-align--right">
+                                <lightning:formattedNumber value="{!ndcObj.Vision_Estimate_Vol_Method__c == 'Full Line Volume' ? (ndcObj.Vision_Estimate_Account_Total_Vol_EU__c*ndcObj.Vision_Product__r.Phoenix_Pkg_Size__c) : (ndcObj.Vision_User_Input_Estimate_Vol__c*ndcObj.Vision_Product__r.Phoenix_Pkg_Size__c)}" 
+                                                           maximumFractionDigits="0" minimumFractionDigits="0"/>
+                            </td>
+                            <td>
+                                <lightning:input type="date" value="{!ndcObj.Vision_Modified_Date__c}"
+                                                 variant="label-hidden" onchange="{!c.modifiedDateUpdated}"/>
+                            </td>
+                            <td class="slds-text-align--right" title="From GCP">
+                                <aura:if isTrue="{!ndcObj.GCP_Cust_Act_Volume_Mat_Eu__c != undefined}">
+                                    <lightning:formattedNumber value="{!ndcObj.GCP_Cust_Act_Volume_Mat_Eu__c}" 
+                                                               maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                    <aura:if isTrue="{!v.accObj.Name == 'Red Oak Sourcing'}">
+                                        &nbsp;<lightning:icon title="{! 'CVS/Caremark: '+ndcObj.Vision_CVS_CustAct_Volume__c+'&#013;Cardinal Health: '+ndcObj.Vision_Cardinal_CustAct_Volume__c+'&#013;Cardinal Major: '+ndcObj.Vision_Major_CustAct_Volume__c}"
+                                                              iconName="utility:info_alt" size="x-small"/>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.accObj.AccountNumber == '153363'}">
+                                        &nbsp;<lightning:icon title="{! 'McKesson Drug Company: '+ndcObj.Vision_CVS_CustAct_Volume__c+'&#013;Rite Aid: '+ndcObj.Vision_Cardinal_CustAct_Volume__c+'&#013;Wal-Mart Stores, Inc.: '+ndcObj.Vision_Major_CustAct_Volume__c+'&#013;NorthStar: '+ndcObj.Vision_NorthStar_CustAct_Vol__c}"
+                                                              iconName="utility:info_alt" size="x-small"/>
+                                    </aura:if>
+                                    <aura:set attribute="else">
+                                        N/A
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <td class="slds-text-align--right" title="From GCP">
+                                <aura:if isTrue="{!ndcObj.Vision_Cust_Act_Sales_Mat__c != null}">
+                                    <lightning:formattedNumber value="{!ndcObj.Vision_Cust_Act_Sales_Mat__c}" 
+                                                               style="currency" currencyCode="USD" 
+                                                               maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                    <aura:if isTrue="{!v.accObj.Name == 'Red Oak Sourcing'}">
+                                        &nbsp;<lightning:icon title="{! 'CVS/Caremark: '+ndcObj.Vision_CVS_CustAct_Sales__c+'&#013;Cardinal Health: '+ndcObj.Vision_Cardinal_CustAct_Sales__c+'&#013;Cardinal Major: '+ndcObj.Vision_Major_CustAct_Sales__c}"
+                                                              iconName="utility:info_alt" size="x-small"/>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.accObj.AccountNumber == '153363'}">
+                                        &nbsp;<lightning:icon title="{! 'McKesson Drug Company: '+ndcObj.Vision_CVS_CustAct_Sales__c+'&#013;Rite Aid: '+ndcObj.Vision_Cardinal_CustAct_Sales__c+'&#013;Wal-Mart Stores, Inc.: '+ndcObj.Vision_Major_CustAct_Sales__c+'&#013;NorthStar: '+ndcObj.Vision_NorthStar_CustAct_Sales__c}"
+                                                              iconName="utility:info_alt" size="x-small"/>
+                                    </aura:if>
+                                    <aura:set attribute="else">
+                                        N/A
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <td class="slds-text-align--right" title="DRL Customer Actuals Sales/DRL Customer Actuals Vol">
+                                <aura:if isTrue="{!(ndcObj.Vision_Cust_Act_Sales_Mat__c/ndcObj.GCP_Cust_Act_Volume_Mat_Eu__c) GT 0}">
+                                    <lightning:formattedNumber value="{!ndcObj.Vision_Cust_Act_Sales_Mat__c/ndcObj.GCP_Cust_Act_Volume_Mat_Eu__c}" 
+                                                               style="currency" currencyCode="USD" 
+                                                               maximumFractionDigits="2" minimumFractionDigits="2"/>
+                                    <aura:set attribute="else">
+                                        $ 0
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            <aura:if isTrue="{!v.accObj.Vision_is_SRx_Account__c}">  
+                                <td class="slds-text-align--right">
+                                    <lightning:input value="{!ndcObj.Vision_SRx_Opty_Share_per__c}" variant="label-hidden"
+                                                     onchange="{!c.updateSrxSharedPercent}"
+                                                     type="number" min="0" max="100" formatter="percent-fixed"/>
+                                </td>
+                                
+                                <td class="slds-text-align--right">
+                                    <lightning:formattedNumber value="{!(ndcObj.Vision_SRx_Opty_Share_per__c/100)*((v.gcpLineItem.Phoenix_Est_Acct_Total_Vol_EU__c != null ? v.gcpLineItem.Phoenix_Est_Acct_Total_Vol_EU__c : 0) - (v.gcpLineItem.Phoenix_Cust_Act_Volume_Mat_Eu__c != null ? v.gcpLineItem.Phoenix_Cust_Act_Volume_Mat_Eu__c : 0))}" 
+                                                               maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                </td>
+                                <td class="slds-text-align--right">
+                                    <lightning:formattedNumber value="{!(ndcObj.Vision_SRx_Opty_Share_per__c/100)*(v.gcpLineItem.Phoenix_Customer_Opp_Sales__c)}" 
+                                                               maximumFractionDigits="0" minimumFractionDigits="0" style="currency" currencyCode="USD" />
+                                </td>
+                                
+                            </aura:if>
+                            <td>
+                                <lightning:select name="opptyProbChange" class="labelHideCss"
+                                                  aura:id="opptyProbChangeId"
+                                                  onchange="{!c.probabilityUpdated}">
+                                    <option value="{!ndcObj.Vision_Probability__c}">
+                                        {!ndcObj.Vision_Probability__c}
+                                    </option>
+                                    <aura:if isTrue="{!(ndcObj.Vision_Probability__c != 'None')}" >
+                                        <option value="{!indx+'~None'}">None</option>
+                                    </aura:if>
+                                    <aura:if isTrue="{!(ndcObj.Vision_Probability__c != 'High')}" >
+                                        <option value="{!indx+'~High'}">High</option>
+                                    </aura:if>
+                                    <aura:if isTrue="{!(ndcObj.Vision_Probability__c != 'Medium')}" >
+                                        <option value="{!indx+'~Medium'}">Medium</option>
+                                    </aura:if>
+                                    <aura:if isTrue="{!(ndcObj.Vision_Probability__c != 'Low')}" >
+                                        <option value="{!indx+'~Low'}">Low</option>
+                                    </aura:if>
+                                </lightning:select>
+                            </td>
+                            <td>
+                                <aura:if isTrue="{!!v.isOtcAccount}">
+                                    <div class="slds-col" style="cursor:pointer;" title="Product Position"
+                                         data-record-id="{!ndcObj.Id}" onclick="{!c.openAwardedPositions}">
+                                        <lightning:icon class="ribbonmIcon" iconName="utility:ribbon" size="small"/>
+                                    </div>
+                                    <aura:set attribute="else">
+                                        <div class="slds-col" title="Product Position">
+                                            <aura:if isTrue="{!or(ndcObj.Vision_OTC_Product_Position__c != null,ndcObj.Vision_OTC_Product_Position__c != 0)}">
+                                                <b><lightning:formattedNumber value="{!ndcObj.Vision_OTC_Product_Position__c}" style="percent-fixed" 
+                                                                              maximumFractionDigits="0" minimumFractionDigits="0"/></b>
+                                                <aura:set attribute="else">
+                                                    <lightning:icon class="" title="Product Position" iconName="utility:dash" size="x-small"/>
+                                                </aura:set>
+                                            </aura:if>
+                                        </div>
+                                    </aura:set>
+                                </aura:if>
+                            </td>
+                            
+                            <aura:if isTrue="{!and(v.accObj.Name != 'Red Oak Sourcing',v.accObj.AccountNumber != '153363')}">  
+                                <td>
+                                    <lightning:input type="Number" value="{!ndcObj.Vision_Cooling_Period__c}" 
+                                                     onfocusout="{!c.coolingPeriodUpdated}" variant="label-hidden"/>
+                                </td>
+                                <td>
+                                    <lightning:input type="date" value="{!ndcObj.Vision_Cooling_Period_Date__c}" 
+                                                     onchange="{!c.coolingPeriodDateUpdated}" variant="label-hidden"/>
+                                    <!-- <ui:inputDate aura:id="expdate" class="slds-input" value="{!v.ndcObj.Vision_Cooling_Period_Date__c}" 
+                                                  displayDatePicker="true" onchange=""/>  -->    
+                                    
+                                </td> 
+                            </aura:if>
+                            
+                            <td class="slds-text-align--center">
+                                <button onclick="{!c.inlineEditComments}" 
+                                        class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small"
+                                        tabindex="0" id="{!indx}">
+                                    <lightning:icon iconName="utility:comments" 
+                                                    size="x-small"/>
+                                </button>
+                            </td>
+                            <aura:if isTrue="{!v.accObj.Vision_is_SRx_Account__c}">  
+                                <td>
+                                    {!ndcObj.Vision_is_inBid_Item__c ? 'Yes' : 'No'}
+                                </td>
+                            </aura:if>
+                            <!-- <aura:if isTrue="{!and(v.accObj.Name != 'Red Oak Sourcing',v.accObj.AccountNumber != '153363')}">  -->
+                            <td>
+                                {!ndcObj.Vision_Product_Status__c}
+                            </td>
+                            <td>
+                                <lightning:select name="prodStatusChange" label="" onchange="{!c.constraintUpdated}"
+                                                  aura:id="prodStatusChange" variant="label-hidden"
+                                                  value="{!ndcObj.Vision_Product_Constraint__c}" class="labelHideCss">
+                                    <option value="{!ndcObj.Vision_Product_Constraint__c}">
+                                        {!ndcObj.Vision_Product_Constraint__c}
+                                    </option>
+                                    <aura:if isTrue="{!(ndcObj.Vision_Product_Constraint__c != 'None')}" >
+                                        <option value="{!indx+'~None'}">None</option>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.accObj.Vision_is_SRx_Account__c}">
+                                        <aura:if isTrue="{!and(ndcObj.Vision_Product_Constraint__c != 'True Opportunity',and(ndcObj.Vision_Product_Status__c != 'True Opportunity',v.accObj.Vision_is_SRx_Account__c))}" >
+                                            <option value="{!indx+'~True Opportunity'}">True Opportunity</option>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(ndcObj.Vision_Product_Constraint__c != 'Price Constraint',and(ndcObj.Vision_Product_Status__c != 'Price Constraint',v.accObj.Vision_is_SRx_Account__c))}" >
+                                            <option value="{!indx+'~Price Constraint'}">Price Constraint</option>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(ndcObj.Vision_Product_Constraint__c != 'Supply Constraint',and(ndcObj.Vision_Product_Status__c != 'Supply Constraint',v.accObj.Vision_is_SRx_Account__c))}" >
+                                            <option value="{!indx+'~Supply Constraint'}">Supply Constraint</option>
+                                        </aura:if>
+                                        <aura:if isTrue="{!v.accObj.Vision_is_SRx_Account__c}">  
+                                            <aura:if isTrue="{!(ndcObj.Vision_Product_Constraint__c != 'Both')}" >
+                                                <option value="{!indx+'~Both'}">Both</option>
+                                            </aura:if>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(ndcObj.Vision_Product_Constraint__c != 'Not An Opportunity',and(ndcObj.Vision_Product_Status__c != 'Not An Opportunity',v.accObj.Vision_is_SRx_Account__c))}" >
+                                            <option value="{!indx+'~Not An Opportunity'}">Not An Opportunity</option>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(ndcObj.Vision_Product_Constraint__c != 'Awarded',and(ndcObj.Vision_Product_Status__c != 'Awarded',v.accObj.Vision_is_SRx_Account__c))}" >
+                                            <option value="{!indx+'~Awarded'}">Awarded</option>
+                                        </aura:if>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!ndcObj.Vision_Product_Constraint__c != 'True Opportunity'}" >
+                                                <option value="{!indx+'~True Opportunity'}">True Opportunity</option>
+                                            </aura:if>
+                                            <aura:if isTrue="{!ndcObj.Vision_Product_Constraint__c != 'Price Constraint'}" >
+                                                <option value="{!indx+'~Price Constraint'}">Price Constraint</option>
+                                            </aura:if>
+                                            <aura:if isTrue="{!ndcObj.Vision_Product_Constraint__c != 'Supply Constraint'}" >
+                                                <option value="{!indx+'~Supply Constraint'}">Supply Constraint</option>
+                                            </aura:if>
+                                            <aura:if isTrue="{!ndcObj.Vision_Product_Constraint__c != 'Not An Opportunity'}" >
+                                                <option value="{!indx+'~Not An Opportunity'}">Not An Opportunity</option>
+                                            </aura:if>
+                                            <aura:if isTrue="{!ndcObj.Vision_Product_Constraint__c != 'Awarded'}" >
+                                                <option value="{!indx+'~Awarded'}">Awarded</option>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </lightning:select> 
+                            </td>
+                            <td>
+                                <div class="slds-grid">
+                                    <div class="slds-col">
+                                        <div style="{!ndcObj.Vision_isIncludeProduct__c ? 'font-weight:bold;font-size:12px;height:15px;color:green;' : 'font-size:10px;height:12px;'}">
+                                            Include
+                                        </div>
+                                        <div style="{!!ndcObj.Vision_isIncludeProduct__c ? 'font-weight:bold;font-size:12px;height:15px;color:red;' : 'font-size:10px;height:12px;'}">
+                                            Exclude
+                                        </div>
+                                    </div>
+                                    <div class="slds-col">
+                                        <lightning:input type="toggle" value="{!ndcObj.Vision_isIncludeProduct__c}" onchange="{!c.isReviewChanged}"
+                                                         checked="{!ndcObj.Vision_isIncludeProduct__c}" messageToggleActive="" 
+                                                         messageToggleInactive="" class="toggleButton" name="{!ndcObj.Id}"/>
+                                    </div>
+                                </div>
+                            </td>
+                            <!--  <aura:set attribute="else">
+                                    <td>
+                                        {!ndcObj.Vision_Product_Status__c}
+                                    </td>
+                                    <aura:if isTrue="{!v.accObj.Name != 'Red Oak Sourcing'}">  
+                                        <td>
+                                            <lightning:select name="prodStatusChange" label="" onchange="{!c.constraintUpdated}"
+                                                              aura:id="prodStatusChange" variant="label-hidden"
+                                                              value="{!ndcObj.Vision_Product_Constraint__c}" class="labelHideCss">
+                                                <option value="{!ndcObj.Vision_Product_Constraint__c}">
+                                                    {!ndcObj.Vision_Product_Constraint__c}
+                                                </option>
+                                                <aura:if isTrue="{!(ndcObj.Vision_Product_Constraint__c != 'None')}" >
+                                                    <option value="{!indx+'~None'}">None</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!(ndcObj.Vision_Product_Constraint__c != 'Awarded')}" >
+                                                    <option value="{!indx+'~Awarded'}">Awarded</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!(ndcObj.Vision_Product_Constraint__c != 'True Opportunity')}" >
+                                                    <option value="{!indx+'~True Opportunity'}">True Opportunity</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!(ndcObj.Vision_Product_Constraint__c != 'Not An Opportunity')}" >
+                                                    <option value="{!indx+'~Not An Opportunity'}">Not An Opportunity</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!(ndcObj.Vision_Product_Constraint__c != 'Price Constraint')}" >
+                                                    <option value="{!indx+'~Price Constraint'}">Price Constraint</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!(ndcObj.Vision_Product_Constraint__c != 'Supply Constraint')}" >
+                                                    <option value="{!indx+'~Supply Constraint'}">Supply Constraint</option>
+                                                </aura:if>
+                                                <aura:if isTrue="{!(ndcObj.Vision_Product_Constraint__c != 'Both')}" >
+                                                    <option value="{!indx+'~Both'}">Both</option>
+                                                </aura:if>
+                                            </lightning:select>
+                                        </td>
+                                    </aura:if>
+                                </aura:set>
+                            </aura:if> -->
+                        </tr> 
+                        
+                        <aura:if isTrue="{!v.accObj.Name == 'Red Oak Sourcing'}"> 
+                            <tr>
+                                <td colSpan="23" style="padding-top:0px;">
+                                    <div class="rosDefaultsBox" style="width:930px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">CVS/Caremark(%):&nbsp;</div>
+                                                <div>
+                                                    <lightning:input type="number" name="input7" class="labelCss"
+                                                                     formatter="percent-fixed" variant="label-hidden"
+                                                                     value="{!ndcObj.Vision_CVS_VolShare_Percent__c}"
+                                                                     onchange="{!c.updateSharedVols}" step="0.01"/>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">CVS/Caremark Vol:&nbsp;</div>
+                                                <div style="text-align:center;padding-top:5px;">
+                                                    <b><lightning:formattedNumber type="number" class="labelCss" variant="label-hidden"
+                                                                                  value="{!ndcObj.Vision_CVS_Share_Vol__c}"
+                                                                                  minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">Cardinal Health(%):&nbsp;</div>
+                                                <div>
+                                                    <lightning:input type="number" name="input7" class="labelCss"
+                                                                     formatter="percent-fixed" variant="label-hidden"
+                                                                     value="{!ndcObj.Vision_Cardinal_VolShare_Percent__c}"
+                                                                     onchange="{!c.updateSharedVols}" step="0.01"/>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">Cardinal Health Vol:&nbsp;</div>
+                                                <div style="text-align:center;padding-top:5px;">
+                                                    <b><lightning:formattedNumber type="number" class="labelCss" variant="label-hidden"
+                                                                                  value="{!ndcObj.Vision_Cardinal_Share_Vol__c}" 
+                                                                                  minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">Cardinal-Major(%):&nbsp;</div>
+                                                <div>
+                                                    <lightning:input type="number" name="input7" class="labelCss"
+                                                                     formatter="percent-fixed" variant="label-hidden"
+                                                                     value="{!ndcObj.Vision_Major_VolShare_Percent__c}"
+                                                                     onchange="{!c.updateSharedVols}" step="0.01"/>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">Cardinal Major Vol:&nbsp;</div>
+                                                <div style="text-align:center;padding-top:5px;">
+                                                    <b><lightning:formattedNumber type="number" class="labelCss" variant="label-hidden"
+                                                                                  value="{!ndcObj.Vision_Major_Share_Vol__c}" 
+                                                                                  minimumFractionDigits="0" maximumFractionDigits="0"/></b>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">Contract Type:&nbsp;</div>
+                                                <div>
+                                                    <lightning:select name="contractType" class="conType label-hidden" variant="label-hidden"
+                                                                      value="{!ndcObj.Vision_Contract_Type__c}">
+                                                        <option value="Direct">Direct</option>
+                                                        <option value="Indirect">Indirect</option>
+                                                    </lightning:select>                                            
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </aura:if>
+                        <aura:if isTrue="{!v.accObj.AccountNumber == '153363'}"> 
+                            <tr>
+                                <td colSpan="23" style="padding-top:0px;">
+                                    <div class="rosDefaultsBox" style="width:1050px;">
+                                        <div class="slds-grid">
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">McKesson Vol:&nbsp;</div>
+                                                <div>
+                                                    <lightning:input type="number" variant="label-hidden"
+                                                                     value="{!ndcObj.Vision_McKesson_Vol__c}"
+                                                                     onchange="{!c.updateSharedVols}"
+                                                                     minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">McKesson(%):&nbsp;</div>
+                                                <div style="text-align:center;padding-top:5px;">
+                                                    <b><lightning:formattedNumber value="{!ndcObj.Vision_McKesson_Vol_Share__c}" 
+                                                                                  style="percent-fixed"  
+                                                                                  maximumFractionDigits="2"/></b>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">Rite Aid Vol:&nbsp;</div>
+                                                <div>
+                                                    <lightning:input type="number" variant="label-hidden"
+                                                                     value="{!ndcObj.Vision_Rite_Aid_Vol__c}"
+                                                                     onchange="{!c.updateSharedVols}"
+                                                                     minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">Rite Aid(%):&nbsp;</div>
+                                                <div style="text-align:center;padding-top:5px;">
+                                                    <b><lightning:formattedNumber value="{!ndcObj.Vision_Rite_Aid_Vol_Share__c}" 
+                                                                                  style="percent-fixed"  
+                                                                                  maximumFractionDigits="2"/></b>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">Wal-Mart Stores Vol:&nbsp;</div>
+                                                <div>
+                                                    <lightning:input type="number" variant="label-hidden"
+                                                                     value="{!ndcObj.Vision_WalMart_Vol__c}"
+                                                                     onchange="{!c.updateSharedVols}"
+                                                                     minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">Wal-Mart Stores(%):&nbsp;</div>
+                                                <div style="text-align:center;padding-top:5px;">
+                                                    <b><lightning:formattedNumber value="{!ndcObj.Vision_WalMart_Vol_Share__c}" 
+                                                                                  style="percent-fixed"  
+                                                                                  maximumFractionDigits="2"/></b>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">NorthStar Health Vol:&nbsp;</div>
+                                                <div>
+                                                    <lightning:input type="number" variant="label-hidden"
+                                                                     value="{!ndcObj.Vision_NorthStar_Vol__c}"
+                                                                     onchange="{!c.updateSharedVols}"
+                                                                     minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                </div>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-8" style="width:120px;margin-right:10px;">
+                                                <div style="font-size:12px;">NorthStar Health(%):&nbsp;</div>
+                                                <div style="text-align:center;padding-top:5px;">
+                                                    <b><lightning:formattedNumber value="{!ndcObj.Vision_NorthStar_Vol_Share__c}" 
+                                                                                  style="percent-fixed"  
+                                                                                  maximumFractionDigits="2"/></b>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </aura:if>
+                    </aura:iteration>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="" style="{!v.excludedId == '' ? 'padding-top:10px;text-align:right;' : 'pointer-events: none;padding-top:10px;text-align:right;'}">
+        <!--<aura:if isTrue="{!or(or(v.accObj.Name == 'Red Oak Sourcing',v.accObj.AccountNumber == '153363'),v.accObj.Vision_is_SRx_Account__c)}">-->
+        <lightning:button title="Save the percentage and calculate Volume" label="Save"
+                              onclick="{!c.saveNDCvalues}" variant="brand" disabled="{!v.disableSave}"/>
+        <lightning:button title="Close SKU view" label="Close"
+                          onclick="{!c.closeSkuView}"/>
+    </div>
+</aura:component>

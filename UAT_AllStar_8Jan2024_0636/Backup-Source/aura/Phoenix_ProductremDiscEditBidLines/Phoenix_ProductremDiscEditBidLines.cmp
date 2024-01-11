@@ -1,0 +1,399 @@
+<aura:component controller="Phoenix_ProductRemDiscLineCls" implements="lightning:isUrlAddressable,force:hasRecordId,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithOutHeader" access="global" >
+    
+    <aura:attribute name="recordId" type="Id" />
+        <aura:attribute name="filetype" type="List" default="['.eml','.PST','.EDB','.MBOX','.OST','.odt','.wps','.rtf','.msg','.pps','.png','.war','.pjp','.apng','.gif','.pjp','.pjpeg','.jfif','.webp','.avif','.jpg','.jpeg','.pdf','.xlsm','.xlsx','.xlsb','.CSV','.xltx','.html', '.htt', '.mht',' .svg', '.swf', '.thtml','.xhtml','.txt','.odp','.pptx','.ppt','.docx','.doc','.docm','.dotx','.dot','.zip','.zipx','.tar','.xls']"/>
+
+    <lightning:navigation aura:id="navService"/> 
+    <aura:handler name="init" value="{!this}" action="{!c.initRecords}"/>
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.initRecords}"/>
+    <aura:attribute name="BidLineItemListAll" type="Phoenix_Bid_Line_Item__c[]"/>
+    <aura:attribute name="isView" type="Boolean" access="GLOBAL" default="false"/>
+    <aura:attribute name="showFiles" type="Boolean" access="GLOBAL" default="false"/>
+    <aura:attribute name="multiple" type="Boolean" default="true" />
+       <aura:attribute name="fileList" type="List"  /> 
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="bidNumber" type="string"  />
+    <aura:attribute name="bidName" type="string"  />
+    <aura:attribute name="BidTypeVal" type="string"  />
+     <aura:attribute name="BidAprrovalStatus" type="string"  />
+     <aura:attribute name="loggedInUserName" type="string" default=""/>
+     <aura:attribute name="loggedInUserId" type="string" default=""/>
+     <aura:attribute name="isVistexApprovePerson" type="boolean"  />
+     <aura:attribute name="isFinanceApprovePerson" type="boolean"  />
+    <aura:attribute name="isMarketingLeadotc" type="boolean" default="true" />
+      <aura:attribute name="isMarketingLeadsrx" type="boolean" default="true" />
+      <aura:attribute name="isMarketingLeadrx" type="boolean" default="true" />
+    <aura:attribute name="isdelegationUserrx" type="boolean" default="true"/>
+    <aura:attribute name="isdelegationUsersrx" type="boolean" default="true"/>
+    <aura:attribute name="isdelegationUserotc" type="boolean" default="true"/>
+     <aura:attribute name="isMarketingApprovePerson" type="string"/>
+    <aura:attribute name="isMarketingLeadrxApprovePerson" type="string"  />
+    <aura:attribute name="isMarketingLeadsrxApprovePerson" type="string"  />
+    <aura:attribute name="isMarketingLeadotcApprovePerson" type="string"  />
+     <aura:attribute name="delagationuser1" type="string"  /> 
+    <aura:attribute name="delagationuser" type="string"  /> 
+   <aura:attribute name="isSRxApprovePerson" type="string"  />
+    <aura:attribute name="showProceedBtn" type="boolean"  />
+        <aura:attribute name="showproceedlead" type="boolean" default="true" />
+   
+    <aura:attribute name="submitPopUp" type="boolean" default="false" /> 
+    
+    <aura:attribute name="showSaveCancelBtn" type="boolean" default="false" description="flag for rendered save and cancel buttons in aura:if "/>    
+    <aura:handler name="lightningEvent" event="c:Phoenix_ProductMassDiscEvt" action="{!c.handleEvent}"/>
+      <lightning:tabset aura:id="Tabset" selectedTabId="EBLI">
+        <lightning:tab label="Edit Line Items" id="EBLI" onactive="{!c.initRecords}"> 
+    <lightning:card iconName="custom:custom90" title="{!(v.bidNumber+'-'+v.bidName)}">
+        <aura:set attribute="actions">
+              <lightning:button variant="neutral" label="Back" title="Back" onclick="{! c.backToBid }"/>
+                <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+                    <lightning:button label="Export" onclick="{!c.downloadCsv}"/>
+                </aura:if>
+             <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Marketing',v.BidLineItemListAll.length > 0),and(v.isMarketingApprovePerson==v.loggedInUserId,v.showProceedBtn==true))}">
+                        <lightning:button variant="neutral" label="Submit" title="Submit" onclick="{! c.saveToProceedMarketing }"/>
+                    </aura:if>
+     <aura:if isTrue="{!and(and(and(v.BidAprrovalStatus=='Marketing Lead',v.BidLineItemListAll.length > 0),and(v.isMarketingLeadrxApprovePerson==v.loggedInUserId)), v.isMarketingLeadrx)}">
+    <lightning:button variant="neutral" label="Submit" title="Submit" onclick="{! c.saveToProceedMarketingLead }"/>
+</aura:if>
+                 <aura:if isTrue="{!and(and(and(v.BidAprrovalStatus=='Marketing Lead',v.BidLineItemListAll.length > 0),and(v.isMarketingLeadsrxApprovePerson==v.loggedInUserId)), v.isMarketingLeadsrx)}">
+    <lightning:button variant="neutral" label="Submit" title="Submit" onclick="{! c.saveToProceedMarketingLead }"/>
+</aura:if>
+             <aura:if isTrue="{!and(and(and(v.BidAprrovalStatus=='Marketing Lead',v.BidLineItemListAll.length > 0),and(v.isMarketingLeadotcApprovePerson==v.loggedInUserId)), v.isMarketingLeadotc)}">
+    <lightning:button variant="neutral" label="Submit" title="Submit" onclick="{! c.saveToProceedMarketingLead }"/>
+</aura:if>
+         <aura:if isTrue="{!and(and(and(v.BidAprrovalStatus=='Marketing Lead',v.BidLineItemListAll.length > 0),and(v.delagationuser==v.loggedInUserId,v.showProceedBtn==true)), v.isdelegationUserotc)}">
+    <lightning:button variant="neutral" label="Submit" title="Submit" onclick="{! c.saveToProceedMarketingLeadDelegation }"/>
+</aura:if>  
+             
+         
+              
+       
+           
+            
+                     <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Finance',v.BidLineItemListAll.length > 0),v.isFinanceApprovePerson==true)}">
+                        <lightning:button variant="neutral" label="Submit" title="Submit" onclick="{! c.saveToProceedFinance }"/>
+                    </aura:if> 
+             <aura:if isTrue="{!and(v.BidAprrovalStatus=='Draft',and(v.BidLineItemListAll.length > 0,v.showSaveCancelBtn==false))}">
+                        <lightning:button label="Submit For Approval" variant="brand" onclick="{!c.submitFor}"/>
+                    </aura:if>
+             <aura:if isTrue="{!v.submitPopUp}">
+                 <c:Phoenix_SubmitBidForApproval recordId="{!v.recordId}"/>
+            </aura:if>
+                      <aura:if isTrue="{!and(v.BidAprrovalStatus=='Contracts',and(v.BidLineItemListAll.length > 0,v.isSRxApprovePerson==true))}">
+                        <lightning:button variant="brand" label="Submit" title="Submit" onclick="{!c.saveToProceedContracts}"/>
+                    </aura:if>
+              <aura:if isTrue="{!and(v.BidAprrovalStatus=='Vistex Update',and(v.BidLineItemListAll.length > 0,v.isVistexApprovePerson==true))}">
+                        <lightning:button variant="neutral" label="Submit" title="Submit" onclick="{! c.saveToProceedVistex }"/>
+                    </aura:if> 
+                     <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Marketing',v.BidLineItemListAll.length > 0),and(v.isMarketingApprovePerson==v.loggedInUserId,v.showProceedBtn==true))}">
+          <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:7%">
+
+                                                
+                                                    
+                                                    <lightning:select label="Marketing Approval (Mark all as)"
+                                                                      aura:id="headerMarketingApproval"
+                                                                      onchange="{!c.onMarketingChange}"
+                                                                      >
+                                                        <option value="None">-None-</option>
+                                                        <option value="Approved">Approved</option>
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </lightning:select>
+                                         </div>
+                                            </aura:if>
+           <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Marketing Lead',v.BidLineItemListAll.length > 0),and(v.isMarketingApprovePerson==v.loggedInUserId,v.showProceedBtn==true))}">
+
+             <!--Added by satya<aura:if isTrue="{!v.BidAprrovalStatus== 'Marketing Lead'}"-->
+                 <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:7%">
+                                                    <lightning:select label="Marketing Lead Approval (Mark all as)"
+                                                                      aura:id="headerMarketingLeadApproval"
+                                                                      onchange="{!c.onMarketingLeadChange}"
+                                                                      >
+                                                        <option value="None">-None-</option>
+                                                        <option value="Approved">Approved</option>
+                                                        <option value="Not Approved">Not Approved</option>
+                                                    </lightning:select>
+                                         </div>
+            </aura:if>
+                      <aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Finance',v.BidLineItemListAll.length > 0),v.isFinanceApprovePerson==true)}">
+
+                                                            <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:7%">
+ <lightning:select label="Finance Approval (Mark all as)"
+                                                          aura:id="headerFinanceApproval"
+                                                          onchange="{!c.onFinanceApprovalChange}"
+                                                          >
+                                            <option value="None">-None-</option>
+                                            <option value="Approved">Approved</option>
+                                            <option value="Not Approved">Not Approved</option>
+                                        </lightning:select>
+                                                  </div>
+                                                  </aura:if>
+                      <aura:if isTrue="{!and(v.BidAprrovalStatus=='Contracts',and(v.BidLineItemListAll.length > 0,v.isSRxApprovePerson==true))}">
+          <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:7%">
+
+                     <lightning:select label="Contract Approval (Mark all as)"
+                                                      aura:id="headerContractApproval"
+                                                      onchange="{!c.onApprovalChange}"
+                                                      >
+                                        <option value="None">-None-</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Sent to Customer	">Sent to Customer</option>
+                                        <option value="Line Error- Not Sent	">Line Error- Not Sent</option>
+              </lightning:select></div>
+                    </aura:if>
+             <aura:if isTrue="{!and(v.BidAprrovalStatus=='Vistex Update',and(v.BidLineItemListAll.length > 0,v.isVistexApprovePerson==true))}">
+          <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:7%">
+
+                     <lightning:select label="Vistex Approval (Mark all as)"
+                                                      aura:id="headerVistexApproval"
+                                                      onchange="{!c.onApprovalVistexChange}"
+                                                      >
+                                        <option value="None">-None-</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Updated">Updated</option>
+                                       
+              </lightning:select></div>
+                    </aura:if>
+              
+                 
+             
+           
+            
+            
+        </aura:set>
+         <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="Edit Line Items" >
+                    <lightning:accordionSection name="Edit Line Items" label="Edit Line Items"  >
+                        <p>
+        <center>
+            
+            <aura:if isTrue="{!v.showSaveCancelBtn}">
+                <!--button for save and cancel Record after Inline Edit-->
+                <lightning:button label="Cancel" onclick="{!c.cancel}"/>&nbsp;
+                
+                <lightning:button variant="brand" label="Save"  onclick="{!c.SaveAndNavigate}"/>
+            </aura:if> 
+        </center>
+        
+        
+        
+        <aura:if isTrue="{!v.isSpinnerLoad}">
+            <div class="backgroundInverse">
+                <lightning:spinner alternativeText="Loading" variant="brand" />
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+            <div aura:id="mainDiv" style="height:450px;overflow:auto;margin-top:10px;" class=" slds-m-right_small slds-m-left_small">
+                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                    
+                    <table aura:id="LineTable"  class="customtable slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                        
+                        <thead>
+                            <tr> 
+                                <th></th>
+                                <th>Sr.No</th>
+                                <th class="slds-truncate slds-cell-wrap">Product Name</th>
+                                <th class="slds-truncate slds-cell-wrap">Product Family</th>
+                                  <th class="slds-truncate slds-cell-wrap">Product Director</th>
+                                <th class="slds-truncate slds-cell-wrap">NDC</th>
+                                <aura:if isTrue="{! v.BidTypeVal=='Product Discontinuation Process'}">
+                                    
+                                    <th class="slds-truncate slds-cell-wrap">Days' Notice - Product Discontinuation</th>
+                                </aura:if>
+                                <aura:if isTrue="{! v.BidTypeVal=='Mass Product Removals'}">
+                                    <th class="slds-truncate slds-cell-wrap">Days' Notice - Product Removals</th>
+                                </aura:if>
+                                <th class="slds-truncate slds-cell-wrap">Customer Requested Days</th>
+                                <th class="slds-truncate slds-cell-wrap">Contract</th>
+                                <th class="slds-truncate slds-cell-wrap">Customer</th>
+                           
+                                    <th class="slds-truncate slds-cell-wrap">Marketing Approval</th>
+                                    <th class="slds-truncate slds-cell-wrap">Marketing Notes</th>
+                              <th class="slds-truncate slds-cell-wrap">Marketing Lead  Approval</th>
+                                    <th class="slds-truncate slds-cell-wrap">Marketing Lead Comments</th>
+                                <th class="slds-truncate slds-cell-wrap">Finance Approval</th>
+                                <th class="slds-truncate slds-cell-wrap">Finance Comments</th>
+                                <th class="slds-truncate slds-cell-wrap">Contract Approval</th>
+                                <th class="slds-truncate slds-cell-wrap">Contract Comments</th>
+                               
+                                 <th class="slds-truncate slds-cell-wrap">Vistex Update</th>
+                                <th class="slds-truncate slds-cell-wrap">Vistex Comments</th>
+                             
+                                
+                                
+                                
+                                
+                                
+                                
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.BidLineItemListAll}" var="biltem" indexVar="sNo">
+                                <c:Phoenix_ProductRemDiscEditChildBidLines delagationuser1="{!v.delagationuser1}" isSRxApprovePerson="{!v.isSRxApprovePerson}" isVistexApprovePerson="{!v.isVistexApprovePerson}" isMarketingLeadApprovePerson="{isMarketingLeadApprovePerson}" isMarketingApprovePerson="{!v.isMarketingApprovePerson}" isFinanceApprovePerson="{!v.isFinanceApprovePerson}" BidTypeVal="{!v.BidTypeVal}" singleRec="{!biltem}" showSaveCancelBtn="{!v.showSaveCancelBtn}" sNo="{!sNo + 1}" lineItemId="{!biltem.Id}"  loggedInUserName="{!v.loggedInUserName}" BidAprrovalStatus="{!v.BidAprrovalStatus}"/>
+                                
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                  </div> 
+            </div>
+                          <aura:set attribute="else">
+                <lightning:card >
+                    <center>
+                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                            <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                            </span>
+                            <h2>There are no line items for this bid</h2>
+                        </div>
+                    </center>
+                </lightning:card>
+            </aura:set>
+        </aura:if> 
+                        </p></lightning:accordionSection></lightning:accordion>
+                <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="Upload Document" >
+                    <lightning:accordionSection name="Upload Document" label="Upload Document" >
+                        <aura:if isTrue="{!v.BidAprrovalStatus=='Draft'}">
+                             <center style="padding: 0%;"><div style="width:100%" class="slds-theme_default">            
+                             
+                               <div class="slds-scope" >
+                            <div class="slds-grid slds-wrap slds-text-align_left custom-container">
+                                <div class="slds-size_1-of-4 slds-max-small-size_1-of-1 sapdata" style="padding-left: 85px;">
+                                    <br/>
+                                    FTS Exposure File
+                                    
+                                </div>
+                                
+                                <div class="slds-size_1-of-4 slds-max-small-size_1-of-1 sapdata">
+                                    
+                                    <lightning:fileUpload label=""
+                                                          variant="label-hidden"
+                                                          name="fileUploader"
+                                                          multiple="true"
+                                                          accept="{!v.filetype}"
+                                                          recordId="{!v.recordId}"
+                                                          onuploadfinished="{!c.handleUploadFinished}" class="hideSpan"/>
+                                    
+                                    
+                                    
+                                </div>
+                            </div>
+                            <div class="slds-grid slds-wrap slds-text-align_left custom-container">
+                                <div class="slds-size_1-of-4 slds-max-small-size_1-of-1 sapdata" style="padding-left: 85px;" >
+                                    <br/>
+                                    Liquidation of Inventory (WS / Inhouse) File
+                                    
+                                </div>
+                                <div class="slds-size_1-of-4 slds-max-small-size_1-of-1 sapdata">
+                                    
+                                    <lightning:fileUpload label=""
+                                                          variant="label-hidden"
+                                                          name="fileUploader"
+                                                          multiple="true"
+                                                          accept="{!v.filetype}"
+                                                          recordId="{!v.recordId}"
+                                                          onuploadfinished="{!c.handleUploadFinished}" class="hideSpan"/>
+                                    
+                                    
+                                    
+                                </div>
+                            </div>
+                            <div class="slds-grid slds-wrap slds-text-align_left custom-container">
+                                <div class="slds-size_1-of-4 slds-max-small-size_1-of-1 sapdata" style="padding-left: 85px;">
+                                    <br/>
+                                    Other File
+                                    
+                                </div>
+                                <div class="slds-size_1-of-4 slds-max-small-size_1-of-1 sapdata">
+                                    
+                                    <lightning:fileUpload label=""
+                                                          variant="label-hidden"
+                                                          name="fileUploader"
+                                                          multiple="true"
+                                                          accept="{!v.filetype}"
+                                                          recordId="{!v.recordId}"
+                                                          onuploadfinished="{!c.handleUploadFinished}" class="hideSpan"/>
+                                    
+                                    
+                                    
+                                </div>
+                            </div>
+                        </div>   
+                               
+                                </div>
+                            </center>       
+                            <div class="modal-container slds-modal__container" style="width:100% !important;margin: 0; padding: 0; margin-left: 5%;margin-right:5%;margin-top:2%;border:1px solid #dddbda" >
+                                <br/>
+                                <b><h2 style="font-size:15px;padding-bottom:10px;padding-left:5px;">List of Attachments ({!v.fileList.length})</h2></b>
+                                <div class="modal-body scrollable slds-modal__content slds-p-around--medium"  style="padding: 0px; overflow-y: hidden; border-radius: 0px;">
+                                    <div class="container desktop forceContentFilePicker" style="width: 100%; display: flex; background-color: var(--lwc-colorBackgroundAlt,rgb(255, 255, 255));">
+                                        <!--div class="slds-border_left" ></div-->
+                                        <div class="rightPanel" style="float:right;width:100%;overflow-y: visible;" >
+                                            <div class="searchResultsContainer multiAttach"   style="overflow: auto; clear: both; padding-right: 0;">
+                                                <ul style="list-style:none;padding:0px;margin:0px;">
+                                                    
+                                                    <aura:iteration items="{!v.fileList}" var="file" indexVar="itemIndex">
+                                                        <li class="slds-var-p-horizontal_medium slds-var-p-vertical_xx-small forceContentVirtualRelatedListStencil forceRecordLayout" style="{!if(itemIndex==(v.fileList.length-1),'border-top:var(--lwc-borderWidthThin,1px) solid var(--lwc-colorBorderSeparatorAlt,rgb(221, 219, 218));height: auto; margin: 0; padding: 0; list-style: none; font-weight: var(--lwc-fontWeightRegular,400); font-size: var(--lwc-fontSizeMedium,0.8125rem);border-bottom:1px solid #dddbda;','border-top:var(--lwc-borderWidthThin,1px) solid var(--lwc-colorBorderSeparatorAlt,rgb(221, 219, 218));height: auto; margin: 0; padding: 0; list-style: none; font-weight: var(--lwc-fontWeightRegular,400); font-size: var(--lwc-fontSizeMedium,0.8125rem);')}" >
+                                                            <div class="filerow" style="padding: var(--lwc-spacingXxSmall,0.25rem) 0 var(--lwc-spacingXxSmall,0.25rem) var(--lwc-spacingMedium,1rem);display: flex; table-layout: fixed; width: 100%;padding-bottom:8px;">
+                                                                <div class="slds-size_12-of-12 slds-grid slds-nowrap">
+                                                                    <p  data-name="{!file.Id}" style="cursor:pointer;">
+                                                                         <a  name="{!file.Id}" onclick="{!c.deleteAttachment}">
+                <lightning:icon iconName="utility:delete" iconPosition="left" alternativeText="delete" size="x-small" />
+            </a>&nbsp; 
+                                                                        <a href="{!'/'+file.Id}"
+                                                                           target="_blank"  >{!itemIndex+1}.&nbsp;{!file.Title} </a>   
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </li>
+                                                    </aura:iteration>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                           
+                        </aura:if>
+                        <aura:if isTrue="{!v.BidAprrovalStatus!='Draft'}">
+                            
+                            <div class="modal-container slds-modal__container" style="width:100% !important;margin: 0; padding: 0; margin-left: 5%;margin-right:5%;margin-top:2%;border:1px solid #dddbda" >
+                                <br/>
+                                <b><h2 style="font-size:15px;padding-bottom:10px;padding-left:5px;">List of Attachments ({!v.fileList.length})</h2></b>
+                                <div class="modal-body scrollable slds-modal__content slds-p-around--medium"  style="padding: 0px; overflow-y: hidden; border-radius: 0px;">
+                                    <div class="container desktop forceContentFilePicker" style="width: 100%; display: flex; background-color: var(--lwc-colorBackgroundAlt,rgb(255, 255, 255));">
+                                        <!--div class="slds-border_left" ></div-->
+                                        <div class="rightPanel" style="float:right;width:100%;overflow-y: visible;" >
+                                            <div class="searchResultsContainer multiAttach"   style="overflow: auto; clear: both; padding-right: 0;">
+                                                <ul style="list-style:none;padding:0px;margin:0px;">
+                                                    <aura:iteration items="{!v.fileList}" var="file" indexVar="itemIndex">
+                                                        <li class="slds-var-p-horizontal_medium slds-var-p-vertical_xx-small forceContentVirtualRelatedListStencil forceRecordLayout" style="{!if(itemIndex==(v.fileList.length-1),'border-top:var(--lwc-borderWidthThin,1px) solid var(--lwc-colorBorderSeparatorAlt,rgb(221, 219, 218));height: auto; margin: 0; padding: 0; list-style: none; font-weight: var(--lwc-fontWeightRegular,400); font-size: var(--lwc-fontSizeMedium,0.8125rem);border-bottom:1px solid #dddbda;','border-top:var(--lwc-borderWidthThin,1px) solid var(--lwc-colorBorderSeparatorAlt,rgb(221, 219, 218));height: auto; margin: 0; padding: 0; list-style: none; font-weight: var(--lwc-fontWeightRegular,400); font-size: var(--lwc-fontSizeMedium,0.8125rem);')}" >
+                                                            <div class="filerow" style="padding: var(--lwc-spacingXxSmall,0.25rem) 0 var(--lwc-spacingXxSmall,0.25rem) var(--lwc-spacingMedium,1rem);display: flex; table-layout: fixed; width: 100%;padding-bottom:8px;">
+                                                                <div class="slds-size_12-of-12 slds-grid slds-nowrap">
+                                                                    <p  data-name="{!file.Id}" style="cursor:pointer;">
+                                                                        
+                                                                        <a href="{!'/'+file.Id}"
+                                                                           target="_blank"  >{!itemIndex+1}.&nbsp;{!file.Title} </a>   
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </li>
+                                                    </aura:iteration>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>   
+                        </aura:if>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+                  
+            <br/>
+            
+    </lightning:card> 
+          </lightning:tab>
+             <lightning:tab label="Rejected View" id="RejectedStatus" onactive="{!c.initRejectedStatus}">
+            <c:RemDiscRejectedLineItemsTab aura:id="RejectedStatusChildCmp"  recordId='{!v.recordId}'/>
+        </lightning:tab>
+        <lightning:tab label="Bid Summary View" id="CustomerResponseNew" onactive="{!c.initNewCustomerView}">
+            <c:CustomerResponseLinesView aura:id="CustomersTabNew"  title="{!(v.bidNumber+'-'+v.bidName)}" recordId='{!v.recordId}'/>
+        </lightning:tab>
+    </lightning:tabset>
+</aura:component>

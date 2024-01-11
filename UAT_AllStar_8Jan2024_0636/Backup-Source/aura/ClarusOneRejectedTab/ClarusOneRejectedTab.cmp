@@ -1,0 +1,663 @@
+<aura:component controller="Phoenix_RejectedStatusCls" implements="flexipage:availableForAllPageTypes,force:hasRecordId,force:appHostable,lightning:isUrlAddressable" access="global">   
+    <aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="columns" type="List"/>
+    <lightning:navigation aura:id="navService"/> 
+    <aura:handler name="init" value="{!this}" action="{!c.initRecords}"/>
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.initRecords}"/>
+    <aura:attribute name="BidLineItemListAll" type="Phoenix_Bid_Line_Item__c[]"/>
+    <aura:attribute name="isRelatedLineItemsEmpty" type="boolean" default="true" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="lstSelectedRecords" type="sObject[]" default="[]" description="Use,for store SELECTED sObject Records"/>
+    <aura:attribute name="listOfSearchRecords" type="List" description="Use,for store the list of search records which returns from apex class" />
+    <aura:attribute name="defaultlistOfProductFamily" type="List" />
+    <aura:attribute name="lstSelectedPDRecords" type="sObject[]" default="[]" description="Use,for store SELECTED sObject Records"/>
+    <aura:attribute name="listOfSearchPDRecords" type="List" description="Use,for store the list of search records which returns from apex class" />
+    <aura:attribute name="defaultlistOfProductDirectors" type="List" />
+    <aura:attribute name="SearchKeyWord" type="string"/>
+    <aura:attribute name="SearchKeyWordPD" type="string"/>
+    <aura:attribute name="activeSections" type="List" default="['FilterTerms','FilterInputs']" />
+    <aura:attribute name="objectAPIName" type="string" default=""/>
+    <aura:attribute name="IconName" type="string" default=""/>
+    <aura:attribute name="label" type="string" default=""/>
+    <aura:attribute name="options" type="List"  />
+    <aura:attribute name="selectedValues" type="List" default="" description="Selected value in Multi Select" />
+    <lightning:navigation aura:id="navigationService" />
+    <aura:handler name="lightningEvent" event="c:RefreshBidLineItemCmpEvt" action="{!c.handleEvent}"/>
+    <aura:attribute name="showSaveCancelBtn" type="boolean" default="false" description="flag for rendered save and cancel buttons in aura:if "/>    
+    <aura:attribute name="isRxChecked" type="boolean" default="false" />
+    <aura:attribute name="isSRxChecked" type="boolean" default="false" />
+    <aura:attribute name="isOtcChecked" type="boolean" default="false" />
+    <aura:attribute name="RxSrxList" type="List"  />
+    <aura:attribute name="crntVipVal" type="decimal"  />
+    <aura:attribute name="VipReadOnly" type="boolean"  />
+    <aura:attribute name="customerId" type="string"  />
+    <aura:attribute name="bidNumber" type="string"  />
+    <aura:attribute name="bidName" type="string"  />
+    <aura:attribute name="BidTypeVal" type="string"  />
+    <aura:attribute name="BidAprrovalStatus" type="string"  />
+    <aura:attribute name="isMarketingApprovePerson" type="string"  />
+    <aura:attribute name="isContractsApprovePerson" type="string"  />
+    <aura:attribute name="showProceedBtn" type="boolean"  />
+    <aura:attribute name="hasDirectorLines" type="boolean" />
+    <aura:attribute name="bidRecord" type="sObject"  />
+    <aura:attribute name="IODType" type="string"  />
+    <!-- totalvalues -->
+    <aura:attribute name="ItemsLength" type="Decimal" />
+    <aura:attribute name="CurOSRADUnitsTotal" type="Decimal" />
+    <aura:attribute name="CurWMTDirUnitTotal" type="Decimal" />
+    <aura:attribute name="CurWMTIndUnitTotal" type="Decimal" />
+    <aura:attribute name="ORCurWMTIndUnitTotal" type="Decimal" />
+    <aura:attribute name="ORCurOSRADUnitsTotal" type="Decimal" />
+    <aura:attribute name="ORCurWMTDirUnitTotal" type="Decimal" />
+    <aura:attribute name="PropOSUnitTotal" type="Decimal" />
+    <aura:attribute name="PropRADUnitTotal" type="Decimal" />
+    <aura:attribute name="PropWMTUnitTotal" type="Decimal" />
+    <aura:attribute name="scmQty" type="Decimal" />
+    
+    <aura:attribute name="MacandRADNetSales" type="Decimal" />
+    <aura:attribute name="WMTDirectNetSales" type="Decimal" />
+    <aura:attribute name="WMTindirectNetSales" type="Decimal" />
+    
+    <aura:attribute name="PDSUTotal" type="Decimal" />
+    <aura:attribute name="netSalesIntTotal" type="Decimal" />
+    <aura:attribute name="LCostTotal" type="Decimal" />
+    <aura:attribute name="ThptMrgnDTotal" type="Decimal" />
+    <aura:attribute name="intDeadNetTotal" type="Decimal" /> 
+    
+    <aura:attribute name="proNetSaleDir" type="Decimal" /> 
+    <aura:attribute name="proNetSaleInd" type="Decimal" /> 
+    <aura:attribute name="proTPTDir" type="Decimal" /> 
+    <aura:attribute name="proTPTInd" type="Decimal" /> 
+    <aura:attribute name="proTPTPerDir" type="Decimal" /> 
+    <aura:attribute name="proTPTPerIndir" type="Decimal" /> 
+    <aura:attribute name="BlendedTPMargin" type="Decimal" /> 
+    
+    <aura:attribute name="MckRadTPT" type="Decimal" /> 
+    <aura:attribute name="WMTDirTPT" type="Decimal" /> 
+    <aura:attribute name="WMTIndirTPT" type="Decimal" /> 
+    <aura:attribute name="totalNetSalesCom" type="Decimal" /> 
+    <aura:attribute name="totalTPTDollar" type="Decimal" /> 
+    <aura:attribute name="totalWMTNetSales" type="Decimal" /> 
+    <aura:attribute name="totalWMTTPT" type="Decimal" /> 
+    
+    <aura:attribute name="scmOSUnits" type="Decimal" /> 
+    <aura:attribute name="scmRADUnits" type="Decimal" /> 
+    <aura:attribute name="scmWMTUnits" type="Decimal" /> 
+    <aura:attribute name="twlveMonRAADSales" type="Decimal" /> 
+    <aura:attribute name="twlveMonWMTIndiSales" type="Decimal" /> 
+    <aura:attribute name="twlveMonWMTDIiSales" type="Decimal" /> 
+    
+    <aura:attribute name="CurMckNetSales" type="Decimal" /> 
+    <aura:attribute name="CurWMTDirNetSales" type="Decimal" /> 
+    <aura:attribute name="CurWMTIndirNetSales" type="Decimal" /> 
+    
+    
+    <aura:attribute name="MckStokingOvrAmt" type="Decimal" /> 
+    <aura:attribute name="WMTStokingOvrAmt" type="Decimal" /> 
+    
+    <!-- totalvalues -->
+    <!--specific customer attributes-->
+    <aura:attribute name="isSpecificCustomer" type="boolean" />
+    <aura:attribute name="isDirectType" type="boolean" default="false"/>
+    <aura:attribute name="templateType" type="string" default=""/>
+    <aura:attribute name="loggedInUserName" type="string" default=""/>
+    <aura:attribute name="submitModel" type="boolean" default="false"/>
+    <!--specific customer attributes-->
+    
+    <!--Contract Model section-->
+    <aura:attribute name="showModal" type="boolean" default="false"/>
+    <aura:attribute type="List" name="contratcsList"/>
+    <aura:attribute name="mycolumns" type="List"/>
+    <aura:attribute name="selectedCntrcts"  type="list"/>    
+    
+    <!--Rebate and Fee type attributes-->
+    <aura:attribute name="isRebateChanged" type="boolean" default="false" />
+    <aura:attribute name="isFeeChanged" type="boolean" default="false" />
+    <aura:handler name="calcEvent" event="c:TotalCalculationEvt" action="{!c.handleCalcEvent}"/>
+    <!--declare events hendlers-->  
+    <aura:handler name="oSelectedRecordEvent" event="c:selectedsObjectRecordsEvent" action="{!c.handleComponentEvent}"/>
+    <aura:attribute name="Message" type="String" default=""/>
+    <aura:attribute name="isMarketingChanged" type="boolean" default="false"/>
+    <aura:method name="rejectedStatusRefresh" action="{!c.initRecords}" />
+    <!--re bid-->
+    <aura:attribute name="allContractsChecked" type="boolean" default='false'/>
+    <aura:attribute name="isReBid" type="boolean" default="false" />
+    <aura:attribute name="tableRef" type="String" default=""/>
+    <!--re bid-->
+    <!--Product Positions Attributes-->
+    <aura:attribute name="positionColumns" type="List" />
+    <aura:attribute type="List" name="positionsList" />
+    <aura:attribute name="showPositionsModal" type="boolean" default="false" />
+    <aura:attribute name="selectedPosistions" type="list" />
+    <aura:attribute name="MCKpositionColumns" type="List" />
+    <aura:attribute type="List" name="MCKpositionsList" />
+    <aura:attribute name="showMCKPositionsModal" type="boolean" default="false" />
+    <aura:attribute name="selectedMCKPosistions" type="list" />
+    <!--End of Product Positions Attributes-->
+    
+    <aura:handler name="PDSelectedRecordEvent" event="c:ProductDirectorSearchEvent" action="{!c.handleComponentEventProdDir}"/>
+    <aura:attribute name="MessagePD" type="String" default=""/>
+    
+    
+    <lightning:card iconName="custom:custom90" title="{!(v.bidNumber+'-'+v.bidName)}">
+        <aura:set attribute="actions">
+            <lightning:button variant="neutral" label="Back" title="Back" onclick="{! c.backToBid }"/>
+            <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+                <lightning:button label="Export" onclick="{!c.downloadCsv}"/>
+            </aura:if>   
+            <aura:if isTrue="{!and(v.BidAprrovalStatus=='Draft',and(v.BidLineItemListAll.length > 0,v.showSaveCancelBtn==false))}">
+                <lightning:button label="Submit For Approval" variant="brand" onclick="{!c.submitFor}"/>
+            </aura:if>
+            <!-- <lightning:button label="Submit For Approval" onclick="{!c.submitFor}"/>-->
+            
+            <aura:if isTrue="{!and(and(and(v.BidAprrovalStatus!='Draft',v.BidAprrovalStatus==equals(v.BidTypeVal,'Price Change')?'Marketing':'SCM &amp; Marketing'),v.BidLineItemListAll.length > 0),and(and(v.isMarketingApprovePerson==v.loggedInUserName,v.hasDirectorLines==true),and(v.showProceedBtn==true,v.showSaveCancelBtn==false)))}">
+                <lightning:button variant="brand" label="Submit" title="Proceed" onclick="{! c.saveToProceed }"/>
+            </aura:if>
+            <!--<aura:if isTrue="{!and(and(v.BidAprrovalStatus=='Contracts',v.BidLineItemListAll.length > 0),v.isContractsApprovePerson==v.loggedInUserName)}">
+                        <lightning:button variant="neutral" label="Proceed" title="Proceed" onclick="{! c.saveToProceedContracts }"/>
+                    </aura:if> -->                    
+        </aura:set>
+        <p>
+            <lightning:recordEditForm objectApiName="Phoenix_Bid__c" density="comfy" recordId="{!v.recordId}" aura:id="bidForm"   onload="{!c.handleOnload}" onsubmit="{!c.onRecordSubmit}" onsuccess="{!c.onRecordSuccess}">
+                
+                <center>
+                    <!-- use aura:if for show/hide buttons -->      
+                    <aura:if isTrue="{!v.showSaveCancelBtn}">
+                        <!--button for save and cancel Record after Inline Edit-->
+                        <lightning:button label="Cancel" onclick="{!c.cancel}"/>&nbsp;
+                        <lightning:button label="Save" type="submit" variant="brand"/>&nbsp;   
+                        <!-- <lightning:button variant="brand" label="Save &amp; Close"  onclick="{!c.SaveAndNavigate}"/>-->
+                    </aura:if> 
+                </center>
+            </lightning:recordEditForm>
+        </p>
+        <aura:if isTrue="{!v.submitModel}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" 
+                     aria-modal="true" aria-describedby="modal-content-id-1" 
+                     class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                            Submit Bid For Approval</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p><div style="text-align:center;padding-bottom:3px;">Are you sure you want  to submit this bid for approval?</div>
+                        </p>
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="No"
+                                          title="No"
+                                          onclick="{! c.hideSubmitModel }"/>
+                        <lightning:button variant="brand"
+                                          label="Yes"
+                                          title="Yes"
+                                          onclick="{!c.proceedToSubmit}"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+        <aura:if isTrue="{!v.showModal}">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" 
+                     aria-modal="true" aria-describedby="modal-content-id-1" 
+                     class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.hideModel }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+                            Contracts</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p>
+                            <div class="slds-grid" style="margin-bottom:6px;">
+                                <div class="slds-col slds-size_1-of-3">
+                                    <div aura:id="" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                        <ui:inputText aura:id="cntInput" class="slds-lookup__search-input slds-input inputSize"
+                                                      placeholder="Search contracts..."/>
+                                        <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                            <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                        </span>
+                                    </div> 
+                                </div>
+                                <div class="slds-col slds-size_1-of-3">
+                                    <div class="slds-grid">
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:input class="slds-p-left_large slds-p-top_x-small" type="checkbox" label="Show All" name="input1" aura:id="tgleCntrct" onchange="{!c.searchContracts}"/>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <div  class="slds-m-top_medium slds-m-left_small" style="margin-top:1px;"><lightning:button label="Search" onclick="{!c.searchContracts}"  variant="brand"/></div> 
+                                        </div>
+                                    </div>
+                                </div>                                       
+                            </div>  
+                            <aura:if isTrue="{!not(empty(v.contratcsList))}">                            
+                                <lightning:datatable aura:id="linesTable"
+                                                     data="{! v.contratcsList }" 
+                                                     columns="{! v.mycolumns }"
+                                                     keyField="id"                                                
+                                                     />
+                                <aura:set attribute="else">
+                                    <center>
+                                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                            <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                            </span>
+                                            <h2> No Records Found</h2>
+                                        </div>
+                                    </center>
+                                </aura:set>
+                            </aura:if>
+                        </p>
+                    </div>
+                    <!--Modal/Popup Box Footer Starts here-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="neutral"
+                                          label="Cancel"
+                                          title="Cancel"
+                                          onclick="{! c.hideModel }"/>
+                        <lightning:button variant="brand"
+                                          label="OK"
+                                          title="OK"
+                                          disabled= "{!empty(v.contratcsList)}"
+                                          onclick="{!c.saveDetails}"/>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </aura:if>
+        <lightning:accordion aura:id="filterId" allowMultipleSectionsOpen="true" activeSectionName="FilterInput">
+            <lightning:accordionSection name="FilterInput" label="Product Details and Inputs" >
+                <div class="slds-grid slds-gutters">
+                    <div class="slds-col slds-size_1-of-3">
+                        <div class="slds-grid" >
+                            <div class="slds-col slds-size_1-of-3">
+                                <lightning:input aura:id="RX" type="checkbox" label="Rx" onchange="{!c.searchSrxRxOttc}" checked="{!v.isRxChecked}"/>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3">
+                                <lightning:input aura:id="SRX" type="checkbox" label="SRx" onchange="{!c.searchSrxRxOttc}" checked="{!v.isSRxChecked}" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-3">
+                                <lightning:input aura:id="OTC" type="checkbox" label="OTC" onchange="{!c.searchSrxRxOttc}" checked="{!v.isOtcChecked}" />
+                            </div>
+                        </div>
+                    </div> 
+                    <div class="slds-col slds-size_1-of-3">
+                        <div onmouseleave="{!c.onblurProDir}" aura:id="searchResPD" class="slds-form-element slds-lookup slds-is-close">
+                            <div class="slds-form-element__control">
+                                <div class="slds-input-has-icon slds-input-has-icon--right">
+                                    <div aura:id="lookup-pill-PD" class="slds-pill-container">
+                                        <div aura:id="lookupFieldPD" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                            <ui:inputText                                                                
+                                                          updateOn="keyup"
+                                                          keyup="{!c.keyPressControllerProdDir}"
+                                                          class="slds-lookup__search-input slds-input inputSize"
+                                                          value="{!v.SearchKeyWordPD}"
+                                                          placeholder="Search Product Directors here.."/>
+                                            <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                            </span>
+                                        </div> 
+                                        <aura:iteration items="{!v.lstSelectedPDRecords}" var="sr">
+                                            <lightning:pill class="slds-m-around_xx-small" label="{!sr}" name="{!sr}" onremove="{! c.clearProdDir }">
+                                            </lightning:pill>
+                                        </aura:iteration>
+                                    </div>
+                                </div>
+                            </div>
+                            <ul style="min-height:40px;margin-top:0px !important" class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds" role="listbox">
+                                <lightning:spinner class="slds-hide" variant="brand" size="small" aura:id="mySpinner"/>
+                                <center> {!v.MessagePD}</center>
+                                <aura:iteration items="{!v.listOfSearchPDRecords}" var="singleRec">
+                                    <c:ProductDirectorSearchFilterCmp oRecord="{!singleRec}"/>
+                                </aura:iteration>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <div class="slds-grid" >
+                            <div class="slds-col slds-size_9-of-12" >
+                                <div onmouseleave="{!c.onblur}" aura:id="searchRes" class="slds-form-element slds-lookup slds-is-close">
+                                    <div class="slds-form-element__control">
+                                        <div class="slds-input-has-icon slds-input-has-icon--right">
+                                            <div aura:id="lookup-pill" class="slds-pill-container">
+                                                <div aura:id="lookupField" class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"  style="width: 100%;">
+                                                    <ui:inputText 
+                                                                  updateOn="keyup"
+                                                                  keyup="{!c.keyPressController}"
+                                                                  class="slds-lookup__search-input slds-input inputSize"
+                                                                  value="{!v.SearchKeyWord}"
+                                                                  placeholder="Search Product Family here.."/>
+                                                    <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                                                        <lightning:icon iconName="utility:search" size="x-small" alternativeText="icon"/>
+                                                    </span>
+                                                </div> 
+                                                <aura:iteration items="{!v.lstSelectedRecords}" var="sr">
+                                                    <lightning:pill class="slds-m-around_xx-small" label="{!sr}" name="{!sr}" onremove="{! c.clear }">
+                                                        <aura:set attribute="media">
+                                                            <lightning:icon iconName="{!v.IconName}" size="x-small" alternativeText="icon"/>
+                                                        </aura:set>
+                                                    </lightning:pill>
+                                                </aura:iteration>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <ul style="min-height:40px;margin-top:0px !important" class="slds-listbox slds-listbox_vertical slds-dropdown slds-dropdown_fluid slds-lookup__menu slds" role="listbox">
+                                        <lightning:spinner class="slds-hide" variant="brand" size="small" aura:id="mySpinner"/>
+                                        <center> {!v.Message}</center>
+                                        <aura:iteration items="{!v.listOfSearchRecords}" var="singleRec">
+                                            <!--Child Component--> 
+                                            <c:reUsableMultiSelectLookupResult oRecord="{!singleRec}" IconName="{!v.IconName}"/>
+                                        </aura:iteration>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_3-of-12" >
+                                <div  class="slds-m-top_medium  slds-m-right_small" style="margin-top:1.6%"><lightning:button label="Search" onclick="{!c.searchProFamilyChange}" variant="brand"/></div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+                <!-- <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_11-of-12">
+                            </div>
+                            <div class="slds-col slds-size_1-of-12 slds-m-top_medium slds-m-left_small" style="margin-top:1.6%">
+                               <div  class="slds-m-top_medium s slds-m-right_small" style="margin-top:1.6%"><lightning:button label="Search" onclick="{!c.searchProFamilyChange}" variant="brand"/></div>
+                            </div>
+                        </div> -->                       
+            </lightning:accordionSection>
+        </lightning:accordion>
+        <aura:if isTrue="{!v.isSpinnerLoad}">
+            <div class="backgroundInverse">
+                <lightning:spinner alternativeText="Loading" variant="brand" />
+            </div>
+        </aura:if>
+        <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+            
+            <div aura:id="mainDiv" style="height:400px;overflow:auto;margin-top:10px;" class=" slds-m-right_small slds-m-left_small">
+                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                    <table aura:id="LineTable"  class="maintable fixedtable slds-table slds-no-row-hover  slds-table_bordered slds-table_col-bordered">
+                        <thead>
+                            <tr> 
+                                <th></th>
+                                <th class="slds-truncate slds-cell-wrap">NDC</th>
+                                <th class="slds-truncate slds-cell-wrap">SAP Number</th>
+                                <th class="slds-truncate slds-cell-wrap zindexPrd" aura:id="zvaluePrd">Product Family</th>
+                                <th class="slds-truncate slds-cell-wrap zindexPkg" aura:id="zvaluePkg">Pkg Size</th>
+                                <th class="slds-truncate slds-cell-wrap zindex" aura:id="zvalue">
+                                    Product Name
+                                </th>
+                                <!-- logic for Re-Bid functionality- starts-->
+                                <aura:if isTrue="{!v.isReBid}" >
+                                    <th class="slds-truncate slds-cell-wrap">Previous Bid</th>
+                                    <th class="slds-truncate slds-cell-wrap">Previous Bid Line Item</th>
+                                </aura:if>
+                                <!-- logic for Re-Bid functionality- ends-->
+                                
+                                <th class="slds-truncate slds-cell-wrap">Case Pack</th>
+                                <th class="slds-truncate slds-cell-wrap">MOQ</th>                                       
+                                <th class="slds-truncate slds-cell-wrap">Compare To (Brand Name)</th>
+                                <th class="slds-truncate slds-cell-wrap">Product Director</th>
+                                <th class="slds-truncate slds-cell-wrap">Orange Book Rating</th>
+                                <th class="slds-truncate slds-cell-wrap">Throughput Cost</th>
+                                <th class="slds-truncate slds-cell-wrap">WAC</th>
+                                <th class="slds-truncate slds-cell-wrap">REMS Programme</th>
+                                <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                    <th class="slds-truncate slds-cell-wrap">Current WMT Position</th>
+                                    <th class="slds-truncate slds-cell-wrap">Current MCK Position</th>
+                                </aura:if>
+                                <th class="slds-truncate slds-cell-wrap">Proposed WMT/MCK Position</th>
+                                <!-- <th class="slds-truncate slds-cell-wrap">Proposed MCK Position</th>-->
+                                <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                    <aura:if isTrue="{!and(v.BidTypeVal !='Price Change',v.BidTypeVal !='Customer Rebate Change')}">
+                                        <th class="slds-truncate slds-cell-wrap">New Opportunities Bidding</th>
+                                        <th class="slds-truncate slds-cell-wrap">New Opportunities Value</th>
+                                    </aura:if>
+                                    
+                                    <th class="slds-truncate slds-cell-wrap">Last 12 Months OS And RAD Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">Last 12 Months WMT Direct Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">Last 12 Months WMT Indirect Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">Last 12 Months Total Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">3 Months Annualized OS And RAD Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">3 Months Annualized WMT Direct Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">3 Months Annualized WMT Indirect Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">3 Months Annualized Total Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">Override OS And RAD Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">Override WMT Direct Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">Override WMT Indirect Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">Override Total Units</th>
+                                </aura:if>
+                                <aura:if isTrue="{!or(or(v.BidTypeVal =='RFP Bids',v.BidTypeVal =='New Product Launch'),or(v.BidTypeVal =='Product Addition',v.BidTypeVal =='Volume Review Only'))}">  
+                                    <aura:if isTrue="{!or(or(v.BidTypeVal =='RFP Bids',v.BidTypeVal =='Volume Review Only'),v.BidTypeVal =='Product Addition')}">
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed OS Units(Current + Increment)</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed RAD Units(Current + Increment)</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed WMT Units(Current + Increment)</th> 
+                                        <aura:set attribute="else">
+                                            <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed OS Units</th>
+                                            <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed RAD Units</th>
+                                            <th class="slds-truncate slds-cell-wrap" style="background-color:#e6ccff !important;">Proposed WMT Units</th>
+                                        </aura:set>
+                                    </aura:if>          
+                                    <th class="slds-truncate slds-cell-wrap">Total Proposed Units</th>
+                                    <!--<aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                            <th class="slds-truncate slds-cell-wrap">SCM Approved OS Units</th>
+                                            <th class="slds-truncate slds-cell-wrap">SCM Approved RAD Units</th>
+                                            <th class="slds-truncate slds-cell-wrap">SCM Approved  WMT Units</th>
+                                     </aura:if>-->
+                                </aura:if>
+                                <aura:if isTrue="{!and(v.BidTypeVal !='New Product Launch',v.BidTypeVal !='Price Change')}">
+                                    <th class="slds-truncate slds-cell-wrap">Total SCM Approved Qty</th>
+                                </aura:if>
+                                <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                    <th class="slds-truncate slds-cell-wrap">OS And RAD CP</th>
+                                    <th class="slds-truncate slds-cell-wrap">WMT Direct CP</th> 
+                                    <th class="slds-truncate slds-cell-wrap">WMT Indirect CP</th> 
+                                    <th class="slds-truncate slds-cell-wrap">OS And RAD PUR</th> 
+                                    <th class="slds-truncate slds-cell-wrap">WMT Direct PUR</th>
+                                    <th class="slds-truncate slds-cell-wrap">WMT Indirect PUR</th>
+                                    <th class="slds-truncate slds-cell-wrap">OS And RAD NCP</th>
+                                    <th class="slds-truncate slds-cell-wrap">WMT Direct NCP</th>
+                                    <th class="slds-truncate slds-cell-wrap">WMT Indirect NCP</th>
+                                    <th class="slds-truncate slds-cell-wrap">Current Customer Dead Net</th>
+                                    <th class="slds-truncate slds-cell-wrap">Current McK OS Dead Net</th>
+                                    <th class="slds-truncate slds-cell-wrap">Current WMT Direct Dead Net</th>
+                                    <th class="slds-truncate slds-cell-wrap">Current WMT Indirect Dead Net</th>
+                                    
+                                    <th class="slds-truncate slds-cell-wrap">Current Mac &amp; OS Net Sales</th>
+                                    <th class="slds-truncate slds-cell-wrap">Current WMT Direct Net Sales</th>
+                                    <th class="slds-truncate slds-cell-wrap">Current WMT Indirect Net Sales</th>
+                                </aura:if>
+                                <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal  !='Sales Out Rebate')}">
+                                    <th class="slds-truncate slds-cell-wrap">Customer Guidance</th>
+                                    <th class="slds-truncate slds-cell-wrap">Proposed Sales NCP for McK OS And RAD</th>
+                                    <th class="slds-truncate slds-cell-wrap">Sales Proposed NCP WMT</th>
+                                    <aura:if isTrue="{!v.BidTypeVal =='New Product Launch'}">
+                                        <!--  <th class="slds-truncate slds-cell-wrap">Current Supplier for MCK OS &amp; RAD</th>
+                                                <th class="slds-truncate slds-cell-wrap">Current Supplier for WMT</th>-->
+                                        <th class="slds-truncate slds-cell-wrap">Brand WAC</th>
+                                        <th class="slds-truncate slds-cell-wrap">% Brand WAC for MCK OS &amp; RAD</th>
+                                        <th class="slds-truncate slds-cell-wrap">% Brand WAC for WMT</th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">Proposed NCP for McK OS And RAD (Marketing)</th>
+                                    <th class="slds-truncate slds-cell-wrap">Proposed NCP for WMT Direct (Marketing)</th>
+                                    <th class="slds-truncate slds-cell-wrap">Proposed NCP for WMT Indirect (Marketing)</th>
+                                    <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                        <th class="slds-truncate slds-cell-wrap">% Reduction in NCP McK And RAD</th>
+                                        <th class="slds-truncate slds-cell-wrap">% Reduction in NCP WMT</th>
+                                    </aura:if>
+                                </aura:if>
+                                
+                                <aura:if isTrue="{!v.BidTypeVal =='Customer Rebate Change'}">
+                                    <th class="slds-truncate slds-cell-wrap">Proposed Rebate %</th> 
+                                </aura:if> 
+                                
+                                <th class="slds-truncate slds-cell-wrap">Mck &amp; RAD Global Rebate</th>
+                                <th class="slds-truncate slds-cell-wrap">Mck &amp; RAD Admin Fee</th>
+                                <th class="slds-truncate slds-cell-wrap">Mck &amp; RAD Cash terms</th>
+                                <th class="slds-truncate slds-cell-wrap">Mck &amp; RAD RDC</th>
+                                <th class="slds-truncate slds-cell-wrap">Customer Dead net McK And RAD (Proposed)</th>
+                                <th class="slds-truncate slds-cell-wrap">Mck &amp; RAD Data Fee</th>
+                                <th class="slds-truncate slds-cell-wrap">McK &amp; RAD Dead Net</th>
+                                <th class="slds-truncate slds-cell-wrap">McK &amp; RAD TPT $</th>
+                                <th class="slds-truncate slds-cell-wrap">McK &amp; RAD TPT %</th>
+                                <aura:if isTrue="{!or(v.BidTypeVal =='RFP Bids',or(v.BidTypeVal =='Product Addition',v.BidTypeVal =='New Product Launch'))}">
+                                    <th class="slds-truncate slds-cell-wrap">McK &amp; RAD Stocking Allowance Per Unit</th>
+                                    <th class="slds-truncate slds-cell-wrap">McK &amp; RAD Stocking Allowance Overall Amount</th>
+                                </aura:if>
+                                <th class="slds-truncate slds-cell-wrap">Medicaid &amp; Returns  Per Unit</th>
+                                <th class="slds-truncate slds-cell-wrap">McK And RAD Net Sales</th>
+                                <th class="slds-truncate slds-cell-wrap">McK And RAD TPT $</th>
+                                <th class="slds-truncate slds-cell-wrap">McK And RAD TPT % Margin</th>
+                                <aura:if isTrue="{!v.BidTypeVal =='New Product Launch'}">
+                                    <th class="slds-truncate slds-cell-wrap">Opening Order for MCK OS &amp; RAD</th>
+                                    <th class="slds-truncate slds-cell-wrap">Opening Order Net Sales for MCK OS &amp; RAD</th>
+                                    <th class="slds-truncate slds-cell-wrap">Opening Order TPT $ for MCK OS &amp; RAD </th>
+                                    <th class="slds-truncate slds-cell-wrap">Opening Order TPT % for MCK OS &amp; RAD</th>
+                                </aura:if>
+                                <th class="slds-truncate slds-cell-wrap">WMT Direct Invoice Allowance</th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Direct Cash Terms</th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Direct Admin Fee </th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Direct Dead Net</th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Direct TPT %</th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Indirect Admin Fee </th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Indirect CD </th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Indirect RDC</th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Indirect CM Fees</th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Indirect Dead Net</th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Indirect TPT $ Per Unit</th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Indirect TPT %</th>
+                                <th class="slds-truncate slds-cell-wrap">TPT % Margin</th>
+                                <aura:if isTrue="{!or(v.BidTypeVal =='RFP Bids',or(v.BidTypeVal =='Product Addition',v.BidTypeVal =='New Product Launch'))}">
+                                    <th class="slds-truncate slds-cell-wrap">WMT Stocking Allowance Per Unit</th>
+                                    <th class="slds-truncate slds-cell-wrap">WMT Stocking Allowance Overall Amount</th>
+                                </aura:if>
+                                <th class="slds-truncate slds-cell-wrap">WMT Direct Net Sales</th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Direct TPT $</th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Direct TPT % Margin</th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Indirect Net Sales</th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Indirect TPT $</th>
+                                <th class="slds-truncate slds-cell-wrap">WMT Indirect TPT % Margin</th>
+                                <th class="slds-truncate slds-cell-wrap">Total WMT Net Sales</th>
+                                <th class="s	lds-truncate slds-cell-wrap">Total WMT TPT $</th>
+                                <th class="slds-truncate slds-cell-wrap">Total WMT TPT %</th>
+                                <aura:if isTrue="{!v.BidTypeVal =='New Product Launch'}">
+                                    <th class="slds-truncate slds-cell-wrap">Opening Order for WMT</th>
+                                    <th class="slds-truncate slds-cell-wrap">Opening Order Net Sales for WMT</th>
+                                    <th class="slds-truncate slds-cell-wrap">Opening Order TPT $ for WMT</th>
+                                    <th class="slds-truncate slds-cell-wrap">Opening Order TPT % for WMT</th>
+                                </aura:if>
+                                <th class="slds-truncate slds-cell-wrap">Total Net Sales (Combined)</th>
+                                <th class="slds-truncate slds-cell-wrap">TP $</th>
+                                <th class="slds-truncate slds-cell-wrap">TP%</th>
+                                
+                                <th class="slds-truncate slds-cell-wrap">Budgeted ASP</th>
+                                <th class="slds-truncate slds-cell-wrap">% to Budgeted ASP</th>
+                                <th class="slds-truncate slds-cell-wrap">Latest Estimate ASP</th>
+                                <th class="slds-truncate slds-cell-wrap">% to Latest Estimate ASP</th>
+                                <th class="slds-truncate slds-cell-wrap">Lowest Price SKU</th>
+                                <th class="slds-truncate slds-cell-wrap">Approved Lowest Price /SKU</th>
+                                <th class="slds-truncate slds-cell-wrap">Sales Notes</th>
+                                <aura:if isTrue="{!and(v.BidTypeVal !='New Product Launch',v.BidTypeVal !='Price Change')}">
+                                    <th class="slds-truncate slds-cell-wrap">Initial Stocking Order Volume</th>
+                                    <th class="slds-truncate slds-cell-wrap">Initial Stocking Order Comments</th>
+                                    <aura:if isTrue="{!and(and(v.BidTypeVal!='Price Change',v.BidTypeVal!='New Product Launch'),and(v.BidTypeVal!='Sales Out Rebate',v.BidTypeVal!='Customer Rebate Change'))}">
+                                        <th class="slds-truncate slds-cell-wrap">Estimated Lead Time</th>
+                                        <th class="slds-truncate slds-cell-wrap">SCM Approval (Y/N)</th>
+                                        <th class="slds-truncate slds-cell-wrap">SCM Rejection Reason</th>
+                                        <th class="slds-truncate slds-cell-wrap">Revisit Date</th>
+                                        <th class="slds-truncate slds-cell-wrap">SCM Comments</th>
+                                    </aura:if>
+                                </aura:if>
+                                <aura:if isTrue="{!v.BidTypeVal =='New Product Launch'}">
+                                    <th class="slds-truncate slds-cell-wrap">Opening Order Comments</th>
+                                </aura:if>
+                                <aura:if isTrue="{!v.BidTypeVal !='Volume Review Only'}">
+                                    <th class="slds-truncate slds-cell-wrap">Marketing Approval</th>
+                                </aura:if>
+                                <th class="slds-truncate slds-cell-wrap">Marketing Notes</th>
+                                <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='Sales Out Rebate')}">
+                                    <th class="slds-truncate slds-cell-wrap">Marketing Lead Rx</th>
+                                    <th class="slds-truncate slds-cell-wrap">Marketing Lead SRx</th>
+                                    <th class="slds-truncate slds-cell-wrap">Marketing Lead OTC</th>
+                                    <th class="slds-truncate slds-cell-wrap">Marketing Lead Comments</th>
+                                    <th class="slds-truncate slds-cell-wrap">Marketing Head Approval</th>
+                                    <th class="slds-truncate slds-cell-wrap">Marketing Head Comments</th>
+                                </aura:if>
+                                <aura:if isTrue="{!v.BidTypeVal !='Volume Review Only'}">
+                                    <th class="slds-truncate slds-cell-wrap">Finance Approval</th>
+                                    <th class="slds-truncate slds-cell-wrap">Finance Comments</th>
+                                </aura:if>
+                                <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='Sales Out Rebate')}">
+                                    <th class="slds-truncate slds-cell-wrap">Sr Director / VP Finance Approval</th>
+                                    <th class="slds-truncate slds-cell-wrap">Sr Director / VP Finance Comments</th>
+                                </aura:if>
+                                <th class="slds-truncate slds-cell-wrap">Contract Status</th>
+                                <th class="slds-truncate slds-cell-wrap">Contract Comments</th>
+                                <th class="slds-truncate slds-cell-wrap">Bid Status</th>
+                                <th class="slds-truncate slds-cell-wrap">Customer Decline Reasons</th>
+                                <th class="slds-truncate slds-cell-wrap">WAC Check</th>
+                                <aura:if isTrue="{!or(v.BidTypeVal =='RFP Bids',or(v.BidTypeVal =='Product Addition',v.BidTypeVal =='New Product Launch'))}">
+                                    <th class="slds-truncate slds-cell-wrap">IOD Qty (Rounded To MOQ)</th>
+                                </aura:if>	
+                                
+                                
+                                
+                                <th class="slds-truncate slds-cell-wrap">Customer Comments</th>
+                                
+                                
+                                <!--Analytics Components related Icons END-->
+                            </tr>
+                            
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.BidLineItemListAll}" var="biltem" indexVar="sNo">
+                                <!-- Child Lightning Component -->
+                                <c:ClarusOneRejectedTabChild tableRef="{!v.tableRef}" bidRecordParent="{!v.bidRecord}" CurOSRADUnitsTotal="{!v.CurOSRADUnitsTotal}" CurWMTDirUnitTotal="{!v.CurWMTDirUnitTotal}" CurWMTIndUnitTotal="{!v.CurWMTIndUnitTotal}" intDeadNetTotal="{!v.intDeadNetTotal}"
+                                                             ORCurOSRADUnitsTotal="{!v.ORCurOSRADUnitsTotal}" ORCurWMTDirUnitTotal="{!v.ORCurWMTDirUnitTotal}" ORCurWMTIndUnitTotal="{!v.ORCurWMTIndUnitTotal}"
+                                                             PropOSUnitTotal="{!v.PropOSUnitTotal}" PropRADUnitTotal="{!v.PropRADUnitTotal}" PropWMTUnitTotal="{!v.PropWMTUnitTotal}" WMTDirectNetSales= "{!v.WMTDirectNetSales}" MacandRADNetSales="{!v.MacandRADNetSales}"
+                                                             ItemsLength="{!v.ItemsLength}"  PDSUTotal="{!v.PDSUTotal}"  proNetSaleDir="{!v.proNetSaleDir}" WMTindirectNetSales="{!v.WMTindirectNetSales}"
+                                                             MckRadTPT="{!v.MckRadTPT}" WMTDirTPT="{!v.WMTDirTPT}" WMTIndirTPT="{!v.WMTIndirTPT}" totalNetSalesCom="{!v.totalNetSalesCom}" totalTPTDollar="{!v.totalTPTDollar}" totalWMTNetSales="{!v.totalWMTNetSales}" totalWMTTPT="{!v.totalWMTTPT}"
+                                                             scmOSUnits="{!v.scmOSUnits}"
+                                                             scmRADUnits="{!v.scmRADUnits}"
+                                                             scmWMTUnits="{!v.scmWMTUnits}"
+                                                             scmQty="{v.scmQty}"
+                                                             twlveMonRAADSales="{!v.twlveMonRAADSales}"
+                                                             twlveMonWMTIndiSales="{!v.twlveMonWMTIndiSales}"
+                                                             twlveMonWMTDIiSales="{!v.twlveMonWMTDIiSales}"
+                                                             CurMckNetSales="{!v.CurMckNetSales}"
+                                                             CurWMTDirNetSales="{!v.CurWMTDirNetSales}"
+                                                             CurWMTIndirNetSales="{!v.CurWMTIndirNetSales}"
+                                                             customerId="{!v.customerId}"
+                                                             MckStokingOvrAmt="{!v.MckStokingOvrAmt}"
+                                                             WMTStokingOvrAmt="{!v.WMTStokingOvrAmt}"
+                                                             proNetSaleInd="{!v.proNetSaleInd}" proTPTDir="{!v.proTPTDir}" proTPTInd="{!v.proTPTInd}" isContractsApprovePerson="{!v.isContractsApprovePerson}" isMarketingApprovePerson="{!v.isMarketingApprovePerson}" proTPTPerDir="{!v.proTPTPerDir}" proTPTPerIndir="{!v.proTPTPerIndir}" BlendedTPMargin="{!v.BlendedTPMargin}" loggedInUserName="{!v.loggedInUserName}" BidAprrovalStatus="{!v.BidAprrovalStatus}" bidType="{!v.BidTypeVal}" templateType="{!v.templateType}" isSpecificCust="{!v.isSpecificCustomer}" singleRec="{!biltem}" showSaveCancelBtn="{!v.showSaveCancelBtn}" sNo="{!sNo + 1}" lineItemId="{!biltem.Id}" isReBid="{!v.isReBid}" recordId="{!v.recordId}"/>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </div> 
+            </div>
+            <br/>
+            <aura:set attribute="else">
+                <lightning:card >
+                    <center>
+                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                            <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                            </span>
+                            <h2>There are no line items for this bid</h2>
+                        </div>
+                    </center>
+                </lightning:card>
+            </aura:set>
+        </aura:if>
+        
+    </lightning:card> 
+    
+    
+</aura:component>

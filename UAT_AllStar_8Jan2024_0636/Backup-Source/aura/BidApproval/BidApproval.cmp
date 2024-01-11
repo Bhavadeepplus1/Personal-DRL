@@ -1,0 +1,266 @@
+<!--
+  @description       : 
+  @author            : Surender Patel (Dhruvsoft)
+  @group             : 
+  @last modified on  : 29-05-2021
+  @last modified by  : Surender Patel (Dhruvsoft)
+  Modifications Log 
+  Ver   Date         Author                       Modification
+  1.0   29-05-2021   Surender Patel (Dhruvsoft)   Initial Version
+-->
+<aura:component controller="BidApprovalController"
+                implements="force:lightningQuickAction,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId"
+                access="global">
+    
+    <aura:attribute name="model" type="Object" description="used to store model structure" />
+    <aura:attribute name="usersList" type="List" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="status" type="String" description="used to show the approval status." />
+    <aura:attribute name="lastActivityTime" type="string"  />
+    <aura:attribute name="showApproversForTeam" type="string"  />
+    <aura:attribute name="lastActivityTime2" type="string"  />
+    <aura:attribute name="userId" type="string"  />
+    <aura:attribute name="approverTeam" type="string"  />
+    <aura:attribute name="approverTeamMembers" type="string"  />
+    <aura:attribute name="teamApprovers" type="string"  />
+    <aura:attribute name="inProcessUsersList" type="List"  />
+    <aura:attribute name="lastloginHoverMsg" type="string"  />
+    <aura:attribute name="finalHoveMsg" type="string"  />
+    <div class="slds-box slds-theme_default slds-m-top_small">
+        <aura:iteration items="{!v.model.stepNames}" var="item">
+            <img src="{!$Resource.ApprovalStages + '/'+item+'.png'}" />
+        </aura:iteration>
+        
+        <br />
+        Approval Status : {!v.model.bid.Phoenix_Approval_Status__c}
+        <div class="slds-section slds-is-open" aura:id="bidApprovalSection">
+            <!--section header-->
+            <h3 class="slds-section__title">
+                <button aria-controls="bidApprovalId" class="slds-button slds-section__title-action">
+                    <span onclick="{!c.toggleSection}" data-auraId="bidApprovalSection">
+                        <lightning:icon iconName="utility:switch" alternativeText="button icon" size="x-small"
+                                        class="slds-section__title-action-icon slds-button__icon_left" />
+                    </span>
+                    <span class="slds-truncate" title="Bid Approvals">Approvals</span>
+                </button>
+            </h3>
+            <!--section body-->
+            <div class="slds-section__content" id="bidApprovalId">
+                <div>
+                    <!--class="table table-bordered table-striped table-responsive-stack"-->
+                    <!--slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped slds-no-row-hover-->
+                    
+                    <table
+                           class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped slds-no-row-hover slds-max-medium-table--stacked-horizontal">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th class="" scope="col">
+                                    <div class="slds-truncate" title="Step">S.No</div>
+                                </th>
+                                <th class="" scope="col">
+                                    <div class="slds-truncate" title="Step Name">Step Name</div>
+                                </th>
+                                <th class="" scope="col">
+                                    <div class="slds-truncate" title="Approver">Approver</div>
+                                </th>
+                                <!--<th class="" scope="col">
+                                </th>-->
+                                <th class="" scope="col">
+                                    <div class="slds-truncate" title="Stage">Status</div>
+                                </th>
+                                <th class="" scope="col">
+                                    <div class="slds-truncate" title="Stage">Status Indicator</div>
+                                </th>
+                                <th class="" scope="col">
+                                    <div class="slds-truncate" title="Approver Team">Approver Team</div>
+                                </th>
+                                <th class="" scope="col">
+                                    <div class="slds-truncate" title="Approval Sent Time">Approval Sent Time</div>
+                                </th>
+                                <th class="" scope="col">
+                                    <div class="slds-truncate" title="Approval Completed Time">Approval Completed Time
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.model.bidProcessSteps}" var="item" indexVar="i">
+                                <tr class="slds-hint-parent">
+                                    <td class="slds-cell-wrap">{!i}</td>
+                                    <td class="slds-cell-wrap">{!item.bStep.Phoenix_Process_Step__r.Name}</td>
+                                    <td class="slds-cell-wrap">
+                                        
+                                        <aura:if isTrue="{!and(item.bStep.Phoenix_Approver__r.Name == null , item.bStep.Phoenix_Approver_Team__c != null)}">
+                                            {!item.bStep.Phoenix_Approver_Team__c} Team
+                                            <aura:set attribute="else">                                                   
+                                                <aura:if isTrue="{!item.delegationStatus == 'Active'}">
+                                                    <aura:if  isTrue="{!and(and(item.bStep.Phoenix_Process_Step__r.Name != 'Finance Approval',item.bStep.Phoenix_Process_Step__r.Name != 'Vistex Update'),and(item.bStep.Phoenix_Process_Step__r.Name != 'Contract Team\'s Action',item.bStep.Phoenix_Process_Step__r.Name != 'Customer\'s Update'))}">    
+                                                        <aura:if  isTrue="{!item.delegationStatus == 'Active'}">
+                                                            <span><lightning:icon  class="amber" iconName="utility:record" title="{!'Delegation of Authority To: '+item.delegationUser}" size="xx-small" alternativeText="icon"/></span>
+                                                        </aura:if>
+                                                    </aura:if>
+                                                    {!item.bStep.Phoenix_Approver__r.Name}  &nbsp;
+                                                    <span>
+                                                        <!--<lightning:icon iconName="utility:routing_offline" size="x-small" alternativeText="icon"/>-->
+                                                    </span>
+                                                    <aura:set attribute="else">
+                                                        <!--<aura:if  isTrue="{!or(item.bStep.Phoenix_Process_Step__r.Name == 'Marketing Approval',or(item.bStep.Phoenix_Process_Step__r.Name == 'Supply Chain Approval',item.bStep.Phoenix_Process_Step__r.Name == 'Initial Submission'))}">-->
+                                                        <aura:if  isTrue="{!and(and(item.bStep.Phoenix_Process_Step__r.Name != 'Finance Approval',item.bStep.Phoenix_Process_Step__r.Name != 'Vistex Update'),and(item.bStep.Phoenix_Process_Step__r.Name != 'Contract Team\'s Action',item.bStep.Phoenix_Process_Step__r.Name != 'Customer\'s Update'))}">    
+                                                            <aura:if  isTrue="{!item.status}">
+                                                                <span><lightning:icon  class="green" iconName="utility:record" title="Online" size="xx-small" alternativeText="icon"/></span>
+                                                                <aura:set attribute="else">
+                                                                    <span data-value="{!item.bStep.Phoenix_Approver__r.Name}" onmouseover="{!c.showLastLoggedIn}">
+                                                                        <aura:if  isTrue="{!item.bStep.Phoenix_Process_Step__r.Name != 'Closed'}">
+                                                                            <lightning:icon  iconName="utility:record" title="{!v.finalHoveMsg}" size="xx-small" alternativeText="icon"/>
+                                                                        </aura:if></span>
+                                                                    
+                                                                </aura:set>
+                                                            </aura:if>
+                                                        </aura:if>
+                                                        {!item.bStep.Phoenix_Approver__r.Name}
+                                                        
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                    </td>
+                                    <!--  <td onmouseover="{!c.getstatusforTeamMem}" data-value= "{!item.bStep.Phoenix_Approver_Team_Members__c}">
+                                        <aura:if  isTrue = "{!item.bStep.Phoenix_Approver_Team_Members__c != null}">
+                                             <aura:if  isTrue="{!item.authTeamStatus}">
+                                                    <b><lightning:icon class="green"  id ="result" iconName="utility:light_bulb" title="{!v.teamApprovers}" size="x-small" alternativeText="icon"/></b>
+                                                    <aura:set attribute="else">
+                                                        <b><lightning:icon  iconName="utility:light_bulb" title="Offline" size="x-small" alternativeText="icon"/></b>
+                                                        
+                                                    </aura:set>
+                                                    
+                                                </aura:if>
+                                            <aura:set attribute="else">
+                                                <aura:if  isTrue="{!item.status}">
+                                                    <b><lightning:icon class="green" iconName="utility:light_bulb" title="Online" size="x-small" alternativeText="icon"/></b>
+                                                    <aura:set attribute="else">
+                                                        <b><lightning:icon iconName="utility:light_bulb" title="Offline" size="x-small" alternativeText="icon"/></b>
+                                                        
+                                                    </aura:set>
+                                                    
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                        </td>-->
+                                    <td class="slds-cell-wrap">{!item.bStep.Phoenix_Status__c}</td>
+                                    <aura:if
+                                             isTrue="{!item.bStep.Phoenix_Status__c == 'In Process'}">
+                                        <!-- -->
+                                        <aura:if isTrue="{!item.bStep.Phoenix_Process_Step__r.Name == 'Customer\'s Update'}">
+                                            <td data-value= "{!item.bStep.Phoenix_Approver__r.Name}" onmouseover="{!c.mouseOveronTeamCustomer}"> 
+                                                <lightning:inputField aura:id ="test" class = "slds-hide"  value= "{!item.bStep.Phoenix_Approver__r.Name}"/>
+                                                <img  title="{!v.lastActivityTime2}"
+                                                     src="{!$Resource.ApprovalStageIndicators  + '/'+item.bStepStageIndicator+'.png'}" />
+                                            </td>
+                                        </aura:if>
+                                        <aura:if isTrue="{!item.bStep.Phoenix_Process_Step__r.Name != 'Customer\'s Update'}">
+                                            <td data-value= "{!item.bStep.Phoenix_Approver__r.Name}" onmouseover="{!c.mouseOveronTeam}"> 
+                                                <lightning:inputField aura:id ="test" class = "slds-hide"  value= "{!item.bStep.Phoenix_Approver__r.Name}"/>
+                                                <img  title="{!v.showApproversForTeam}"
+                                                     src="{!$Resource.ApprovalStageIndicators  + '/'+item.bStepStageIndicator+'.png'}" />
+                                            </td>
+                                        </aura:if>
+                                        <aura:set attribute="else">
+                                            <td><img 
+                                                     src="{!$Resource.ApprovalStageIndicators  + '/'+item.bStepStageIndicator+'.png'}" />
+                                            </td>
+                                        </aura:set>
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(v.model.bid.Phoenix_Bid_Type__c == 'Platform OTB',item.bStep.Phoenix_Process_Step__r.Name == 'Marketing Approval')}">
+                                        <td class="slds-cell-wrap"><span style="font-weight:bold;color:red;">On Behalf of&nbsp;</span>{!item.bStep.Phoenix_Approver_Team_Members__c}</td>
+                                        <aura:set attribute="else">
+                                            <!--<aura:if
+                                                     isTrue="{!and(item.bStep.Phoenix_Approver_Team_Members__c != null,item.bStep.Phoenix_Status__c == 'In Process')}">-->
+                                            <!--onmouseover="{!c.mouseOveronTeam}" title="{!v.lastActivityTime2}"-->
+                                            <!--<td  class="slds-cell-wrap" >{!item.bStep.Phoenix_Approver_Team_Members__c}</td>-->
+                                            <!--<aura:if
+                                                          isTrue="{!and(and(item.bStep.Phoenix_Approver_Team_Members__c != null,item.bStep.Phoenix_Status__c == 'In Process'),item.bStep.Phoenix_Step__c == 'Customer'/'s Update')}">
+                                                <td onmouseover="{!c.mouseOveronTeamCustomer}" class="slds-cell-wrap" title="{!v.lastActivityTime2}">{!item.bStep.Phoenix_Approver_Team_Members__c}</td>
+                                                   
+                                                </aura:if>-->
+                                            <td>
+                                                <aura:iteration items="{!item.finalauthTeamList}" var="itemValue">
+                                                    <!--ll=={!lessthan(itemValue.Last_logout__c,itemValue.LastLoginDate)}-->
+                                                    <aura:if isTrue="{!itemValue.Delegator_Status__c == 'Active'}">
+                                                        <span><lightning:icon  class="amber" iconName="utility:record" title="{!'Delegation of Authority To: '+itemValue.Phoenix_Delegated_Approver__r.Name}" size="xx-small" alternativeText="icon"/></span>
+                                                        <aura:set attribute="else">
+                                                            <aura:if isTrue="{!lessthan(itemValue.Last_logout__c,itemValue.LastLoginDate)}">
+                                                                <b><lightning:icon class="green" iconName="utility:record" title="Online" size="xx-small" alternativeText="icon"/></b>
+                                                                <aura:set attribute="else">
+                                                                    <span data-value="{!itemValue.Name}" onmouseover="{!c.showLastLoggedIn}"><lightning:icon  iconName="utility:record" title="{!v.finalHoveMsg}" size="xx-small" alternativeText="icon"/></span>
+                                                                    
+                                                                </aura:set>
+                                                            </aura:if>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                    {!itemValue.Name}&nbsp;
+                                                </aura:iteration>
+                                                <!--{!item.bStep.Phoenix_Approver_Team_Members__c}--></td>
+                                        </aura:set>
+                                    </aura:if>
+                                    <td class="slds-cell-wrap">{!item.bStep.Phoenix_Approval_Sent_Time_String__c}</td>
+                                    <td class="slds-cell-wrap">{!item.bStep.Phoenix_Approval_Completed_Time_String__c}
+                                    </td>
+                                </tr>
+                                
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </div>
+                <!--   <table border="0" >
+                    <tr>
+                        <th>
+                            Step
+                        </th>
+                        <th>
+                            Step Name
+                        </th>
+                        <th >
+                            Approver
+                        </th>
+                        <th>
+                            Status
+                        </th>
+                        
+                        <th>
+                            Approver Team
+                        </th>
+                        <th>
+                            Approval Sent Time
+                        </th >
+                        <th>
+                            Approval Completed Time
+                        </th>
+                    </tr>
+                    <aura:iteration items="{!v.model.bidProcessSteps}" var="item">    
+                            
+                            <tr>
+                                <td>{!item.Phoenix_Step__c}</td>
+                                <td>{!item.Phoenix_Process_Step__r.Name}</td>
+                                <td>
+                                    
+                                    <aura:if isTrue="{!and(item.Phoenix_Approver__r.Name == null , item.Phoenix_Approver_Team__c != null)}">
+                                         {!item.Phoenix_Approver_Team__c} Team
+                                        <aura:set attribute="else">
+                                          {!item.Phoenix_Approver__r.Name}
+                                        </aura:set>
+                                        
+                                    </aura:if>
+                                </td>
+                                <td>{!item.Phoenix_Status__c}</td>
+                                <td>{!item.Phoenix_Approver_Team_Members__c}</td>
+                                <td>{!item.Phoenix_Approval_Sent_Time_String__c}</td>
+                                <td>{!item.Phoenix_Approval_Completed_Time_String__c}</td>
+                            </tr> 
+                      
+                    </aura:iteration>
+                </table>  -->
+            </div>
+        </div>
+    </div>
+    
+</aura:component>

@@ -1,0 +1,393 @@
+<aura:component controller= "Vision_DOH_ReportCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="tradeGroupList" type="object"/> 
+    <aura:attribute name="selectedId" type="String"/>  
+    <aura:attribute name="visionUpdateDate" type="string"/>
+    <aura:attribute name="pickList" type="List"/>    
+    <aura:attribute name="DoHSummaryList" type="List"/>    
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="accGroupList" type="List"/>
+    <aura:attribute name="isRxChecked" type="boolean" default="false" />
+    <aura:attribute name="isSRxChecked" type="boolean" default="false" />
+    <aura:attribute name="isOtcChecked" type="boolean" default="false" />
+    <aura:attribute name="RxSrxList" type="List"  />
+    <aura:attribute name="expand" type="boolean" default="true" />
+    <aura:attribute name="collapse" type="boolean" default="true" />
+    <aura:attribute name="loaded" type="Boolean" />
+    <aura:attribute name="isVersion" type="boolean" default="false" />
+    <aura:attribute name="isPWO" type="boolean" default="false" />
+    <aura:attribute name="show" type="boolean" default="true" />
+    <aura:attribute name="searchText" type="String"/>
+    
+    <aura:attribute name="showRecords" type="boolean" />
+    <aura:handler name="DoHEvent" event="c:Vision_DoH_Event" action="{!c.handleComponentEvent}"/>
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="isProcessed" type="Boolean"  default="true" />
+    <aura:if isTrue="{! v.loaded }">
+        
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+    </aura:if>
+      <aura:if isTrue="{! v.isProcessed }">
+    <div class="slds-card"> 
+        <aura:if isTrue="{! v.loaded }">
+            
+            <center>
+                <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                         aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                    <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                        <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                            <img src="{!$Resource.LoadingProgress}" />  
+                        </div>  
+                    </div>  
+                </section>   
+                <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+            </center>
+        </aura:if>
+        <div class="slds-grid">
+            <div class="slds-col slds-size_5-of-12 ">
+                <h2  class="slds-modal__title slds-hyphenate" style="color:#675e5e;padding-left: 10px;padding-top: 10px;">
+                    <p style="font-size:22px;text-align:left;color:black;"><b>DoH ANALYSIS</b></p> 
+                </h2>
+            </div>
+            <div class=" slds-col slds-size_2-of-12" align="right"  style="padding-top: 18px;">
+                <span style="font-weight: normal !important;"> Prism Update Date:&nbsp;<b><lightning:formattedDateTime value="{!v.tradeGroupList.Vision_GCP_Update_Date__c}"/></b></span>            </div>
+            <div class="slds-col slds-size_2-of-12" align="right" style="padding-top: 18px;padding-right: 20px;">
+                <span style="font-weight: normal !important;">VISION Update Date:&nbsp;<b><lightning:formattedDateTime value="{!v.visionUpdateDate}"/></b></span>            </div> 
+            <div class="slds-col slds-size_2-of-12" style="padding-top: 18px;text-align:right;padding-right: 10px;">
+                <b><i style="font-size:14px;font-weight:bold;">Source: IntegriChain</i></b>
+            </div>
+            <div class="slds-col slds-size_1-of-12" style="padding-top: 18px;text-align:right;padding-right: 10px;">
+                <div align="right" >
+                    <p style="color:#5224B2;cursor: pointer;">Legends&nbsp;<lightning:icon class="purpleIcon" iconName="utility:in_app_assistant" size="small" onclick="{!c.openModal}"/></p>  
+                </div>
+            </div>
+        </div>   
+       
+        <div style="padding:10px !important;">
+            <lightning:layout  multipleRows="true" >
+                <aura:iteration items="{!v.pickList}" var="picklist">
+                    <lightning:layoutItem size="3" >
+                        <div class="paddingRadio" style="padding-top: 5px;padding-bottom: 5px;">
+                            <span class="{!picklist.isSelected ? 'slds-badge slds-theme_success badgeFontClass' : 'slds-badge slds-badge_lightest'}"
+                                  
+                                  data-id="{!picklist.userId}" 
+                                  onclick="{!c.onSelectUser}"
+                                  style="cursor:pointer;padding-top: 5px;padding-bottom: 5px;">
+                                
+                                <lightning:icon class="{!picklist.isSelected ? 'showGreen' : ''}" iconName="utility:routing_offline" size="x-small"/>&nbsp;&nbsp;{!picklist.userId}
+                                
+                                
+                            </span>
+                        </div>
+                    </lightning:layoutItem>
+                </aura:iteration>
+            </lightning:layout>
+            <div class="slds-grid">
+                <div class="slds-col slds-size_6-of-12">
+                    <div class="slds-m-top_large" style="padding-top: 5px;padding-bottom: 5px;padding-left: 10px;">
+                        <span style=";"><b>Product Type:</b></span>
+                        <div class="slds-grid">
+                            <div class="slds-col slds-size_1-of-8" style="color:black;padding-top:5px;font-size:14px;"><b><lightning:input aura:id="" type="toggle" label="Rx"  onchange="{!c.searchSrxRxOttc}" checked="{!v.isRxChecked}" title="To view only Rx Products" messageToggleActive="" messageToggleInactive=""/></b></div>
+                            <div class="slds-col slds-size_1-of-8" style="color:black;padding-top:5px;font-size:14px;"><b><lightning:input aura:id="" type="toggle" label="SRx"  onchange="{!c.searchSrxRxOttc}" checked="{!v.isSRxChecked}" title="To view only SRx Products" messageToggleActive="" messageToggleInactive=""/></b></div>
+                            <div class="slds-col slds-size_1-of-8" style="color:black;padding-top:5px;font-size:14px;"><b><lightning:input aura:id="" type="toggle" label="OTC" onchange="{!c.searchSrxRxOttc}" checked="{!v.isOtcChecked}" title="To view only OTC Products" messageToggleActive="" messageToggleInactive=""/></b></div>   
+                            <div class="slds-col slds-size_4-of-8" style="padding-bottom: 10px;padding-left:12px;text-align:left;">
+                                <span onkeypress="{}" >
+                                    <lightning:input value="{!v.searchText}" type="search"
+                                                     variant="label-hidden" placeholder="Search by Product Name and NDC"
+                                                     aura:id="SearchBox" label="Trade Name" 
+                                                     /></span>   
+                            </div>
+                            <div class="slds-col slds-size_1-of-8" style="padding-bottom: 10px;padding-left:12px;text-align:left;">
+                                <lightning:button label="Search" title="Neutral action" onclick="{! c.onsearch }"/>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
+                </div>
+                <div class=" slds-col slds-size_2-of-12"></div>
+                
+                
+            </div>
+            
+            <div aura:id="mainDiv" style="max-height:430px;overflow:auto;margin-top:10px;border-radius: 1rem;border: 1px solid #cfcfcf;">
+                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                    <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered slds-table--header-fixed">
+                        
+                        <tbody>
+                            <aura:if isTrue="{!v.DoHSummaryList.length == 0 }">
+                                <lightning:card >
+                                    <center>
+                                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;background-color:#257CFF;">
+                                            <span class="slds-icon_container slds-m-right_x-small">
+                                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                            </span>
+                                            <h2>No Records to Display </h2>
+                                        </div>
+                                    </center>
+                                </lightning:card>
+                                <aura:set attribute="else"> 
+                                    <tr id="styleids" style="font-weight: bold; background-color: #F3F3F3;text-align:center;"> 
+                                        <th class="headerOfTable custColumn1" colspan="12" style="padding: 4px 8px;background-color:#257CFF;color:white;">
+                                            
+                                            <b>{!v.selectedId} - (No of SKU's - {!v.DoHSummaryList.length})</b>
+                                        </th>
+                                        <th class="headerOfTable custColumn2" colspan="22" style="padding: 4px 8px;background-color:#257CFF;color:white;">
+                                        </th>
+                                    </tr>
+                                    <aura:if isTrue="{!v.showRecords}">
+                                        
+                                        <tr class=" styleids customTable">  
+                                            <th scope="col" rowspan="2" class="dohColumn TopSticky" style="color:white;background-color: #FEB343;text-align:center;width:44.69px fixed;padding-right:14px;padding-left:20px"><b>DoH</b></th>                                                        
+                                            <!-- <th scope="col" rowspan="2" class="qtySoldColumn TopSticky" style="color:white;background-color: #FEB343 ;text-align:center;"><b>Qty Sold</b></th> -->
+                                            <th scope="col" rowspan="2"  class="avgColumn TopSticky" style="color:white;background-color: #FEB343 ;text-align:center;"><b>Avg Sales</b></th>
+                                            <th scope="col" rowspan="2"  class="distributionColumn TopSticky" style="color:white;background-color: #FEB343 ;text-align:center;"><b>Distribution Centers</b></th>
+                                            <th scope="col" colspan="4" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W1_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W1_Day__c}" day="2-digit"/></b></th>
+                                            <th scope="col" colspan="4" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W2_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W2_Day__c}" day="2-digit"/></b></th>
+                                            <th scope="col" colspan="4" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W3_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W3_Day__c}" day="2-digit"/></b></th>
+                                            <th scope="col" colspan="4" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W4_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W4_Day__c}" day="2-digit"/></b></th>
+                                            
+                                            <th scope="col" colspan="4" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W5_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W5_Day__c}" day="2-digit"/></b></th>
+                                            <th scope="col" colspan="4" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W6_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W6_Day__c}" day="2-digit"/></b></th>
+                                            <th scope="col" colspan="4" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W7_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W7_Day__c}" day="2-digit"/></b></th>
+                                            <th scope="col" colspan="5" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W8_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W8_Day__c}" day="2-digit"/></b></th>
+                                            
+                                        </tr>
+                                        
+                                        <tr>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                            
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                            
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                            
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                            
+                                            
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                            
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                            
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                            
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                            <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Avg Sales</b></th>
+                                        </tr>
+                                        <aura:set attribute="else">
+                                            <tr class=" styleids customTable">  
+                                                <th scope="col" rowspan="2" class="dohColumn2 TopSticky" style="color:white;background-color: #FEB343;text-align:center;width:44.69px fixed;"><div width="77.06px"><b>DoH</b></div></th>               
+                                                <!--  <th scope="col" rowspan="2" class="qtySoldColumn2 TopSticky" style="color:white;background-color: #FEB343 ;text-align:center;"><b>Qty Sold</b></th> -->
+                                                <th scope="col" rowspan="2"  class="avgColumn2 TopSticky" style="color:white;background-color: #FEB343 ;text-align:center;"><div width="75.13px"><b>Avg Sales</b></div></th>
+                                                <th scope="col" rowspan="2"  class="distributionColumn2 TopSticky" style="color:white;background-color: #FEB343 ;text-align:center;"><b>Distribution Centers</b></th>
+                                                <th scope="col" colspan="4" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W1_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W1_Day__c}" day="2-digit"/></b></th>
+                                                <th scope="col" colspan="4" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W2_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W2_Day__c}" day="2-digit"/></b></th>
+                                                <th scope="col" colspan="4" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W3_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W3_Day__c}" day="2-digit"/></b></th>
+                                                <th scope="col" colspan="4" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W4_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W4_Day__c}" day="2-digit"/></b></th>
+                                                
+                                                <th scope="col" colspan="4" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W5_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W5_Day__c}" day="2-digit"/></b></th>
+                                                <th scope="col" colspan="4" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W6_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W6_Day__c}" day="2-digit"/></b></th>
+                                                <th scope="col" colspan="4" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W7_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W7_Day__c}" day="2-digit"/></b></th>
+                                                <th scope="col" colspan="5" class="DateSticky " style="color:#5224B2;background-color: white ;text-align:center;"><b><lightning:formattedDateTime value="{!v.tradeGroupList.W8_Day__c}" month="2-digit"/>-<lightning:formattedDateTime value="{!v.tradeGroupList.W8_Day__c}" day="2-digit"/></b></th>
+                                                
+                                            </tr>
+                                            
+                                            <tr>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                                
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                                
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                                
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                                
+                                                
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                                
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                                
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                                
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>DoH</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty on Hand </b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Value($)</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Qty Sold</b></th>
+                                                <th class="subHeaderSticky" style="color:#5224B2;background-color: white;text-align:center;"><b>Avg Sales</b></th>
+                                            </tr>
+                                        </aura:set>         
+                                    </aura:if>
+                                    <aura:iteration items="{!v.DoHSummaryList}" var="sdItem" indexVar="sNo">
+                                        <c:Vision_DOH_Report_Child accGroupList="{!sdItem}" ndcList="{!sdItem.GCP_DOH_Trade_Partner_NDC__r}" selectedId="{!v.selectedId}" tradeGroupList="{!v.tradeGroupList}" isRxChecked="{!v.isRxChecked}"  
+                                                                   isSRxChecked="{!v.isSRxChecked}"  isOtcChecked="{!v.isOtcChecked}" 
+                                                                   indexValue="{!sNo}"/> 
+                                    </aura:iteration>
+                                </aura:set>
+                            </aura:if>
+                        </tbody>
+                    </table>
+                    <aura:if isTrue="{!v.isModalOpen}">
+                        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+                            <div class="slds-modal__container">
+                                <header class="slds-modal__header">
+                                     <div style="font-size:20px;text-align:center;"><b>DoH Analysis</b></div>
+                                    <div> 
+                                        
+                                    </div>  
+                                    
+                                    
+                                    <lightning:buttonIcon iconName="utility:close"
+                                                          onclick="{! c.closeModel }"
+                                                          alternativeText="close"
+                                                          variant="bare-inverse"
+                                                          class="slds-modal__close buttonCSS"/>
+                                </header>
+                                
+                                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;">
+                                    <div style="padding:5px;"><b>NA</b> - The data in the cell is provided as blank from Integrichain.</div>
+
+                                   
+                                    <div style="padding:5px;">
+                                        
+                                        <div>
+                                            <div aura:id="mainDiv" style="overflow:auto;margin-top:10px;border-radius: 0.25rem;border: 1px solid #cfcfcf;">
+                                                
+                                                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                                                    <table aura:id="LineTable" class="maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered slds-table--header-fixed">                            
+                                                        <tbody>
+                                                              <tr>
+                                                                <th colspan="2" style="font-weight:Bold;text-align:left;background-color:#FEB343;color:white;padding:5px;">Inside the Drawer [<lightning:icon class="whiteIcon"  iconName="utility:chevrondown" size="x-small"/>]</th>  
+                                                            </tr>
+                                                             <tr>
+                                                                <th style="font-weight:Bold;text-align:left;background-color:#257CFF;color:white;padding:5px;">Input Value</th>
+                                                                <th style="font-weight:Bold;text-align:left;background-color:#257CFF;color:white;padding:5px;">Condition</th> 
+                                                            </tr>
+                                                            <tr>
+                                                                <td >Min. DoH</td>
+                                                                <td>User input for setting up the Minimum DoH for indicating lower threshold for a NDC.<br></br>
+                                                                    Default Values for Rx = 12.<br></br>
+                                                                    Default Values for SRx &amp; OTC = 7.
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td >Max. DoH</td>
+                                                                <td>User input for setting up the Maximum DoH for indicating higher threshold for a NDC.<br></br>
+                                                                    Default Values for Rx = 45.<br></br>
+                                                                    Default Values for SRx &amp; OTC = 30.<br></br>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td >Min. Avg. Sales</td>
+                                                                <td>User input for setting up the indicator for Avg Sales.</td>
+                                                            </tr>
+                                                              <tr>
+                                                                <th colspan="2" style="font-weight:Bold;text-align:left;background-color:#FEB343;color:white;padding:5px;">DoH</th>  
+                                                            </tr>
+                                                             <tr>
+                                                                <th style="font-weight:Bold;text-align:left;background-color:#257CFF;color:white;padding:5px;">Indicator</th>
+                                                                <th style="font-weight:Bold;text-align:left;background-color:#257CFF;color:white;padding:5px;">Condition</th> 
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="text-align:center;"><lightning:icon class="greenIcon"  iconName="utility:like" size="x-small"/></td>
+                                                                <td>Present Week (W8) DoH is between the Min DoH and Max DoH set up by the user. </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="text-align:center;"><lightning:icon class="redIcon" iconName="utility:dislike" size="x-small"/></td>
+                                                                <td>Present Week (W8) DoH is <span style="color:red;">NOT</span> in between the Min DoH and Max DoH set up by the user.</td>
+                                                            </tr>
+                                                             <tr>
+                                                               <td style="text-align:center;"><lightning:icon class="dohAshIcon" iconName="utility:record" size="x-small"/></td>
+                                                                <td>Present Week (W8) DoH is provided as blank from Integrichain. </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th colspan="2" style="font-weight:Bold;text-align:left;background-color:#FEB343;color:white;padding:5px;">Avg Sales</th>  
+                                                            </tr>
+                                                             <tr>
+                                                                <th style="font-weight:Bold;text-align:left;background-color:#257CFF;color:white;padding:5px;">Indicator</th>
+                                                                <th style="font-weight:Bold;text-align:left;background-color:#257CFF;color:white;padding:5px;">Condition</th> 
+                                                            </tr>
+                                                            <tr>
+                                                                <td style="text-align:center;"><lightning:icon class="greenIcon" iconName="utility:like" size="x-small"/></td>
+                                                                <td>The Avg Sales from Integrichain data is <span style="color:red;">greater than</span> the user input Avg Sales</td>
+                                                            </tr>
+                                                            <tr>
+                                                                 <td style="text-align:center;"><lightning:icon class="redIcon" iconName="utility:dislike" size="x-small"/></td>
+                                                                <td>The Avg Sales from Integrichain data is <span style="color:red;">less than</span> the user input Avg Sales</td>
+                                                            </tr>
+                                                            <tr>
+                                                               <td style="text-align:center;"><lightning:icon class="dohAshIcon" iconName="utility:record" size="x-small"/></td>
+                                                                <td>No value set by the user for this NDC or Avg Sales is provided as blank from Integrichain.</td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>  
+                                                </div>
+                                            </div></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </section>
+                        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+                    </aura:if> 
+                </div>
+            </div>
+        </div>
+    </div>
+          <aura:set attribute="else"> 
+            <b><center>The Data Update Job for DoH is in Process. Please check after sometime for accurate results.</center></b>
+            </aura:set>
+        </aura:if>
+</aura:component>

@@ -1,0 +1,595 @@
+<aura:component controller="Pheonix_BidWACChangeController" implements="lightning:isUrlAddressable,force:hasRecordId,lightning:actionOverride,force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithOutHeader" access="global" >
+    <aura:attribute name="recordId" type="String"  />
+    <aura:attribute name="approvalStatus" type="string" />
+    <aura:attribute name="bidNumber" type="string"  />
+    <aura:attribute name="bidName" type="string"  />
+    <aura:attribute name="filetype" type="List" default="['.odt','.wps','.rtf','.msg','.pps','.png','.war','.pjp','.apng','.gif','.pjp','.pjpeg','.jfif','.webp','.avif','.jpg','.jpeg','.pdf','.xlsm','.xlsx','.xlsb','.CSV','.xltx','.html', '.htt', '.mht',' .svg', '.swf', '.thtml','.xhtml','.txt','.odp','.pptx','.ppt','.docx','.doc','.docm','.dotx','.dot','.zip','.zipx','.tar','.xls']"/>   
+    <aura:attribute name="pageReference" type="Object"/>
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.pageReferenceChangeHandler}"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="wrap" type="Object" description="To hold all objects" />
+    <aura:attribute name="QLlist" type="list" description="All Product details" default="[]" />
+    <aura:attribute name="QLlist1" type="list" description="All Product details" default="[]" />
+    <aura:attribute name="pageList" type="list" default="[]" />
+    <aura:attribute name="totalPages" type="Integer" default="0"  />
+    <aura:attribute name="modalProductList" type="Object[]" description="used to store the selected products to display in Modal popup"/>
+    <aura:attribute name="ProductList" type="Object[]" description="used to store the product list to display in table"/>
+    <aura:attribute name="ProductCopyList" type="Object[]" description="used to store the product list to display in table"/>
+    <aura:attribute name="Allproduct" type="Object[]" description="used to store the product list to display in table"/>
+    <aura:attribute name="allProductRelatedToBid" type="Object[]" description="used to store the bid line item list to display in table"/>
+    <aura:attribute name="allData" type="List" description="used to store the product list"/>
+    <aura:attribute name="searchText" type="String"/>
+    <aura:attribute name="searchFamily" type="String"/>
+    <aura:attribute name="currencyCode" type="String" default="$"/>
+    <aura:attribute name="showbutton" type="Boolean" default="true" description="disable the button when no records selected"/>
+    <aura:attribute name="search" type="Boolean" default="true" description="use for display search records"/>
+    <aura:attribute name="totalRecordsCount" type="Integer" default="0" description="display the total number of records"/>
+    <aura:attribute name="arrowDirection" type="string" default="arrowup" description="Use for change arrow sign direction on header based on click"/>
+    <aura:attribute name="isAsc" type="boolean" default="true" description="boolean flag for pass sorting condition to apex class"/>
+    <aura:attribute name="selectedTabsoft" type="string" default="ProductName" description="Use for show/hide arraow sign on header based on conditions"/>
+    <aura:attribute name="isQLlistempty" type="Boolean" default="false" />
+    <aura:attribute name="noProducts" type="Boolean" default="false" />
+    <aura:attribute name="noData" type="Boolean" default="false" />
+    <aura:attribute name="isModalOpen" type="Boolean" default="false" />
+    <aura:attribute name="showSpinnerSelProds" type="Boolean" default="false" />
+    <aura:attribute name="selectAll" type="Boolean" default="false" />
+    <aura:attribute name="showuploadFile" type="Boolean" default="false" />
+    <aura:attribute name="showRecordView" type="Boolean" default="false" />
+    <aura:attribute name="isOtcChecked" type="Boolean" default="false" />
+    <aura:attribute name="isRxChecked" type="Boolean" default="false" />
+    <aura:attribute name="isSRxChecked" type="Boolean" default="false" />
+    <aura:attribute name="selectedCount" type="Integer" default="0" />
+    <aura:attribute name="wacToast" type="Boolean" default="true"/>
+    <aura:attribute name="effDateToast" type="Boolean" default="false"/>
+    <aura:attribute name="effectiveDate" type="date"/>
+    <aura:attribute name="showNoRecMsg" type="Boolean" default="true"/>
+    <aura:registerEvent name="lightningEvent" type="c:Phoenix_RefreshWACEditEvent"/>
+    <lightning:navigation aura:id="navigationService" />
+    <aura:attribute name="fileList" type="List"  /> 
+    <aura:attribute name="pageSize" type="Integer"  /> 
+    <aura:attribute name="currentPageNumber" type="Integer" />
+    <aura:attribute name="selectedProductsIds" type="Id"  />
+    <aura:attribute name="showSaveCancelBtn" type="boolean" default="false" />
+    <aura:attribute name="showSaveCancelBtn1" type="boolean" default="false" />
+    <aura:attribute name="showProceedBtn" type="boolean" default="false" />
+    <aura:attribute name="isBusinessApprovePerson" type="string" />
+    <aura:attribute name="isCountryApprovePerson" type="string" />
+    <aura:attribute name="isFinanceApprovePerson" type="string" />
+    <aura:attribute name="isContractsApprovePerson" type="string" />
+    <aura:attribute name="loggedInUserName" type="string" default=''/>
+    <aura:attribute name="busStatus" type="string"  />
+    <aura:attribute name="busCom" type="string"  />
+    <aura:attribute name="finStatus" type="string"  />
+    <aura:attribute name="finCom" type="string"  />
+    <aura:attribute name="contrStatus" type="string"  />
+    <aura:attribute name="contrCom" type="string"  />
+    <aura:attribute name="countryStatus" type="string"  />
+    <aura:attribute name="countryCom" type="string"  />
+    <aura:attribute name="isEffDateExists" type="Boolean" default="false"/>
+    <aura:html tag="style">
+        .slds-button slds-button_brand{
+        padding: initial; !important;
+        }
+        .slds-modal__content
+        {
+        background-color: white !important;
+        box-shadow: none !important;
+        }
+        .slds-modal__close {
+        display:none !important;
+        }
+        .slds-modal__content slds-p-around_large{
+        width:100%; !important;
+        }
+        
+    </aura:html>
+    <lightning:tabset aura:id="Tabset" selectedTabId="EBLI">
+        <lightning:tab label="WAC Change Submissions" id="EBLI" onactive="{!c.doInit}">      
+            <lightning:card iconName="custom:custom90" title="{!(v.bidNumber+'-'+v.bidName)}">
+                <aura:set attribute="actions">
+                    <lightning:button variant="neutral" label="Back" title="Back" onclick="{! c.backToBid }"/>
+                    
+                    <aura:if isTrue="{!(v.allProductRelatedToBid.length > 0 )}">
+                        <lightning:button label="Export" onclick="{!c.downloadCsv}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!v.approvalStatus=='Draft'}">
+                        
+                        <aura:if isTrue="{!v.showSaveCancelBtn1==false}">
+                            <aura:if isTrue="{!and(v.isEffDateExists==false,v.allProductRelatedToBid.length > 0)}">
+                                &nbsp;<lightning:button variant="brand" label="Submit Bid" title="Submit Bid" onclick="{! c.effDateToastDisplay }"/>  
+                            </aura:if>
+                            
+                            <aura:if isTrue="{!v.isEffDateExists==true}">
+                                &nbsp;<c:Phoenix_SubmitForApprovalButton recId="{!v.recordId}"/>
+                            </aura:if>
+                        </aura:if>
+                        <!---please enter Effective Date-->
+                    </aura:if>
+                    
+                    
+                    
+                    <aura:if isTrue="{!and(v.approvalStatus=='Business Head', v.showProceedBtn==true)}">
+                        <lightning:button variant="brand" label="Submit" title="Submit" onclick="{!c.saveToProceedBusiness}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!and(v.approvalStatus=='Country Head', v.showProceedBtn==true)}">
+                        <lightning:button variant="brand" label="Submit" title="Submit" onclick="{!c.saveToProceedCountry}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!and(v.approvalStatus=='Finance', v.showProceedBtn==true)}">
+                        <lightning:button variant="brand" label="Submit" title="Submit" onclick="{!c.saveToProceedFinance}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!and(v.approvalStatus=='Contracts', v.showProceedBtn==true)}">
+                        <lightning:button variant="brand" label="Submit" title="Submit" onclick="{!c.saveToProceedCont}"/>
+                    </aura:if>
+                </aura:set>
+                
+                <aura:if isTrue="{!v.approvalStatus!='Draft'}">
+                    <lightning:recordEditForm objectApiName="Phoenix_Bid__c">
+                        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="Approvals">
+                            <lightning:accordionSection name="Approvals" label="Approvals">
+                                <aura:if isTrue="{!v.approvalStatus=='Closed'}">
+                                    <center>
+                                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                            <span class="slds-icon_container slds-m-right_x-small" title="Approvals are completed for this Bid">
+                                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                            </span>
+                                            <h2>Approvals are completed for this Bid</h2>
+                                        </div>
+                                    </center> 
+                                    <br></br>
+                                    <div class="slds-grid" >
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:input label="Business Approval"  value="{!v.busStatus}" disabled="true" />
+                                        </div>
+                                        &nbsp;<div class="slds-col slds-size_1-of-2 ">
+                                        <lightning:inputField fieldName="Phoenix_Business_Approval_Comments__c"  value="{!v.busCom}" disabled="true"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="slds-grid" >
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:input label="Country Head Approval"  value="{!v.countryStatus}" disabled="true" />
+                                        </div>
+                                        &nbsp;<div class="slds-col slds-size_1-of-2 ">
+                                        <lightning:inputField fieldName="Phoenix_Country_Head_Comments__c" value="{!v.countryCom}" disabled="true"/>
+                                        </div>
+                                    </div>   
+                                    
+                                    
+                                    <div class="slds-grid" >
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:input label="Finance Approval"  value="{!v.finStatus}" disabled="true" />
+                                        </div>
+                                        &nbsp;<div class="slds-col slds-size_1-of-2 ">
+                                        <lightning:inputField fieldName="Phoenix_Finance_Approval_Comments__c"  value="{!v.finCom}" disabled="true"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="slds-grid" >
+                                        <div class="slds-col slds-size_1-of-2">
+                                            <lightning:input label="Contracts Approval"  value="{!v.contrStatus}" disabled="true" />
+                                        </div>
+                                        &nbsp;<div class="slds-col slds-size_1-of-2 ">
+                                        <lightning:inputField fieldName="Phoenix_Contracts_Approval_Comments__c" value="{!v.contrCom}" disabled="true"/>
+                                        </div>
+                                    </div>   
+                                    
+                                    
+                                    
+                                    
+                                </aura:if>
+                                <aura:if isTrue="{!v.approvalStatus!='Closed'}">
+                                    
+                                    <aura:if isTrue="{!and(v.approvalStatus=='Business Head',v.isBusinessApprovePerson==v.loggedInUserName)}">
+                                        
+                                        <div class="slds-grid" >
+                                            <div class="slds-col slds-size_1-of-3">
+                                                <lightning:inputField fieldName="Phoenix_Business_Approval__c" value="{!v.busStatus}" onchange="{!c.showSaveCancel}" aura:Id="businessAppStatus"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                <lightning:inputField fieldName="Phoenix_Business_Approval_Comments__c" value="{!v.busCom}" aura:Id="businessComments" onchange="{!c.showSaveCancel}"/>
+                                                
+                                            </div>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(v.approvalStatus=='Business Head',v.isBusinessApprovePerson!=v.loggedInUserName)}">
+                                        
+                                        <div class="slds-grid" >
+                                            <div class="slds-col slds-size_1-of-3">
+                                                <lightning:inputField fieldName="Phoenix_Business_Approval__c" value="{!v.busStatus}" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                <lightning:inputField fieldName="Phoenix_Business_Approval_Comments__c" value="{!v.busCom}" disabled="true" />
+                                                
+                                            </div>
+                                        </div>
+                                    </aura:if>
+                                    
+                                    
+                                    <aura:if isTrue="{!v.approvalStatus=='Country Head'}">
+                                        <div class="slds-grid" >
+                                            <div class="slds-col slds-size_1-of-3">
+                                                <lightning:inputField fieldName="Phoenix_Business_Approval__c" value="{!v.busStatus}" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                <lightning:inputField fieldName="Phoenix_Business_Approval_Comments__c" value="{!v.busCom}" disabled="true" />
+                                                
+                                            </div>
+                                        </div>
+                                        <aura:if isTrue="{!and(v.approvalStatus=='Country Head',v.isCountryApprovePerson==v.loggedInUserName)}">
+                                            <div class="slds-grid" >
+                                                <div class="slds-col slds-size_1-of-3">
+                                                    
+                                                    <lightning:inputField fieldName = "Phoenix_Country_Head_Approval__c"  value="{!v.countryStatus}" onchange="{!c.showSaveCancel}" aura:Id="countryAppStatus"/>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                    <lightning:inputField fieldName = "Phoenix_Country_Head_Comments__c"  value="{!v.countryCom}" aura:Id="countryComments" onchange="{!c.showSaveCancel}"/>
+                                                    
+                                                </div>
+                                            </div>
+                                        </aura:if>
+                                        
+                                        <aura:if isTrue="{!and(v.approvalStatus=='Country Head',v.isCountryApprovePerson!=v.loggedInUserName)}">
+                                            <div class="slds-grid" >
+                                                <div class="slds-col slds-size_1-of-3">
+                                                    
+                                                    <lightning:inputField fieldName="Phoenix_Country_Head_Approval__c"  value="{!v.countryStatus}"  disabled="true"/>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                    <lightning:inputField fieldName="Phoenix_Country_Head_Comments__c"  value="{!v.countryCom}" disabled="true"/>
+                                                    
+                                                </div>
+                                            </div>
+                                        </aura:if>
+                                        
+                                    </aura:if>                                        
+                                    
+                                    
+                                    <aura:if isTrue="{!v.approvalStatus=='Finance'}">
+                                        
+                                        
+                                        <div class="slds-grid" >
+                                            <div class="slds-col slds-size_1-of-3">
+                                                <lightning:inputField fieldName="Phoenix_Business_Approval__c" value="{!v.busStatus}" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                <lightning:inputField fieldName="Phoenix_Business_Approval_Comments__c" value="{!v.busCom}" disabled="true" />
+                                                
+                                            </div>
+                                        </div>
+                                        <div class="slds-grid" >
+                                            <div class="slds-col slds-size_1-of-3">
+                                                
+                                                <lightning:inputField fieldName="Phoenix_Country_Head_Approval__c"  value="{!v.countryStatus}"  disabled="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                <lightning:inputField fieldName="Phoenix_Country_Head_Comments__c"  value="{!v.countryCom}" disabled="true"/>
+                                                
+                                            </div>
+                                        </div>
+                                        <aura:if isTrue="{!and(v.approvalStatus=='Finance',v.isFinanceApprovePerson==v.loggedInUserName)}">
+                                            <div class="slds-grid" >
+                                                <div class="slds-col slds-size_1-of-3">
+                                                    <lightning:inputField fieldName="Phoenix_Finance_Approval__c"  value="{!v.finStatus}" onchange="{!c.showSaveCancel}" aura:Id="financeAppStatus"/>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                    <lightning:inputField fieldName="Phoenix_Finance_Approval_Comments__c"  value="{!v.finCom}" aura:Id="financeComments" onchange="{!c.showSaveCancel}"/>
+                                                    
+                                                </div>
+                                            </div>
+                                        </aura:if>
+                                        
+                                        <aura:if isTrue="{!and(v.approvalStatus=='Finance',v.isFinanceApprovePerson!=v.loggedInUserName)}">
+                                            <div class="slds-grid" >
+                                                <div class="slds-col slds-size_1-of-3">
+                                                    <lightning:inputField fieldName="Phoenix_Finance_Approval__c"  value="{!v.finStatus}" disabled="true"/>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                    <lightning:inputField fieldName="Phoenix_Finance_Approval_Comments__c"  value="{!v.finCom}" disabled="true"/>
+                                                    
+                                                </div>
+                                            </div>
+                                        </aura:if>
+                                    </aura:if>
+                                    
+                                    
+                                    
+                                    <aura:if isTrue="{!v.approvalStatus=='Contracts'}">
+                                        
+                                        
+                                        <div class="slds-grid" >
+                                            <div class="slds-col slds-size_1-of-3">
+                                                <lightning:inputField fieldName="Phoenix_Business_Approval__c" value="{!v.busStatus}" disabled="true" />
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                <lightning:inputField fieldName="Phoenix_Business_Approval_Comments__c" value="{!v.busCom}" disabled="true" />
+                                                
+                                            </div>
+                                        </div>
+                                        <div class="slds-grid" >
+                                            <div class="slds-col slds-size_1-of-3">
+                                                
+                                                <lightning:inputField fieldName="Phoenix_Country_Head_Approval__c"  value="{!v.countryStatus}" disabled="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                <lightning:inputField fieldName="Phoenix_Country_Head_Comments__c"  value="{!v.countryCom}"  disabled="true"/>
+                                                
+                                            </div>
+                                        </div>
+                                        <div class="slds-grid" >
+                                            <div class="slds-col slds-size_1-of-3">
+                                                <lightning:inputField fieldName="Phoenix_Finance_Approval__c"  value="{!v.finStatus}"  disabled="true"/>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                <lightning:inputField fieldName="Phoenix_Finance_Approval_Comments__c"  value="{!v.finCom}" disabled="true"/>
+                                                
+                                            </div>
+                                        </div>
+                                        
+                                        <aura:if isTrue="{!and(v.approvalStatus=='Contracts',v.isContractsApprovePerson==v.loggedInUserName)}">
+                                            
+                                            <div class="slds-grid" >
+                                                <div class="slds-col slds-size_1-of-3">
+                                                    <lightning:inputField fieldName="Phoenix_Contracts_Approval__c" value="{!v.contrStatus}" onchange="{!c.showSaveCancel}"  aura:Id="contrAppStatus"/>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                    <lightning:inputField fieldName="Phoenix_Contracts_Approval_Comments__c"  value="{!v.contrCom}" aura:Id="contrComments" onchange="{!c.showSaveCancel}"/>
+                                                    
+                                                </div>
+                                            </div>
+                                        </aura:if>
+                                        <aura:if isTrue="{!and(v.approvalStatus=='Contracts',v.isContractsApprovePerson!=v.loggedInUserName)}">
+                                            
+                                            <div class="slds-grid" >
+                                                <div class="slds-col slds-size_1-of-3">
+                                                    <lightning:inputField fieldName="Phoenix_Contracts_Approval__c" value="{!v.contrStatus}" disabled="true"/>
+                                                </div>
+                                                <div class="slds-col slds-size_1-of-3 header-fields-align">
+                                                    <lightning:inputField fieldName="Phoenix_Contracts_Approval_Comments__c"  value="{!v.contrCom}" disabled="true"/>
+                                                    
+                                                </div>
+                                            </div>
+                                        </aura:if>
+                                        
+                                    </aura:if>
+                                    
+                                    
+                                </aura:if>
+                            </lightning:accordionSection>
+                        </lightning:accordion>
+                    </lightning:recordEditForm>
+                    
+                    <aura:if isTrue="{!v.showSaveCancelBtn}">
+                        <center>
+                            <aura:if isTrue="{!v.approvalStatus=='Business Head'}">
+                                <lightning:button label="Save" type="submit" variant="brand" onclick="{!c.saveApprovalBus}"/>&nbsp;
+                            </aura:if>
+                            <aura:if isTrue="{!v.approvalStatus=='Country Head'}">
+                                <lightning:button label="Save" type="submit" variant="brand" onclick="{!c.saveApprovalCountry}"/>&nbsp;
+                            </aura:if>
+                            <aura:if isTrue="{!v.approvalStatus=='Finance'}">
+                                <lightning:button label="Save" type="submit" variant="brand" onclick="{!c.saveApprovalFin}"/>&nbsp;
+                            </aura:if>
+                            <aura:if isTrue="{!v.approvalStatus=='Contracts'}">
+                                <lightning:button label="Save" type="submit" variant="brand" onclick="{!c.saveApprovalContr}"/>&nbsp;
+                            </aura:if>
+                            <lightning:button label="Cancel" type="submit" variant="neutral"  onclick="{! c.closeModal}"/>&nbsp; 
+                        </center>
+                        
+                    </aura:if>
+                </aura:if>
+                <!--Approvals Section END -->    
+                
+                
+                
+                
+                <lightning:accordion allowMultipleSectionsOpen="true"  activeSectionName="Edit WAC">
+                    <lightning:accordionSection name="Edit WAC" label="Edit WAC" >
+                        <aura:if isTrue="{!v.showRecordView}">
+                            
+                            <div class="slds-modal__container" style="max-width: 100rem !important;width: 100% !important;padding-top: 10px;padding: 0% 0%;">
+                                
+                                <aura:if isTrue="{!v.showNoRecMsg}">
+                                    <center>
+                                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                            <span class="slds-icon_container slds-m-right_x-small" title="There are no existing Line Items to edit">
+                                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                            </span>
+                                            <h2>There are no existing Line Items to edit</h2>
+                                        </div>
+                                    </center> 
+                                    
+                                </aura:if>
+                                
+                                <aura:if isTrue="{!!v.showNoRecMsg}">
+                                    <div class="slds-col slds-size_1-of-2">
+                                        <lightning:recordEditForm objectApiName="Phoenix_Bid_Line_Item__c">
+                                            <aura:if isTrue ="{!v.allProductRelatedToBid.length>0}">
+                                                <aura:if isTrue="{!v.approvalStatus=='Draft'}">
+                                                    <lightning:input label="Effective Date" type="date" disabled="false"  required='true' aura:id="effDate" 
+                                                                     onchange="{!c.showSaveCancelForEdit}" style="width:50%" value="{!v.effectiveDate}"/>
+                                                </aura:if>
+                                                <aura:if isTrue="{!v.approvalStatus!='Draft'}">
+                                                    <lightning:input label="Effective Date" type="date" disabled="true"  required='true'  
+                                                                     style="width:50%" value="{!v.effectiveDate}"/>
+                                                </aura:if>
+                                            </aura:if>
+                                        </lightning:recordEditForm>
+                                    </div>
+                                    <br></br>
+                                    <br></br>
+                                    <br></br>
+                                    
+                                    <div class="modal-body scrollable slds-modal__content slds-p-around--medium" data-scoped-scroll="true" style="background-color:#f3f2f2;padding:0px;">
+                                        <aura:if isTrue="{!v.showSpinnerSelProds}">
+                                            <lightning:spinner variant="brand" class="spinColor" size="large" />
+                                        </aura:if>
+                                        <div aura:id="mainDiv1" style="height:250px;overflow:auto;margin-top:15px;" class=" slds-m-right_small slds-m-left_small">
+                                            <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                                                
+                                                <table class="maintable slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered " style="border:1px solid #eaeaea">
+                                                    <thead class="textAlign" style="padding-left: 5px;">
+                                                        <tr  >
+                                                            <aura:if isTrue="{!v.approvalStatus=='Draft'}">
+                                                                <th scope="col" class="slds-cell-wrap slds-text-align_left"  style="width:2%">
+                                                                    <div class="slds-truncate" title="Action">Action</div>
+                                                                </th>
+                                                            </aura:if>
+                                                            <th scope="col" class="slds-cell-wrap slds-text-align_left" style="width:10%">
+                                                                <div class="slds-truncate" title="Product Name">
+                                                                    Product Name
+                                                                </div>
+                                                            </th>
+                                                            <th scope="col" class="slds-cell-wrap slds-text-align_left" style="width:2%">
+                                                                <div class="slds-truncate" title="Product Code">
+                                                                    Product Code
+                                                                </div>
+                                                            </th>
+                                                            <th scope="col" class="slds-cell-wrap slds-text-align_left" style="width:4%">
+                                                                <div class="slds-truncate" title="NDC - 11">
+                                                                    NDC - 11
+                                                                </div>
+                                                            </th>
+                                                            <th scope="col" class="slds-cell-wrap slds-text-align_left" style="width:5%">
+                                                                <div class="slds-truncate" title="Product Family">
+                                                                    Product Family
+                                                                </div>
+                                                            </th>
+                                                            <th scope="col" class="slds-cell-wrap slds-text-align_left" style="width:5%">
+                                                                <div class="slds-truncate" title="Current WAC">
+                                                                    Current WAC
+                                                                </div>
+                                                            </th>
+                                                            <th scope="col" class="slds-cell-wrap slds-text-align_left" style="width:7%">
+                                                                <div class="slds-truncate" title="New WAC">
+                                                                    New WAC
+                                                                </div>
+                                                            </th>
+                                                            <!---  <th scope="col" class="slds-cell-wrap slds-text-align_left" style="width:15%">
+                                                                <div class="slds-truncate" title="Effective Date">
+                                                                    Effective Date
+                                                                </div>
+                                                            </th>-->
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <aura:iteration items="{!v.allProductRelatedToBid}" var="prodItem1"
+                                                                        indexVar="itemIndex">
+                                                            <tr >
+                                                                <aura:if isTrue="{!v.approvalStatus=='Draft'}">
+                                                                    <td class="slds-cell-wrap" scope="col" title="Delete Line Item" style="padding-top: 5px;padding-left: 8px;">
+                                                                        <lightning:button class="customBIcon"
+                                                                                          iconName="action:delete" iconPosition="left"
+                                                                                          onclick="{!c.removeDeletedRowLineItem }"
+                                                                                          name="{!prodItem1.qlItem.Id}" />
+                                                                    </td>
+                                                                </aura:if>
+                                                                <td class="slds-cell-wrap" scope="col">
+                                                                    <a href="{!'/'+prodItem1.qlItem.Phoenix_Product__c}"
+                                                                       target="_blank">{!prodItem1.qlItem.Phoenix_Product__r.Name}</a>
+                                                                </td> 
+                                                                <td class="slds-cell-wrap " scope="col">
+                                                                    {!prodItem1.qlItem.Phoenix_Product_Code__c}
+                                                                </td>
+                                                                <td class="slds-cell-wrap " scope="col">
+                                                                    {!prodItem1.qlItem.Phoenix_NDC_National_Drug_Code__c}
+                                                                </td>
+                                                                <td class="slds-cell-wrap " scope="col">
+                                                                    <a href="{!'/'+prodItem1.qlItem.Phoenix_Product__r.Product_Family__c}"
+                                                                       target="_blank">{!prodItem1.qlItem.Phoenix_Product__r.Product_Family__r.Name}</a>
+                                                                    <!--{!prodItem1.qlItem.Phoenix_Product_Family__c}-->
+                                                                </td>
+                                                                <td class="slds-cell-wrap " scope="col">
+                                                                    {!prodItem1.currencyCode} {!prodItem1.qlItem.Phoenix_WAC__c}
+                                                                </td>
+                                                                <aura:if isTrue="{!v.approvalStatus=='Draft'}">
+                                                                    <td class="slds-cell-wrap " scope="col">
+                                                                        <ui:inputCurrency  value="{!prodItem1.qlItem.Phoenix_New_WAC__c}" updateOn="change" disabled="false"  required='true' aura:id="newWAC" change="{!c.showSaveCancelForEdit}"/>
+                                                                    </td>  
+                                                                    <!--- <td class="slds-cell-wrap " scope="col">
+                                                                        <lightning:input type="Date" value="{!prodItem1.qlItem.Phoenix_Effective_Date__c}" disabled="false"  required='true' aura:id="effDate"  onchange="{!c.showSaveCancelForEdit}"/>
+                                                                    </td>-->
+                                                                </aura:if>
+                                                                <aura:if isTrue="{!v.approvalStatus!='Draft'}">
+                                                                    <td class="slds-cell-wrap " scope="col">
+                                                                        <lightning:input type="currency"  value="{!prodItem1.qlItem.Phoenix_New_WAC__c}" disabled="true"  required='true' aura:id="newWAC"/>
+                                                                    </td>  
+                                                                    <!---  <td class="slds-cell-wrap " scope="col">
+                                                                        <lightning:input type="Date" value="{!prodItem1.qlItem.Phoenix_Effective_Date__c}" disabled="true"  required='true' aura:id="effDate" />
+                                                                    </td>-->
+                                                                </aura:if>
+                                                                
+                                                                
+                                                            </tr>
+                                                        </aura:iteration>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    
+                                    <br></br>
+                                    <aura:if isTrue="{!v.showSaveCancelBtn1==true}">
+                                        <center>
+                                            <lightning:button variant="neutral" label="Cancel" onclick="{!c.closeModal}" />
+                                            <lightning:button variant="brand" label="Save"  
+                                                              onclick="{!c.insertProducts}"
+                                                              />
+                                        </center>
+                                    </aura:if>
+                                </aura:if>
+                            </div>
+                        </aura:if>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+                
+                <!--Upload Document Section START -->     
+                <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="Upload Document" >
+                    <lightning:accordionSection name="Upload Document" label="Upload Document" >
+                        <aura:if isTrue="{!v.approvalStatus=='Draft'}">
+                            <center style="padding: 0% 5%;"><div style="width:50%" >   
+                                
+                                <lightning:fileUpload label=""
+                                                      name="fileUploader"
+                                                      variant="label-hidden"
+                                                      accept="{!v.filetype}"
+                                                      multiple="true"
+                                                      recordId="{!v.recordId}"
+                                                      onuploadfinished="{!c.handleUploadFinished}" class="hideSpan" />
+                                </div>
+                            </center>  
+                        </aura:if>
+                        <div>
+                            <b><p >List of Attachments ({!v.fileList.length})</p></b><br></br>
+                            <aura:iteration items="{!v.fileList}" var="file" indexVar="itemIndex">
+                                <aura:if isTrue="{!v.approvalStatus=='Draft'}"> 
+                                    <p  data-name="{!file.Id}" style="cursor:pointer;">
+                                        <lightning:button class="customBIconFileDel"
+                                                          iconName="action:delete" iconPosition="left"
+                                                          onclick="{!c.deleteAttachment }"
+                                                          name="{!file.Id}"  />&nbsp; 
+                                        <a href="{!'/'+file.Id}"
+                                           target="_blank"  >{!itemIndex+1}.&nbsp;{!file.Title} </a>   
+                                    </p>
+                                    <br></br>
+                                </aura:if>
+                                <aura:if isTrue="{!v.approvalStatus!='Draft'}">
+                                    <p  data-name="{!file.Id}" style="cursor:pointer;">
+                                        
+                                        <a href="{!'/'+file.Id}"
+                                           target="_blank"  >{!itemIndex+1}.&nbsp;{!file.Title} </a>   
+                                    </p>
+                                    <br></br>
+                                </aura:if>
+                                
+                            </aura:iteration>
+                        </div>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+                
+                <!--Upload Document Section END --> 
+                
+            </lightning:card>
+        </lightning:tab>
+    </lightning:tabset>
+</aura:component>

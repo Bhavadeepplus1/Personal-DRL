@@ -1,0 +1,257 @@
+<aura:component controller="Phoenix_PricingReviewApprovals" implements="flexipage:availableForAllPageTypes,force:hasRecordId,force:appHostable,lightning:isUrlAddressable" access="global">   
+<aura:attribute name="filetype" type="List" default="['.odt','.wps','.rtf','.msg','.pps','.png','.war','.pjp','.apng','.gif','.pjp','.pjpeg','.jfif','.webp','.avif','.jpg','.jpeg','.pdf','.xlsm','.xlsx','.xlsb','.CSV','.xltx','.html', '.htt', '.mht',' .svg', '.swf', '.thtml','.xhtml','.txt','.odp','.pptx','.ppt','.docx','.doc','.docm','.dotx','.dot','.zip','.zipx','.tar','.xls']"/>
+    <aura:attribute name="recordId" type="Id"/>
+    <aura:attribute name="isView" type="Boolean" access="GLOBAL" default="false"/>
+    <aura:attribute name="multiple" type="Boolean" default="true" />
+    <aura:attribute name="wrap" type="Phoenix_Bid__c[]" description="To hold all objects" />
+    <aura:attribute name="approvalStatus" type="string" />
+    <aura:attribute name="bidNumber" type="string"  />
+    <aura:attribute name="bidName" type="string"  />
+    <aura:attribute name="accountName" type="string"  />
+    <aura:attribute name="accountId" type="Id" />
+    <aura:attribute name="fileList" type="List"  /> 
+    <aura:attribute name="bidType" type="string"  />
+    <aura:attribute name="bidRecord" type="Phoenix_Bid__c[]"/>
+    <aura:attribute name="showSaveCancelBtn" type="boolean" default="false" />
+    <aura:attribute name="showSaveCancelDetailsBtn" type="boolean" default="false" />
+    <aura:attribute name="showProceedBtn" type="boolean" default="false" />
+    <aura:attribute name="isBusinessApprovePerson" type="string" />
+    <aura:attribute name="isContractsApprovePerson" type="string" />
+    <aura:attribute name="loggedInUserName" type="string" default=''/>
+    <aura:attribute name="reviewDetails" type="String"/>
+    <aura:attribute name="reviewDetailsHide" type="boolean" default="false"/>
+    <aura:registerEvent name="lightningEvent" type="c:Phoenix_PricingReviewEvent"/>
+    <aura:attribute name="busStatus" type="string"  />
+    <aura:attribute name="busCom" type="string"  />
+    <aura:attribute name="contrStatus" type="string"  />
+    <aura:attribute name="contrCom" type="string"  />
+    <lightning:navigation aura:id="navService"/> 
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.initRecords}"/>
+    <aura:handler name="init" value="{!this}" action="{!c.initRecords}"/>
+    <lightning:tabset aura:id="Tabset" selectedTabId="EBLI">
+        <lightning:tab label="Customer Requested Pricing Confirmations" id="EBLI" onactive="{!c.initRecords}">   
+            <lightning:card iconName="custom:custom90" title="{!(v.bidNumber+'-'+v.bidName)}">
+                
+                <aura:set attribute="actions">
+                    <lightning:button variant="neutral" label="Back" title="Back" onclick="{! c.backToBid }"/>
+                    <!---&nbsp;<c:Phoenix_SubmitForApprovalButton recId="{!v.recordId}"/>-->
+                    <aura:if isTrue="{!v.approvalStatus=='Draft'}">
+                        &nbsp;<c:Phoenix_SubmitForApprovalButton recId="{!v.recordId}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!and(v.approvalStatus=='Marketing Head', v.showProceedBtn==true)}">
+                        <lightning:button variant="brand" label="Submit" title="Submit" onclick="{!c.saveToProceedBusiness}"/>
+                    </aura:if>
+                    <aura:if isTrue="{!and(v.approvalStatus=='Contracts', v.showProceedBtn==true)}">
+                        <lightning:button variant="brand" label="Submit" title="Submit" onclick="{!c.saveToProceedContr}"/>
+                    </aura:if>
+                    
+                </aura:set>
+                
+                <!--Approvals Section START -->       
+                <aura:if isTrue="{!v.approvalStatus!='Draft'}">
+                    
+                    <lightning:recordEditForm objectApiName="Phoenix_Bid__c"
+                                              >          
+                        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="Approvals">
+                            <lightning:accordionSection name="Approvals" label="Approvals">
+                                
+                                <aura:if isTrue="{!v.approvalStatus=='Closed'}">
+                                    <center>
+                                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                            <span class="slds-icon_container slds-m-right_x-small" title="Approvals are completed for this Bid">
+                                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                            </span>
+                                            <h2>Approvals are completed for this Bid</h2>
+                                        </div>
+                                    </center>
+                                    
+                                    <br></br>
+                                      <div class="slds-grid" >
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Phoenix_Marketing_Head_Approval__c"  value="{!v.busStatus}" disabled="true" />
+                                            </div>
+                                            &nbsp;<div class="slds-col slds-size_1-of-2 ">
+                                            <lightning:inputField fieldName="Phoenix_Marketing_Head_Comments__c"  value="{!v.busCom}" disabled="true"/>
+                                            
+                                            </div>
+                                        </div>
+                                    
+                                      <div class="slds-grid" >
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Phoenix_Contracts_Approval__c"  value="{!v.contrStatus}" disabled="true" />
+                                            </div>
+                                            &nbsp;<div class="slds-col slds-size_1-of-2 ">
+                                            <lightning:inputField fieldName="Phoenix_Contracts_Approval_Comments__c" value="{!v.contrCom}" disabled="true"/>
+                                            
+                                            </div>
+                                        </div>
+                                </aura:if>
+                                
+                                
+                                
+                                <aura:if isTrue="{!v.approvalStatus!='Closed'}">
+                                    <aura:if isTrue="{!and(v.approvalStatus=='Marketing Head', v.isBusinessApprovePerson==v.loggedInUserName)}">
+                                        <div class="slds-grid" >
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Phoenix_Marketing_Head_Approval__c" value="{!v.busStatus}" onchange="{!c.showSaveCancel}" aura:Id="businessAppStatus"/>
+                                            </div>
+                                            &nbsp;<div class="slds-col slds-size_1-of-2 ">
+                                            <lightning:inputField fieldName="Phoenix_Marketing_Head_Comments__c" value="{!v.busCom}" aura:Id="businessComments" onchange="{!c.showSaveCancel}"/>
+                                            
+                                            </div>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!and(v.approvalStatus=='Marketing Head', v.isBusinessApprovePerson!=v.loggedInUserName)}">
+                                        <div class="slds-grid" >
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Phoenix_Marketing_Head_Approval__c"  value="{!v.busStatus}" disabled="true"/>
+                                            </div>
+                                            &nbsp;<div class="slds-col slds-size_1-of-2 ">
+                                            <lightning:inputField fieldName="Phoenix_Marketing_Head_Comments__c"  value="{!v.busCom}" disabled="true" />
+                                            
+                                            </div>
+                                        </div>
+                                    </aura:if>
+                                    
+                                    
+                                    
+                                    
+                                    <aura:if isTrue="{!v.approvalStatus=='Contracts'}">
+                                        <div class="slds-grid" >
+                                            <div class="slds-col slds-size_1-of-2">
+                                                <lightning:inputField fieldName="Phoenix_Marketing_Head_Approval__c"  value="{!v.busStatus}" disabled="true" />
+                                            </div>
+                                            &nbsp;<div class="slds-col slds-size_1-of-2 ">
+                                            <lightning:inputField fieldName="Phoenix_Marketing_Head_Comments__c"  value="{!v.busCom}" disabled="true"/>
+                                            
+                                            </div>
+                                        </div>
+                                        
+                                        <aura:if isTrue="{!and(v.approvalStatus=='Contracts',v.isContractsApprovePerson==v.loggedInUserName)}">
+                                            <div class="slds-grid" >
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <lightning:inputField fieldName="Phoenix_Contracts_Approval__c"  value="{!v.contrStatus}" onchange="{!c.showSaveCancel}"  aura:Id="contrAppStatus"/>
+                                                </div>
+                                                &nbsp;<div class="slds-col slds-size_1-of-2 ">
+                                                <lightning:inputField fieldName="Phoenix_Contracts_Approval_Comments__c" value="{!v.contrCom}"  aura:Id="contrComments" onchange="{!c.showSaveCancel}"/>
+                                                
+                                                </div>
+                                            </div>
+                                        </aura:if>
+                                        
+                                        <aura:if isTrue="{!and(v.approvalStatus=='Contracts',v.isContractsApprovePerson!=v.loggedInUserName)}">
+                                            <div class="slds-grid" >
+                                                <div class="slds-col slds-size_1-of-2">
+                                                    <lightning:inputField fieldName="Phoenix_Contracts_Approval__c"  value="{!v.contrStatus}" disabled="true" />
+                                                </div>
+                                                &nbsp;<div class="slds-col slds-size_1-of-2 ">
+                                                <lightning:inputField fieldName="Phoenix_Contracts_Approval_Comments__c" value="{!v.contrCom}"  disabled="true" />
+                                                
+                                                </div>
+                                            </div>
+                                        </aura:if>
+                                    </aura:if>                              
+                                    
+                                    
+                                </aura:if>
+                            </lightning:accordionSection>
+                        </lightning:accordion>
+                    </lightning:recordEditForm>
+                    
+                    
+                    
+                    
+                    <aura:if isTrue="{!v.showSaveCancelBtn}">
+                        <center>
+                            <aura:if isTrue="{!v.approvalStatus=='Marketing Head'}">
+                                <lightning:button label="Save" type="submit" variant="brand" onclick="{!c.saveApprovalBus}"/>&nbsp;
+                            </aura:if>
+                            <aura:if isTrue="{!v.approvalStatus=='Contracts'}">
+                                <lightning:button label="Save" type="submit" variant="brand" onclick="{!c.saveApprovalContr}"/>&nbsp;
+                            </aura:if>
+                            <lightning:button label="Cancel" type="submit" variant="neutral"  onclick="{! c.closeModal }"/>&nbsp; 
+                        </center>
+                        
+                    </aura:if>
+                </aura:if>
+                
+                
+                <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="Pricing Review" >
+                    <lightning:accordionSection name="Pricing Review" label="Pricing Review"  >
+                        <p>
+                            <lightning:recordEditForm objectApiName="Phoenix_Bid__c" recordId="{!v.recordId}" >
+                                <div class="slds-grid" >
+                                    <div class="slds-col slds-size_1-of-3" >
+                                        <lightning:inputField fieldName="Phoenix_Bid_Type__c" disabled='true' value="{!v.bidType}" />
+                                    </div>
+                                    &nbsp;<div class="slds-col slds-size_1-of-3 " >
+                                    <lightning:inputField  fieldName="Phoenix_Customer__c" disabled='true' />
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-3" >
+                                        <lightning:inputField fieldName="Phoenix_Review_Details__c" aura:Id="pricingDetails" value="{!v.reviewDetails}"  disabled="{!v.reviewDetailsHide}" onchange="{!c.showSaveCancelDetails}"/>
+                                    </div>
+                                    
+                                </div>
+                                
+                            </lightning:recordEditForm>
+                        </p>
+                        
+                        <br></br>
+                        <aura:if isTrue="{!v.showSaveCancelDetailsBtn==true}">
+                            <center>
+                                <lightning:button label="Save" type="submit" variant="brand" onclick="{!c.saveToBidRec}"/>&nbsp;
+                                <lightning:button label="Cancel" type="submit" variant="neutral" onclick="{!c.closeModal}"/>&nbsp; 
+                            </center>
+                        </aura:if>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+                <!--Upload Document Section START -->     
+                <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="Upload Document" >
+                    <lightning:accordionSection name="Upload Document" label="Upload Document" >
+                        <aura:if isTrue="{!v.approvalStatus=='Draft'}">
+                            <center style="padding: 0% 5%;"><div style="width:50%" >   
+                                
+                                <lightning:fileUpload label=""
+                                                      name="fileUploader"
+                                                      variant="label-hidden"
+                                                      accept="{!v.filetype}"
+                                                      multiple="true"
+                                                      recordId="{!v.recordId}"
+                                                      onuploadfinished="{!c.handleUploadFinished}" class="hideSpan" />
+                                </div>
+                            </center>  
+                        </aura:if> 
+                        <div>
+                            <b><p >List of Attachments ({!v.fileList.length})</p></b><br></br>
+                            <aura:iteration items="{!v.fileList}" var="file" indexVar="itemIndex">
+                                <aura:if isTrue="{!v.approvalStatus=='Draft'}"> 
+                                    <p  data-name="{!file.Id}" style="cursor:pointer;">
+                                        <lightning:button class="customBIcon"
+                                                          iconName="action:delete" iconPosition="left"
+                                                          onclick="{!c.deleteAttachment }"
+                                                          name="{!file.Id}"  />&nbsp; 
+                                        <a href="{!'/'+file.Id}"
+                                           target="_blank"  >{!itemIndex+1}.&nbsp;{!file.Title} </a>   
+                                    </p>
+                                    <br></br>
+                                </aura:if>
+                                <aura:if isTrue="{!v.approvalStatus!='Draft'}">
+                                    <p  data-name="{!file.Id}" style="cursor:pointer;">
+                                        
+                                        <a href="{!'/'+file.Id}"
+                                           target="_blank"  >{!itemIndex+1}.&nbsp;{!file.Title} </a>   
+                                    </p>
+                                     <br></br>
+                                </aura:if>
+                                
+                            </aura:iteration>
+                        </div>
+                    </lightning:accordionSection>
+                </lightning:accordion>
+                
+                <!--Upload Document Section END --> 
+                
+            </lightning:card>
+        </lightning:tab>
+    </lightning:tabset>
+</aura:component>

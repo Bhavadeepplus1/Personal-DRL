@@ -1,0 +1,321 @@
+<aura:component controller="Phoenix_GCP_OptyTracker_Controller" 
+                implements="force:hasRecordId" access="global">     
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <aura:attribute name="gcpLineItem" type="Phoenix_GCP_Opportunity_Tracker__c"/>
+    <aura:attribute name="accObj" type="Account"/>
+    <aura:attribute name="MktShareMethodList" type="List"/> <!-- default="Use User Input, Use Default Header, Use Usage Data"/> -->
+    <aura:attribute name="MktShareMethodWalletList" type="List"/> <!--  default="Use User Input,Use Default Header"/> -->
+    <aura:attribute name="MktShareVolumeList" type="List"/> <!--  default="Use User Input, Use Proposed Total Selling Units (BRIGHT), Use Calculation of Est Acct Mkt Share"/>  -->
+    <aura:attribute name="MktSharePriceList" type="List"/> <!--  default="Use User Input, Use Lowest Price, Use GCP Suggested Price"/> -->
+    <aura:attribute name="selectedInput" type="String"/>
+    <aura:attribute name="selectedWalletInput" type="String"/>
+    <aura:attribute name="selectedVolumeInput" type="String"/>
+    <aura:attribute name="selectedPriceInput" type="String"/>
+    
+    <aura:attribute name="estAcctPriceUserInput" type="Integer"/>
+    <aura:attribute name="estAcctVolInput" type="Integer"/>
+    <aura:attribute name="estAcctMktShareOfWalletUserInput" type="Integer"/>
+    <aura:attribute name="estAcctMktShareUserInput" type="Integer"/>
+    <aura:attribute name="estAcctVolEstMktShare" type="Integer"/>
+    
+    <aura:attribute name="estAcctMktShareValue" type="String"/>
+    <aura:registerEvent name="refreshEvent" type="c:GcpDataRefreshEvent"/>
+    <aura:attribute name="showUserInputs" type="boolean"/>
+    <aura:attribute name="doRefresh" type="boolean"/>
+    <aura:attribute name="warnUserInputChange" type="boolean"/>
+    <aura:attribute name="userInputName" type="string"/>
+    <aura:attribute name="avgValue" type="Integer"/>
+    <aura:attribute name="CvsPercentage" type="Integer"/>
+    <aura:attribute name="CardinalPercentage" type="Integer"/>
+    <aura:attribute name="MajorPercentage" type="Integer"/>
+    
+    <div class="slds-box userInputBox" style="width:1150px;margin-left:30px;">
+        <div class="slds-grid">
+            <div class="slds-col slds-size_1-of-6" style="padding-top:30px;">
+                <p class="slds-text slds-line-height_reset">
+                    <b>Est Acct Mkt Share</b>
+                </p>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+                <lightning:select name="MktShareInput" aura:id="MktShareMethod" 
+                                  onchange="{!c.saveWarnUserInputChange}"  
+                                  value="{!v.selectedInput}"
+                                  label="Method" class="labelCss">
+                    <aura:iteration items="{!v.MktShareMethodList}" var="input">
+                        <option value="{!input.value}" selected="{! input.value == v.gcpLineItem.Phoenix_Est_Acct_Mkt_Share_Method__c}">{!input.label}</option>
+                    </aura:iteration>
+                </lightning:select>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+                <lightning:input type="number" name="input7"  class="labelCss"
+                                 label="User Input" formatter="percent-fixed"
+                                 value="{!v.estAcctMktShareUserInput}"
+                                 onchange="{!c.estAcctMktShareUserInputChange}"/>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+                <aura:if isTrue="{!v.accObj.Phoenix_Customer_Est_Market_Share__c != null}">
+                    <lightning:input type="number" name="input7" 
+                                     formatter="percent-fixed" label="Header Default" 
+                                     value="{!v.accObj.Phoenix_Customer_Est_Market_Share__c}"
+                                     disabled="true" class="labelCss"
+                                     maximumFractionDigits="2" minimumFractionDigits="2"/>
+                    <aura:set attribute="else">
+                        <lightning:input label="Header Default" 
+                                         value="N/A" class="labelCss"
+                                         disabled="true"/>
+                    </aura:set>
+                </aura:if>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+                <aura:if isTrue="{!v.estAcctMktShareValue != null}">
+                    <lightning:input type="number" name="input7" 
+                                     formatter="percent-fixed"
+                                     label="Usage Data" 
+                                     value="{!v.estAcctMktShareValue}"
+                                     disabled="true" class="labelCss"/>
+                    <aura:set attribute="else">
+                        <lightning:input label="Usage Data" 
+                                         value="N/A" class="labelCss"
+                                         disabled="true"/>
+                    </aura:set>
+                </aura:if>
+            </div>
+        </div>
+        <div class="slds-grid" style="padding-top:10px;">
+            <div class="slds-col slds-size_1-of-6" style="padding-top:30px;">
+                <p class="slds-text slds-line-height_reset">
+                    <b>Est Acct Share of Wallet</b>
+                </p>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+                <lightning:select name="MktShareWalletInput" 
+                                  aura:id="MktShareWallet" 
+                                  onchange="{!c.saveWarnUserInputChange}"  
+                                  value="{!v.selectedWalletInput}"
+                                  label="Method" class="labelCss">
+                    
+                    <aura:iteration items="{!v.MktShareMethodWalletList}" var="input">
+                        <option value="{!input.value}" selected="{! input.value == v.gcpLineItem.Phoenix_Est_Acct_Share_of_Wallet_Method__c}">{!input.label}</option>
+                        <!--<aura:iteration items="{!v.MktShareMethodWalletList}" var="input"> 
+                       <aura:if isTrue="{!(v.gcpLineItem.Phoenix_Est_Acct_Share_of_Wallet_Method__c != input)}" >
+                            <option value="{!input}">{!input}</option>
+                            <aura:set attribute="else">
+                                <option value="{!input}" selected="true">{!input}</option>
+                            </aura:set>
+                        </aura:if> -->
+                    </aura:iteration>
+                </lightning:select>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+                <lightning:input type="number" name="input7"  class="labelCss"
+                                 formatter="percent-fixed" label="User Input" 
+                                 value="{!v.estAcctMktShareOfWalletUserInput}" 
+                                 onchange="{!c.estAcctMktShareOfWalletUserInputChange}"/>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+                <aura:if isTrue="{!v.accObj.Phoenix_Customer_Max_Est_Share_of_Wallet__c != null}">
+                    <lightning:input type="number" name="input7" 
+                                     formatter="percent-fixed" label="Header Default" 
+                                     value="{!v.accObj.Phoenix_Customer_Max_Est_Share_of_Wallet__c}" 
+                                     disabled="true" class="labelCss"/>
+                    <aura:set attribute="else">
+                        <lightning:input label="Header Default" 
+                                         value="N/A"  class="labelCss"
+                                         disabled="true"/>
+                    </aura:set>
+                </aura:if>
+            </div>
+        </div>
+        <div class="slds-grid" style="padding-top:10px;">
+            <div class="slds-col slds-size_1-of-6" style="padding-top:30px;">
+                <p class="slds-text slds-line-height_reset">
+                    <b>Est Acct Vol</b>
+                </p>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+                <lightning:select name="MktShareWalletInput" 
+                                  aura:id="MktShareVolume" 
+                                  onchange="{!c.saveWarnUserInputChange}"  
+                                  value="{!v.selectedVolumeInput}"
+                                  label="Method" class="labelCss" disabled="true">
+                    
+                    <aura:iteration items="{!v.MktShareVolumeList}" var="input">
+                        <option value="{!input.value}" selected="{! input.value == v.gcpLineItem.Phoenix_Est_Acct_Vol_Method__c}">{!input.label}</option>
+                        <!-- <aura:iteration items="{!v.MktShareVolumeList}" var="input">
+                        <aura:if isTrue="{!(v.gcpLineItem.Phoenix_Est_Acct_Vol_Method__c != input)}" >
+                            <option value="{!input}">{!input}</option>
+                             <aura:set attribute="else">
+                                <option value="{!input}" selected="true">{!input}</option>
+                            </aura:set> 
+                        </aura:if> -->
+                    </aura:iteration>
+                </lightning:select>
+            </div>
+            
+            <div class="slds-col slds-size_1-of-6">
+                <aura:if isTrue="{!v.gcpLineItem.Vision_Inline_RFP_Units__c != null}">
+                    <lightning:input type="number" name="input7" 
+                                     label="BRIGHT"  class="labelCss"
+                                     value="{!v.gcpLineItem.Vision_Inline_RFP_Units__c}" 
+                                     disabled="true"/>
+                    <aura:set attribute="else">
+                        <lightning:input label="BRIGHT" 
+                                         value="N/A"  class="labelCss"
+                                         disabled="true"/>
+                    </aura:set>
+                </aura:if>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+                <aura:if isTrue="{!v.estAcctVolEstMktShare != null}">
+                    <lightning:input type="number" name="input7"  class="labelCss"
+                                     label="Est Acct Mkt Share" disabled="true" 
+                                     value="{!v.estAcctVolEstMktShare}"/>
+                    <aura:set attribute="else">
+                        <lightning:input label="Est Acct Mkt Share" 
+                                         value="N/A" class="labelCss" 
+                                         disabled="true"/>
+                    </aura:set>
+                </aura:if>
+            </div>
+            <!-- <aura:if isTrue="{!or(v.accObj.Name == 'Red Oak Sourcing',v.accObj.AccountNumber == '153363')}">
+                <div class="slds-col slds-size_1-of-6">
+                    <aura:if isTrue="{!v.gcpLineItem.Vision_Sum_of_Sku_est_vol__c != null}">
+                        <lightning:input type="number" name="input7" class="labelCss"
+                                         label="Sum of SKU" disabled="true"
+                                         value="{!v.gcpLineItem.Vision_Sum_of_Sku_est_vol__c}"/>
+                        <aura:set attribute="else">
+                            <lightning:input label="Sum of SKU" 
+                                             value="N/A" class="labelCss" 
+                                             disabled="true"/>
+                        </aura:set>
+                    </aura:if>
+                </div>
+            </aura:if> -->
+            <div class="slds-col slds-size_1-of-6">
+                <!-- <lightning:input type="number" name="input7" 
+                                 label="User Input"  class="labelCss"
+                                 value="{!v.estAcctVolInput}" 
+                                 onchange="{!c.estAcctVolInputChange}"/> -->
+                &nbsp;
+            </div>
+        </div>
+        <div class="slds-grid" style="padding-top:10px;">
+            <div class="slds-col slds-size_1-of-6" style="padding-top:30px;">
+                <p class="slds-text slds-line-height_reset">
+                    <b>Est Acct Price</b>
+                </p>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+                <lightning:select name="MktShareWalletInput" 
+                                  aura:id="MktSharePrice" 
+                                  onchange="{!c.saveWarnUserInputChange}"  
+                                  value="{!v.selectedPriceInput}"
+                                  label="Method" class="labelCss">
+                    <aura:iteration items="{!v.MktSharePriceList}" var="input">
+                        <option value="{!input.value}" selected="{!input.value == v.gcpLineItem.Phoenix_Est_Price_Method__c}">
+                            {!input.label}
+                        </option>
+                        <!-- <aura:if isTrue="{!(v.gcpLineItem.Phoenix_Est_Price_Method__c != input)}" >
+                            <option value="{!input}" selected="{!(v.gcpLineItem.Phoenix_Est_Price_Method__c == input)}">{!input}</option>
+                             <aura:set attribute="else">
+                                <option value="{!input}" selected="true">{!input}</option>
+                            </aura:set> 
+                        </aura:if>-->
+                    </aura:iteration>
+                </lightning:select>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+                <lightning:input type="number" name="input7" 
+                                 label="User Input" class="labelCss" 
+                                 value="{!v.estAcctPriceUserInput}" 
+                                 formatter="currency" step="0.01"
+                                 onchange="{!c.estAcctPriceUserInputChange}"/>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+                <aura:if isTrue="{!v.gcpLineItem.Phoenix_Est_Price_EU_Lowest_Price__c != null}">
+                    <lightning:input type="number" name="input7" 
+                                     label="Lowest Price" class="labelCss" 
+                                     value="{!v.gcpLineItem.Phoenix_Est_Price_EU_Lowest_Price__c}" 
+                                     disabled="true"
+                                     formatter="currency" step="0.01"/>
+                    <aura:set attribute="else">
+                        <lightning:input label="Lowest Price" value="N/A" 
+                                         disabled="true" class="labelCss"/>
+                    </aura:set>
+                </aura:if>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+                <aura:if isTrue="{!v.gcpLineItem.Phoenix_GCP_Suggested_Lowest_Price__c != null}">
+                    <lightning:input type="number" name="input7" 
+                                     label="Panorama suggested Price" 
+                                     value="{!v.gcpLineItem.Phoenix_GCP_Suggested_Lowest_Price__c}" 
+                                     disabled="true" class="labelCss"
+                                     formatter="currency" step="0.01"/>
+                    <aura:set attribute="else">
+                        <lightning:input label="Panorama suggested Price" 
+                                         value="N/A" class="labelCss" 
+                                         disabled="true"/>
+                    </aura:set>
+                </aura:if>
+            </div>
+            <div class="slds-col slds-size_1-of-6">
+                <aura:if isTrue="{!v.avgValue != null}">
+                    <lightning:input type="number" name="input7" 
+                                     label="DRL Cust Actuals Avg Price" 
+                                     value="{!v.avgValue}" 
+                                     disabled="true" class="labelCss"
+                                     formatter="currency" step="0.01"/>
+                    <aura:set attribute="else">
+                        <lightning:input label="DRL Cust Actuals Avg Price" 
+                                         value="N/A" class="labelCss" 
+                                         disabled="true"/>
+                    </aura:set>
+                </aura:if>
+            </div>
+        </div>
+        <center class="slds-m-top_small">
+            <lightning:button title="cancel" 
+                              onclick="{!c.cancelChanges}"
+                              variant="neutral">
+                Cancel
+            </lightning:button>
+            <lightning:button title="Save" 
+                              onclick="{!c.onSaveLineItem}"
+                              variant="brand">
+                Save
+            </lightning:button>
+        </center>
+    </div>
+    
+    
+    <aura:if isTrue="{!v.warnUserInputChange}">
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                 aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <lightning:buttonIcon iconName="utility:close" onclick="{!c.closeWarnUserInputChange}"
+                                          alternativeText="close" variant="bare-inverse" class="slds-modal__close" />
+                    
+                    <h2 class="slds-text-heading_medium slds-hyphenate"><b>{!v.userInputName} Changed</b></h2>
+                    
+                </header>
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                    <center>
+                        <P>
+                            Are you sure you want to change the Method? 
+                        </P>
+                    </center>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning:button variant="neutral" label="No" title="No"
+                                      onclick="{! c.closeWarnUserInputChange }" />
+                    <lightning:button variant="brand" label="Yes" title="Yes"
+                                      onclick="{! c.saveWarnUserInputChange }" />
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </aura:if>
+    
+    
+</aura:component>

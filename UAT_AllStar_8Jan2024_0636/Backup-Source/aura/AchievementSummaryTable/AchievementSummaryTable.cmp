@@ -1,0 +1,660 @@
+<aura:component controller = "AchievementSummaryTableCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,lightning:isUrlAddressable" access="global" >
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>
+    <aura:attribute name="WestSalesRepData" type="List" />
+    <aura:attribute name="EastSalesRepData" type="List" />
+    <aura:attribute name="DaveSmith" type="List" />
+    <aura:attribute name="EricSutherland" type="List" />
+    <aura:attribute name="url" type="String"/>
+    <aura:attribute name="pageReference" type="Object"/>
+    <aura:attribute name="sortField" type="String"/>
+    <aura:attribute name="fiscalYear" type="String"/>
+    <!--<aura:attribute name="in_Progress" type="Boolean" default = "false"/>-->
+    <aura:attribute name="Q1_in_Progress" type="Boolean" default = "false"/>
+    <aura:attribute name="Q2_in_Progress" type="Boolean" default = "false"/>
+    <aura:attribute name="Q3_in_Progress" type="Boolean" default = "false"/>
+    <aura:attribute name="Q4_in_Progress" type="Boolean" default = "false"/>
+    <aura:attribute name="isAscQ1" type="Boolean" default = "false"/>
+    <aura:attribute name="isAscQ2" type="Boolean" default = "false"/>
+    <aura:attribute name="isAscQ3" type="Boolean" default = "false"/>
+    <aura:attribute name="isAscQ4" type="Boolean" default = "false"/>
+    <aura:attribute name="isAscAnnual" type="Boolean" default = "false"/>
+    <aura:attribute name="isAscEastQ1" type="Boolean" default = "false"/>
+    <aura:attribute name="isAscEastQ2" type="Boolean" default = "false"/>
+    <aura:attribute name="isAscEastQ3" type="Boolean" default = "false"/>
+    <aura:attribute name="isAscEastQ4" type="Boolean" default = "false"/>
+    <aura:attribute name="isAscEastAnnual" type="Boolean" default = "false"/>
+   
+    
+    <!--<aura:attribute name="classQ" type="string"/>-->
+    <lightning:navigation aura:id="navService"/>
+    <!--<aura:attribute name="loaded" type="Boolean" default = "true"/>-->
+    
+    
+    
+    <div class="slds-box" style="background-color:#F6F7FB">
+        <aura:if isTrue="{! v.loaded }">
+            <center>
+                <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                         aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                    <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                        <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                            <img src="{!$Resource.LoadingProgress}" />  
+                        </div>  
+                    </div>  
+                </section>   
+                <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+            </center>
+            <!--<div class="demo-only" >
+                <div class="slds-spinner_container slds-align_absolute-center" >
+                    <div role="status">
+                        <img src="{!$Resource.LoadingProgress}" />
+                    </div>
+                </div>
+            </div>-->
+        </aura:if>
+        
+        
+        <br/>
+        <div class="slds-grid" style="display:flex;justify-content: space-between;"> 
+            
+            <div class="slds-size_3-of-12" style="padding-bottom:20px;">
+                <p class="Main-heading" style="font-size:24px; font-weight: 600; margin-left:20px;color:#2D2D2D;">Achievement Summary</p>
+                
+            </div>
+            
+            
+            <div class="slds-size_9-of-12"  style="text-align: right;padding-right:20px;">
+                
+                <span class="circle green"></span> <span style="font-weight:600;">Achieved (%) > 90% </span>
+                
+                <span class="circle blue" style="margin-left:20px;"></span> <span style="font-weight:600;" > Achieved (%) > 50-90% </span>
+                
+                <span class="circle red" style="margin-left:20px;"></span> <span style="font-weight:600;">  Achieved (%) &lt; 50% </span>
+                
+                <!--onclick="{!c.redirectToLeaderboard}"-->
+                <span style="padding-left:10px;padding-right:10px;"><lightning:button label="Leaderboard" variant="brand" onclick="{!c.redirectToLeaderboard}" /></span>
+               <!-- <span style="margin-right:2px;"><lightning:button label="Medigy/MedShorts Summary" variant="brand" onclick="{!c.openModal}"/></span> -->
+				<!--MedShorts/Medigi Summary-->
+            </div>
+            
+        </div>
+        
+        <div class="table-class" style="margin-right:20px;">
+            <table style = "width:100%;border: 1px ridge #D9D9D9;border-radius:6px; overflow: hidden;box-shadow: 0 0 2px rgba(0, 0, 0, 0.3)" aura:id="LineTable" class="table maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered">
+                <thead >
+                    <tr style="height:40px;"> 
+                        <th rowspan="2" style = "width:10%;background-color:#f0f0f0;font-size:16px;font-weight: 700;" class="slds-text-align_center">SRx Team</th>
+                        <th rowspan="2" style = "width:10%;background-color:#f0f0f0;font-size:16px;font-weight: 700;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "3">FY {!v.fiscalYear} Quarter 1
+                         <aura:if isTrue = "{!v.Q1_in_Progress}"><span style="font-size:12px"><i>(In Progress)</i></span>
+                            </aura:if>
+                        </th>
+                        <th rowspan="2" style = "width:10%;background-color:#f0f0f0;font-size:16px;font-weight: 700;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "3">FY {!v.fiscalYear} Quarter 2
+                          <aura:if isTrue = "{!v.Q2_in_Progress}"><span style="font-size:12px"><i>(In Progress)</i></span>
+                            </aura:if>
+                        </th>
+                        <th rowspan="2" style = "width:10%;background-color:#f0f0f0;font-size:16px;font-weight: 700;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "3">FY {!v.fiscalYear} Quarter 3
+                            <aura:if isTrue = "{!v.Q3_in_Progress}"><span style="font-size:12px"><i>(In Progress)</i></span>
+                            </aura:if>
+                        </th>
+                        <th rowspan="2" style = "width:10%;background-color:#f0f0f0;font-size:16px;font-weight: 700;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "3">FY {!v.fiscalYear} Quarter 4
+                         <aura:if isTrue = "{!v.Q4_in_Progress}"><span style="font-size:12px"><i>(In Progress)</i></span>
+                            </aura:if>
+                        </th>
+                        <th rowspan="2" style = "width:10%;background-color:#f0f0f0;font-size:16px;font-weight: 700;"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "3">FY {!v.fiscalYear} Annual</th>
+                        
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="height:40px;font-size:14px">
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 630;background-color:#F5F5F5;">East</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 630;background-color:#F5F5F5;">Target</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 630;background-color:#F5F5F5;">Achieved</td>
+                        <td style="text-align:center;background-color:#F5F5F5;">
+                            <span onclick="{!c.sortByQuarterOneEast}">
+                                <aura:if isTrue="{!v.isAscEastQ1}">
+                                    <lightning:icon class="blackIcon" iconName="utility:arrowup" 
+                                                    size="xx-small" 
+                                                    alternativeText="sort arrow up"/>
+                                    
+                                    <aura:set attribute = "else">
+                                        <lightning:icon class="blackIcon" iconName="utility:arrowdown" 
+                                                        size="xx-small" 
+                                                        alternativeText="sort arrow down"/>
+                                    </aura:set>
+                                </aura:if>
+                                
+                            </span>
+                            
+                            %</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Target</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Achieved</td>
+                        <td style="text-align:center;background-color:#F5F5F5;">
+                            <span onclick="{!c.sortByQuarterTwoEast}">
+                                <aura:if isTrue="{!v.isAscEastQ2}">
+                                    <lightning:icon class="blackIcon" iconName="utility:arrowup" 
+                                                    size="xx-small" 
+                                                    alternativeText="sort arrow up"/>
+                                    
+                                    <aura:set attribute = "else">
+                                        <lightning:icon class="blackIcon" iconName="utility:arrowdown" 
+                                                        size="xx-small" 
+                                                        alternativeText="sort arrow down"/>
+                                    </aura:set>
+                                </aura:if>
+                            </span>
+                            %</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Target</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Achieved</td>
+                        <td style="text-align:center;background-color:#F5F5F5;">
+                            <span onclick="{!c.sortByQuarterThreeEast}">
+                                <aura:if isTrue="{!v.isAscEastQ3}">
+                                    <lightning:icon class="blackIcon" iconName="utility:arrowup" 
+                                                    size="xx-small" 
+                                                    alternativeText="sort arrow up"/>
+                                    
+                                    <aura:set attribute = "else">
+                                        <lightning:icon class="blackIcon" iconName="utility:arrowdown" 
+                                                        size="xx-small" 
+                                                        alternativeText="sort arrow down"/>
+                                    </aura:set>
+                                </aura:if>
+                            </span>
+                            %</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Target</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Achieved</td>
+                        <td style="text-align:center;background-color:#F5F5F5;">
+                            <span onclick="{!c.sortByQuarterFourEast}">
+                                <aura:if isTrue="{!v.isAscEastQ4}">
+                                    <lightning:icon class="blackIcon" iconName="utility:arrowup" 
+                                                    size="xx-small" 
+                                                    alternativeText="sort arrow up"/>
+                                    
+                                    <aura:set attribute = "else">
+                                        <lightning:icon class="blackIcon" iconName="utility:arrowdown" 
+                                                        size="xx-small" 
+                                                        alternativeText="sort arrow down"/>
+                                    </aura:set>
+                                </aura:if>
+                            </span>
+                            %</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Target</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Achieved</td>
+                        <td style="text-align:center;background-color:#F5F5F5;">
+                            <span onclick="{!c.sortByAnnualEast}">
+                                <aura:if isTrue="{!v.isAscEastAnnual}">
+                                    <lightning:icon class="blackIcon" iconName="utility:arrowup" 
+                                                    size="xx-small" 
+                                                    alternativeText="sort arrow up"/>
+                                    
+                                    <aura:set attribute = "else">
+                                        <lightning:icon class="blackIcon" iconName="utility:arrowdown" 
+                                                        size="xx-small" 
+                                                        alternativeText="sort arrow down"/>
+                                    </aura:set>
+                                </aura:if>
+                            </span>
+                            %</td>
+                    </tr>
+                    
+                    
+                    <aura:iteration items="{!v.EricSutherland}" var="eric">
+                        <tr style="height:40px;color:#676767;font-weight:400">
+                            <td style="font-weight: 630;">Eric Sutherland</td>
+                            <td style="text-align:center;font-weight: 630;">${!eric.Target1}</td>
+                            <td style="text-align:center;font-weight: 630;">${!eric.Quarter1}</td>
+                            <!--<td style="text-align:center;" ><p style="{!'color: ' + row.class1}"> {!row.percentage_for_Q1}%</p></td>-->
+                             <aura:if isTrue="{! (eric.percentage1 > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!eric.percentage1}%</td>
+                            </aura:if>
+                              <aura:if isTrue="{! and(eric.percentage1 >= 50,lessthan(eric.percentage1,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!eric.percentage1}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(eric.percentage1 , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!eric.percentage1}%</td>
+                            </aura:if>
+                            <!--<td style="text-align:center;color:#579857;font-weight: 630;" >{!eric.percentage1}%</td>-->
+                            
+                            
+                            <td style="text-align:center;font-weight: 630;">${!eric.Target2}</td>
+                            <td style="text-align:center;font-weight: 630;">${!eric.Quarter2}</td>
+                            <aura:if isTrue="{! (eric.percentage2 > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!eric.percentage2}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! and(eric.percentage2 >= 50,lessthan(eric.percentage2,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!eric.percentage2}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(eric.percentage2 , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!eric.percentage2}%</td>
+                            </aura:if>                            
+                            <!--<td style="text-align:center;color:#579857;font-weight: 630;" >{!eric.percentage2}%</td>-->
+                            
+                            
+                            <td style="text-align:center;font-weight: 630;">${!eric.Target3}</td>
+                            <td style="text-align:center;font-weight: 630;">${!eric.Quarter3}</td>
+							<aura:if isTrue="{! (eric.percentage3 > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!eric.percentage3}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! and(eric.percentage3 >= 50,lessthan(eric.percentage3,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!eric.percentage3}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(eric.percentage3 , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!eric.percentage3}%</td>
+                            </aura:if>                             
+                            <!--<td style="text-align:center;color:#579857;font-weight: 630;" >{!eric.percentage3}%</td>-->
+                            
+                            
+                            <td style="text-align:center;font-weight: 630;">${!eric.Target4}</td>
+                             <aura:if isTrue= "{!and(eric.Quarter4 >0,Q4_in_Progress == false)}">
+                            <td style="text-align:center;font-weight: 630;">${!eric.Quarter4}</td>
+                                 <aura:set attribute = "else">
+                                     <td style="text-align:center;font-weight: 630;">N/A</td>
+
+                                 </aura:set>
+                            </aura:if>
+                            <aura:if isTrue= "{!and(eric.percentage4 >0,Q4_in_Progress == false)}">
+                                <aura:if isTrue="{! (eric.percentage4 > 90) }">
+                                    <td style="text-align:center;color:#579857;font-weight: 630;" >{!eric.percentage4}%</td>
+                                </aura:if>
+                                <aura:if isTrue="{! and(eric.percentage4 >= 50,lessthan(eric.percentage4,90)) }">
+                                    <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!eric.percentage4}%</td>
+                                </aura:if>
+                                <aura:if isTrue="{! lessthan(eric.percentage4 , 50) }">
+                                    <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!eric.percentage4}%</td>
+                                </aura:if>  
+                                <aura:set attribute="else">
+                                    <td style="text-align:center;font-weight: 630;" >N/A</td>
+
+                                </aura:set>
+                            </aura:if>
+                            <!--<td style="text-align:center;color:#579857;font-weight: 630;" >{!eric.percentage4}%</td>-->
+                            
+                            
+                            <td style="text-align:center;font-weight: 630;">${!eric.TargetAchieved}</td>
+                            <td style="text-align:center;font-weight: 630;">${!eric.AnnualAchieved}</td>
+							<aura:if isTrue="{! (eric.Annualpercentage > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!eric.Annualpercentage}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! and(eric.Annualpercentage >= 50,lessthan(eric.Annualpercentage,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!eric.Annualpercentage}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(eric.Annualpercentage , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!eric.Annualpercentage}%</td>
+                            </aura:if>                                
+                            <!--<td style="text-align:center;color:#579857;font-weight: 630;" >{!eric.Annualpercentage}%</td>-->
+                            
+                            
+                        </tr>
+                    </aura:iteration>
+                    
+                    
+                    <aura:iteration items="{!v.EastSalesRepData}" var="row">
+                        <tr style="height:40px;color:#676767;font-weight:400">
+                            <td style="font-weight: 630;">{!row.Name}</td>
+                            <td style="text-align:center;font-weight: 630;">${!row.Target1}</td>
+                            <td style="text-align:center;font-weight: 630;">${!row.Q1_Achieved}</td>
+                            <!--<td style="text-align:center;" ><p style="{!'color: ' + row.class1}"> {!row.percentage_for_Q1}%</p></td>-->
+                            <aura:if isTrue="{! (row.percentage_for_Q1 > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!row.percentage_for_Q1}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! and(row.percentage_for_Q1 >= 50,lessthan(row.percentage_for_Q1,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!row.percentage_for_Q1}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(row.percentage_for_Q1 , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!row.percentage_for_Q1}%</td>
+                            </aura:if>
+                            
+                            <td style="text-align:center;font-weight: 630;">${!row.Target2}</td>
+                            <td style="text-align:center;font-weight: 630;">${!row.Q2_Achieved}</td>
+                            <!--<td style="text-align:center;"><p style="{!'color: ' + !row.class2}">{!row.percentage_for_Q2}%</p></td>-->
+                            <aura:if isTrue="{! (row.percentage_for_Q2 > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!row.percentage_for_Q2}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! and(row.percentage_for_Q2 >= 50,lessthan(row.percentage_for_Q2,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!row.percentage_for_Q2}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(row.percentage_for_Q2 , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!row.percentage_for_Q2}%</td>
+                            </aura:if>
+                            <td style="text-align:center;font-weight: 630;">${!row.Target3}</td>
+                            <td style="text-align:center;font-weight: 630;">${!row.Q3_Achieved}</td>
+                            <!--<td style="text-align:center;"><p style="{!'color: ' + !row.class3}">{!row.percentage_for_Q3}%</p></td>-->
+                            <aura:if isTrue="{! (row.percentage_for_Q3 > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!row.percentage_for_Q3}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! and(row.percentage_for_Q3 >= 50,lessthan(row.percentage_for_Q3,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!row.percentage_for_Q3}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(row.percentage_for_Q3 , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!row.percentage_for_Q3}%</td>
+                            </aura:if>
+                            <td style="text-align:center;font-weight: 630;">${!row.Target4}</td>
+                            <aura:if isTrue= "{!and(row.Q4_Achieved >0,Q4_in_Progress == false)}">
+                            <td style="text-align:center;font-weight: 630;">${!row.Q4_Achieved}</td>
+                                <aura:set attribute = "else">
+                                    <td style="text-align:center;font-weight: 630;">N/A</td>
+
+                                </aura:set>
+                            </aura:if>
+                            <!--<td style="text-align:center;"><p style="{!'color: ' + !row.class4}">{!row.percentage_for_Q4}%</p></td>-->
+                            <aura:if isTrue= "{!and(row.percentage_for_Q4 >0,Q4_in_Progress == false)}">
+                                <aura:if isTrue="{! (row.percentage_for_Q4 > 90) }">
+                                    <td style="text-align:center;color:#579857;font-weight: 630;" >{!row.percentage_for_Q4}%</td>
+                                </aura:if>
+                                <aura:if isTrue="{! and(row.percentage_for_Q4 >= 50,lessthan(row.percentage_for_Q4,90)) }">
+                                    <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!row.percentage_for_Q4}%</td>
+                                </aura:if>
+                                <aura:if isTrue="{! lessthan(row.percentage_for_Q4 , 50) }">
+                                    <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!row.percentage_for_Q4}%</td>
+                                </aura:if>
+                                <aura:set attribute="else">
+                                    <td style="text-align:center;font-weight: 630;" >N/A</td>
+
+                                </aura:set>
+                            </aura:if>
+                            <td style="text-align:center;font-weight: 630;">${!row.annualTarget}</td>
+                            <td style="text-align:center;font-weight: 630;">${!row.Annual}</td>
+                            <!--<td style="text-align:center;"><p style="{!'color: ' + !row.class5}">{!row.annualPercent}%</p></td>-->
+                            <aura:if isTrue="{! (row.annualPercent > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!row.annualPercent}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! and(row.annualPercent >= 50,lessthan(row.annualPercent,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!row.annualPercent}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(row.annualPercent , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!row.annualPercent}%</td>
+                            </aura:if>
+                        </tr>
+                    </aura:iteration>
+                    
+                </tbody>
+            </table>
+        </div>
+        
+        
+        
+        <br/><br/>
+        <div class="table-class" style="margin-left: 20px;margin-right:20px;">
+            <table style = "width:100%; border: 1px ridge #D9D9D9;border-radius:6px; overflow: hidden;box-shadow: 0 0 2px rgba(0, 0, 0, 0.3)" aura:id="LineTable" class=" maintable fixedtable slds-table slds-no-row-hover slds-table_bordered slds-table_col-bordered">
+                <thead >
+                    <tr style="height:40px;"> 
+                        <th rowspan="2" style = "width:10%;background-color:#EAEAEA;font-size:16px;font-weight: 700" class="slds-text-align_center">SRx Team</th>
+                        <th rowspan="2" style = "width:10%;background-color:#EAEAEA;font-size:16px;font-weight: 700"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "3">FY {!v.fiscalYear} Quarter 1
+                        <aura:if isTrue = "{!v.Q1_in_Progress}"><span style="font-size:12px"><i>(In Progress)</i></span>
+                            </aura:if>
+                        </th>
+                        <th rowspan="2" style = "width:10%;background-color:#EAEAEA;font-size:16px;font-weight: 700"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "3">FY {!v.fiscalYear} Quarter 2
+                        <aura:if isTrue = "{!v.Q2_in_Progress}"><span style="font-size:12px"><i>(In Progress)</i></span>
+                            </aura:if>
+                        </th>
+                        <th rowspan="2" style = "width:10%;background-color:#EAEAEA;font-size:16px;font-weight: 700"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "3">FY {!v.fiscalYear} Quarter 3
+                         <aura:if isTrue = "{!v.Q3_in_Progress}"><span style="font-size:12px"><i>(In Progress)</i></span>
+                            </aura:if>
+                        </th>
+                        <th rowspan="2" style = "width:10%;background-color:#EAEAEA;font-size:16px;font-weight: 700"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "3">FY {!v.fiscalYear} Quarter 4
+                            <aura:if isTrue = "{!v.Q4_in_Progress}"><span style="font-size:12px"><i>(In Progress)</i></span>
+                            </aura:if>
+                        </th>
+                        <th rowspan="2" style = "width:10%;background-color:#EAEAEA;font-size:16px;font-weight: 700"  class="slds-truncate slds-cell-wrap slds-text-align_center" colspan = "3">FY {!v.fiscalYear} Annual</th>
+                        
+                        
+                    </tr>
+                </thead>
+                <tbody>  
+                    <tr style="height:40px;font-size:14px;">
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 630;background-color:#F5F5F5;">West</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 630;background-color:#F5F5F5;">Target</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 630;background-color:#F5F5F5;">Achieved</td>
+                        <td style="text-align:center;background-color:#F5F5F5;">
+                            <span onclick="{!c.sortByQuarterOne}">
+                                <aura:if isTrue="{!v.isAscQ1}">
+                                    <lightning:icon class="blackIcon" iconName="utility:arrowup" 
+                                                    size="xx-small" 
+                                                    alternativeText="sort arrow up"/>
+                                    
+                                    <aura:set attribute = "else">
+                                        <lightning:icon class="blackIcon" iconName="utility:arrowdown" 
+                                                        size="xx-small" 
+                                                        alternativeText="sort arrow down"/> 
+                                    </aura:set>
+                                </aura:if>
+                                
+                            </span>
+                            
+                            %</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Target</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Achieved</td>
+                        <td style="text-align:center;background-color:#F5F5F5;">
+                            <span onclick="{!c.sortByQuarterTwo}">
+                                <aura:if isTrue="{!v.isAscQ2}">
+                                    <lightning:icon class="blackIcon" iconName="utility:arrowup" 
+                                                    size="xx-small" 
+                                                    alternativeText="sort arrow up"/>
+                                    
+                                    <aura:set attribute = "else">
+                                        <lightning:icon class="blackIcon" iconName="utility:arrowdown" 
+                                                        size="xx-small" 
+                                                        alternativeText="sort arrow down"/>
+                                    </aura:set>
+                                </aura:if>
+                            </span>
+                            %</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Target</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Achieved</td>
+                        <td style="text-align:center;background-color:#F5F5F5;">
+                            <span onclick="{!c.sortByQuarterThree}">
+                                <aura:if isTrue="{!v.isAscQ3}">
+                                    <lightning:icon class="blackIcon" iconName="utility:arrowup" 
+                                                    size="xx-small" 
+                                                    alternativeText="sort arrow up"/>
+                                    
+                                    <aura:set attribute = "else">
+                                        <lightning:icon class="blackIcon" iconName="utility:arrowdown" 
+                                                        size="xx-small" 
+                                                        alternativeText="sort arrow down"/>
+                                    </aura:set>
+                                </aura:if>
+                            </span>
+                            %</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Target</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Achieved</td>
+                        <td style="text-align:center;background-color:#F5F5F5;">
+                            <span onclick="{!c.sortByQuarterFour}">
+                                <aura:if isTrue="{!v.isAscQ4}">
+                                    <lightning:icon class="blackIcon" iconName="utility:arrowup" 
+                                                    size="xx-small" 
+                                                    alternativeText="sort arrow up"/>
+                                    
+                                    <aura:set attribute = "else">
+                                        <lightning:icon class="blackIcon" iconName="utility:arrowdown" 
+                                                        size="xx-small" 
+                                                        alternativeText="sort arrow down"/>
+                                    </aura:set>
+                                </aura:if>
+                            </span>
+                            %</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Target</td>
+                        <td style="text-align:center;color:#2D2D2D;font-weight: 600;background-color:#F5F5F5;">Achieved</td>
+                        <td style="text-align:center;background-color:#F5F5F5;">
+                            <span onclick="{!c.sortByAnnual}">
+                                <aura:if isTrue="{!v.isAscAnnual}">
+                                    <lightning:icon class="blackIcon" iconName="utility:arrowup" 
+                                                    size="xx-small" 
+                                                    alternativeText="sort arrow up"/>
+                                    
+                                    <aura:set attribute = "else">
+                                        <lightning:icon class="blackIcon" iconName="utility:arrowdown" 
+                                                        size="xx-small" 
+                                                        alternativeText="sort arrow down"/>
+                                    </aura:set>
+                                </aura:if>
+                            </span>
+                            %</td>
+                    </tr>
+                    
+                    
+                    <aura:iteration items="{!v.DaveSmith}" var="dave">
+                        <tr style="height:40px;color:#676767;font-weight:400">
+                            <td style="font-weight: 630;">Dave Smith</td>
+                            <td style="text-align:center;font-weight: 630;">${!dave.Target1}</td>
+                            <td style="text-align:center;font-weight: 630;">${!dave.Quarter1}</td>
+  							<aura:if isTrue="{! (dave.percentage1 > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!dave.percentage1}%</td>
+                            </aura:if>
+                              <aura:if isTrue="{! and(dave.percentage1 >= 50,lessthan(dave.percentage1,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!dave.percentage1}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(dave.percentage1 , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!dave.percentage1}%</td>
+                            </aura:if>                            
+                           <!-- <td style="text-align:center;color:#579857;font-weight: 630;" >{!dave.percentage1}%</td>-->
+                            
+                            
+                            <td style="text-align:center;font-weight: 630;">${!dave.Target2}</td>
+                            <td style="text-align:center;font-weight: 630;">${!dave.Quarter2}</td>
+							<aura:if isTrue="{! (dave.percentage2 > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!dave.percentage2}%</td>
+                            </aura:if>
+                              <aura:if isTrue="{! and(dave.percentage2 >= 50,lessthan(dave.percentage2,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!dave.percentage2}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(dave.percentage2 , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!dave.percentage2}%</td>
+                            </aura:if>                            
+                            <!--<td style="text-align:center;color:#579857;font-weight: 630;" >{!dave.percentage2}%</td>-->
+                            
+                            
+                            <td style="text-align:center;font-weight: 630;">${!dave.Target3}</td>
+                            <td style="text-align:center;font-weight: 630;">${!dave.Quarter3}</td>
+							<aura:if isTrue="{! (dave.percentage3 > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!dave.percentage3}%</td>
+                            </aura:if>
+                              <aura:if isTrue="{! and(dave.percentage3 >= 50,lessthan(dave.percentage3,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!dave.percentage3}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(dave.percentage3 , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!dave.percentage3}%</td>
+                            </aura:if>                            
+                            <!--<td style="text-align:center;color:#579857;font-weight: 630;" >{!dave.percentage3}%</td>-->
+                            
+                            
+                            <td style="text-align:center;font-weight: 630;">${!dave.Target4}</td>
+                            <aura:if isTrue= "{!and(dave.Quarter4 >0,Q4_in_Progress == false)}">  
+                                <td style="text-align:center;font-weight: 630;">${!dave.Quarter4}</td>
+                                <aura:set attribute ="else">
+                                    <td style="text-align:center;font-weight: 630;">N/A</td>
+                                </aura:set>
+                                
+                            </aura:if>
+                            <aura:if isTrue= "{!and(dave.percentage4 >0,Q4_in_Progress == false)}">
+                                
+                                <aura:if isTrue="{! (dave.percentage4 > 90) }">
+                                    <td style="text-align:center;color:#579857;font-weight: 630;" >{!dave.percentage4}%</td>
+                                </aura:if>
+                                <aura:if isTrue="{! and(dave.percentage4 >= 50,lessthan(dave.percentage4,90)) }">
+                                    <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!dave.percentage4}%</td>
+                                </aura:if>
+                                <aura:if isTrue="{! lessthan(dave.percentage4 , 50) }">
+                                    <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!dave.percentage4}%</td>
+                                </aura:if>  
+                                <aura:set attribute= "else">
+                                    <td style="text-align:center;font-weight: 630;">N/A</td>
+                                </aura:set>
+                            </aura:if>
+                            <!--<td style="text-align:center;color:#579857;font-weight: 630;" >{!dave.percentage4}%</td>-->
+                            
+                            
+                            <td style="text-align:center;font-weight: 630;">${!dave.TargetAchieved}</td>
+                            <td style="text-align:center;font-weight: 630;">${!dave.AnnualAchieved}</td>
+                            <!--<td style="text-align:center;"><p style="{!'color: ' + !row.class5}">{!row.annualPercent}%</p></td>-->
+                            
+                            <td style="text-align:center;color:#579857;font-weight: 630;" >{!dave.Annualpercentage}%</td>
+                            
+                            
+                        </tr>
+                    </aura:iteration>
+                    
+                    
+                    
+                    <aura:iteration items="{!v.WestSalesRepData}" var="row">
+                        <tr style="height:40px;color:#676767;font-weight:400">
+                            <td style="font-weight: 630;">{!row.Name}</td>
+                            <td style="text-align:center;font-weight: 630;">${!row.Target1}</td>
+                            <td style="text-align:center;font-weight: 630;">${!row.Q1_Achieved}</td>
+                            <!--<td style="text-align:center;" ><p style="{!'color: ' + row.class1}"> {!row.percentage_for_Q1}%</p></td>-->
+                            <aura:if isTrue="{! (row.percentage_for_Q1 > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!row.percentage_for_Q1}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! and(row.percentage_for_Q1 >= 50,lessthan(row.percentage_for_Q1,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!row.percentage_for_Q1}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(row.percentage_for_Q1 , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!row.percentage_for_Q1}%</td>
+                            </aura:if>
+                            
+                            <td style="text-align:center;font-weight: 630;">${!row.Target2}</td>
+                            <td style="text-align:center;font-weight: 630;">${!row.Q2_Achieved}</td>
+                            <!--<td style="text-align:center;"><p style="{!'color: ' + !row.class2}">{!row.percentage_for_Q2}%</p></td>-->
+                            <aura:if isTrue="{! (row.percentage_for_Q2 > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!row.percentage_for_Q2}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! and(row.percentage_for_Q2 >= 50,lessthan(row.percentage_for_Q2,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!row.percentage_for_Q2}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(row.percentage_for_Q2 , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!row.percentage_for_Q2}%</td>
+                            </aura:if>
+                            <td style="text-align:center;font-weight: 630;">${!row.Target3}</td>
+                            <td style="text-align:center;font-weight: 630;">${!row.Q3_Achieved}</td>
+                            <!--<td style="text-align:center;"><p style="{!'color: ' + !row.class3}">{!row.percentage_for_Q3}%</p></td>-->
+                            <aura:if isTrue="{! (row.percentage_for_Q3 > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!row.percentage_for_Q3}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! and(row.percentage_for_Q3 >= 50,lessthan(row.percentage_for_Q3,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!row.percentage_for_Q3}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(row.percentage_for_Q3 , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!row.percentage_for_Q3}%</td>
+                            </aura:if>
+                            <td style="text-align:center;font-weight: 630;">${!row.Target4}</td>
+                            <aura:if isTrue= "{!and(row.Q4_Achieved >0,Q4_in_Progress == false)}">
+                                <td style="text-align:center;font-weight: 630;">${!row.Q4_Achieved}</td>
+                                 <aura:set attribute = "else">
+                                    <td style="text-align:center;font-weight: 630;">N/A</td>
+                                </aura:set>
+                            </aura:if>
+                                <!--<td style="text-align:center;"><p style="{!'color: ' + !row.class4}">{!row.percentage_for_Q4}%</p></td>-->
+                            <aura:if isTrue= "{!and(row.percentage_for_Q4 >0,Q4_in_Progress == false)}">  
+                                <aura:if isTrue="{! (row.percentage_for_Q4 > 90) }">
+                                    <td style="text-align:center;color:#579857;font-weight: 630;" >{!row.percentage_for_Q4}%</td>
+                                </aura:if>
+                                <aura:if isTrue="{! and(row.percentage_for_Q4 >= 50,lessthan(row.percentage_for_Q4,90)) }">
+                                    <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!row.percentage_for_Q4}%</td>
+                                </aura:if>
+                                <aura:if isTrue="{! lessthan(row.percentage_for_Q4 , 50) }">
+                                    <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!row.percentage_for_Q4}%</td>
+                                </aura:if>
+                                <aura:set attribute = "else">
+                                    <td style="text-align:center;font-weight: 630;">N/A</td>
+                                </aura:set>
+                            </aura:if>
+                            <td style="text-align:center;font-weight: 630;">${!row.annualTarget}</td>
+                            <td style="text-align:center;font-weight: 630;">${!row.Annual}</td>
+                            <!--<td style="text-align:center;"><p style="{!'color: ' + !row.class5}">{!row.annualPercent}%</p></td>-->
+                            <aura:if isTrue="{! (row.annualPercent > 90) }">
+                                <td style="text-align:center;color:#579857;font-weight: 630;" >{!row.annualPercent}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! and(row.annualPercent >= 50,lessthan(row.annualPercent,90)) }">
+                                <td style="text-align:center;color:#5072F1;font-weight: 630;" >{!row.annualPercent}%</td>
+                            </aura:if>
+                            <aura:if isTrue="{! lessthan(row.annualPercent , 50) }">
+                                <td style="text-align:center;color:#EB4747;font-weight: 630;" >{!row.annualPercent}%</td>
+                            </aura:if>
+                        </tr>
+                    </aura:iteration>  
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+</aura:component>

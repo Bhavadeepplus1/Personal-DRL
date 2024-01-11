@@ -1,0 +1,463 @@
+<aura:component controller="Phoenix_BidVIPRebateChangeReqCtrl" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" 
+                access="global" >
+    <aura:attribute name="filetype" type="List" default="['.odt','.wps','.rtf','.msg','.pps','.png','.war','.pjp','.apng','.gif','.pjp','.pjpeg','.jfif','.webp','.avif','.jpg','.jpeg','.pdf','.xlsm','.xlsx','.xlsb','.CSV','.xltx','.html', '.htt', '.mht',' .svg', '.swf', '.thtml','.xhtml','.txt','.odp','.pptx','.ppt','.docx','.doc','.docm','.dotx','.dot','.zip','.zipx','.tar','.xls']"/>
+    <aura:registerEvent name="lightningEvent1" type="c:Phoenix_VIPRebateEvent"/>
+    <ltng:require scripts="/support/console/52.0/integration.js"/>
+    
+    
+    <aura:attribute name="moretabs" type="Aura.Component[]"/>
+    <aura:attribute name="tabName" type="String" />
+    <aura:attribute name="selectedTabNumber" type="Integer"/>
+    <aura:attribute name="bidId" type="String" />
+    <aura:attribute name="customerIdList" type="List" />
+    
+    <aura:attribute name="tabId" type="String" default="EBLI"/>
+    
+    <aura:attribute name="recordId" type="String" />
+    <lightning:navigation aura:id="navService"/> 
+    <aura:attribute name="bidRecords" type="Phoenix_Bid__c[]"/>
+    <aura:attribute name="bidRecord" type="Phoenix_Bid__c"/>
+    <aura:attribute name="selectedCustId" type="string"/>    
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="objectAPIName" type="string" default=""/>
+    <aura:attribute name="IconName" type="string" default=""/>
+    <aura:attribute name="label" type="string" default=""/>
+    <aura:attribute name="selectedTabId" type="string"/>
+    <aura:registerEvent name="deleteEvent" type="c:deleteVIPRebateTab"/>
+    
+    <aura:attribute name="options" type="List"  />
+    
+    <aura:attribute name="activeSections" type="string"/>
+    <aura:attribute name="activeSectionsMessage" type="String" default=" " />
+    <!---Handlers START-->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!---Handlers END-->
+    
+    <!---Current& Proposed Sections START-->
+    <aura:attribute name="bidRebateCurrentList" type="Phoenix_VIP_Rebate_Line__c[]"/>
+    <aura:attribute name="bidRebateProposedList2" type="Phoenix_VIP_Rebate_Line__c[]"/>
+    <aura:attribute name = "checkBoxFieldCurrent" type = "Boolean" default ="false"/>
+    <aura:attribute name = "checkBoxField" type = "Boolean" default ="false"/>
+    <aura:attribute name="fileList" type="List"  /> 
+    <aura:attribute name="isView" type="Boolean" access="GLOBAL" default="false"/>
+    <aura:attribute name="rebateType" type="string" default="Currency"/>
+    <aura:attribute name="bidNumber" type="string"  />
+    <aura:attribute name="bidName" type="string"  />
+    <aura:attribute name="busStatus" type="string"  />
+    <aura:attribute name="busCom" type="string"  />
+    <aura:attribute name="finStatus" type="string"  />
+    <aura:attribute name="finCom" type="string"  />
+    <aura:attribute name="contrStatus" type="string"  />
+    <aura:attribute name="contrCom" type="string"  />
+    <aura:attribute name="custStatus" type="string"  />
+    <aura:attribute name="custCom" type="string"  />
+    <aura:attribute name="vistStatus" type="string"  />
+    <aura:attribute name="vistCom" type="string"  />
+    <aura:attribute name="paymentFrequency" type="string"  />
+    <aura:attribute name="netGross" type="string"  />
+    <aura:attribute name="proposedPaymentFrequency" type="string"  />
+    <aura:attribute name="proposedNetGross" type="string"  />
+    <aura:attribute name="division" type="string" default="None" />
+    <aura:attribute name="divisionOptions" type="List" default="[
+                                                                {'label': 'None', 'value': 'None'},
+                                                                {'label': 'Rx', 'value': 'Rx'},
+                                                                {'label': 'SRx', 'value': 'SRx'},
+                                                                {'label': 'OTC', 'value': 'OTC'},
+                                                                ]"/>
+    <aura:attribute name="paymentFrequencyOptions" type="List" default="[
+                                                                        {'label': 'Monthly', 'value': 'Monthly'},
+                                                                        {'label': 'Quarterly', 'value': 'Quarterly'},
+                                                                        {'label': 'Half-Yearly', 'value': 'Half-Yearly'},
+                                                                        {'label': 'Annual', 'value': 'Annual'},
+                                                                        ]"/>
+    <aura:attribute name="netGrossOptions" type="List" default="[
+                                                                {'label': 'Net', 'value': 'Net'},
+                                                                {'label': 'Gross', 'value': 'Gross'},
+                                                                ]"/>
+    <aura:attribute name="disableDivision" type="boolean" />
+    <aura:attribute name="BidTypeVal" type="string"  />
+    <aura:attribute name="Message" type="String" default=""/>
+    <aura:attribute name="isSpinner" type="boolean" default="false" />
+    <aura:attribute name="showDateMsg" type="boolean" default="false" />
+    <aura:attribute name="showDateMsgStrt" type="boolean" default="false" />
+    <aura:attribute name="showDateMsgEnd" type="boolean" default="false" />
+    <aura:attribute name="showRecalculate" type="boolean" default="false" />
+    <aura:attribute name="validFrom" type="boolean" default="false" />
+    <aura:attribute name="isRebTypeChanged" type="boolean" default="false" />
+    <aura:attribute name="isRebTypeChangedPopup" type="boolean" default="false" />
+    <aura:attribute name="showSaveCancelBtn" type="boolean" default="false" />
+    <aura:attribute name="showProceedBtn" type="boolean" default="false" />
+    <aura:attribute name="strtDateRebate" type="date"/>
+    <aura:attribute name="endDateRebate" type="date"/>
+    <aura:attribute name="typeRebate" type="string"/>
+    <aura:attribute name="excDetailsRebate" type="string"/>
+    <aura:attribute name="strtDateRebatePro" type="date"/>
+    <aura:attribute name="endDateRebatePro" type="date"/>
+    <aura:attribute name="typeRebatePro" type="string"/>
+    <aura:attribute name="excDetailsRebatePro" type="string"/>
+    <aura:attribute name="custName" type="string"/>
+    <aura:attribute name="bidType" type="string"/>
+    <aura:attribute name="reCalculateToast" type="boolean"  default="false" />
+    <aura:attribute name="discRebate" type="boolean"  default="false" />
+    <aura:attribute name="currentRec" type="Id" />
+    <aura:attribute name="currentRecName" type="string" />
+    <aura:attribute name="proposedRec" type="Id" />
+    <aura:attribute name="proposedRecName" type="string" />
+    <aura:attribute name="showSaveCancelBtn1" type="Boolean"  default="false"/>
+    <aura:attribute name="showSaveCancelBtn2" type="Boolean"  default="false"/>
+    <aura:attribute name="customerLkp" type="string" default=""/>
+    <aura:attribute name="showSearchResult" type="Boolean"  default="false"/>
+    
+    <!---Current& Proposed Sections END-->
+    
+    <!---Approval Process START-->
+    <aura:attribute name="approvalStatus" type="string" />
+    <aura:attribute name="isBusinessApprovePerson" type="string" />
+    <aura:attribute name="isFinanceApprovePerson" type="string" />
+    <aura:attribute name="isCustomerApprovePerson" type="string" />
+    <aura:attribute name="isVistexApprovePerson" type="string" />
+    <aura:attribute name="isContractsApprovePerson" type="string" />
+    <aura:attribute name="loggedInUserName" type="string" default=''/>
+    <aura:attribute name="doNotEdit" type="boolean"  default="false" />
+    <aura:attribute name="disableInApproval" type="boolean"  default="false" />
+    <!---Approval Process END-->
+    
+    <!--
+    <aura:attribute name="showCopyButton" type="boolean" default="true" />-->    
+    <aura:attribute name="vipRebate" type="Object" />
+    
+    <aura:attribute name="isVipRebateExist" type="boolean" default="true"/>
+    <aura:handler name="lightningEvent" event="c:Phoenix_BidVIPRebateChangeEvt" action="{!c.handleEvent}"/>
+    <!-- <aura:registerEvent name="processedVipRebate" type="c:VipRebateVerificationFromTab"/>
+    <aura:handler action="{!c.receiveVipObject}" event="c:PassVIPObjectEvent" /> -->
+    
+    <div style="text-align:right;padding-right:14px;">
+        <aura:if isTrue="{!and(v.approvalStatus=='Draft',v.bidRecord.Phoenix_Customer__c!=v.selectedCustId)}">
+            &nbsp;<lightning:button variant="neutral" label="Delete" title="Delete" onclick="{! c.deletePropRebate }"/>
+        </aura:if>
+        <lightning:button variant="neutral" label="Export" title="Export" onclick="{! c.downloadCsv }" />
+        <aura:if isTrue="{!v.customerLkp != ''}">
+            <lightning:button variant="brand" label="Search" onclick="{!c.getCustomerVIP}"/>
+        </aura:if>
+    </div>
+    <!--Current Rebate Section START -->          
+    <aura:if isTrue="{!v.isSpinnerLoad}">
+        <div class="backgroundInverse">
+            <lightning:spinner alternativeText="Loading" variant="brand" />
+        </div>
+    </aura:if>
+    <div class="slds-box slds-grid" style="margin: 0px 8px;padding: 8px 4px;">
+        <div class="slds-col slds-size_1-of-12">
+            <lightning:combobox label="Division" value="{!v.division}" placeholder="Select Division" options="{! v.divisionOptions }" required="true" disabled="{!v.disableDivision}" onchange="{!c.handleChange}"/>
+        </div>
+    </div>
+    <aura:if isTrue="{!v.division != 'None'}">
+        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="Current Rebate" >
+            <lightning:accordionSection name="Current Rebate" label="Current Rebate"  >
+                <p>
+                    <lightning:recordEditForm objectApiName="Phoenix_Bid__c" recordId="{!v.recordId}" >
+                        <aura:if isTrue="{!v.strtDateRebate!=null}">
+                            <div class="slds-grid" >
+                                <div class="slds-col slds-size_1-of-4">
+                                    <!-- <lightning:inputField fieldName="Phoenix_Customer__c" disabled="true" /> -->
+                                    <l_lookup:Lookup label="Customer" aura:id="customerLookup"
+                                                     objectType="Account" 
+                                                     additionalField="Name"
+                                                     selectedRecordId="{!v.selectedCustId}"
+                                                     readOnly="true"/> 
+                                </div>
+                                <div class="slds-col slds-size_1-of-4">
+                                    <lightning:input type="date" name="input1" label="Start Date" value="{!v.strtDateRebate}" disabled='true' style="width:99%"/>
+                                </div>
+                                &nbsp;<div class="slds-col slds-size_1-of-4">
+                                <lightning:input type="date" name="input2" label="End Date" disabled='true' value="{!v.endDateRebate}" style="width:98%"/>
+                                </div>   
+                                <div class="slds-col slds-size_1-of-4">
+                                    <lightning:select label="Type"
+                                                      aura:id="headerRebateType2345"
+                                                      value="{!v.typeRebate}"
+                                                      onchange="{!c.pullChangedTyeRecord}"
+                                                      disabled="true">
+                                        <option value="Currency">Currency</option>
+                                        <option value="Quantity">Quantity</option>
+                                    </lightning:select>    
+                                </div>
+                            </div>
+                            <div class="slds-grid">
+                                <div class="slds-col slds-size_1-of-4" style="margin: 0px 4px;" >
+                                    <lightning:combobox label="Net/Gross" disabled='true' value="{!v.netGross}" placeholder="" options="{! v.netGrossOptions }"/>
+                                </div>
+                                <div class="slds-col slds-size_1-of-4" >
+                                    <lightning:combobox label="Payment Frequency" disabled='true' value="{!v.paymentFrequency}" placeholder="" options="{! v.paymentFrequencyOptions }"/>
+                                </div>
+                                <div class="slds-col slds-size_1-of-4" >
+                                    <lightning:input label="Division" disabled='true' value="{!v.division}" />
+                                </div>
+                                <aura:if isTrue="{!v.currentRec!=null}">
+                                    &nbsp;&nbsp;<div class="slds-col slds-size_1-of-4" style="margin-top:25px">
+                                    Current Rebate:  <a href="{!'/'+v.currentRec}" target="_blank" width="90%"> {!v.currentRecName}</a>
+                                    </div>
+                                </aura:if>
+                            </div>
+                            <div class="slds-grid" >
+                                <div class="slds-col slds-size_1-of-4" style="margin-top:25px">
+                                    <lightning:input type="checkbox" label="Exclusions" aura:id="exclusions1" checked="{!v.checkBoxFieldCurrent}" onchange="{!c.onCheckExclusions}"
+                                                     disabled='true' style="width:98%"/>
+                                </div>
+                                <div class="slds-col slds-size_1-of-4">
+                                    <lightning:input type="text" label="Exclusion Details" aura:id="excDetails1" value="{!v.excDetailsRebate}" disabled='true' style="width:98%"/>
+                                </div>                             
+                            </div>
+                        </aura:if>
+                        <aura:if isTrue="{!v.strtDateRebate==null}"> 
+                            
+                            <div class="slds-grid" >
+                                <div class="slds-col slds-size_1-of-3" >
+                                    <lightning:input label="Bid Type" disabled='true' value="{!v.bidType}" />
+                                </div>
+                                <div class="slds-col slds-size_1-of-3">
+                                    <!-- <lightning:inputField fieldName="Phoenix_Customer__c" disabled="true" /> -->
+                                    <l_lookup:Lookup label="Customer" aura:id="customerLookup"
+                                                     objectType="Account" 
+                                                     additionalField="Name"
+                                                     selectedRecordId="{!v.selectedCustId}"
+                                                     readOnly="true"/> 
+                                </div>
+                                &nbsp;<div class="slds-col slds-size_1-of-3">
+                                <lightning:select label="Type"
+                                                  aura:id="headerRebateType2345"
+                                                  value="{!v.typeRebate}" 
+                                                  onchange="{!c.pullChangedTyeRecord}"
+                                                  disabled="{!v.approvalStatus!='Draft'}">
+                                    <option value="Currency">Currency</option>
+                                    <option value="Quantity">Quantity</option>
+                                </lightning:select>    
+                                </div>
+                            </div>
+                            
+                            <div class="slds-grid" >
+                                <div class="slds-col slds-size_1-of-3" style="margin: 0px 4px;" >
+                                    <lightning:combobox label="Net/Gross" disabled='true' value="{!v.netGross}" placeholder="" options="{! v.netGrossOptions }"/>
+                                </div>
+                                <div class="slds-col slds-size_1-of-3" >
+                                    <lightning:combobox label="Payment Frequency" disabled='true' value="{!v.paymentFrequency}" placeholder="" options="{! v.paymentFrequencyOptions }"/>
+                                </div>
+                                <div class="slds-col slds-size_1-of-3" >
+                                    <lightning:input label="Division" disabled='true' value="{!v.division}" />
+                                </div>
+                            </div>
+                            
+                            <lightning:card >
+                                <center>
+                                    <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                        <span class="slds-icon_container slds-m-right_x-small" title="There are no Current VIP Rebates">
+                                            <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                        </span>
+                                        <h2>There are no Current VIP Rebates </h2>
+                                    </div>
+                                </center>
+                            </lightning:card>  
+                        </aura:if>
+                        
+                    </lightning:recordEditForm>
+                </p>
+                <br></br>
+                <aura:if isTrue="{!(v.bidRebateCurrentList.length > 0 )}">
+                    <div class="slds-table--header-fixed_container" aura:Id='mainDiv'>
+                        <div class="slds-scrollable_y" style="height:100%;">
+                            <table class="maintable slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered" style="border:1px solid #eaeaea">
+                                <thead>
+                                    <tr> 
+                                        <th class="slds-truncate slds-cell-wrap" style="padding-left: 25px;font-weight: normal;font-size: var(--lwc-fontSize3,0.8125rem)">Tier</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="font-weight: normal;font-size: var(--lwc-fontSize3,0.8125rem)">Dollar Value From</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="font-weight: normal;font-size: var(--lwc-fontSize3,0.8125rem)">Dollar Value To</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="font-weight: normal;font-size: var(--lwc-fontSize3,0.8125rem)">Unit Volume From</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="font-weight: normal;font-size: var(--lwc-fontSize3,0.8125rem)">Unit Volume To</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="font-weight: normal;font-size: var(--lwc-fontSize3,0.8125rem)">Discount Rebate (%)</th>
+                                        <th class="slds-truncate slds-cell-wrap" style="font-weight: normal;font-size: var(--lwc-fontSize3,0.8125rem)">Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <aura:iteration items="{!v.bidRebateCurrentList}" var="bidCurrentRebateListinSF" indexVar="sNo">
+                                        <tr>
+                                            <td >{!bidCurrentRebateListinSF.Phoenix_Tier__c}</td>
+                                            <aura:if  isTrue="{!bidCurrentRebateListinSF.Phoenix_Dollar_Value_From__c==null}" >
+                                                <td class="slds-truncate slds-text-align_right"> <lightning:formattedNumber value="{!bidCurrentRebateListinSF.Phoenix_Dollar_Value_From__c}" style="currency" currencyCode="USD" minimumFractionDigits="0"/></td>
+                                                
+                                            </aura:if>
+                                            <aura:if  isTrue="{!bidCurrentRebateListinSF.Phoenix_Dollar_Value_From__c!=null}" >
+                                                <td class="slds-truncate slds-text-align_right">
+                                                    <lightning:formattedNumber value="{!bidCurrentRebateListinSF.Phoenix_Dollar_Value_From__c}" style="currency" currencyCode="USD" minimumFractionDigits="0"/>
+                                                    
+                                                </td>
+                                                
+                                            </aura:if>
+                                            
+                                            <aura:if  isTrue="{!bidCurrentRebateListinSF.Phoenix_Dollar_Value_To__c==null}" >
+                                                
+                                                <td class="slds-truncate slds-text-align_right"><lightning:formattedNumber value="{!bidCurrentRebateListinSF.Phoenix_Dollar_Value_To__c}" style="currency" currencyCode="USD" minimumFractionDigits="0"/></td>
+                                                
+                                            </aura:if>
+                                            
+                                            <aura:if  isTrue="{!bidCurrentRebateListinSF.Phoenix_Dollar_Value_To__c!=null}" >
+                                                <td class="slds-truncate slds-text-align_right"><lightning:formattedNumber value="{!bidCurrentRebateListinSF.Phoenix_Dollar_Value_To__c}" style="currency" currencyCode="USD" minimumFractionDigits="0"/>
+                                                    
+                                                </td>
+                                                
+                                            </aura:if>
+                                            <td class="slds-truncate slds-text-align_right"> <lightning:formattedNumber value="{!bidCurrentRebateListinSF.Phoenix_Unit_Volume_From__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                            <td class="slds-truncate slds-text-align_right"><lightning:formattedNumber value="{!bidCurrentRebateListinSF.Phoenix_Unit_Volume_To__c}"  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                            <aura:if  isTrue="{!bidCurrentRebateListinSF.Phoenix_Discount_Rebate__c==null}" >
+                                                <td class="slds-truncate slds-text-align_right"><lightning:formattedNumber value="{!bidCurrentRebateListinSF.Phoenix_Discount_Rebate__c}" style="percent-fixed" minimumFractionDigits="2" /></td>
+                                            </aura:if>
+                                            <aura:if  isTrue="{!bidCurrentRebateListinSF.Phoenix_Discount_Rebate__c!=null}" >
+                                                <td class="slds-truncate slds-text-align_right"><lightning:formattedNumber value="{!bidCurrentRebateListinSF.Phoenix_Discount_Rebate__c}" style="percent-fixed" minimumFractionDigits="2" /></td>
+                                            </aura:if>
+                                            <td>{!bidCurrentRebateListinSF.Phoenix_Remarks__c}</td>
+                                        </tr>    
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <br/>
+                    <!--- <aura:if isTrue="{!!v.showProposedSection}">
+                            <center>
+                                <lightning:button label="Copy" type="submit" variant="brand" onclick="{!c.copyCurrentRebateList}"/>&nbsp; 
+                            </center>-->
+                    <!--- </aura:if>-->
+                    <aura:set attribute="else">
+                        <aura:if isTrue="{!v.strtDateRebate != null}">
+                            <lightning:card >
+                                <center>
+                                    <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                        <span class="slds-icon_container slds-m-right_x-small" title="Please add VIP Rebates to view the table">
+                                            <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                        </span>
+                                        <h2>There are no Current VIP Rebate Lines for the Current Rebate </h2>
+                                    </div>
+                                </center>
+                            </lightning:card>
+                        </aura:if>
+                    </aura:set>
+                </aura:if> 
+            </lightning:accordionSection>
+        </lightning:accordion>
+        <!--Current Rebate Section END -->
+        
+        <!--Proposed Rebate Section START -->       
+        <lightning:accordion allowMultipleSectionsOpen="true"  activeSectionName="Proposed Rebate">
+            <lightning:accordionSection name="Proposed Rebate" label="Proposed Rebate" >
+                <p>
+                    <lightning:recordEditForm objectApiName="Phoenix_Bid_VIP_Rebate__c" recordId="{!v.recordId}" >
+                        <div class="slds-grid" >
+                            <div class="slds-col slds-size_1-of-4" >
+                                <lightning:input type="date" name="input1" label="Start Date" aura:id="startDate" placeholder="Choose Date here..."  required="true" value="{!v.strtDateRebatePro}" disabled="{!v.disableInApproval}" 
+                                                 
+                                                 onchange="{!c.handleSaveOnChange}">
+                                </lightning:input>
+                            </div>
+                            &nbsp;&nbsp;&nbsp;<div class="slds-col slds-size_1-of-4">
+                            <lightning:input type="date" name="input2" label="End Date" aura:id='endDate' onchange="{!c.handleSaveOnChange}" class="{!v.showDateMsgEnd==true?'colorClass':'noColorClass'}" placeholder="Choose Date here..." 
+                                             required="true" value="{!v.endDateRebatePro}" disabled="{!v.disableInApproval}"/>
+                            </div>  
+                            &nbsp;&nbsp;&nbsp;<div class="slds-col slds-size_1-of-4" style="margin-top:25px">
+                            <lightning:input type="checkbox" label="Exclusions" aura:id="exclusions" style="width:99%" checked="{!v.checkBoxField}" onchange="{!c.onCheckExclusions}"  disabled="{!v.disableInApproval}" />
+                            
+                            </div> 
+                            <div class="slds-col slds-size_1-of-4">
+                                <lightning:input type="text" label="Exclusion Details" aura:id="excDetails" style="margin-right:7%" value="{!v.excDetailsRebatePro}" disabled="{!v.disableInApproval}" onchange="{!c.handleSaveOnChange}"/>
+                                
+                            </div>
+                        </div>
+                        
+                        <div class="slds-grid" >
+                            <div class="slds-col slds-size_1-of-5" >
+                                <lightning:select label="Type"
+                                                  aura:id="headerRebateType234"
+                                                  onchange="{!c.rebateTypeChange}"
+                                                  required="true" 
+                                                  value="{!v.typeRebatePro}" 
+                                                  disabled="{!v.disableInApproval}">
+                                    <option value="Currency">Currency</option>
+                                    <option value="Quantity">Quantity</option>
+                                </lightning:select>    
+                            </div>
+                            <div class="slds-col slds-size_1-of-5" style="margin: 0px 4px;" >
+                                <lightning:combobox label="Net/Gross" disabled="{!v.approvalStatus != 'Draft'}" value="{!v.proposedNetGross}" placeholder="" options="{! v.netGrossOptions }"/>
+                            </div>
+                            <div class="slds-col slds-size_1-of-5" >
+                                <lightning:combobox label="Payment Frequency" disabled="{!v.approvalStatus != 'Draft'}" value="{!v.proposedPaymentFrequency}" placeholder="" options="{! v.paymentFrequencyOptions }"/>
+                            </div>
+                            <div class="slds-col slds-size_1-of-5" >
+                                <lightning:input label="Division" disabled='true' value="{!v.division}" />
+                            </div>
+                            <aura:if isTrue="{!v.proposedRec!=null}">
+                                &nbsp;&nbsp;&nbsp;<div class="slds-col slds-size_1-of-5" style="margin-top:25px">
+                                Proposed Rebate:  <a href="{!'/'+v.proposedRec}" target="_blank"> {!v.proposedRecName}</a>
+                                </div>
+                            </aura:if>
+                        </div>
+                        
+                        <br></br>
+                        
+                    </lightning:recordEditForm>
+                </p>
+                <div aura:id="mainDiv1" style="height:230px;overflow:auto;margin-top:15px;" class=" slds-m-right_small slds-m-left_small">
+                    <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                        <table class="maintable slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered" style="border:1px solid #eaeaea">
+                            <thead>
+                                <tr>
+                                    <aura:if isTrue="{!!v.doNotEdit}">
+                                        <th></th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap " style="font-weight: normal;font-size: var(--lwc-fontSize3,0.8125rem);font-family: var(--lwc-fontFamily,'Salesforce Sans', Arial, sans-serif);">Tier</th>
+                                    <th class="slds-truncate slds-cell-wrap" style="font-weight: normal;font-size: var(--lwc-fontSize3,0.8125rem);font-family: var(--lwc-fontFamily,'Salesforce Sans', Arial, sans-serif);">Dollar Value From</th>
+                                    <th class="slds-truncate slds-cell-wrap" style="font-weight: normal;font-size: var(--lwc-fontSize3,0.8125rem)">Dollar Value To</th>
+                                    <th class="slds-truncate slds-cell-wrap" style="font-weight: normal;font-size: var(--lwc-fontSize3,0.8125rem)">Unit Volume From</th>
+                                    <th class="slds-truncate slds-cell-wrap" style="font-weight: normal;font-size: var(--lwc-fontSize3,0.8125rem)">Unit Volume To</th>
+                                    <th class="slds-truncate slds-cell-wrap" style="font-weight: normal;font-size: var(--lwc-fontSize3,0.8125rem)">Discount Rebate (%)</th>
+                                    <th class="slds-truncate slds-cell-wrap" style="font-weight: normal;font-size: var(--lwc-fontSize3,0.8125rem)">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                
+                                <aura:iteration items="{!v.bidRebateProposedList2}" var="biltem" indexVar="sNo">
+                                    <c:Phoenix_BidVIPRebateReqChildProposed aura:id="proposedCompEditOff" 
+                                                                            singleRec="{!biltem}" 
+                                                                            showSaveCancelBtn1="{!v.showSaveCancelBtn1}" 
+                                                                            sNo="{!sNo + 1}" 
+                                                                            lineItemId="{!biltem.Id}" 
+                                                                            type="{!v.rebateType}" 
+                                                                            validFromProposed="{!v.validFrom}"
+                                                                            typeChanged="{!v.isRebTypeChanged}" 
+                                                                            typeChangedPopup="{!v.isRebTypeChangedPopup}"
+                                                                            doNotEdit="{!v.doNotEdit}"
+                                                                            fromWhichCmp='childCmp'/>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                    </div> 
+                </div>
+                <br/>
+                <aura:if isTrue="{!v.approvalStatus=='Draft'}">
+                    <center>
+                        <lightning:button label="New" type="submit" variant="brand" onclick="{!c.addNewProposedRebateRow}"/>&nbsp; 
+                        <aura:if isTrue="{!v.showSaveCancelBtn1}">
+                            <lightning:button label="Recalculate" type="submit" variant="brand" onclick="{!c.reCalculate}"/>&nbsp; 
+                        </aura:if>
+                        <aura:if isTrue="{!or(v.showSaveCancelBtn1==true,v.showSaveCancelBtn2==true)}">
+                            <lightning:button label="Save" type="submit" variant="brand" onclick="{!c.saveProposedRebateList}"/>&nbsp;
+                            <lightning:button label="Cancel" type="submit" variant="neutral" onclick="{!c.closeModal}"/>&nbsp; 
+                        </aura:if>
+                        
+                    </center>
+                </aura:if>
+            </lightning:accordionSection>
+        </lightning:accordion>   
+        
+        <!--Proposed Rebate Section END --> 
+    </aura:if>
+    
+    
+</aura:component>

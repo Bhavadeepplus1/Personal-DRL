@@ -1,0 +1,153 @@
+<aura:component controller="Phoenix_NDCChangeEditor" >
+    <aura:attribute name="productInstance" type="Phoenix_NDC_Change_Product__c" default="{
+                                                                                         'sobjectType' : 'Phoenix_NDC_Change_Product__c',
+                                                                                         'Phoenix_NDC_Change_Name__c':'',
+                                                                                         'Phoenix_Current_Product__c' : '',
+                                                                                         'Phoenix_Current_Product_Name__c': '',
+                                                                                         'Phoenix_Current_NDC__c' : '',
+                                                                                         'Phoenix_Current_SAP_Number__c': '',
+                                                                                         'Phoenix_Current_Pack_Size__c' : '',
+                                                                                         'Phoenix_Proposed_Product__c': '',
+                                                                                         'Phoenix_Proposed_Product_Name__c': '',
+                                                                                         'Phoenix_Proposed_NDC__c': '',
+                                                                                         'Phoenix_Proposed_Pack_Size__c': '',
+                                                                                         'Phoenix_Proposed_SAP_Number__c': ''
+                                                                                         }"
+                    />
+    <aura:attribute name="recordIdNew" type="String" />
+    <aura:attribute name="rowIndex" type="String"/>
+    <aura:attribute name="currentProductFamily" type="string" />
+    <aura:attribute name="proposedProductFamily" type="string" />
+    <aura:attribute name="currentProducts" type="List" />
+    <aura:attribute name="proposedProducts" type="List" />
+    <aura:attribute name="currentProductInfo" type="string" />
+    <aura:attribute name="proposedProductInfo" type="string" />
+    <aura:attribute name="selectedCurrentProduct" type="string" />
+    <aura:attribute name="selectedProposedProduct" type="string" />
+    <aura:attribute name="disableProposedProduct" type="boolean" />
+    <aura:attribute name="recordId" type="String"  />
+    <aura:attribute name="pageReference" type="Object"/>
+    <aura:attribute name="ApprovalStatus" type="string" />
+    <aura:attribute name="selectedProducts" type="list" />
+    <aura:attribute name="isModalOpen" type="boolean" />
+    
+    <!-- Register 2 Lightning Event for handle add or Delete rows on Parent Component  --> 
+    <aura:registerEvent name="DeleteRowEvt" type="c:DeleteRowEvt"/> 
+    <aura:registerEvent name="AddRowEvt" type="c:AddNewRowEvt"/> 
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <tr>
+        <td scope="row">
+            <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+                <div>
+                    <lightning:combobox aura:id="selectItem"
+                                        placeholder="Choose Current Product"
+                                        value="{!v.selectedCurrentProduct}"
+                                        onchange="{!c.handleCurrentProductSelect}"
+                                        options="{!v.currentProducts}"
+                                        class="customPadding"
+                                        />
+                </div>
+                <aura:set attribute="else">
+                    <div>
+                        <lightning:combobox aura:id="selectItem"
+                                            placeholder="Choose Current Product"
+                                            value="{!v.selectedCurrentProduct}"
+                                            options="{!v.currentProducts}"
+                                            class="customPadding"
+                                            disabled="true"
+                                            />
+                    </div>
+                </aura:set>
+            </aura:if>
+        </td>
+        <aura:if isTrue="{!v.productInstance != null}" >
+            <td scope="row">
+                <div class="slds-truncate" title="{!v.productInstance.Phoenix_Current_NDC__c}">{!v.productInstance.Phoenix_Current_NDC__c}</div>
+            </td>
+            <aura:set attribute="else">
+                <td scope="row">
+                    <div class="slds-truncate"></div>
+                </td>
+            </aura:set>
+        </aura:if>
+        <aura:if isTrue="{!v.productInstance != null}" >
+            <td scope="row">
+                <div class="slds-truncate" title="{!v.productInstance.Phoenix_Current_SAP_Number__c}">{!v.productInstance.Phoenix_Current_SAP_Number__c}</div>
+            </td>
+            <aura:set attribute="else">
+                <td scope="row">
+                    <div class="slds-truncate"></div>
+                </td>
+            </aura:set>
+        </aura:if>
+        <td scope="row" isTrue="{!v.productInstance != null}">
+            <div class="slds-truncate" title="{!v.productInstance.Phoenix_Current_Pack_Size__c}">{!v.productInstance.Phoenix_Current_Pack_Size__c}</div>
+        </td>
+        <td scope="row" data-row-index="{!rowIndex}">
+            <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+                <lightning:combobox aura:id="selectItem"
+                                    placeholder="Choose Proposed Product"
+                                    value="{!v.selectedProposedProduct}"
+                                    onchange="{!c.handleProposedProductSelect}"
+                                    options="{!v.proposedProducts}"
+                                    disabled="{!v.disableProposedProduct}"
+                                    class="customPadding"
+                                    />
+                <aura:set attribute="else">
+                    <lightning:combobox aura:id="selectItem"
+                                        placeholder="Choose Proposed Product"
+                                        value="{!v.selectedProposedProduct}"
+                                        options="{!v.proposedProducts}"
+                                        disabled="true"
+                                        class="customPadding"
+                                        />
+                </aura:set>
+            </aura:if>
+        </td>
+        <td scope="row" isTrue="{!v.productInstance != null}">
+            <div class="slds-truncate" title="{!v.productInstance.Phoenix_Proposed_NDC__c}">{!v.productInstance.Phoenix_Proposed_NDC__c}</div>
+        </td>
+        <td scope="row" isTrue="{!v.productInstance != null}">
+            <div class="slds-truncate" title="{!v.productInstance.Phoenix_Proposed_SAP_Number__c}">{!v.productInstance.Phoenix_Proposed_SAP_Number__c}</div>
+        </td>
+        <td scope="row" isTrue="{!v.productInstance != null}">
+            <div class="slds-truncate" title="{!v.productInstance.Phoenix_Proposed_Pack_Size__c}">{!v.productInstance.Phoenix_Proposed_Pack_Size__c}</div>
+        </td>
+        <aura:if isTrue="{!v.ApprovalStatus == 'Draft'}">
+            <td scope="row" style="text-align: center;">
+                <lightning:button class="customButton" variant="neutral" iconName="utility:delete" iconPosition="left" onclick="{!c.removeRow}" />
+            </td> 
+        </aura:if>
+    </tr>
+    <aura:if isTrue="{!v.isModalOpen}">
+        <div style="width: 300px;">
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- ###### MODAL BOX HEADER Start ######-->
+                    <header class="slds-modal__header">
+                        <lightning:buttonIcon iconName="utility:close"
+                                              onclick="{! c.closeModal }"
+                                              alternativeText="close"
+                                              variant="bare-inverse"
+                                              class="slds-modal__close"/>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Delete lines</h2>
+                    </header>
+                    <!--###### MODAL BOX BODY Part Start######-->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        The line items associated with this product will be deleted. Are you sure you want to delete?
+                    </div>
+                    <!--###### MODAL BOX FOOTER Part Start ######-->
+                    <footer class="slds-modal__footer">
+                        <lightning:button variant="brand" label="No"
+                                          onclick="{!c.closeModal}" />
+                        <lightning:button variant="brand" label="Yes"
+                                          onclick="{!c.deleteProduct}" />
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+        <div class="slds-backdrop slds-backdrop--open" id="backdrop"></div>
+    </aura:if>
+</aura:component>

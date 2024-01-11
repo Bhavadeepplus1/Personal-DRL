@@ -1,0 +1,139 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+	<aura:attribute name="data" type="object" />
+    <aura:attribute name="family" type="String" />
+    <aura:attribute name="relatedList" type="list" />
+    <aura:attribute name="expandFamily" type="boolean" />
+    <aura:attribute name="showDrawer" type="boolean" default="false" />
+    <aura:attribute name="expandAll" type="boolean" />
+    <aura:attribute name="isAsc" type="boolean" />
+    <aura:attribute name="isSalesNull" type="boolean" />
+    <aura:attribute name="summaryMap" type="Object" />
+    <aura:attribute name="familyIds" type="Object" />
+    <aura:attribute name="familyId" type="String" />
+    <aura:handler name = "init" value ="{!this}" action = "{!c.doInit}"/>
+    
+    <tr style="font-weight: bold;background-color: #F3F3F3;">
+        <td>              
+            <aura:if isTrue="{!or(v.expandFamily, v.expandAll)}">
+                (<lightning:buttonIcon iconName="utility:minimize_window" variant="bare" class="iconCSS" size="small" onclick="{!c.showDropDown}" alternativeText="Hide Products" title="Hide Products" />)
+                <aura:set attribute="else">
+                    (<lightning:buttonIcon iconName="utility:add" class="iconCSS1" size="small" variant="bare" onclick="{! c.showDropDown }" alternativeText="Show Products" title="Show Products" />)
+                </aura:set>
+            </aura:if>
+            <lightning:formattedUrl value="{!'/' + v.familyId}" label="{!v.family}" target="_blank" />
+        </td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td style="text-align: right;">
+            <lightning:formattedNumber value="{!v.summaryMap.volumeSummary}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+        </td>
+        <td style="text-align: right;">
+            <aura:if isTrue="{!v.isSalesNull}">
+                <aura:set attribute="else">
+                    <lightning:formattedNumber value="{!v.summaryMap.salesSummary}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                </aura:set>
+            </aura:if>
+        </td>
+        <td></td>
+        <td style="text-align: right;">
+            <lightning:formattedNumber value="{!v.summaryMap.tptDollarSummary}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+        </td>
+        <td style="text-align: right;">
+            <lightning:formattedNumber value="{!v.summaryMap.tptPercentSummary}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0" />
+        </td>
+    </tr>
+    <aura:if isTrue="{!or(v.showDrawer, v.expandAll)}">
+        <aura:iteration items="{!v.relatedList}" var="item" indexVar="index">
+            <tr>
+                <td style="padding: 4px 8px; text-align: right;">
+                    <aura:if isTrue="{!item.showDrawer}">
+                        <lightning:buttonIcon iconName="utility:chevronup" value="{!item.product.Id}" size="small" variant="bare" onclick="{! c.handleClick }" alternativeText="Close Drawer" title="Close Drawer" />
+                        <aura:set attribute="else">
+                            <lightning:buttonIcon iconName="utility:chevrondown" value="{!item.product.Id}" size="small" variant="bare" onclick="{! c.handleClick }" alternativeText="Open Drawer" title="Open Drawer" />
+                        </aura:set>
+                    </aura:if>
+                </td>
+                <td>
+                    <lightning:formattedUrl value="{!'/' + item.product.Id}" label="{!item.product.Name}" target="_blank" />
+                </td>
+                <td style="text-align: right;">{!item.product.ProductCode}</td>
+                <td style="text-align: right;">
+                    <aura:if isTrue="{!item.bid.Id != null}">
+                        <lightning:formattedUrl value="{!'/' + item.bid.Id}" label="{!item.bid.Name}" target="_blank" />
+                        <aura:set attribute="else">
+                            N/A
+                        </aura:set>
+                    </aura:if>
+                </td>
+                <td style="text-align: right;">
+                    <aura:if isTrue="{!and(item.daysSinceLastBid != null, item.isLastBidNull == false)}">
+                        {!item.daysSinceLastBid}
+                        <aura:set attribute="else">
+                            N/A
+                        </aura:set>
+                    </aura:if>
+                </td>
+                <td style="text-align: right;">
+                    <aura:if isTrue="{!item.marketShareRecord.drl_act_volume_eu__c != null}">
+                        <lightning:formattedNumber value="{!item.marketShareRecord.drl_act_volume_eu__c}" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        <aura:set attribute="else">
+                            N/A
+                        </aura:set>
+                    </aura:if>
+                </td>
+                <td style="text-align: right;">
+                    <aura:if isTrue="{!item.marketShareRecord.DRL_Act_Sales__c != null}">
+                        <lightning:formattedNumber value="{!item.marketShareRecord.DRL_Act_Sales__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        <aura:set attribute="else">
+                            N/A
+                        </aura:set>
+                    </aura:if>
+                </td>
+                <td style="text-align: right;">
+                    <aura:if isTrue="{!item.marketShareRecord.DRL_Act_Price__c != null}">
+                        <lightning:formattedNumber value="{!item.marketShareRecord.DRL_Act_Price__c}" style="currency" currencyCode="USD" minimumFractionDigits="2" maximumFractionDigits="2"/>
+                        <aura:set attribute="else">
+                            N/A
+                        </aura:set>
+                    </aura:if>
+                </td>
+                <td style="text-align: right;">
+                    <aura:if isTrue="{!item.marketShareRecord.DRL_Act_Tpt__c != null}">
+                        <lightning:formattedNumber value="{!item.marketShareRecord.DRL_Act_Tpt__c}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        <aura:set attribute="else">
+                            N/A
+                        </aura:set>
+                    </aura:if>
+                </td>
+                <td style="text-align: right;">
+                    <aura:if isTrue="{!item.marketShareRecord.DRL_Act_Tpt_Pct__c != null}">
+                        <lightning:formattedNumber value="{!item.marketShareRecord.DRL_Act_Tpt_Pct__c}" style="percent" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                        <aura:set attribute="else">
+                            N/A
+                        </aura:set>
+                    </aura:if>
+                </td>
+            </tr>
+            <aura:if isTrue="{!item.showDrawer}">
+                <tr>
+                    <td></td>
+                    <td colspan="2" style="text-align: center;">
+                        <b>Finished Goods Manufactured Country</b><br/>{!item.product.Phoenix_Finished_Goods_Mfactured_Country__c}&nbsp;
+                    </td>
+                    <td colspan="2" style="text-align: center;">
+                        <b>Finished Goods Supplier Name</b><br/>{!item.product.Phoenix_Finished_Goods_Supplier_Name__c}&nbsp;
+                    </td>
+                    <td colspan="2" style="text-align: center;">
+                        <b>API Manufactured Country</b><br/>{!item.product.Phoenix_API_Manufactured_Country__c}&nbsp;
+                    </td>
+                    <td colspan="2" style="text-align: center;">
+                        <b>API Supplier Name</b><br/>{!item.product.Phoenix_API_Supplier_Name__c}&nbsp;
+                    </td>
+                    <td></td>
+                </tr>
+            </aura:if>
+        </aura:iteration>
+    </aura:if>
+</aura:component>

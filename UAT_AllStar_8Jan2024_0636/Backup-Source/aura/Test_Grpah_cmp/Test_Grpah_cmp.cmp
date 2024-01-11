@@ -1,0 +1,1625 @@
+<aura:component controller = "Target_Approval_Class" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <!-- Target_Approval_Cmp    Target_Approval_Class-->
+    <aura:attribute name="newScreen" type="Boolean" default="true"/>
+    <aura:attribute name="OverrideHeadSales" type="Boolean" default="false"/>
+    <aura:attribute name="OverrideEastSales" type="Boolean" default="false"/>
+    <aura:attribute name="OverrideWestSales" type="Boolean" default="false"/>
+    <aura:attribute name="approveSRxScreen" type="Boolean" default="false"/>
+    <aura:attribute name="approveRSMScreen" type="Boolean" default="false"/>
+    <aura:attribute name="approveOrReject" type="String"/>
+    <aura:attribute name="targetSubmitted" type="Boolean" default="false"/>
+    <aura:attribute name="approveMarketingScreen" type="Boolean" default="false"/>
+    <aura:handler name="init" value="{!this }" action="{!c.doInit }" />
+    <aura:attribute name="disableIcon" type="Boolean" default="true"/>
+    <aura:attribute name="disableIconEastChild" type="Boolean" default="true"/>
+    <aura:attribute name="disableIconWestChild" type="Boolean" default="true"/>
+    <aura:attribute name="options" type="List" default="[
+                                                        {'label': 'FY 24', 'value': 'FY24'},
+                                                        {'label': 'FY 25', 'value': 'FY25'},
+                                                        ]"/>
+    <aura:attribute name="selectedFinancialYear" type="String"/>
+    <aura:attribute name="targetName" type="String"/>
+    <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="targetApprovalObj" type="object" />
+    <aura:attribute name="eastSalesData" type="List"/>
+    <aura:attribute name="westSalesData" type="List"/>
+    <aura:attribute name="wVal" type="string"/>
+    <aura:attribute name="eVal" type="string"/>
+    <aura:attribute name="acceptedRecs" type="List" />
+    <aura:attribute name="historyRecs" type="List" />
+    <aura:attribute name="draftRecs" type="List" />
+    <aura:attribute name="pendingRecs" type="List" />
+    <aura:attribute name="eastHeader" type="String"/>
+    <aura:attribute name="westHeader" type="String"/>
+    <aura:attribute name="submitPopup" type="Boolean" default="false"/>
+    <aura:attribute name="checkingRequires" type="Boolean" default="false"/>
+    <aura:attribute name="isModalOpen" type="Boolean" default="false" />
+    <aura:attribute name="showConfirmDialog" type="boolean" default="false"/>
+    <aura:attribute name="isBtnOpen" type="boolean" default="true"/>
+    <aura:attribute name="disableCreateNew" type="boolean" default="true"/>
+    <aura:attribute name="disableHeadIcon" type="boolean" default="false"/>
+    <aura:attribute name="cloneButton" type="boolean" default="false"/>
+    <aura:attribute name="createButton" type="boolean" default="false"/>
+    <aura:attribute name="rowId" type="String"/>
+    <aura:attribute name="reTargetName" type="String"/>
+    <aura:attribute name="SrxRecDelId" type="String"/>
+    <aura:attribute name="index" type="String"/>
+    <aura:attribute name="tagetListData" type="Object"/>
+    <aura:attribute name="isSpinnerLoad" type="boolean" />
+    <aura:attribute name="disableSubmitButton" type="boolean"  default="true"/>
+    <aura:attribute name="cloneTargetName" type="String"/>
+    <aura:attribute name="afterSubmitHideTrName" type="boolean" default="true"/>
+    <aura:attribute name="inProcessBackBtn" type="boolean" default="false"/>
+    <aura:attribute name="marketingBackBtn" type="boolean" default="false"/>
+    <aura:attribute name="srxBackBtn" type="boolean" default="false"/>
+    <aura:attribute name="srxApprover" type="String"/>
+    <aura:attribute name="rsmApprover" type="String"/>
+    <aura:attribute name="marketingApprover" type="String"/>
+    <aura:attribute name="initialWestApprover" type="String"/>
+    <aura:attribute name="initialEastApprover" type="String"/>
+    <aura:attribute name="loggedInUserEmail" type="String"/>
+    <aura:attribute name="pageNumbers" type="List"/>
+    <aura:attribute name="selectedPageNumber" type="String" default="1"/>
+    <aura:attribute name="pagedLineItems" type="List"/>
+    
+    
+    <aura:if isTrue="{!v.newScreen}">
+        <div class="slds-box" style="padding:50px;background-color:#F6F7FB;">
+            <b style="font-size:24px;font-weight: 600;color:#2D2D2D;">Create Annual Target</b><br></br>
+            <p>Easily create or modify existing target values for your SRx team using this Target Value tool.</p>
+            <br></br>
+            <div class="slds-grid slds-gutters">
+                <div class="slds-size_1-of-6" style="padding-left:10px;"> 
+                    <lightning:combobox aura:id="requiredField" name="progress" label="Financial Year" value="{!v.selectedFinancialYear}" placeholder="Select Year" options="{! v.options }" onchange="{! c.handleChange }" required="true"/>
+                </div>
+                <div class="slds-size_1-of-6" style="padding-left:20px;"> 
+                    <lightning:input name="input1" 
+                                     aura:id="targetName"
+                                     label="Target Value Name" 
+                                     value="{!v.targetName}"
+                                     onchange = "{!c.validateTargetName}"
+                                     required="true"
+                                     messageWhenBadInput="Target Name Already Exist!"
+                                     placeholder="Type Name"
+                                     /> 
+                </div>
+                <div class="slds-size_1-of-6" style="margin-top:24px;margin-left:20px;">
+                    <aura:if isTrue="{!v.createButton}">
+                        <lightning:button variant="brand" label="Create New" onclick="{! c.handleClick }" disabled="true"/> 
+                        <aura:set attribute="else">
+                            <lightning:button variant="brand" label="Create New" onclick="{! c.handleClick }"/>
+                        </aura:set>
+                    </aura:if>
+                </div>
+                <div class="slds-size_1-of-6"> </div>
+                <div class="slds-size_1-of-6"> </div>
+                <div class="slds-size_1-of-6"> </div>
+                
+            </div>
+            
+            <br></br>
+            <!--<div class="slds-grid slds-wrap">-->
+            <div>
+                <!--<div class="slds-size_1-of-3">-->
+                <div>
+                    <p style="font-size:20px;font-weight: 600;color:#2D2D2D;">Annual Target Accepted</p><br/>
+                    
+                    <table style="padding:12px;border-radius:50px;">
+                        <thead>
+                            <tr style="text-align:center;border: 1px solid lightgrey;height:40px;background-color:#F5F5F5;">
+                                <th style="padding-left:10px;"><p style="font-weight: 600;color:#2d2d2d;">Target Values Name</p></th>
+                                <th style="padding-left:10px;"><p style="font-weight: 600;color:#2d2d2d;">Last Modified Date&amp;Time</p></th>
+                                <th style="padding-left:10px;padding-right:10px;text-align:left;"><p style="font-weight: 600;color:#2d2d2d;">Approval Status</p></th>
+                                <th style="padding-left:10px;padding-right:10px;text-align:left;"><p style="font-weight: 600;color:#2d2d2d;">Target Status</p></th>
+                                <th style="padding-left:10px;padding-right:10px;text-align:center;"><p style="font-weight: 600;color:#2d2d2d;">Actions</p></th>
+                                
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.pagedLineItems}" var="accRecs">
+                                
+                                <tr style="border: 1px ridge lightgrey;height:40px;width:25%;background-color:white;border-radius:30px;">
+                                    <td style="padding-left:10px;width: 65%;">
+                                        <a onclick="{!c.handleRecordClick}" data-acrecsid = "{!accRecs.Id}">{!accRecs.Name}</a>
+                                        
+                                    </td>
+                                    <td style="padding-left:10px;padding-right:10px;text-align:left;width:13%;">{!accRecs.LastModifiedDate}</td>
+                                    <td style="padding-left:10px;padding-right:10px;text-align:left;width:9%;">{!accRecs.Approval_Status__c}</td>
+                                    <td style="padding-left:10px;padding-right:10px;text-align:left;">{!accRecs.Target_Status__c}</td>
+                                    <td style="text-align:center;">
+                                        <lightning:buttonIcon iconName="utility:edit" variant="bare" alternativeText="Edit" disabled="true"/>&nbsp;
+                                        <lightning:buttonIcon iconName="utility:copy" variant="bare" value="{!accRecs.Id}" onclick="{!c.cloneRecord}" alternativeText="Clone"/>&nbsp;
+                                        <lightning:buttonIcon iconName="utility:delete" variant="bare" alternativeText="Delete" disabled="true"/>
+                                    </td>
+                                    
+                                </tr>
+                            </aura:iteration>
+                        </tbody>
+                        
+                    </table>
+                    <aura:if isTrue="{!(v.pageNumbers.length > 0 )}">
+                        <center>
+                            <aura:iteration items="{!v.pageNumbers}" var="pageNum">
+                                <lightning:button variant="{!and(pageNum == 1, pageNum == v.selectedPageNumber) ? 'brand' : (v.selectedPageNumber == pageNum ? 'brand' : 'neutral') }"
+                                                  label="{!pageNum}"
+                                                  onclick="{!c.openPage}"/>
+                            </aura:iteration>
+                        </center>
+                    </aura:if>
+                </div>
+                <!--<div class="slds-size_1-of-3">-->
+                <div style="margin-top: 12px;">
+                    <span style="font-size:20px;font-weight: 600;color:#2D2D2D;">Annual Target Drafts</span><br/><br/>
+                    <table style="padding:12px;">
+                        <thead>
+                            <tr style="padding:2px;text-align:center;border: 1px solid lightgrey;height:40px;background-color:#F5F5F5;border-radius:30px;">
+                                <th style="padding-left:10px;"><p style="font-weight: 600;color:#2d2d2d;">Target Values Name</p></th>
+                                <th style="padding-left:10px;"><p style="font-weight: 600;color:#2d2d2d;">Last Modified Date&amp;Time</p></th>
+                                <th style="padding-left:10px;padding-right:10px;text-align:left;"><p style="font-weight: 600;color:#2d2d2d;">Approval Status</p></th>
+                                <th style="padding-left:10px;padding-right:10px;text-align:center;"><p style="font-weight: 600;color:#2d2d2d;">Actions</p></th>
+                            </tr>
+                        </thead>
+                        
+                        <tbody>
+                            <aura:iteration items="{!v.draftRecs}" var="draftRecs">
+                                
+                                <tr style="border: 1px ridge lightgrey;height:40px;width:25%;background-color:white;border-radius:30px;">
+                                    <td style="padding-left:10px;width: 70%;"> 
+                                        <a onclick="{!c.handleDraftRecordClick}" data-draftrecsid = "{!draftRecs.Id}">{!draftRecs.Name}</a>
+                                    </td>
+                                    <td style="padding-left:15px;padding-right:15px;text-align: left;">{!draftRecs.LastModifiedDate}</td>
+                                    <td style="padding-left:10px;padding-right:10px;text-align: left;">{!draftRecs.Approval_Status__c}</td>
+                                    
+                                    <td style="text-align:center;">
+                                        <lightning:buttonIcon iconName="utility:edit" variant="bare" value="{!draftRecs.Id}" onclick="{!c.editRecord}" alternativeText="Edit"/>
+                                        <lightning:buttonIcon iconName="utility:copy" variant="bare" value="{!draftRecs.Id}" onclick="{!c.cloneRecord}" alternativeText="Clone"/>
+                                        <lightning:buttonIcon iconName="utility:delete" variant="bare" value="{!draftRecs.Id}" onclick="{!c.deleteRecord}"  alternativeText="Delete"/>
+                                    </td>    
+                                </tr>
+                                
+                                <aura:if isTrue="{!v.showConfirmDialog}">
+                                    <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01" class="slds-modal slds-fade-in-open slds-modal_medium">
+                                        <div class="slds-modal__container">
+                                            <header class="slds-modal__header">
+                                                <h1 class="slds-text-heading--medium">Confirmation</h1>
+                                            </header>
+                                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                                <center><b>Are you sure you want to delete this record?</b></center>
+                                            </div>
+                                            <footer class="slds-modal__footer">
+                                                <lightning:button name='No' label='No' onclick='{!c.handleConfirmDialogNo}'/>
+                                                <lightning:button variant="brand" value="{!draftRecs.Id}" name='Yes' label='Yes' onclick='{!c.handleConfirmDialogYes}'/>
+                                            </footer>
+                                        </div>
+                                    </section>
+                                    
+                                    
+                                    <div class="slds-backdrop slds-backdrop_open"></div> 
+                                </aura:if>
+                                
+                            </aura:iteration>
+                            
+                            <aura:if isTrue="{!v.isModalOpen}">
+                                <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01" class="slds-modal slds-fade-in-open slds-modal_medium">
+                                    <div class="slds-modal__container">
+                                        <header class="slds-modal__header">
+                                            <lightning:buttonIcon iconName="utility:close"
+                                                                  onclick="{! c.closeModel }"
+                                                                  alternativeText="close"
+                                                                  variant="bare-inverse"
+                                                                  class="slds-modal__close"/>
+                                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Modal/PopUp Box</h2>
+                                        </header>
+                                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                            <lightning:input style="width: 25%;" name="input1" 
+                                                             aura:id="cloneTargetName"
+                                                             label="Target Value Name" 
+                                                             value="{!v.cloneTargetName}"
+                                                             onchange = "{!c.cloneValidateTargetName}"
+                                                             required="true"
+                                                             messageWhenBadInput="Target Name Already Exist!"
+                                                             /> 
+                                        </div>
+                                        <footer class="slds-modal__footer">
+                                            <lightning:button variant="neutral" label="Cancel" title="Cancel" onclick="{!c.closeModel}"/>
+                                            <aura:if isTrue="{!v.cloneButton}">
+                                                <lightning:button variant="brand" label="Clone" title="Clone" onclick="{!c.submitDetails}" disabled="true"/>
+                                            </aura:if>
+                                            
+                                            <aura:if isTrue="{!not(v.cloneButton)}">
+                                                <lightning:button variant="brand" label="Clone" title="Clone" onclick="{!c.submitDetails}"/>
+                                            </aura:if>
+                                        </footer>
+                                    </div>
+                                </section>
+                                <div class="slds-backdrop slds-backdrop_open"></div>
+                            </aura:if>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!--<div class="slds-size_1-of-3">-->
+                <div style="margin-top: 12px;">
+                    <span style="font-size:20px;font-weight: 600;color:#2D2D2D;">Annual Target History</span><br/><br/>
+                    <table style="padding:12px;border-radius:50px">
+                        <thead>
+                            <tr style="padding:2px;text-align:center;border: 1px solid lightgrey;height:40px;background-color:#F5F5F5;">
+                                <th style="padding-left:10px;"><p style="font-weight: 600;color:#2d2d2d;">Target Values Name</p></th>
+                                <th style="padding-left:10px;"><p style="font-weight: 600;color:#2d2d2d;">Last Modified Date&amp;Time</p></th>
+                                <th style="padding-left:10px;text-align:left;padding-right:10px;"><p style="font-weight: 600;color:#2d2d2d;">Approval Status</p></th>
+                                <th style="padding-left:10px;text-align:center;padding-right:10px;"><p style="font-weight: 600;color:#2d2d2d;">Actions</p></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.historyRecs}" var="allRecs">
+                                <tr style="border: 1px ridge lightgrey;height:40px;width:25%;background-color:white;border-radius:30px;">
+                                    <td style="padding-left:10px;width: 70%;"> 
+                                        <a onclick="{!c.handleAllRecordClick}" data-allrecsid = "{!allRecs.Id}">{!allRecs.Name}</a>
+                                        
+                                    </td>
+                                    <td style="padding-left:10px;padding-right:10px;text-align:left;">{!allRecs.LastModifiedDate}</td>
+                                    <td style="padding-left:10px;padding-right:10px;text-align:left;">
+                                        {!allRecs.Approval_Status__c}
+                                    </td>
+                                    
+                                    <td style="text-align:center;">
+                                        <lightning:buttonIcon iconName="utility:edit" variant="bare" alternativeText="Edit" disabled="true"/>
+                                        <lightning:buttonIcon iconName="utility:copy" variant="bare" value="{!allRecs.Id}" onclick="{!c.cloneRecord}" alternativeText="Clone"/>
+                                        <lightning:buttonIcon iconName="utility:delete" variant="bare" alternativeText="Delete" disabled="true"/>
+                                    </td>
+                                    
+                                </tr>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                    
+                </div>
+                
+                <div style="margin-top: 12px;">
+                    <span style="font-size:20px;font-weight: 600;color:#2D2D2D;">Annual Pending Targets</span><br/><br/>
+                    <table style="padding:12px;border-radius:50px">
+                        <thead>
+                            <tr style="padding:2px;text-align:center;border: 1px solid lightgrey;height:40px;background-color:#F5F5F5;">
+                                <th style="padding-left:10px;"><p style="font-weight: 600;color:#2d2d2d;">Target Values Name</p></th>
+                                <th style="padding-left:10px;"><p style="font-weight: 600;color:#2d2d2d;">Last Modified Date&amp;Time</p></th>
+                                <th style="padding-left:10px;text-align:left;padding-right:10px;"><p style="font-weight: 600;color:#2d2d2d;">Approval Status</p></th>
+                                <th style="padding-left:10px;text-align:center;padding-right:10px;"><p style="font-weight: 600;color:#2d2d2d;">Actions</p></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.pendingRecs}" var="pendRecs">
+                                <tr style="border: 1px ridge lightgrey;height:40px;width:25%;background-color:white;border-radius:30px;">
+                                    <td style="padding-left:10px;width: 70%;"> 
+                                        <a onclick="{!c.handleAllRecordClick}" data-allrecsid = "{!pendRecs.Id}">{!pendRecs.Name}</a>
+                                        
+                                    </td>
+                                    <td style="padding-left:10px;padding-right:10px;text-align:left;">{!pendRecs.LastModifiedDate}</td>
+                                    <td style="padding-left:10px;padding-right:10px;text-align:left;">
+                                        {!pendRecs.Approval_Status__c}
+                                    </td>
+                                    
+                                    <td style="text-align:center;">
+                                        <lightning:buttonIcon iconName="utility:edit" variant="bare" alternativeText="Edit" disabled="true"/>
+                                        <lightning:buttonIcon iconName="utility:copy" variant="bare" value="{!pendRecs.Id}" onclick="{!c.cloneRecord}" alternativeText="Clone"/>
+                                        <lightning:buttonIcon iconName="utility:delete" variant="bare" alternativeText="Delete" disabled="true"/>
+                                    </td>
+                                    
+                                </tr>
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                    
+                </div>
+            </div>
+            <aura:if isTrue="{!v.isSpinnerLoad}">
+                <center>
+                    <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                             aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                        <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                            <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                                <img src="{!$Resource.LoadingProgress}" />  
+                            </div>  
+                        </div>  
+                    </section>   
+                    <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+                </center>
+            </aura:if> 
+        </div>
+        <aura:set attribute="else">
+            <aura:if isTrue="{!v.targetApprovalObj.Initiator_Status__c == 'In Process'}">
+                
+                <div class="slds-box" style="padding:50px;background-color:#F6F7FB;">
+                    
+                    <aura:if isTrue="{!v.afterSubmitHideTrName}">
+                        <div class="slds-grid" style="margin-bottom:25px;">
+                            <div class="slds-size_4-of-12">
+                                <p style="font-weight:600; color:#2D2D2D; font-size:20px;">{!v.targetApprovalObj.Financial_Year__c}&nbsp;{!v.targetApprovalObj.Name}</p>
+                            </div>
+                            <div class="slds-size_8-of-12" style="text-align:right;">
+                                <div style="display:inline-block;"><p style="font-weight:bold;font-size:16px;color:#2D2D2D;">Approval Status:</p></div>&nbsp;&nbsp;&nbsp;&nbsp;
+                                <div style="display:inline-block;margin-left:20px;"><p style="font-weight:500;">Initiator</p></div>&nbsp;&nbsp;&nbsp;&nbsp;
+                                <span style="display:inline-block;">
+                                    <aura:if isTrue="{!v.targetApprovalObj.Initiator_Status__c == 'Not Initiated'}">
+                                        <lightning:icon class="AshIcon" iconName="utility:record" variant="bare"  size="medium" />
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.targetApprovalObj.Initiator_Status__c == 'In Process'}">
+                                                <lightning:icon class="blueIcon" iconName="utility:record" variant="bare" size="medium"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.targetApprovalObj.Initiator_Status__c == 'Completed'}">
+                                                        
+                                                        <lightning:icon class="greenIcon" iconName="utility:record" variant="bare"  size="medium"/>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </span>
+                                <div class="horizontal-line" style="margin:2px;width:80px;display:inline-block;margin-left:20px;"></div>&nbsp;&nbsp;&nbsp;&nbsp; 
+                                <div style="display:inline-block;margin-left:15px;"><p style="font-weight:500">RSM Head</p></div>
+                                <span style="display:inline-block;">
+                                    <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'Not Initiated'}">
+                                        <lightning:icon class="AshIcon" iconName="utility:record" variant="bare"  size="medium" />
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'In Process'}">
+                                                <lightning:icon class="blueIcon" iconName="utility:record" variant="bare" size="medium"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'Completed'}">
+                                                        
+                                                        <lightning:icon class="greenIcon" iconName="utility:record" variant="bare"  size="medium"/>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </span>
+                                <div class="horizontal-line" style="margin:2px;width:80px;display:inline-block;margin-left:20px;"></div>&nbsp;&nbsp;&nbsp;&nbsp; 
+                                <div style="display:inline-block;"><p style="font-weight:500">SRx Head</p></div>
+                                <span style="margin-left:15px;">
+                                    <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'Not Initiated'}">
+                                        <lightning:icon class="AshIcon" iconName="utility:record" variant="bare"  size="medium"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'In Process'}">
+                                                <lightning:icon class="blueIcon" iconName="utility:record" variant="bare"  size="medium"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'Completed'}">
+                                                        <lightning:icon class="greenIcon" iconName="utility:record" variant="bare"  size="medium"/>
+                                                        <aura:set attribute="else"> 
+                                                            <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'SRx Head Rejected'}">
+                                                                <lightning:icon class="redIcon" iconName="utility:record" variant="bare"  size="medium"/>
+                                                            </aura:if>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </span>
+                                <div class="horizontal-line" style="margin:2px;width:80px;display:inline-block;margin-left:20px;"></div>&nbsp;&nbsp;&nbsp;&nbsp; 
+                                <div style="display:inline-block;margin-left:15px;"><p style="font-weight:500">Marketing Head</p></div>
+                                <span style="margin-left:15px;">
+                                    <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'Not Initiated'}">
+                                        <lightning:icon class="AshIcon" iconName="utility:record" variant="bare"  size="medium"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'In Process'}">
+                                                <lightning:icon class="blueIcon" iconName="utility:record" variant="bare"  size="medium"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'Completed'}">
+                                                        <lightning:icon class="greenIcon" iconName="utility:record" variant="bare"  size="medium"/>
+                                                        <aura:set attribute="else"> 
+                                                            <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'Marketing Head Rejected'}">
+                                                                <lightning:icon class="redIcon" iconName="utility:record" variant="bare"  size="medium"/>
+                                                            </aura:if>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </span>
+                            </div>
+                        </div>
+                    </aura:if>
+                    <br></br> 
+                    
+                    <aura:if isTrue="{!v.targetSubmitted}">
+                        <div style="background-color:white;">
+                            <div class="slds-page-header">
+                                <div class="slds-page-header__row">
+                                    <div class="slds-page-header__col-title">
+                                        <div class="slds-media">
+                                            <div class="slds-media__figure">
+                                                <a onclick="{goToNewScn}">All Target</a>  > {!v.targetApprovalObj.Name}
+                                                <lightning:icon class="docIcon" iconName="utility:contract_doc" size="large"/>
+                                                
+                                            </div>
+                                            <div class="slds-media__body">
+                                                <div class="slds-page-header__name">
+                                                    <div class="slds-page-header__name-title">
+                                                        <h1>
+                                                            <span class="slds-page-header__title slds-truncate" style="font-size:18px;font-weight: 600;color:gray;">Target Values</span>
+                                                        </h1>
+                                                    </div>
+                                                </div>
+                                                <p class="slds-page-header__name-meta" style="font-size:24px;font-weight: 600;color:#2D2D2D;">{!v.targetApprovalObj.Name}</p>
+                                            </div>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <br/><br/>
+                        <aura:if isTrue="{!v.targetApprovalObj.Initiator_Status__c == 'In Process'}">
+                            <span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Approval Status:</span>&nbsp;<span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Draft</span><br/>
+                        </aura:if>
+                        <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'In Process'}">
+                            <span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Approval Status:</span>&nbsp;<span style="font-size:16px;color:#2D2D2D;font-weight: 600;">RSM Head</span><br/>
+                        </aura:if>
+                        <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'In Process'}">
+                            <span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Approval Status:</span>&nbsp;<span style="font-size:16px;color:#2D2D2D;font-weight: 600;">SRx Head</span><br/>
+                        </aura:if>
+                        <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'In Process'}">
+                            <span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Approval Status:</span>&nbsp;<span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Marketing Head</span><br/>
+                        </aura:if>
+                        <aura:if isTrue="{!and(and(v.targetApprovalObj.SRx_Head_Status__c == 'Completed',v.targetApprovalObj.RSM_Head_Status__c == 'Completed'),and (v.targetApprovalObj.Marketing_Head_Status__c == 'Completed', v.targetApprovalObj.Initiator_Status__c == 'Completed'))}">
+                            <span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Approval Status:</span>&nbsp;<span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Accepted</span><br/>
+                        </aura:if>
+                        <br/>                    
+                        <lightning:layout>
+                            <h2><span>Initiator</span></h2>&nbsp;&nbsp; 
+                            <div style="height:20px;width:20px;">
+                                <aura:if isTrue="{!v.targetApprovalObj.Initiator_Status__c == 'Not Initiated'}">
+                                    <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!v.targetApprovalObj.Initiator_Status__c == 'In Process'}">
+                                            <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!v.targetApprovalObj.Initiator_Status__c == 'Completed'}">
+                                                    
+                                                    <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                            </div>&nbsp;&nbsp;
+                            <h2><span>RSM Head</span></h2>&nbsp;&nbsp; 
+                            <div style="height:20px;width:20px;">
+                                <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'Not Initiated'}">
+                                    <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'In Process'}">
+                                            <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'Completed'}">
+                                                    
+                                                    <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                            </div>&nbsp;&nbsp;
+                            <hr class="line" style="width:35%;"></hr><span style="">SRx Head</span>&nbsp;&nbsp;
+                            <div style="height:20px;width:20px;">
+                                <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'Not Initiated'}">
+                                    <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'In Process'}">
+                                            <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'Completed'}">
+                                                    
+                                                    <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                    <aura:set attribute="else">
+                                                        <img src="{!$Resource.SRxAndMarketingRejectionIcon}"/>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>                       
+                            </div>&nbsp;&nbsp;<hr class="line" style="width:35%;"></hr><h2><span>Marketing Head</span></h2>&nbsp;&nbsp;
+                            <div style="height:20px;width:20px;">
+                                <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'Not Initiated'}">
+                                    <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                    <aura:set attribute="else">
+                                        <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'In Process'}">
+                                            <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'Completed'}">
+                                                    
+                                                    <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                    <aura:set attribute="else">
+                                                        <img src="{!$Resource.SRxAndMarketingRejectionIcon}"/>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>                        
+                            </div>&nbsp;
+                        </lightning:layout><br/><br/>
+                        
+                        <table style="padding:12px;border-radius:50px;">
+                            <thead>
+                                <tr style="padding:2px;text-align:center;border: 1px solid lightgrey;height:60px;background-color:#F5F5F5;">
+                                    <th class="" scope="col" style="width:5%;color: #2d2d2d;font-weight: 600;">
+                                        <div class="slds-truncate" title="Step" style="padding-left:10px;font-size:14px;">S.No</div>
+                                    </th>
+                                    <th class="" scope="col" style="width:15%;color: #2d2d2d;font-weight: 600;">
+                                        <div class="slds-truncate" title="Step Name" style="font-size:14px;">Submission Status</div>
+                                    </th>
+                                    <th class="" scope="col" style="width:15%;color: #2d2d2d;font-weight: 600;">
+                                        <div class="slds-truncate" title="Approver" style="font-size:14px;">Approver</div>
+                                    </th>
+                                    <th class="" scope="col" style="width:15%;color: #2d2d2d;font-weight: 600;">
+                                        <div class="slds-truncate" title="Approval Sent Time" style="font-size:14px;">Approval Sent Time</div>
+                                    </th>
+                                    <th class="" scope="col" style="width:15%;color: #2d2d2d;font-weight: 600;">
+                                        <div class="slds-truncate" title="Approval Completed Time" style="font-size:14px;">Approval Completed Time
+                                        </div>
+                                    </th>
+                                    <th class="" scope="col" >
+                                        <div class="slds-truncate" title="Comments" style="font-size:14px;color: #2d2d2d;font-weight: 600;">Comments</div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tr style="border: 1px ridge lightgrey;height:60px;width:25%;background-color:white;border-radius:30px;">
+                                <td style="padding-left:25px;">1</td>
+                                <td><div style="display:inline-block;height:10px; width:15px;">
+                                    <img src="{!$Resource.SRx_Approval_Icons_Approve}" style="margin-bottom: 4px;"/>
+                                    </div>
+                                    <span style="display:inline-block;padding-left:2px;padding-bottom:3px;">Initial Submission</span></td>
+                                <td><lightning:buttonIcon class="approverIcon greenIcon" iconName="utility:record" variant="bare" alternativeText="record" size="medium"/><span style="padding-top:4px;">{!v.targetApprovalObj.Intial_Approver__c}</span></td>
+                                <td class="slds-cell-wrap">{!v.targetApprovalObj.Initiator_Approval_Sent_Time_String__c}</td>
+                                <td class="slds-cell-wrap">{!v.targetApprovalObj.Initiator_Approval_Completed_Time_String__c}</td>
+                                <td>-</td>
+                            </tr>
+                            <tr style="border: 1px ridge lightgrey;height:60px;width:25%;background-color:white;border-radius:30px;">
+                                <td style="padding-left:25px;">2</td>
+                                <td><div style="display:inline-block;height:10px; width:15px;">
+                                    <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'Not Initiated'}">
+                                        <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'In Process'}">
+                                                <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'Completed'}">
+                                                        
+                                                        <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                        <aura:set attribute="else">
+                                                            <img src="{!$Resource.SRxAndMarketingRejectionIcon}"/>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>   
+                                    </div> <span style="display:inline-block;padding-left:2px;padding-bottom:3px;padding-top:4px;">RSM Head</span></td>
+                                <td>
+                                    <lightning:buttonIcon class="greenIcon" iconName="utility:record" variant="bare" alternativeText="record" size="medium"/>
+                                    <span style="padding-top:4px;">Dave Smith</span>
+                                </td>
+                                <td class="slds-cell-wrap">{!v.targetApprovalObj.RSM_Head_Approval_Sent_Time_String__c}</td>
+                                <td class="slds-cell-wrap">{!v.targetApprovalObj.RSM_Head_Approval_Completed_Time_String__c}</td>
+                                <td class="ellipsis">{!v.targetApprovalObj.RSM_Head_Comments__c}</td>
+                            </tr>
+                            <tr style="border: 1px ridge lightgrey;height:60px;width:25%;background-color:white;border-radius:30px;">
+                                <td style="padding-left:25px;">3</td>
+                                <td><div style="display:inline-block;height:10px; width:15px;">
+                                    <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'Not Initiated'}">
+                                        <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'In Process'}">
+                                                <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'Completed'}">
+                                                        
+                                                        <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                        <aura:set attribute="else">
+                                                            <img src="{!$Resource.SRxAndMarketingRejectionIcon}"/>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>   
+                                    </div> <span style="display:inline-block;padding-left:2px;padding-bottom:3px;padding-top:4px;">SRx Head</span></td>
+                                <td><lightning:buttonIcon class="greenIcon" iconName="utility:record" variant="bare" alternativeText="record" size="medium"/><span style="padding-top:4px;">N/A</span></td>
+                                <td class="slds-cell-wrap">{!v.targetApprovalObj.SRx_Head_Approval_Sent_Time_String__c}</td>
+                                <td class="slds-cell-wrap">{!v.targetApprovalObj.SRx_Head_Approval_Completed_Time_String__c}</td>
+                                <td class="ellipsis">{!v.targetApprovalObj.SRx_Head_Comments__c}</td>
+                            </tr>
+                            <tr style="border: 1px ridge lightgrey;height:60px;width:25%;background-color:#F5F5F5;border-radius:30px;"> <!-- Highlight the row which is in progress not 3rd row -->
+                                <td style="padding-left:25px;">4</td>
+                                <td><div style="display:inline-block;height:10px; width:15px;">
+                                    <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'Not Initiated'}">
+                                        <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'In Process'}">
+                                                <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'Completed'}">
+                                                        
+                                                        <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                        <aura:set attribute="else">
+                                                            <img src="{!$Resource.SRxAndMarketingRejectionIcon}"/>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                    </div><span style="display:inline-block;padding-left:2px;padding-bottom:3px;">Marketing Head</span></td>
+                                <td><span style="padding-bottom:5px;"><lightning:buttonIcon class="greenIcon" iconName="utility:record" variant="bare" alternativeText="record" size="medium"/></span><span style="padding-top:4px;">Milan Kalawadia</span></td>
+                                <!-- <td><span style="padding-bottom:5px;"><lightning:buttonIcon class="greenIcon" iconName="utility:record" variant="bare" alternativeText="record" size="medium"/></span><span style="padding-top:4px;">{!v.targetApprovalObj.Marketing_Approver__c}</span></td>-->
+                                <td class="slds-cell-wrap">{!v.targetApprovalObj.Marketing_Head_Approval_Sent_Time_String__c}</td>
+                                <td class="slds-cell-wrap">{!v.targetApprovalObj.Marketing_Head_Approval_Completed_Str__c}</td>
+                                
+                                <td class="ellipsis">{!v.targetApprovalObj.Marketing_Head_Comments__c}</td>
+                                
+                            </tr>
+                            <tbody>
+                                
+                            </tbody>
+                        </table>
+                        
+                        
+                    </aura:if><br/>
+                    
+                    <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'In Process'}">
+                        <div align = "right"> 
+                            <aura:if isTrue="{!v.loggedInUserEmail == v.rsmApprover}">
+                                
+                                <lightning:button variant="Neutral" label="Reject" title="Brand action" onclick="{! c.openRejectRSM }" />
+                                <lightning:button variant="brand" label="Approve" title="Brand action" onclick="{! c.openapproveRSM }" />
+                                <aura:set attribute="else">
+                                    <lightning:button variant="Neutral" label="Reject" title="Only RSM head can reject the target at RSM Head Stage" onclick="{! c.openRejectRSM }" disabled="true"/>
+                                    <lightning:button variant="brand" label="Approve" title="Only RSM head can approve the target at RSM Head Stage" onclick="{! c.openapproveRSM }" disabled="true" />
+                                    
+                                </aura:set>
+                            </aura:if>
+                        </div> 
+                    </aura:if>
+                    
+                    <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'In Process'}">
+                        <div align = "right"> 
+                            <aura:if isTrue="{!v.loggedInUserEmail == v.srxApprover}">
+                                
+                                <lightning:button variant="Neutral" label="Reject" title="Brand action" onclick="{! c.openRejectSRx }" />
+                                <lightning:button variant="brand" label="Approve" title="Brand action" onclick="{! c.openapproveSRx }" />
+                                <aura:set attribute="else">
+                                    <lightning:button variant="Neutral" label="Reject" title="Only SRx head can reject the target at SRx Head Stage" onclick="{! c.openRejectSRx }" disabled="true"/>
+                                    <lightning:button variant="brand" label="Approve" title="Only SRx head can approve the target at SRx Head Stage" onclick="{! c.openapproveSRx }" disabled="true" />
+                                    
+                                </aura:set>
+                            </aura:if>
+                        </div> 
+                    </aura:if>
+                    <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'In Process'}">
+                        <div align = "right">
+                            <aura:if isTrue="{!v.loggedInUserEmail == v.marketingApprover}">
+                                
+                                <lightning:button variant="Neutral" label="Reject" title="Brand action" onclick="{! c.openRejectMarketing }" />
+                                <lightning:button variant="brand" label="Approve" title="Brand action" onclick="{! c.openapproveMarketing }" />
+                                <aura:set attribute="else">
+                                    <lightning:button variant="Neutral" label="Reject" title="Only Marketing head can reject the target at Marketing Head Stage" onclick="{! c.openRejectMarketing }" disabled="true"/>
+                                    <lightning:button variant="brand" label="Approve" title="Only Marketing head can approve the target at Marketing Head Stage" onclick="{! c.openRejectMarketing }" disabled="true" />
+                                    
+                                </aura:set>
+                            </aura:if> </div>  
+                    </aura:if><br/>
+                    <div class="slds-grid slds-gutters">
+                        <div class="slds-size_5-of-12">
+                        </div>
+                        <div class="slds-size_2-of-12">
+                            <div  class="slds-box" style="text-align:center;background-color:#A9C77D;height:180px;border-radius: 8px;">
+                                <p style="font-weight:600;text-align:center;font-size: 16px;color: #2d2d2d;">SRx HEAD'S TARGET</p>
+                                <p style="font-weight:600;text-align:center;font-style:italic;font-size:16px;color: #2d2d2d;"></p><br/>
+                                <div class="slds-grid">
+                                    <div class="slds-size_10-of-12" style = "padding-right:20px;text-align:center;font-size: 24px;" align="center">
+                                        <aura:if isTrue="{!v.OverrideHeadSales == false}">
+                                            <div style="margin-left:50px;font-weight:bold;">
+                                                <aura:if isTrue="{!or(v.targetApprovalObj.headTargetStr == null,v.targetApprovalObj.headTargetStr=='')}">
+                                                    <b>-</b>
+                                                    <aura:set attribute="else"> {!v.targetApprovalObj.headTargetStr}</aura:set>
+                                                </aura:if>    
+                                            </div>
+                                            <aura:set attribute="else">
+                                                
+                                                <ui:inputNumber class="slds-input inputWidth centerCss"
+                                                                labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                aura:id="headSales"
+                                                                blur="{!c.closeheadTarget}"
+                                                                change="{!c.onHeadTargetChange}"                                                      
+                                                                value="{!v.targetApprovalObj.Head_Target__c}"
+                                                                
+                                                                />
+                                            </aura:set>
+                                        </aura:if>
+                                    </div>
+                                    <div class="slds-size_2-of-12 slds-box slds-box_xx-small" style="background-color:white;border-radius: 6px;margin-top:60px">
+                                        <div style="align:top;text-align:center;">
+                                            <aura:if isTrue="{!or(v.loggedInUserEmail == v.initialWestApprover,v.loggedInUserEmail == v.initialEastApprover)}">
+                                                <lightning:buttonIcon iconName="utility:edit" class="slds-truncate" variant="bare" alternativeText="edit" onclick="{! c.inlineEditHeadTarget }" disabled="{!v.disableHeadIcon}"/>
+                                                
+                                                <aura:set attribute="else">
+                                                    <lightning:buttonIcon iconName="utility:edit" class="slds-truncate" variant="bare" alternativeText="edit" onclick="{! c.inlineEditHeadTarget }" disabled="true"/>
+                                                    
+                                                </aura:set>
+                                            </aura:if>
+                                        </div>
+                                    </div>
+                                </div> 
+                            </div>
+                        </div>
+                        <div class="slds-size_5-of-12">
+                        </div>
+                    </div>
+                    <div class="slds-grid slds-gutters">
+                        <div class="slds-size_2-of-12">
+                        </div>
+                        <div class="slds-size_2-of-12">
+                            <div  class="slds-box" style="border:none;align:center;background-color:#FCEDDA;height:180px;border-radius: 8px;">
+                                <p style="font-weight:600;text-align:center;font-size: 16px;color: #2d2d2d;">EAST REGION TARGET</p>
+                                <p style="font-weight:600;text-align:center;font-style:italic;font-size:16px;color: #2d2d2d;">{!v.ericSutherland}(ERIC SUTHERLAND)</p><br/>
+                                <div class="slds-grid">
+                                    <div class="slds-size_10-of-12" style = "padding-right:20px;text-align:center;font-size: 24px;" align="center">
+                                        <aura:if isTrue="{!v.OverrideEastSales == false}">
+                                            <div style="margin-left:50px;font-size: 24px;font-weight: bold;">
+                                                <aura:if isTrue="{!or(v.targetApprovalObj.eastTargetStr == null,v.targetApprovalObj.eastTargetStr == '')}">
+                                                    <b>-</b>  
+                                                    <aura:set attribute="else">{!v.targetApprovalObj.eastTargetStr}</aura:set>
+                                                </aura:if>     
+                                            </div>
+                                            
+                                            <aura:set attribute="else">
+                                                <ui:inputNumber class="slds-input inputWidth centerCss"
+                                                                labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                aura:id="eastSales"
+                                                                blur="{!c.closeEastTarget}"
+                                                                change="{!c.onEastTargetChange}"                                                      
+                                                                value="{!v.targetApprovalObj.East_Region_Target__c}"
+                                                                
+                                                                />
+                                            </aura:set>
+                                        </aura:if>
+                                    </div>
+                                    <div class="slds-size_2-of-12 slds-box slds-box_xx-small" style="background-color:white;border-radius: 6px;margin-top:50px;">
+                                        <div align="center">
+                                            
+                                            <aura:if isTrue="{!or(v.loggedInUserEmail == v.initialWestApprover,v.loggedInUserEmail == v.initialEastApprover)}">
+                                                <lightning:buttonIcon iconName="utility:edit" variant="bare" alternativeText="edit" onclick="{! c.inlineEditEastTarget }" disabled="{!v.disableIcon}"/>
+                                                
+                                                <aura:set attribute="else">
+                                                    <lightning:buttonIcon iconName="utility:edit" variant="bare" alternativeText="edit" onclick="{! c.inlineEditEastTarget }" disabled="true"/>
+                                                    
+                                                </aura:set>
+                                            </aura:if>
+                                        </div>
+                                    </div>
+                                </div>   
+                            </div>
+                        </div>
+                        <div class="slds-size_4-of-12">
+                            
+                        </div>
+                        <div class="slds-size_2-of-12">
+                            <div  class="slds-box" style="border:none;align:center;background-color:#FCEDDA;height:180px;border-radius: 8px;">
+                                <p style="font-weight:600;text-align:center;font-size: 16px;color: #2d2d2d;">WEST REGION TARGET</p>
+                                <p style="font-weight:600;text-align:center;font-style:italic;font-size: 16px; color: #2d2d2d;">{!v.daveSmith}(DAVE SMITH)</p><br/>
+                                <div class="slds-grid">
+                                    <div class="slds-size_10-of-12" style = "padding-right:20px;text-align:center;font-size: 24px;" align="center">
+                                        <aura:if isTrue="{!v.OverrideWestSales == false}">
+                                            <div style="margin-left:50px;font-weight:bold;font-size: 24px;">
+                                                <aura:if isTrue="{!v.targetApprovalObj.westtargetStr != null}">
+                                                    {!v.targetApprovalObj.westtargetStr}
+                                                    <aura:set attribute="else"><b>-</b></aura:set>
+                                                </aura:if>    
+                                            </div>
+                                            
+                                            <aura:set attribute="else">
+                                                <ui:inputNumber class="slds-input inputWidth centerCss"
+                                                                labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                aura:id="WestSales"
+                                                                blur="{!c.closeWestTarget}"
+                                                                change="{!c.onWestTargetChange}"                                                      
+                                                                value="{!v.targetApprovalObj.West_Region_Target__c}"
+                                                                
+                                                                />
+                                            </aura:set>
+                                        </aura:if>
+                                    </div>
+                                    <div class="slds-size_2-of-12 slds-box slds-box_xx-small" style="background-color:white;border-radius: 6px;margin-top:50px;">
+                                        <div align="center">
+                                            <aura:if isTrue="{!or(v.loggedInUserEmail == v.initialWestApprover,v.loggedInUserEmail == v.initialEastApprover)}">
+                                                <lightning:buttonIcon iconName="utility:edit" variant="bare" alternativeText="edit" onclick="{! c.inlineEditWestTarget }" disabled="{!v.disableIcon}"/>
+                                                
+                                                <aura:set attribute="else">
+                                                    <lightning:buttonIcon iconName="utility:edit" variant="bare" alternativeText="edit" onclick="{! c.inlineEditWestTarget }" disabled="true"/>
+                                                    
+                                                </aura:set>
+                                            </aura:if>
+                                        </div>
+                                    </div>
+                                </div>   
+                            </div>
+                        </div>
+                        <div class="slds-size_2-of-12">
+                        </div>
+                        
+                    </div><br/><br/>
+                    <div class="" style="display:flex">
+                        
+                        <div class="" style="width:50%;padding-left:10px;padding-right:20px;">
+                            <p style="font-weight:600;font-size:18px;color:#2D2D2D;">{!v.eastHeader}</p><br/>
+                            <table style="border-collapse:collapse;padding:12px;">
+                                <thead style="height:40px;">
+                                    <tr style="padding:2px;text-align:center;border: 1px solid lightgrey;background-color:#F5F5F5;" >
+                                        <th style="border-bottom: 0px solid; color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:10%;">S.No</th>
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;width:15%;">Name</th>
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 1</th>
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 2</th>
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 3</th>
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 4</th>
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%;">Annual</th>
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%;">Actions</th>
+                                        <!--<th style="border-bottom: 0px solid;color: grey;padding:2px;text-align:center;width:13%;">Actions</th>-->
+                                        
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                    <aura:iteration items="{!v.eastSalesData}" var="item" indexVar="index">
+                                        <c:Target_Approval_East_Child_Cmp  singlerec="{!item}"  indexVal="{!index}" targetApprovalObj="{!v.targetApprovalObj}" disableIconEastChild="{!v.disableIconEastChild}"  disableSubmitButton = "{!v.disableSubmitButton}"/>
+                                    </aura:iteration>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        
+                        <div class="" style="width:50%;padding-right:10px;padding-left:20px;">
+                            <p style="font-weight:600;font-size:18px;color:#2D2D2D;">{!v.westHeader}</p><br/>
+                            <table id="rows" style="border-collapse: collapse;padding:12px;border-radius:10px;">
+                                <thead style="height:40px;">
+                                    <tr style="padding:2px;text-align:center;border: 1px solid lightgrey;height:35px;background-color:#F5F5F5;" >
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:10%;">S.No</th>
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;width:15%;">Name</th>
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 1</th>
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 2</th>
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 3</th>
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 4</th>
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%;">Annual</th>
+                                        <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%;">Actions</th>
+                                        <!--<th style="border-bottom: 0px solid;color:grey;padding:2px;text-align:center;width:13%;">Actions</th>-->
+                                        
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                    
+                                    <aura:iteration items="{!v.westSalesData}" var="item" indexVar="index">
+                                        
+                                        <c:Target_Approval_West_Child_Cmp  singlerec="{!item}" indexVal="{!index}" targetApprovalObj="{!v.targetApprovalObj}" disableIconWestChild="{!v.disableIconWestChild}"  disableSubmitButton = "{!v.disableSubmitButton}"/>
+                                    </aura:iteration>
+                                </tbody>
+                                
+                            </table>
+                        </div>
+                    </div>
+                    <br/>
+                    <aura:if isTrue="{! v.approveRSMScreen }">
+                        <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01" class="slds-modal slds-fade-in-open">
+                            <div class="slds-modal__container">
+                                <!-- Modal/Popup Box Header Starts here-->
+                                <header class="slds-modal__header">
+                                    <p style="font-size:20px;">Please provide comments for your approval</p>
+                                    <lightning:input class="my-input-field-class" style="height:100px !important;" name="input1" label="" value="{!v.targetApprovalObj.RSM_Head_Comments__c}"/><br></br>
+                                    <!-- <lightning:button variant="Neutral" label="Cancel" onclick="{! c.cancelApprove }" />-->
+                                    <lightning:button variant="Neutral" label="Close" onclick="{! c.closeRSMpopup }" />
+                                    
+                                    <aura:if isTrue="{!v.approveOrReject == 'Approve'}"> <lightning:button variant="brand" label="Approve" onclick="{! c.approveRSM }" />
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.approveOrReject == 'Reject'}">
+                                        <lightning:button variant="brand" label="Reject" onclick="{! c.rejectRSM }" /> </aura:if>
+                                </header>
+                            </div>
+                        </section>
+                        <div class="slds-backdrop slds-backdrop_open"></div>
+                    </aura:if>         
+                    
+                    <aura:if isTrue="{! v.approveSRxScreen }">
+                        <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01" class="slds-modal slds-fade-in-open">
+                            <div class="slds-modal__container">
+                                <!-- Modal/Popup Box Header Starts here-->
+                                <header class="slds-modal__header">
+                                    <p style="font-size:20px;">Please provide comments for your approval</p>
+                                    <lightning:input class="my-input-field-class" style="height:100px !important;" name="input1" label="" value="{!v.targetApprovalObj.SRx_Head_Comments__c}"/><br></br>
+                                    <!-- <lightning:button variant="Neutral" label="Cancel" onclick="{! c.cancelApprove }" />-->
+                                    <lightning:button variant="Neutral" label="Close" onclick="{! c.closeSrxPopup }" />
+                                    
+                                    <aura:if isTrue="{!v.approveOrReject == 'Approve'}"> <lightning:button variant="brand" label="Approve" onclick="{! c.approveSRx }" />
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.approveOrReject == 'Reject'}">
+                                        <lightning:button variant="brand" label="Reject" onclick="{! c.rejectSRx }" /> </aura:if>
+                                </header>
+                            </div>
+                        </section>
+                        <div class="slds-backdrop slds-backdrop_open"></div>
+                    </aura:if>
+                    <aura:if isTrue="{! v.approveMarketingScreen }">
+                        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                                 aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_small">
+                            <div class="slds-modal__container">
+                                <header class="slds-modal__header">
+                                    Please provide comments for your approval
+                                    <lightning:input class="my-input-field-class" style="height:100px !important;" name="input1" label="" value="{!v.targetApprovalObj.Marketing_Head_Comments__c}"/><br></br>
+                                    <lightning:button variant="Neutral" label="Close" onclick="{! c.closeMktgPopup }" />
+                                    <aura:if isTrue="{!v.approveOrReject == 'Approve'}">
+                                        <lightning:button variant="brand" label="Approve" onclick="{! c.approveMarketing }" />
+                                        
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.approveOrReject == 'Reject'}">
+                                        <lightning:button variant="brand" label="Reject" onclick="{! c.rejectMarketing }" />
+                                    </aura:if>
+                                </header>
+                            </div>
+                        </section>
+                        <div class="slds-backdrop slds-backdrop_open"></div>
+                    </aura:if>
+                    
+                    
+                    <aura:if isTrue="{!v.inProcessBackBtn}">
+                        <div align = "right">
+                            <lightning:button variant="neutral" label="Back" title="Go back to target setting screen" onclick="{! c.intiatorBackBtn }"/>
+                            <lightning:button variant="brand" label="Submit For Approval" title="Submit the record for approval" onclick="{! c.openSubmitPopup }" />
+                            <!--disabled="{!v.disableSubmitButton}"/>-->  
+                        </div>  
+                    </aura:if>
+                    <aura:if isTrue="{!v.srxBackBtn}">
+                        <div align = "right" style="padding-right:10px;">
+                            <lightning:button variant="neutral" label="Back" title="Go back" onclick="{! c.srxtBackBtn}"/>
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{!v.marketingBackBtn}">
+                        <div align = "right" style="padding-right:10px;">
+                            <lightning:button variant="neutral" label="Back" title="Go back to target setting screen" onclick="{! c.mrktBackBtn}"/>
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{!v.legendIcons}">
+                        <div align = "right" style="padding-right:10px;">
+                            <div style="border: 1px ridge lightgrey;height:60px;width:25%;background-color:#F5F5F5;border-radius:30px;"> <!-- Highlight the row which is in progress not 3rd row -->
+                                <div style="display:inline-block;height:10px; width:15px;">
+                                    <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'Not Initiated'}">
+                                        <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'In Process'}">
+                                                <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'Completed'}">
+                                                        
+                                                        <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                        <aura:set attribute="else">
+                                                            <img src="{!$Resource.SRxAndMarketingRejectionIcon}"/>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                    </div>
+                        </div>
+                        </div>
+                    </aura:if>
+                    <aura:if isTrue="{! v.submitPopup }">
+                        <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01" class="slds-modal slds-fade-in-open slds-modal_medium">
+                            <div class="slds-modal__container">
+                                <header class="slds-modal__header">
+                                    <h1 class="slds-text-heading--medium"></h1>
+                                </header>
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                    {!v.targetApprovalObj.RSM_Head_Comments__c}
+                                    <center><b>Please provide comments for your submissions</b></center>
+                                    <lightning:input class="my-input-field-class"  name="input1" label="" value="{!v.targetApprovalObj.RSM_Head_Comments__c}"/><br></br>
+                                </div>
+                                <footer class="slds-modal__footer">
+                                    <lightning:button name='Close' label='Close' onclick='{!c.closeSubmitPopup}'/>
+                                    <lightning:button variant="brand" name='Submit' label='Submit' onclick='{!c.submitTarget}'/>
+                                </footer>
+                            </div>
+                        </section>
+                        
+                        
+                        <div class="slds-backdrop slds-backdrop_open"></div> 
+                        
+                    </aura:if>
+                    
+                </div>  
+                
+                <!-- Dummy -->
+                <aura:set attribute="else">
+                    
+                    <aura:if isTrue="{!v.targetSubmitted}">
+                        
+                        <div style="background-color:white;">
+                            <div class="slds-page-header">
+                                <div class="slds-page-header__row">
+                                    <div class="slds-page-header__col-title">
+                                        <div class="slds-media">
+                                            <div class="slds-media__figure">
+                                                <lightning:icon class="docIcon" iconName="utility:contract_doc" size="large"/>
+                                                
+                                            </div>
+                                            <div class="slds-media__body">
+                                                <div class="slds-page-header__name">
+                                                    <div class="slds-page-header__name-title">
+                                                        <h1>
+                                                            <span class="slds-page-header__title slds-truncate" style="font-size:18px;font-weight: 600;color:gray;">Target Values</span>
+                                                        </h1>
+                                                    </div>
+                                                </div>
+                                                <p class="slds-page-header__name-meta" style="font-size:24px;font-weight: 600;color:#2D2D2D;">{!v.targetApprovalObj.Name}</p>
+                                            </div>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <br/><br/>
+                        <div class="slds-box" style="padding:50px;background-color:#F6F7FB;">
+                            
+                            <aura:if isTrue="{!v.targetApprovalObj.Initiator_Status__c == 'In Process'}">
+                                <span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Approval Status:</span>&nbsp;<span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Draft</span><br/>
+                            </aura:if>
+                            <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'In Process'}">
+                                <span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Approval Status:</span>&nbsp;<span style="font-size:16px;color:#2D2D2D;font-weight: 600;">SRx Head</span><br/>
+                            </aura:if>
+                            <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'In Process'}">
+                                <span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Approval Status:</span>&nbsp;<span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Marketing Head</span><br/>
+                            </aura:if>
+                            <aura:if isTrue="{!and(v.targetApprovalObj.SRx_Head_Status__c == 'Completed',and (v.targetApprovalObj.Marketing_Head_Status__c == 'Completed', v.targetApprovalObj.Initiator_Status__c == 'Completed'))}">
+                                <span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Approval Status:</span>&nbsp;<span style="font-size:16px;color:#2D2D2D;font-weight: 600;">Accepted</span><br/>
+                            </aura:if>
+                            <br/>                    
+                            <lightning:layout>
+                                <h2><span>Initiator</span></h2>&nbsp;&nbsp; 
+                                <div style="height:20px;width:20px;">
+                                    <aura:if isTrue="{!v.targetApprovalObj.Initiator_Status__c == 'Not Initiated'}">
+                                        <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.targetApprovalObj.Initiator_Status__c == 'In Process'}">
+                                                <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.targetApprovalObj.Initiator_Status__c == 'Completed'}">
+                                                        
+                                                        <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </div>&nbsp;&nbsp;
+                                <hr class="line" style="width:20%;"></hr><span style="">RSM Head</span>&nbsp;&nbsp;
+                                <div style="height:20px;width:20px;">
+                                    <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'Not Initiated'}">
+                                        <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'In Process'}">
+                                                <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'Completed'}">
+                                                        
+                                                        <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>
+                                </div>&nbsp;&nbsp;
+                                <hr class="line" style="width:20%;"></hr><span style="">SRx Head</span>&nbsp;&nbsp;
+                                <div style="height:20px;width:20px;">
+                                    <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'Not Initiated'}">
+                                        <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'In Process'}">
+                                                <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'Completed'}">
+                                                        
+                                                        <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                        <aura:set attribute="else">
+                                                            <img src="{!$Resource.SRxAndMarketingRejectionIcon}"/>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>                       
+                                </div>&nbsp;&nbsp;
+                                <hr class="line" style="width:20%;"></hr><h2><span>Marketing Head</span></h2>&nbsp;&nbsp;
+                                <div style="height:20px;width:20px;">
+                                    <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'Not Initiated'}">
+                                        <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'In Process'}">
+                                                <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'Completed'}">
+                                                        
+                                                        <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                        <aura:set attribute="else">
+                                                            <img src="{!$Resource.SRxAndMarketingRejectionIcon}"/>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>                        
+                                </div>&nbsp;
+                            </lightning:layout><br/><br/>
+                            
+                            <table style="padding:12px;border-radius:50px;">
+                                <thead>
+                                    <tr style="padding:2px;text-align:center;border: 1px solid lightgrey;height:60px;background-color:#F5F5F5;">
+                                        <th class="" scope="col" style="width:5%;color: #2d2d2d;font-weight: 600;">
+                                            <div class="slds-truncate" title="Step" style="padding-left:10px;font-size:14px;">S.No</div>
+                                        </th>
+                                        <th class="" scope="col" style="width:15%;color: #2d2d2d;font-weight: 600;">
+                                            <div class="slds-truncate" title="Step Name" style="font-size:14px;">Submission Status</div>
+                                        </th>
+                                        <th class="" scope="col" style="width:15%;color: #2d2d2d;font-weight: 600;">
+                                            <div class="slds-truncate" title="Approver" style="font-size:14px;">Approver</div>
+                                        </th>
+                                        <th class="" scope="col" style="width:15%;color: #2d2d2d;font-weight: 600;">
+                                            <div class="slds-truncate" title="Approval Sent Time" style="font-size:14px;">Approval Sent Time</div>
+                                        </th>
+                                        <th class="" scope="col" style="width:15%;color: #2d2d2d;font-weight: 600;">
+                                            <div class="slds-truncate" title="Approval Completed Time" style="font-size:14px;">Approval Completed Time
+                                            </div>
+                                        </th>
+                                        <th class="" scope="col" >
+                                            <div class="slds-truncate" title="Comments" style="font-size:14px;color: #2d2d2d;font-weight: 600;">Comments</div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tr style="border: 1px ridge lightgrey;height:60px;width:25%;background-color:white;border-radius:30px;">
+                                    <td style="padding-left:25px;">1</td>
+                                    <td><div style="display:inline-block;height:10px; width:15px;">
+                                        <img src="{!$Resource.SRx_Approval_Icons_Approve}" style="margin-bottom: 4px;"/>
+                                        </div>
+                                        <span style="display:inline-block;padding-left:2px;padding-bottom:3px;">Initial Submission</span></td>
+                                    <td><lightning:buttonIcon class="approverIcon greenIcon" iconName="utility:record" variant="bare" alternativeText="record" size="medium"/><span style="padding-top:4px;">{!v.targetApprovalObj.Intial_Approver__c}</span></td>
+                                    <td class="slds-cell-wrap">{!v.targetApprovalObj.Initiator_Approval_Sent_Time_String__c}</td>
+                                    <td class="slds-cell-wrap">{!v.targetApprovalObj.Initiator_Approval_Completed_Time_String__c}</td>
+                                    <td>-</td>
+                                </tr>
+                                 <tr style="border: 1px ridge lightgrey;height:60px;width:25%;background-color:white;border-radius:30px;">
+                                <td style="padding-left:25px;">2</td>
+                                <td><div style="display:inline-block;height:10px; width:15px;">
+                                    <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'Not Initiated'}">
+                                        <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                        <aura:set attribute="else">
+                                            <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'In Process'}">
+                                                <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                                <aura:set attribute="else">
+                                                    <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'Completed'}">
+                                                        
+                                                        <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                        <aura:set attribute="else">
+                                                            <img src="{!$Resource.SRxAndMarketingRejectionIcon}"/>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>   
+                                    </div> <span style="display:inline-block;padding-left:2px;padding-bottom:3px;padding-top:4px;">RSM Head</span></td>
+                                <td><lightning:buttonIcon class="greenIcon" iconName="utility:record" variant="bare" alternativeText="record" size="medium"/><span style="padding-top:4px;">Admin</span></td>
+                                <td class="slds-cell-wrap">{!v.targetApprovalObj.RSM_Head_Approval_Sent_Time_String__c}</td>
+                                <td class="slds-cell-wrap">{!v.targetApprovalObj.RSM_Head_Approval_Completed_Time_String__c}</td>
+                                <td class="ellipsis">{!v.targetApprovalObj.RSM_Head_Comments__c}</td>
+                                </tr>
+                                <tr style="border: 1px ridge lightgrey;height:60px;width:25%;background-color:white;border-radius:30px;">
+                                    <td style="padding-left:25px;">2</td>
+                                    <td><div style="display:inline-block;height:10px; width:15px;">
+                                        <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'Not Initiated'}">
+                                            <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'In Process'}">
+                                                    <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                                    <aura:set attribute="else">
+                                                        <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'Completed'}">
+                                                            
+                                                            <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                            <aura:set attribute="else">
+                                                                <img src="{!$Resource.SRxAndMarketingRejectionIcon}"/>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>   
+                                        </div> <span style="display:inline-block;padding-left:2px;padding-bottom:3px;padding-top:4px;">SRx Head</span></td>
+                                    <td><lightning:buttonIcon class="greenIcon" iconName="utility:record" variant="bare" alternativeText="record" size="medium"/><span style="padding-top:4px;">N/A</span></td>
+                                    <td class="slds-cell-wrap">{!v.targetApprovalObj.SRx_Head_Approval_Sent_Time_String__c}</td>
+                                    <td class="slds-cell-wrap">{!v.targetApprovalObj.SRx_Head_Approval_Completed_Time_String__c}</td>
+                                    <td class="ellipsis">{!v.targetApprovalObj.SRx_Head_Comments__c}</td>
+                                </tr>
+                                <tr style="border: 1px ridge lightgrey;height:60px;width:25%;background-color:#F5F5F5;border-radius:30px;"> 
+                                    <td style="padding-left:25px;">3</td>
+                                    <td><div style="display:inline-block;height:10px; width:15px;">
+                                        <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'Not Initiated'}">
+                                            <img src="{!$Resource.SRx_Approval_Icons_Pending}"/>
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'In Process'}">
+                                                    <img src="{!$Resource.SRx_Approval_Icons_Edit}"/>
+                                                    <aura:set attribute="else">
+                                                        <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'Completed'}">
+                                                            
+                                                            <img src="{!$Resource.SRx_Approval_Icons_Approve}"/>
+                                                            <aura:set attribute="else">
+                                                                <img src="{!$Resource.SRxAndMarketingRejectionIcon}"/>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                        </div><span style="display:inline-block;padding-left:2px;padding-bottom:3px;">Marketing Head</span></td>
+                                    <td><span style="padding-bottom:5px;"><lightning:buttonIcon class="greenIcon" iconName="utility:record" variant="bare" alternativeText="record" size="medium"/></span><span style="padding-top:4px;">Milan Kalawadia</span></td>
+                                    <td class="slds-cell-wrap">{!v.targetApprovalObj.Marketing_Head_Approval_Sent_Time_String__c}</td>
+                                    <td class="slds-cell-wrap">{!v.targetApprovalObj.Marketing_Head_Approval_Completed_Str__c}</td>
+                                    
+                                    <td class="ellipsis">{!v.targetApprovalObj.Marketing_Head_Comments__c}</td>
+                                    
+                                </tr>
+                                <tbody>
+                                    
+                                </tbody>
+                            </table>
+                            
+                            
+                            <br/>
+                            <aura:if isTrue="{!v.targetApprovalObj.RSM_Head_Status__c == 'In Process'}">
+                                <div align = "right"> 
+                                    <aura:if isTrue="{!v.loggedInUserEmail == v.rsmApprover}">
+                                        
+                                        <lightning:button variant="Neutral" label="Reject" title="Brand action" onclick="{! c.openRejectRSM }" />
+                                        <lightning:button variant="brand" label="Approve" title="Brand action" onclick="{! c.openapproveRSM }" />
+                                        <aura:set attribute="else">
+                                            <lightning:button variant="Neutral" label="Reject" title="Only RSM head can reject the target at RSM Head Stage" onclick="{! c.openRejectRSM }" disabled="true"/>
+                                            <lightning:button variant="brand" label="Approve" title="Only RSM head can approve the target at RSM Head Stage" onclick="{! c.openapproveRSM }" disabled="true" />
+                                            
+                                        </aura:set>
+                                    </aura:if>
+                                </div> 
+                            </aura:if>
+                            <aura:if isTrue="{!v.targetApprovalObj.SRx_Head_Status__c == 'In Process'}">
+                                <div align = "right"> 
+                                    <aura:if isTrue="{!v.loggedInUserEmail == v.srxApprover}">
+                                        
+                                        <lightning:button variant="Neutral" label="Reject" title="Brand action" onclick="{! c.openRejectSRx }" />
+                                        <lightning:button variant="brand" label="Approve" title="Brand action" onclick="{! c.openapproveSRx }" />
+                                        <aura:set attribute="else">
+                                            <lightning:button variant="Neutral" label="Reject" title="Only SRx head can reject the target at SRx Head Stage" onclick="{! c.openRejectSRx }" disabled="true"/>
+                                            <lightning:button variant="brand" label="Approve" title="Only SRx head can approve the target at SRx Head Stage" onclick="{! c.openapproveSRx }" disabled="true" />
+                                            
+                                        </aura:set>
+                                    </aura:if>
+                                </div> 
+                            </aura:if>
+                            <aura:if isTrue="{!v.targetApprovalObj.Marketing_Head_Status__c == 'In Process'}">
+                                <div align = "right">
+                                    <aura:if isTrue="{!v.loggedInUserEmail == v.marketingApprover}">
+                                        
+                                        <lightning:button variant="Neutral" label="Reject" title="Brand action" onclick="{! c.openRejectMarketing }" />
+                                        <lightning:button variant="brand" label="Approve" title="Brand action" onclick="{! c.openapproveMarketing }" />
+                                        <aura:set attribute="else">
+                                            <lightning:button variant="Neutral" label="Reject" title="Only Marketing head can reject the target at Marketing Head Stage" onclick="{! c.openRejectMarketing }" disabled="true"/>
+                                            <lightning:button variant="brand" label="Approve" title="Only Marketing head can approve the target at Marketing Head Stage" onclick="{! c.openRejectMarketing }" disabled="true" />
+                                            
+                                        </aura:set>
+                                    </aura:if> </div>  
+                            </aura:if><br/>
+                            <div class="slds-grid slds-gutters">
+                                <div class="slds-size_5-of-12">
+                                </div>
+                                <div class="slds-size_2-of-12">
+                                    <div  class="slds-box" style="text-align:center;background-color:#A9C77D;height:180px;border-radius: 8px;">
+                                        <p style="font-weight:600;text-align:center;font-size: 16px;color: #2d2d2d;">SRx HEAD'S TARGET</p>
+                                        <p style="font-weight:600;text-align:center;font-style:italic;font-size:16px;color: #2d2d2d;"></p><br/>
+                                        <div class="slds-grid">
+                                            <div class="slds-size_10-of-12" style = "padding-right:20px;text-align:center;font-size: 24px;" align="center">
+                                                <aura:if isTrue="{!v.OverrideHeadSales == false}">
+                                                    <div style="margin-left:50px;font-weight:bold;">
+                                                        <aura:if isTrue="{!or(v.targetApprovalObj.headTargetStr == null,v.targetApprovalObj.headTargetStr=='')}">
+                                                            <b>-</b>
+                                                            <aura:set attribute="else"> {!v.targetApprovalObj.headTargetStr}</aura:set>
+                                                        </aura:if>    
+                                                    </div>
+                                                    <aura:set attribute="else">
+                                                        
+                                                        <ui:inputNumber class="slds-input inputWidth centerCss"
+                                                                        labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                        aura:id="headSales"
+                                                                        blur="{!c.closeheadTarget}"
+                                                                        change="{!c.onHeadTargetChange}"                                                      
+                                                                        value="{!v.targetApprovalObj.Head_Target__c}"
+                                                                        
+                                                                        />
+                                                    </aura:set>
+                                                </aura:if>
+                                            </div>
+                                            <div class="slds-size_2-of-12 slds-box slds-box_xx-small" style="background-color:white;border-radius: 6px;margin-top:60px">
+                                                <div style="align:top;text-align:center;">
+                                                    <aura:if isTrue="{!or(v.loggedInUserEmail == v.initialWestApprover,v.loggedInUserEmail == v.initialEastApprover)}">
+                                                        <lightning:buttonIcon iconName="utility:edit" class="slds-truncate" variant="bare" alternativeText="edit" onclick="{! c.inlineEditHeadTarget }" disabled="{!v.disableHeadIcon}"/>
+                                                        
+                                                        <aura:set attribute="else">
+                                                            <lightning:buttonIcon iconName="utility:edit" class="slds-truncate" variant="bare" alternativeText="edit" onclick="{! c.inlineEditHeadTarget }" disabled="true"/>
+                                                            
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </div>
+                                            </div>
+                                        </div> 
+                                    </div>
+                                </div>
+                                <div class="slds-size_5-of-12">
+                                </div>
+                            </div>
+                            <div class="slds-grid slds-gutters">
+                                <div class="slds-size_2-of-12">
+                                </div>
+                                <div class="slds-size_2-of-12">
+                                    <div  class="slds-box" style="border:none;align:center;background-color:#FCEDDA;height:180px;border-radius: 8px;">
+                                        <p style="font-weight:600;text-align:center;font-size: 16px;color: #2d2d2d;">EAST REGION TARGET</p>
+                                        <p style="font-weight:600;text-align:center;font-style:italic;font-size:16px;color: #2d2d2d;">{!v.ericSutherland}(ERIC SUTHERLAND)</p><br/>
+                                        <div class="slds-grid">
+                                            <div class="slds-size_10-of-12" style = "padding-right:20px;text-align:center;font-size: 24px;" align="center">
+                                                <aura:if isTrue="{!v.OverrideEastSales == false}">
+                                                    <div style="margin-left:50px;font-size: 24px;font-weight: bold;">
+                                                        <aura:if isTrue="{!or(v.targetApprovalObj.eastTargetStr == null,v.targetApprovalObj.eastTargetStr == '')}">
+                                                            <b>-</b>  
+                                                            <aura:set attribute="else">{!v.targetApprovalObj.eastTargetStr}</aura:set>
+                                                        </aura:if>     
+                                                    </div>
+                                                    
+                                                    <aura:set attribute="else">
+                                                        <ui:inputNumber class="slds-input inputWidth centerCss"
+                                                                        labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                        aura:id="eastSales"
+                                                                        blur="{!c.closeEastTarget}"
+                                                                        change="{!c.onEastTargetChange}"                                                      
+                                                                        value="{!v.targetApprovalObj.East_Region_Target__c}"
+                                                                        
+                                                                        />
+                                                    </aura:set>
+                                                </aura:if>
+                                            </div>
+                                            <div class="slds-size_2-of-12 slds-box slds-box_xx-small" style="background-color:white;border-radius: 6px;margin-top:50px;">
+                                                <div align="center">
+                                                    
+                                                    <aura:if isTrue="{!or(v.loggedInUserEmail == v.initialWestApprover,v.loggedInUserEmail == v.initialEastApprover)}">
+                                                        <lightning:buttonIcon iconName="utility:edit" variant="bare" alternativeText="edit" onclick="{! c.inlineEditEastTarget }" disabled="{!v.disableIcon}"/>
+                                                        
+                                                        <aura:set attribute="else">
+                                                            <lightning:buttonIcon iconName="utility:edit" variant="bare" alternativeText="edit" onclick="{! c.inlineEditEastTarget }" disabled="true"/>
+                                                            
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </div>
+                                            </div>
+                                        </div>   
+                                    </div>
+                                </div>
+                                <div class="slds-size_4-of-12">
+                                    
+                                </div>
+                                <div class="slds-size_2-of-12">
+                                    <div  class="slds-box" style="border:none;align:center;background-color:#FCEDDA;height:180px;border-radius: 8px;">
+                                        <p style="font-weight:600;text-align:center;font-size: 16px;color: #2d2d2d;">WEST REGION TARGET</p>
+                                        <p style="font-weight:600;text-align:center;font-style:italic;font-size: 16px; color: #2d2d2d;">{!v.daveSmith}(DAVE SMITH)</p><br/>
+                                        <div class="slds-grid">
+                                            <div class="slds-size_10-of-12" style = "padding-right:20px;text-align:center;font-size: 24px;" align="center">
+                                                <aura:if isTrue="{!v.OverrideWestSales == false}">
+                                                    <div style="margin-left:50px;font-weight:bold;font-size: 24px;">
+                                                        <aura:if isTrue="{!v.targetApprovalObj.westtargetStr != null}">
+                                                            {!v.targetApprovalObj.westtargetStr}
+                                                            <aura:set attribute="else"><b>-</b></aura:set>
+                                                        </aura:if>    
+                                                    </div>
+                                                    
+                                                    <aura:set attribute="else">
+                                                        <ui:inputNumber class="slds-input inputWidth centerCss"
+                                                                        labelClass="slds-form-element__label slds-form-element__label_edit slds-no-flex"
+                                                                        aura:id="WestSales"
+                                                                        blur="{!c.closeWestTarget}"
+                                                                        change="{!c.onWestTargetChange}"                                                      
+                                                                        value="{!v.targetApprovalObj.West_Region_Target__c}"
+                                                                        
+                                                                        />
+                                                    </aura:set>
+                                                </aura:if>
+                                            </div>
+                                            <div class="slds-size_2-of-12 slds-box slds-box_xx-small" style="background-color:white;border-radius: 6px;margin-top:50px;">
+                                                <div align="center">
+                                                    <aura:if isTrue="{!or(v.loggedInUserEmail == v.initialWestApprover,v.loggedInUserEmail == v.initialEastApprover)}">
+                                                        <lightning:buttonIcon iconName="utility:edit" variant="bare" alternativeText="edit" onclick="{! c.inlineEditWestTarget }" disabled="{!v.disableIcon}"/>
+                                                        
+                                                        <aura:set attribute="else">
+                                                            <lightning:buttonIcon iconName="utility:edit" variant="bare" alternativeText="edit" onclick="{! c.inlineEditWestTarget }" disabled="true"/>
+                                                            
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </div>
+                                            </div>
+                                        </div>   
+                                    </div>
+                                </div>
+                                <div class="slds-size_2-of-12">
+                                </div>
+                                
+                            </div><br/><br/>
+                            <div class="" style="display:flex">
+                                
+                                <div class="" style="width:50%;padding-left:10px;padding-right:20px;">
+                                    <p style="font-weight:600;font-size:18px;color:#2D2D2D;">{!v.eastHeader}</p><br/>
+                                    <table style="border-collapse:collapse;padding:12px;">
+                                        <thead style="height:40px;">
+                                            <tr style="padding:2px;text-align:center;border: 1px solid lightgrey;background-color:#F5F5F5;" >
+                                                <th style="border-bottom: 0px solid; color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:10%;">S.No</th>
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;width:15%;">Name</th>
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 1</th>
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 2</th>
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 3</th>
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 4</th>
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%;">Annual</th>
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%;">Actions</th>
+                                                
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            
+                                            <aura:iteration items="{!v.eastSalesData}" var="item" indexVar="index">
+                                                <c:Target_Approval_East_Child_Cmp  singlerec="{!item}"  indexVal="{!index}" targetApprovalObj="{!v.targetApprovalObj}" disableIconEastChild="{!v.disableIconEastChild}"  disableSubmitButton = "{!v.disableSubmitButton}"/>
+                                            </aura:iteration>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                
+                                <div class="" style="width:50%;padding-right:10px;padding-left:20px;">
+                                    <p style="font-weight:600;font-size:18px;color:#2D2D2D;">{!v.westHeader}</p><br/>
+                                    <table id="rows" style="border-collapse: collapse;padding:12px;border-radius:10px;">
+                                        <thead style="height:40px;">
+                                            <tr style="padding:2px;text-align:center;border: 1px solid lightgrey;height:35px;background-color:#F5F5F5;" >
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:10%;">S.No</th>
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;width:15%;">Name</th>
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 1</th>
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 2</th>
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 3</th>
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%">Quarter 4</th>
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%;">Annual</th>
+                                                <th style="border-bottom: 0px solid;color: #2d2d2d;font-weight: 600;padding:2px;text-align:center;width:13%;">Actions</th>
+                                                
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            
+                                            
+                                            <aura:iteration items="{!v.westSalesData}" var="item" indexVar="index">
+                                                
+                                                <c:Target_Approval_West_Child_Cmp  singlerec="{!item}" indexVal="{!index}" targetApprovalObj="{!v.targetApprovalObj}" disableIconWestChild="{!v.disableIconWestChild}"  disableSubmitButton = "{!v.disableSubmitButton}"/>
+                                            </aura:iteration>
+                                        </tbody>
+                                        
+                                    </table>
+                                </div>
+                            </div><br/>
+                            <aura:if isTrue="{! v.approveRSMScreen }">
+                                <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01" class="slds-modal slds-fade-in-open">
+                                    <div class="slds-modal__container">
+                                        <header class="slds-modal__header">
+                                            <p style="font-size:20px;">Please provide comments for your approval</p>
+                                            <lightning:input class="my-input-field-class" style="height:100px !important;" name="input1" label="" value="{!v.targetApprovalObj.RSM_Head_Comments__c}"/><br></br>
+                                            <lightning:button variant="Neutral" label="Close" onclick="{! c.closeRSMpopup }" />
+                                            
+                                            <aura:if isTrue="{!v.approveOrReject == 'Approve'}"> <lightning:button variant="brand" label="Approve" onclick="{! c.approveRSM }" />
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.approveOrReject == 'Reject'}">
+                                                <lightning:button variant="brand" label="Reject" onclick="{! c.rejectRSM }" /> </aura:if>
+                                        </header>
+                                    </div>
+                                </section>
+                                <div class="slds-backdrop slds-backdrop_open"></div>
+                            </aura:if>                                    
+                            
+                            <aura:if isTrue="{! v.approveSRxScreen }">
+                                <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01" class="slds-modal slds-fade-in-open">
+                                    <div class="slds-modal__container">
+                                        <header class="slds-modal__header">
+                                            <p style="font-size:20px;">Please provide comments for your approval</p>
+                                            <lightning:input class="my-input-field-class" style="height:100px !important;" name="input1" label="" value="{!v.targetApprovalObj.SRx_Head_Comments__c}"/><br></br>
+                                            <lightning:button variant="Neutral" label="Close" onclick="{! c.closeSrxPopup }" />
+                                            
+                                            <aura:if isTrue="{!v.approveOrReject == 'Approve'}"> <lightning:button variant="brand" label="Approve" onclick="{! c.approveSRx }" />
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.approveOrReject == 'Reject'}">
+                                                <lightning:button variant="brand" label="Reject" onclick="{! c.rejectSRx }" /> </aura:if>
+                                        </header>
+                                    </div>
+                                </section>
+                                <div class="slds-backdrop slds-backdrop_open"></div>
+                            </aura:if>
+                            <aura:if isTrue="{! v.approveMarketingScreen }">
+                                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+                                         aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_small">
+                                    <div class="slds-modal__container">
+                                        <header class="slds-modal__header">
+                                            Please provide comments for your approval
+                                            <lightning:input class="my-input-field-class" style="height:100px !important;" name="input1" label="" value="{!v.targetApprovalObj.Marketing_Head_Comments__c}"/><br></br>
+                                            <lightning:button variant="Neutral" label="Close" onclick="{! c.closeMktgPopup }" />
+                                            <aura:if isTrue="{!v.approveOrReject == 'Approve'}">
+                                                <lightning:button variant="brand" label="Approve" onclick="{! c.approveMarketing }" />
+                                                
+                                            </aura:if>
+                                            <aura:if isTrue="{!v.approveOrReject == 'Reject'}">
+                                                <lightning:button variant="brand" label="Reject" onclick="{! c.rejectMarketing }" />
+                                            </aura:if>
+                                        </header>
+                                    </div>
+                                </section>
+                                <div class="slds-backdrop slds-backdrop_open"></div>
+                            </aura:if>
+                            
+                            
+                            <aura:if isTrue="{!v.inProcessBackBtn}">
+                                <div align = "right">
+                                    <lightning:button variant="neutral" label="Back" title="Go back to target setting screen" onclick="{! c.intiatorBackBtn }"/>
+                                    <lightning:button variant="brand" label="Submit For Approval" title="Submit the record for approval" onclick="{! c.openSubmitPopup }" disabled="{!v.disableSubmitButton}"/>  
+                                </div>  
+                            </aura:if>
+                            <aura:if isTrue="{!v.srxBackBtn}">
+                                <div align = "right" style="padding-right:10px;">
+                                    <lightning:button variant="neutral" label="Back" title="Go back" onclick="{! c.srxtBackBtn}"/>
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{!v.marketingBackBtn}">
+                                <div align = "right" style="padding-right:10px;">
+                                    <lightning:button variant="neutral" label="Back" title="Go back to target setting screen" onclick="{! c.mrktBackBtn}"/>
+                                </div>
+                            </aura:if>
+                            <aura:if isTrue="{! v.submitPopup }">
+                                <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="modal-heading-01" class="slds-modal slds-fade-in-open slds-modal_medium">
+                                    <div class="slds-modal__container">
+                                        <header class="slds-modal__header">
+                                            <h1 class="slds-text-heading--medium"></h1>
+                                        </header>
+                                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                            Please provide comments for your submissions
+                                            <lightning:input class="my-input-field-class" name="input1" label="" value="{!v.targetApprovalObj.RSM_Head_Comments__c}"/><br></br>
+                                        </div>
+                                        <footer class="slds-modal__footer">
+                                            <lightning:button name='Close' label='Close' onclick='{!c.closeSubmitPopup}'/>
+                                            <lightning:button variant="brand" name='Approve' label='Submit' onclick='{!c.submitTarget}'/>
+                                        </footer>
+                                    </div>
+                                </section>
+                                
+                                
+                                <div class="slds-backdrop slds-backdrop_open"></div> 
+                                
+                            </aura:if>
+                            
+                        </div>
+                    </aura:if>
+                </aura:set>                
+            </aura:if>
+        </aura:set>
+        
+    </aura:if>
+    
+</aura:component>

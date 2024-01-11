@@ -1,0 +1,247 @@
+<!--
+  @description       : 
+  @author            : Surender Patel (Dhruvsoft)
+  @group             : 
+  @last modified on  : 29-05-2021
+  @last modified by  : Surender Patel (Dhruvsoft)
+  Modifications Log 
+  Ver   Date         Author                       Modification
+  1.0   29-05-2021   Surender Patel (Dhruvsoft)   Initial Version
+-->
+<aura:component controller="CheckListController"
+    implements="lightning:actionOverride,force:hasRecordId,force:hasSObjectName,force:lightningQuickActionWithoutHeader"
+    access="global">
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="filetype" type="List"
+        default="['.eml','.PST','.EDB','.MBOX',,'.odt','.wps','.rtf','.msg','.pps','.png','.war','.pjp','.apng','.gif','.pjp','.pjpeg','.jfif','.webp','.avif','.jpg','.jpeg','.pdf','.xlsm','.xlsx','.xlsb','.CSV','.xltx','.html', '.htt', '.mht',' .svg', '.swf', '.thtml','.xhtml','.txt','.odp','.pptx','.ppt','.docx','.doc','.docm','.dotx','.dot','.zip','.zipx','.tar','.xls']" />
+    <aura:attribute name="fileList" type="List" />
+    <aura:attribute name="bidType" type="String" default="" />
+    <aura:attribute name="contrType" type="String" default="" />
+    <aura:attribute name="contrNum" type="String" default="" />
+    <aura:attribute name="isChecklistExists" type="boolean" default="false" />
+
+    <aura:registerEvent name="lightningEvent" type="c:Phoenix_CheckListEvent" />
+
+    <!--style to increase width-->
+    <aura:html tag="style">
+        .slds-modal__container{
+        max-width: 80rem !important;
+        width:80% !important;
+        }
+    </aura:html>
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="ChecklistTypeboolean" type="boolean" default="false" />
+
+
+
+    <!-- <===============creating form  ==================>-->
+
+    <lightning:card>
+
+        <header class="slds-modal__header">
+            <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Add Checklist</h2>
+        </header>
+
+        <!-- <=============== start collecting bid id ==================>-->
+        <div aura:id="incomeForm" class="hide123">
+            <lightning:input label="curentrecid" aura:id="recordid" value="{!v.recordId}" />
+        </div>
+        <!-- <=============== end collecting bid id ==================>-->
+
+        <aura:if isTrue="{!v.isChecklistExists}">
+            <br></br><br></br>
+            <center>
+                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large"
+                    role="alert" style="width:50%;">
+                    <span class="slds-icon_container slds-m-right_x-small"
+                        title="There is is already checklist exists for this bid">
+                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small"
+                            variant="inverse" />
+                    </span>
+                    <h2>There is is already checklist exists for this bid</h2>
+                </div>
+            </center>
+            <aura:set attribute="else">
+                <lightning:recordEditForm objectApiName="Checklist__c" aura:id="ChecklistForm"
+                    onsubmit="{!c.handleOnSubmit}" onsuccess="{!c.handleOnSuccess}" onerror="{!c.handleOnError}">
+
+                    <div class="slds-box slds-box_xx-small" Style="width:100%;background:#E5E4E2">
+                        <p><b>Information</b></p>
+                    </div>
+                    <div Style="width:100%;padding:9px">
+                        <table>
+                            <tr width="100%">
+                                <td width="48%">
+                                    
+                                    <lightning:inputField fieldName="Bid__c" aura:id="bid" disabled="true" />
+                                    <lightning:inputField fieldName="Bid_Workflow_Type__c" value="{!v.bidType}"
+                                        disabled="true" />
+                                    <lightning:inputField fieldName="Current_Contract__c" value="{!v.contrNum}" />
+                                </td>
+                                <td width="1%"></td>
+                                <td width="48%">
+
+                                    <lightning:inputField fieldName="Account__c" aura:id="accid" disabled="true" />
+                                    <lightning:inputField fieldName="Contract_Workflow_Type__c"
+                                        value="{!v.contrType}" />
+                                    <lightning:inputField fieldName="Checklist_Type__c"
+                                        onchange="{!c.ChecklistTypeChange}" />
+
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!--Upload Document Section START -->
+
+                    <div class="slds-box slds-box_xx-small" Style="width:100%;background:#E5E4E2">
+                        <p><b>Attach Document</b></p>
+                    </div>
+                    <center style="padding: 0% 5%;">
+                        <div style="width:50%">
+                            <lightning:fileUpload label="" name="fileUploader" variant="label-hidden"
+                                accept="{!v.filetype}" multiple="true" recordId="{!v.recordId}"
+                                onuploadfinished="{!c.handleUploadFinished}" class="hideSpan" />
+                        </div>
+                    </center>
+                    <div style="margin-left:1%">
+
+                        <b>
+                            <p>List of Attachments ({!v.fileList.length})</p>
+                        </b><br></br>
+                        <aura:iteration items="{!v.fileList}" var="file" indexVar="itemIndex">
+                            <p data-name="{!file.Id}" style="cursor:pointer;">
+                                <lightning:button class="customBIconFileDel" iconName="action:delete"
+                                    iconPosition="left" onclick="{!c.deleteAttachment }" name="{!file.Id}" />&nbsp;
+                                <a href="{!'/'+file.Id}" target="_blank">{!itemIndex+1}.&nbsp;{!file.Title} </a>
+                            </p>
+                            <br></br>
+                        </aura:iteration>
+                    </div>
+                    <br></br>
+                    <!--Upload Document Section END -->
+
+
+                    <aura:if isTrue="{!v.ChecklistTypeboolean}">
+                        <div class="slds-box slds-box_xx-small" Style="width:100%;background:#E5E4E2">
+                            <p><b>Checklist Item</b></p>
+                        </div>
+                        <div Style="width:100%;padding:9px">
+                            <table>
+                                <tr width="100%">
+                                    <td width="48%">
+                                        <label for="Rebate Gross or Net">Rebate Gross or Net</label>
+                                        <lightning:helptext
+                                            content="Please confirm if “Gross” or “Net” indicator should be set up: (G = payable on contract price/ N = payable on net price (after rebates)" />
+                                        <lightning:inputField fieldName="Rebate_Gross_or_Net__c"
+                                            variant="label-hidden" />
+                                        <label for="Rebate Payable to Buying Group">Rebate Payable to Buying
+                                            Group</label>
+                                        <lightning:helptext content="Rebates are payable to any Buying group?" />
+                                        <lightning:inputField fieldName="Rebate_Payable_to_Buying_Group__c"
+                                            variant="label-hidden" />
+                                        <label for="Bonafide fee required">Bonafide fee required</label>
+                                        <lightning:helptext content="Bonafide fee required to be maintained?" />
+                                        <lightning:inputField fieldName="Bonafide_fee_required__c"
+                                            variant="label-hidden" />
+                                        <label for="Bonafide fee %">Bonafide fee %</label>
+                                        <lightning:helptext content="What is the Bonafide fee %" />
+                                        <lightning:inputField fieldName="Bonafide_fee__c" variant="label-hidden" />
+                                        <label for="Product eligible for VIP program">Product eligible for VIP
+                                            program</label>
+                                        <lightning:helptext content="Product is eligible for VIP program?" />
+                                        <lightning:inputField fieldName="Product_eligible_for_VIP_program__c"
+                                            variant="label-hidden" />
+                                        <label for="IOD agreement setup required">IOD agreement setup required</label>
+                                        <lightning:helptext
+                                            content="IOD agreement setup is also required for this proposal?" />
+                                        <lightning:inputField fieldName="IOD_agreement_setup_required__c"
+                                            variant="label-hidden" />
+                                        <label for="Rebates payable on 3rd party  non contract sales">Rebates payable on
+                                            3rd party non contract sales</label>
+                                        <lightning:helptext
+                                            content="Rebates payable on 3rd party and non contract sales also?" />
+                                        <lightning:inputField fieldName="Rebates_paybl_on_3rd_party_non_con_sal__c"
+                                            variant="label-hidden" />
+                                        <label for="Rebates payable to end member">Rebates payable to end member</label>
+                                        <lightning:helptext content="Rebates payable to end member?" />
+                                        <lightning:inputField fieldName="Rebates_payable_to_end_member__c"
+                                            variant="label-hidden" />
+                                        <label for="Rebates payable only on Specefic Ship Location">Rebates payable only
+                                            on Specefic Ship Location</label>
+                                        <lightning:helptext
+                                            content="Rebates payable only on particular ship to location sales?" />
+                                        <lightning:inputField fieldName="Rebates_payable_only_on_Specific_Ship_Lo__c"
+                                            variant="label-hidden" />
+                                        <!-- End -->
+                                    </td>
+                                    <td width="1%"></td>
+                                    <td width="48%">
+                                        <label for="Any exclusions">Any exclusions</label>
+                                        <lightning:helptext content="Are there any exclusions?" />
+                                        <lightning:inputField fieldName="Any_exclusions__c" variant="label-hidden" />
+                                        <label for="Rebates payable upon Customer Claim">Rebates payable upon Customer
+                                            Claim</label>
+                                        <lightning:helptext
+                                            content="Rebates payable upon receipt of the customer claim?" />
+                                        <lightning:inputField fieldName="Rebates_payable_upon_Customer_Claim__c"
+                                            variant="label-hidden" />
+                                        <label for="Settlement period ">Settlement period </label>
+                                        <lightning:helptext content="Settlement period" />
+                                        <lightning:inputField fieldName="Settlement_period__c" variant="label-hidden" />
+                                        <label for="Due Dates">Due Dates</label>
+                                        <lightning:helptext content="Due Dates (within 30 days/45 days, etc.)" />
+                                        <lightning:inputField fieldName="Due_Dates__c" variant="label-hidden" />
+                                        <label for="Validity period rebate from date">Validity period rebate from
+                                            date</label>
+                                        <lightning:helptext content="Validity period of the rebate, (from)" />
+                                        <lightning:inputField fieldName="Validity_period_rebate_from_date__c"
+                                            variant="label-hidden" />
+                                        <label for="Validity period rebate to date">Validity period rebate to
+                                            date</label>
+                                        <lightning:helptext content="Validity period of the rebate, (valid to)" />
+                                        <lightning:inputField fieldName="Validity_period_rebate_to_date__c"
+                                            variant="label-hidden" />
+                                        <label for="Reporting requirements">Reporting requirements</label>
+                                        <lightning:helptext
+                                            content="Reporting requirements (specify format and frequency)" />
+                                        <lightning:inputField fieldName="Reporting_requirements__c"
+                                            variant="label-hidden" />
+                                        <label for="Mode of payment ">Mode of payment </label>
+                                        <lightning:helptext content="Mode of payment" />
+                                        <lightning:inputField fieldName="Mode_of_payment__c" variant="label-hidden" />
+                                        <label for="Growth Rebate Indicator">Growth Rebate Indicator</label>
+                                        <lightning:helptext content="GR1:CP - ZITD Value = Growth basis*VIP% = Growth Rebate
+                                                             GR2:CP - PUR - PUR Bonafide - ZITD Value = Growth basis*VIP% = Growth Rebate
+                                                             GR3:CP - PUR - Rebate Value - ZITD Value = Growth Basis *VIP% = Growth Rebate
+                                                             GR4:CP - PUR - PUR Bonafide - Rebate" />
+                                        <lightning:inputField fieldName="Growth_Rebate_Indicator__c"
+                                            variant="label-hidden" />
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </aura:if>
+                </lightning:recordEditForm>
+            </aura:set>
+        </aura:if>
+        <!-- <footer class="slds-modal__footer">
+          
+            <lightning:button   label="Cancel" onclick="{!c.Cancelrecod}"/>
+            <lightning:button variant="Brand"  label="Save" onclick="{!c.saveNewRecord}"/>
+        </footer>-->
+
+        <div class="slds-docked-form-footer">
+            <button type="button" class="slds-button slds-button_neutral" onclick="{!c.Cancelrecord}">Cancel</button>
+            <!--  <lightning:button variant="brand" type="submit" name="save" label="Save" />-->
+            <aura:if isTrue="{!v.isChecklistExists==false}">
+                <button type="button" class="slds-button slds-button_brand" onclick="{!c.Saverecord}">Save</button>
+            </aura:if>
+        </div>
+
+    </lightning:card>
+
+
+
+</aura:component>

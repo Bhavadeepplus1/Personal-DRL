@@ -1,0 +1,155 @@
+<aura:component controller="Phoenix_SubmitBidForApprovalCtrl" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickActionWithOutHeader,lightning:actionOverride" access="global" >
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    <aura:attribute name="wrap" type="Object" description="To hold all objects" />
+    <aura:attribute name="isError" type="Boolean" default="false" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false" />
+    <aura:attribute name="errorMessage" type="String" />
+    <aura:attribute name="bidType" type="String" />
+     <aura:attribute name="ApprovalStatus" type="String" />
+    <aura:attribute name="showNextScreen" type="boolean" default = "true" />    
+    <aura:attribute name="ScreenClose" type="boolean" default = "false" /> 
+    <aura:attribute name="ShowContinue" type="boolean" default = "false" /> 
+    <aura:attribute name="selectedStep" type="String"/> 
+    
+    <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1">  
+        <aura:if isTrue="{!v.showSpinner}">
+            <lightning:spinner variant="brand" class="spinColor" size="large" />
+        </aura:if>
+        <div class="slds-modal__container"> 
+            <header class="slds-modal__header">
+                <h1 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Recall the Bid</h1>
+            </header>
+            <aura:if isTrue="{!v.isError}">
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <center><p>{!v.errorMessage}</p></center>
+                </div>
+                <footer class="slds-modal__footer"> 
+                    <lightning:button label="Close" title="Close" class="btn2" onclick="{!c.closeQuickActionPanel}" variant="brand">
+                    </lightning:button>
+                </footer>
+                <aura:set attribute="else">
+                    <aura:if isTrue="{!v.wrap.bidItemCount>0}">
+                        <aura:if isTrue="{!and(v.wrap.bid.Phoenix_Approval_Status__c != 'Draft',and(v.wrap.bid.Phoenix_Approval_Status__c != 'On Hold',and(v.wrap.bid.Phoenix_Approval_Status__c != 'Closed-Draft')))}"> <!-- ADD SOME CONDITIONS- --> 
+                          <aura:if isTrue="{!or(v.bidType == 'Price Change',or(v.bidType == 'Product Addition',or(v.bidType == 'RFP Bids',or(v.bidType =='Volume Review Only',or(v.bidType =='Sales Out Rebate',or(v.bidType =='Customer Rebate Change',or(v.bidType =='Good Dated OTB',or(v.bidType =='One Time Buy Good Dated Shelf Life for New Product Launch',or(v.bidType =='Short Dated OTB' ,or(v.bidType =='New Product Launch',or(v.bidType =='New Customer',or(v.bidType =='Initial Order Discount for WAC Customers (No-Contract Price Offering)',or(v.bidType == 'SRx IPA Price Change',or(v.bidType == 'SRx IPA Product Addition' , or(v.bidType == 'NEW Individual Pricing Agreement (IPA)')))))))))))))))}">
+                            <aura:if isTrue="{!v.showNextScreen}"> 
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                    <aura:if isTrue = "{!v.ApprovalStatus == 'Customer Update'}">
+                                        <center ><p>You can recall only to contract's step at this point.</p></center>
+                                        <lightning:select name="Stage" onchange="{!c.enableContinue}" class="frequired" value="{!v.selectedStep}">
+                                            <option value="None">--None--</option>
+                                            <option value="Contracts">Contracts</option>
+                                            
+                                        </lightning:select> 
+                                        <aura:set attribute = "else">
+                                            <center ><p>Please Select a stage from here.</p></center>
+                                            
+                                            
+                                            <!-- new recall code on 11th october-->
+                                            <!--set1 for scm and marketing both bid types -->
+                                            <aura:if isTrue="{!or(v.bidType == 'Product Addition',or(v.bidType == 'RFP Bids',or(v.bidType =='Good Dated OTB',or(v.bidType =='One Time Buy Good Dated Shelf Life for New Product Launch',or(v.bidType =='Short Dated OTB' ,or(v.bidType =='New Customer'))))))}">
+                                                <lightning:select name="Stage" onchange="{!c.enableContinue}" class="frequired" value="{!v.selectedStep}">
+                                                    <option value="None">--None--</option>
+                                                    <option value="Draft">Draft</option>
+                                                    <option value="SCMMarketing">SCM &amp;Marketing</option>
+                                                    <option value="SCM1">My Supply Chain Step</option>
+                                                    <option value="SCM">All Supply Chain Steps</option>
+                                                    <option value="MarketingOne">My Marketing Step</option>
+                                                    <option value="MarketingAll">All Marketing Steps</option>
+                                                    <option value="Contracts">Contracts</option>
+                                                    
+                                                </lightning:select> 
+                                            </aura:if>
+                                            <!--set1 end-->
+                                            <!-- set 2 for no marketing biud types  -->
+                                            <aura:if isTrue="{!v.bidType =='Volume Review Only'}">
+                                                <lightning:select name="Stage" onchange="{!c.enableContinue}" class="frequired" value="{!v.selectedStep}">
+                                                    <option value="None">--None--</option>
+                                                    <option value="Draft">Draft</option>
+                                                    <option value="SCM1">My Supply Chain Step</option>
+                                                    <option value="SCM">All Supply Chain Steps</option>
+                                                    <option value="Contracts">Contracts</option>
+                                                    
+                                                </lightning:select> 
+                                            </aura:if>
+                                            <!--set 2 end-->
+                                            <!--set 3 start for no scm bid types -->
+                                            <aura:if isTrue="{!or(v.bidType == 'Price Change',or(v.bidType =='Sales Out Rebate',or(v.bidType =='Customer Rebate Change',or(v.bidType =='New Product Launch'))))}">
+                                                <lightning:select name="Stage" onchange="{!c.enableContinue}" class="frequired" value="{!v.selectedStep}">
+                                                    <option value="None">--None--</option>
+                                                    <option value="Draft">Draft</option>
+                                                    <option value="MarketingOne">My Marketing Step</option>
+                                                    <option value="MarketingAll">All Marketing Steps</option>
+                                                    <option value="Contracts">Contracts</option>
+                                                    
+                                                </lightning:select> 
+                                            </aura:if>
+                                            <!-- set 3 end -->
+                                            
+                                            
+                                            
+                                            <!--set 4 only contracts bid types-->
+                                            <aura:if isTrue="{!or(v.bidType =='Initial Order Discount for WAC Customers (No-Contract Price Offering)',or(v.bidType =='SRx IPA Price Change',or(v.bidType == 'SRx IPA Product Addition',or(v.bidType == 'NEW Individual Pricing Agreement (IPA)'))))}">
+                                                <lightning:select name="Stage" onchange="{!c.enableContinue}" class="frequired" value="{!v.selectedStep}">
+                                                    <option value="None">--None--</option>
+                                                    <option value="Draft">Draft</option>
+                                                    <option value="Contracts">Contracts</option>
+                                                    
+                                                </lightning:select> 
+                                            </aura:if>
+                                            <!--set 4 ends-->
+                                            <!--new recall end-->
+                                            
+                                            
+                                            
+                                        </aura:set>
+                                    </aura:if>
+                                </div>                                  
+                                
+                                <footer class="slds-modal__footer"> 
+                                    <lightning:button label="Cancel" title="Cancel" class="btn2" onclick="{!c.closeQuickActionPanel}">
+                                    </lightning:button>
+                                    <aura:if isTrue="{!v.ShowContinue}">
+                                        <lightning:button label="Continue" title="Continue" class="btn2" onclick="{!c.showTheScreen}" variant="brand">
+                                        </lightning:button> 
+                                        
+                                    </aura:if>
+                                </footer>
+                            </aura:if>
+                            </aura:if>
+                            
+                            <aura:if isTrue="{!v.ScreenClose}">
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                    <center><p>Are you sure you want  to recall this bid?</p></center>
+                                </div>
+                                <footer class="slds-modal__footer"> 
+                                    <lightning:button label="Yes" title="Yes" class="btn2" onclick="{!c.recallTheBid}" variant="brand">
+                                    </lightning:button>                                   
+                                    <lightning:button label="No" title="No" class="btn2" onclick="{!c.closeQuickActionPanel}" variant="brand">
+                                    </lightning:button>
+                                </footer>
+                            </aura:if>                            
+                            <aura:set attribute="else">
+                                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                    <center><p>{!v.errorMessage}</p></center>
+                                </div>
+                                <footer class="slds-modal__footer"> 
+                                    <lightning:button label="Close" title="Close" class="btn2" onclick="{!c.closeQuickActionPanel}" variant="brand">
+                                    </lightning:button>
+                                </footer>
+                            </aura:set>
+                        </aura:if> 
+                        <aura:set attribute="else">
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                                <center><p>{!v.errorMessage}</p></center>
+                            </div>
+                            <footer class="slds-modal__footer"> 
+                                <lightning:button label="Close" title="Close" class="btn2" onclick="{!c.closeQuickActionPanel}" variant="brand">
+                                </lightning:button>
+                            </footer>
+                        </aura:set>    
+                    </aura:if>
+                </aura:set>
+            </aura:if>
+        </div>
+    </section>
+</aura:component>

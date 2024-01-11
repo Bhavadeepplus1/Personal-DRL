@@ -1,0 +1,189 @@
+<aura:component controller="Phoenix_AwardedQtycontroller"  implements="flexipage:availableForAllPageTypes,force:appHostable,flexipage:availableForRecordHome,force:hasRecordId,force:hasSObjectName">
+    <aura:attribute name="data" type="Object"/>
+    <aura:attribute name="columns" type="List"/>
+    <aura:attribute name="errors" type="Object" default="[]"/>
+    <aura:attribute name="draftValues" type="Object" default="[]"/>
+    <aura:handler name="init" value="{! this }" action="{! c.init }"/>
+    <aura:attribute name="getPicklistValues" type="List" />
+    <aura:attribute name="responseLen" type="Integer" />
+    <aura:attribute name="sNo" type="string" />
+    <aura:attribute name="sumofAllAwardedQty" type="Integer" />
+    <aura:attribute name="sumofAllAwardedQty1" type="Integer" />
+    <aura:attribute name="responseList" type="List" />
+    <aura:attribute name="totallineAwaQty" type="Decimal" />
+    <aura:attribute name="remQtyToAward" type="Decimal" />
+    <aura:attribute name="selectedPositionsString" type="String" />
+    <aura:attribute name="isRenderCompleted" type="Boolean" default="false" />
+    
+    
+    <aura:handler name="render" value="{!this}" action="{!c.onRender}"/>
+
+    <!--
+    <div class="slds-p-around_medium">
+        <h1 class="slds-text-heading_large">Inline edit Data table</h1>
+    </div>
+    -->
+    <!-- the container element determine the height of the datatable -->
+    <!--<div style="height: 300px">
+        <lightning:datatable aura:id="dtTable"
+                             columns="{! v.columns }"
+                             data="{! v.data }"
+                             keyField="Id"
+                             errors="{! v.errors }"
+                             draftValues="{! v.draftValues }"
+                             onsave="{! c.handleSaveEdition }"
+                             />
+    </div>
+    -->
+    <aura:attribute name="prodItem" type="object" />
+    <aura:attribute name="ConNo" type="String" />
+    <aura:attribute name="awardPosition" type="String" />
+    <aura:attribute name="awardQty" type="String" />
+    <aura:attribute name="CustomerName" type="String" />
+    <aura:attribute name="CustomerId" type="String" />
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="OverrideUnitsEditMode" type="boolean" default="false" />
+    <aura:attribute name="OverrideUnitsEditMode1" type="boolean"  />
+    <aura:attribute name="selectedValues" type="List" default="" description="Selected value in Multi Select" />
+    <aura:attribute name="selectedPositions" type="String" />
+    
+    <aura:attribute name="options" type="list" default="" required="true" />
+    <aura:attribute name="value" type="String" default="" description="Selected value in single Select" />
+    <aura:attribute name="values" type="List"   default="" description="Selected value in Multi Select" />
+    <aura:attribute name="label" type="string" default="" description="Label will be displayed above input Box" />
+    <aura:attribute name="minChar" type="Integer" default="1" description="Minimum character to type for search" />
+    <aura:attribute name="disabled" type="Boolean" default="false" description="Disable the combobox" />
+    <aura:attribute name="multiSelect" type="Boolean" default="true" description="Switch between single and multiSelect" />
+    <aura:attribute name="searchString"   type="string" default="" description="String to search"/>
+    <aura:attribute name="message"   type="String" default="" />
+    <aura:attribute name="showPills" type="boolean" />
+    <aura:attribute name="allSelected" type="boolean" />
+    
+    <!--<aura:handler name="change" value="{!v.selectedValues}" action="{!c.positionsChanged}"/>-->
+    <!--
+ <aura:iteration items="{!v.BidLineItemListAll}" var="biltem" indexVar="sNo">-->
+    <!-- Child Lightning Component -->
+    <tr>
+        <td style="color:black">{!v.prodItem.Phoenix_Contract_Number__c}</td>
+        <td class="slds-truncate slds-cell-wrap" scope="col" style="color:black"><a href="{!'/'+v.prodItem.Phoenix_Customer__c}" target="_blank">{!v.prodItem.Customer_Name__c}</a></td>
+        
+        <td class="slds-truncate slds-cell-wrap"  scope="col" style="color:black">{!v.prodItem.Contract_Internal_Description__c}</td>
+        <!--   <td class="slds-truncate slds-cell-wrap"  scope="col">{!v.prodItem.Contract_Internal_Description__c}</td>
+        -->
+        
+        
+        
+        <!--            <td class="slds-truncate slds-cell-wrap" scope="col">{!prodItem.Phoenix_Awarded_Quantity__c}</td>
+                                       
+                                        <aura:if isTrue="{!v.OverrideUnitsEditMode1 == false}">
+                                         <td><lightning:formattedNumber value="{!v.prodItem.Phoenix_Awarded_Quantity__c}" maximumFractionDigits="0"/></td>   
+                                            
+     
+     </aura:if> 
+     <aura:if isTrue="{!v.OverrideUnitsEditMode1 == true}">--> 
+        <td class="slds-truncate slds-cell-wrap" scope="col" ondblclick="{!c.inlineEditOverrideUnits}" style="color:black">
+            <span class="slds-grid slds-grid_align-spread">
+                <aura:if isTrue="{!v.OverrideUnitsEditMode == false}">
+                    <span  ><lightning:formattedNumber value="{!v.prodItem.Phoenix_Awarded_Quantity__c}" maximumFractionDigits="0"/></span>
+                    
+                    <button onclick="{!c.inlineEditOverrideUnits}" class="slds-button slds-button_icon slds-cell-edit__button slds-m-left_x-small" tabindex="0"  >
+                        <lightning:icon iconName="utility:edit" size="xx-small" />
+                    </button>
+                    <aura:set attribute="else">
+                        <section  tabindex="0" class="slds-popover slds-popover_edit" role="dialog" style="position: absolute; top: 0px;width: max-content;">
+                            <div class="slds-popover__body">
+                                <div class="slds-form-element slds-grid slds-wrap">
+                                    <div class="slds-form-element__control slds-grow">
+                                        <ui:inputNumber class="slds-input inputWidth"
+                                                        aura:id="OverrideUnits"
+                                                        blur="{!c.closeOverrideUnits}"
+                                                        change="{!c.onCISUChange}"                                                      
+                                                        value="{!v.prodItem.Phoenix_Awarded_Quantity__c}" />
+                                    </div>
+                                </div>
+                            </div>
+                            <span id="form-end" tabindex="0"></span>
+                        </section>
+                    </aura:set>
+                </aura:if>
+            </span>
+        </td>
+        <td style="color:black">
+            <!--<c:Vision_MultiSelectCombobox options="{!v.getPicklistValues}" values="{!v.selectedValues}" multiSelect="true" label="Select Position" showPills="true"/>-->
+            <div>
+                <aura:if isTrue="{!!empty(v.label)}">
+                    <label class="slds-form-element__label">{!v.label}</label>
+                </aura:if>
+                <div class="slds-combobox_container">
+                    <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open" aura:id="resultsDiv" aria-expanded="true" aria-haspopup="listbox" role="combobox">
+                        <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                            <lightning:input disabled="{!v.disabled}" aura:id="inputLookup" class="inputBox" placeholder="Select Positions" onblur="{!c.handleBlur}" onclick="{!c.showOptions}" onkeyup="{!c.filterOptions}" value="{!v.searchString}" autoComplete="off" variant="label-hidden" id="combobox-id-1" />
+                            <lightning:icon class="slds-input__icon" iconName="utility:down" size="x-small" alternativeText="search"/>
+                        </div>
+                        <!-- Dropdown List -->
+                        <div id="listbox-id-1" class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid" style="{! 'max-height:' + (8 + (v.recordCount * 40)) + 'px' }">
+                            <ul class="slds-listbox slds-listbox_vertical recordListBox" role="presentation">
+                                <aura:if isTrue="{!empty(v.message)}" >
+                                    <!-- To display Drop down List -->
+                                    <aura:iteration items="{!v.options}" var="option" >
+                                        <aura:if isTrue="{!option.disabled}">
+                                            <li class="{!'slds-listbox__item disabledItem' + if(option.isVisible,'',' slds-hide')}">
+                                                <span class="slds-media slds-listbox__option_entity verticalAlign slds-truncate">{!option.label}</span>
+                                            </li>
+                                            <aura:set attribute="else">
+                                                <li id="{!option.value}" class="{!'slds-listbox__item eachItem' + if(option.isVisible,'',' slds-hide')}" onmousedown="{!c.selectItem}">
+                                                    <lightning:icon class="{!if(option.selected,'','slds-hide')}" iconName="utility:check" size="x-small" alternativeText="icon" />
+                                                    <span class="slds-media slds-listbox__option_entity verticalAlign slds-truncate">{!option.label}</span>
+                                                </li>
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:iteration>
+                                    <!-- To display Error Message -->
+                                    <aura:set attribute="else">
+                                        <li class="slds-listbox__item">
+                                            <span class="slds-media slds-listbox__option_entity verticalAlign slds-truncate">{!v.message}</span>
+                                        </li>
+                                    </aura:set>
+                                </aura:if>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <aura:if isTrue="{!v.showPills == false}">
+                    <aura:iteration items="{!v.options}" var="option">
+                        <aura:if isTrue="{!option.selected}">
+                            <lightning:pill class="slds-m-around_xx-small" name="{!option.value}" label="{!option.label}" onremove="{!c.closePill}"/>
+                        </aura:if>
+                    </aura:iteration>
+                </aura:if>
+            </div>
+            
+            <!--<lightning:select label="Select Position" aura:id="select" name="select" value="{!v.prodItem.Phoenix_Awarded_Position__c}"  required="false" >
+                <option text="None" value=""></option>
+                <aura:iteration items="{!v.getPicklistValues}" var="per">
+                    <option value="{!per}" text="{!per}" selected="{!per==v.prodItem.Phoenix_Awarded_Position__c}"/> 
+                </aura:iteration>
+            </lightning:select>-->
+        </td>
+        <!-- </aura:if>
+        <td class="slds-truncate slds-cell-wrap" scope="col">{!v.prodItem.Phoenix_Awarded_Position__c}</td> 
+        -->
+        <td>
+            {!v.selectedPositionsString}
+        </td>
+    </tr>
+    <aura:if isTrue="{!v.sNo==v.responseLen}">
+        <tr>
+            <td class="slds-truncate slds-cell-wrap slds-text-align--right" colspan="3"><b><span style="color:black">Total:&nbsp;&nbsp;&nbsp;&nbsp;</span></b></td>
+            <td class="slds-truncate slds-cell-wrap"><b><span style="color:black"><lightning:formattedNumber value="{!v.sumofAllAwardedQty}"/></span></b></td>
+            <td colspan="2"></td>
+        </tr>
+        <tr>
+            <td class="slds-truncate slds-cell-wrap slds-text-align--right" colspan="3"><b><span style="color:black">Balance to allocate:&nbsp;&nbsp;&nbsp;&nbsp;</span></b></td>
+            <td class="slds-truncate slds-cell-wrap"><b><span style="color:black"><lightning:formattedNumber value="{!v.remQtyToAward}"/></span></b></td>
+            <td colspan="2"></td>
+        </tr>
+        
+    </aura:if> 
+    
+</aura:component>

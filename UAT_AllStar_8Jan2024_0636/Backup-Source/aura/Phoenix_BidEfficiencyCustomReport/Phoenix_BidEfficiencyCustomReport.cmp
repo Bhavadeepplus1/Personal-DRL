@@ -1,0 +1,197 @@
+<aura:component controller="Phoenix_CustomReportController" implements="force:appHostable,flexipage:availableForAllPageTypes,lightning:isUrlAddressable,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:attribute name="months" type="list" />
+    <aura:attribute name="totalBids" type="list" />
+    <aura:attribute name="withIn2Days" type="list" />
+    <aura:attribute name="withIn3_5Days" type="list" />
+    <aura:attribute name="withIn6_10Days" type="list" />
+    <aura:attribute name="moreThan10Days" type="list" />
+    <aura:attribute name="loadSpinner" type="boolean" default="false" />
+    <aura:attribute name="defaultOption" type="String" />
+    <aura:attribute name="showReport" type="boolean" default="false" />
+    <aura:attribute name="options" type="list" default="[
+                                                        {'label': 'Current Year', 'value': 'Current_Year'},
+                                                        {'label': 'Last 12 Months', 'value': 'Last_12_Months'},
+                                                        ]"/>
+    <aura:attribute name="startDate" type="Date" default="" />
+    <aura:attribute name="endDate" type="Date" default="" />
+    <aura:attribute name="dataForExport" type="list" />
+    
+    <aura:attribute name="Bidsdisplaylist" type="List" />
+
+    
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:if isTrue="{! v.loadSpinner }">
+        <lightning:spinner alternativeText="Loading" />
+    </aura:if>
+    <div class="slds-box slds-theme_default slds-m-top_small" id="top">
+        <div class="slds-align_absolute-center" style="font-size:20px; color: black;">
+            <b>Bid Efficiency Report</b>
+        </div>
+        <div class="slds-grid" style="margin-bottom: 10px;">
+            <div class="slds-col slds-size_3-of-12">
+            </div>
+            <div class="slds-col slds-size_3-of-12 slds-m-right_xx-small">
+                <lightning:input aura:id="inpt" type="date" name="date1" label="Start Date" class="customIndex" value="{!v.startDate}" fieldLevelHelp="Bid Submitted Date" required="true"/>
+            </div>
+            <div class="slds-col slds-size_3-of-12 slds-m-left_xx-small">
+                <lightning:input aura:id="inpt" type="date" name="date2" label="End Date" class="customIndex" value="{!v.endDate}" fieldLevelHelp="Bid Submitted Date" required="true"/>
+            </div>
+            <div class="slds-col slds-size_3-of-12">
+            </div>
+        </div>
+        <div class="slds-col slds-grid slds-size_1-of-1 slds-m-left_small">      
+            <div class="slds-align_absolute-center">
+                <lightning:button variant="brand" label="Run Report" title="Run" onclick="{! c.filterData }" class="slds-m-around_xx-small" />
+                <lightning:button variant="brand" label="Reset" title="Reset" onclick="{! c.resetData }" class="slds-m-around_xx-small" />
+            </div>
+        </div>
+        <aura:if isTrue="{!v.showReport}">
+            <div class="slds-grid slds-m-right_small slds-m-left_small slds-m-top_small">
+                <div class="slds-col slds-size_11-of-12" style="color: black;">
+                </div>
+                <div class="slds-col slds-size_1-of-12" style="color: black;">
+                    <lightning:button class="slds-float_right" variant="neutral" label="Export" title="Export" onclick="{! c.downloadCsv }" />
+                </div>
+            </div>
+            <div aura:id="mainDiv" style="height:340px;overflow:auto;margin-top:10px;"
+                 class=" slds-m-right_small slds-m-left_small">
+                <!--<div style="margin-bottom:10px;width: 350px; float: right;">
+                            <lightning:combobox name="progress" label="Filter" placeholder="Choose a filter" value="{!v.defaultOption}" options="{! v.options }" onchange="{! c.handleChange }" />
+                            <lightning:button class="slds-m-top_small slds-float_right" variant="neutral" type="Button" label="Export" onclick="{!c.downloadCsv}" />                    
+                        </div>-->
+                <table class="customTable" border="2" aura:id="tab" >
+                    <thead>
+                        <tr>
+                            <th style="min-width: 160px;" aura:id="customTh">
+                                <i>Summary:</i>
+                                <br></br>
+                                <i>Monthly Trend</i>
+                            </th>
+                            <aura:iteration items="{!v.months}" var="month">
+                                <th scope="col" colspan="2" style="text-align: center;min-width: 80px;">{!month}</th>
+                            </aura:iteration>
+                        </tr>
+                        <tr>
+                            <th aura:id="customTh">Efficiency Level</th>
+                            <aura:iteration items="{!v.months}" var="month">
+                                <th style="text-align: center;min-width: 80px;"># Bids</th>
+                                <th style="text-align: center;min-width: 80px;">% </th>
+                            </aura:iteration>
+                        </tr>
+                        <tr id="customTr">
+                            <th aura:id="customTh">Completed within 2 days</th>
+                            <aura:iteration items="{!v.withIn2Days}" var="item" >
+                                <aura:if isTrue="{!(not(empty(item.count)))}">
+                                    <td>
+                                        <lightning:button name="{!item.count}" variant="base" label="{!item.count.length}" onclick="{! c.onCountClick }"/>
+                                    </td>
+                                    <aura:set attribute="else">
+                                        <td>0</td>    
+                                    </aura:set>
+                                </aura:if>
+                                <td>
+                                    <lightning:formattedNumber value="{!item.percent}" style="percent" maximumFractionDigits="2"/>
+                                </td>
+                            </aura:iteration>
+                        </tr>
+                        <tr id="customTr">
+                            <th aura:id="customTh">Completed within 3-5 days</th>
+                            <aura:iteration items="{!v.withIn3_5Days}" var="item">
+                                <aura:if isTrue="{!(not(empty(item.count)))}">
+                                    <td>
+                                        <lightning:button name="{!item.count}" variant="base" label="{!item.count.length}" onclick="{! c.onCountClick }"/>
+                                    </td>
+                                    <aura:set attribute="else">
+                                        <td>0</td>    
+                                    </aura:set>
+                                </aura:if>                 
+                                <td>
+                                    <lightning:formattedNumber value="{!item.percent}" style="percent" maximumFractionDigits="2"/>
+                                </td>
+                            </aura:iteration>
+                        </tr>
+                        <tr id="customTr">
+                            <th aura:id="customTh">Completed within 6-10 days</th>
+                            <aura:iteration items="{!v.withIn6_10Days}" var="item">
+                              <aura:if isTrue="{!(not(empty(item.count)))}">
+                                    <td>
+                                        <lightning:button name="{!item.count}" variant="base" label="{!item.count.length}" onclick="{! c.onCountClick }"/>
+                                    </td>
+                                    <aura:set attribute="else">
+                                        <td>0</td>    
+                                    </aura:set>
+                                </aura:if>            
+                                <td>
+                                    <lightning:formattedNumber value="{!item.percent}" style="percent" maximumFractionDigits="2"/>
+                                </td>
+                            </aura:iteration>
+                        </tr>
+                        <tr id="customTr">
+                            <th aura:id="customTh">Completed > 10 days</th>
+                            <aura:iteration items="{!v.moreThan10Days}" var="item">
+                                <aura:if isTrue="{!(not(empty(item.count)))}">
+                                    <td>
+                                        <lightning:button name="{!item.count}" variant="base" label="{!item.count.length}" onclick="{! c.onCountClick }"/>
+                                    </td>
+                                    <aura:set attribute="else">
+                                        <td>0</td>    
+                                    </aura:set>
+                                </aura:if>            
+                                <td>
+                                    <lightning:formattedNumber value="{!item.percent}" style="percent" maximumFractionDigits="2"/>
+                                </td>
+                            </aura:iteration>
+                        </tr>
+                        <tr style="background-color: #a1a1a1; color: black;">
+                            <th style="font-weight: bold;" aura:id="customTh">Total</th>
+                            <aura:iteration items="{!v.totalBids}" var="item">
+                                <td><b>{!item.count}</b></td>
+                                <td>
+                                    <b><lightning:formattedNumber value="{!item.percent}" style="percent" maximumFractionDigits="2"/></b>
+                                </td>
+                            </aura:iteration>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+                
+            </div>
+            
+             <aura:if isTrue="{! v.Bidsdisplaylist.length > 0 }">
+               <div aura:id="mainDiv" style="height:340px;overflow:auto;"
+                         class=" slds-m-right_small slds-m-left_small">
+                    <table class="customTable" border="2" aura:id="tab">
+                        <tr>
+                            <th style="text-align: center;min-width: 80px;">Bid Number</th>
+                            <th style="text-align: center;min-width: 80px;">Bid type</th>
+                            <th style="text-align: center;min-width: 80px;">Approval Status</th>
+                            <th style="text-align: center;min-width: 80px;">Bid Submitted Date</th>
+                            <th style="text-align: center;min-width: 80px;">Sent To Customer Date</th>
+                            
+                        </tr>
+                        <aura:iteration items="{!v.Bidsdisplaylist}" var="bidvalues" >  
+                            <tr>
+                                <td style="text-align: center;min-width: 80px;"><lightning:formattedUrl value="{!'/' + bidvalues.Id}"  label="{!bidvalues.Name}" target="_blank" /></td>
+                                <td style="text-align: center;min-width: 80px;">{!bidvalues.Phoenix_Bid_Type__c }</td>
+                                <td style="text-align: center;min-width: 80px;">{!bidvalues.Phoenix_Approval_Status__c}</td>
+                                <td class="slds-text-align_right"> <lightning:formattedDateTime aura:id="dt"
+                                                                                                value="{!bidvalues.Phoenix_Bid_Submitted_Date__c}"
+                                                                                                month="short"
+                                                                                                day="numeric"
+                                                                                                year="numeric"/></td>
+                                <td class="slds-text-align_right"> <lightning:formattedDateTime aura:id="dt"
+                                                                                                value="{!bidvalues.Phoenix_Sent_to_Customer_Date__c}"
+                                                                                                month="short"
+                                                                                                day="numeric"
+                                                                                                year="numeric"/></td>
+                            </tr>
+                        </aura:iteration>
+                    </table>
+                </div>
+            
+        </aura:if>
+        </aura:if>
+    </div>
+</aura:component>

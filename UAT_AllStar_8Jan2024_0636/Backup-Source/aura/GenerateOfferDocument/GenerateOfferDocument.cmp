@@ -1,0 +1,79 @@
+<aura:component controller="Phoenix_OfferGenerationDocumentCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction,force:hasRecordId" access="global" extensible="true" >
+	<aura:attribute name="recordId" type="Id" />
+    <aura:attribute name="customerId" type="string" default='' />
+    <aura:attribute name="isOpen" type="boolean" />
+    <aura:attribute name="isWACOffer" type="boolean" default="false" />
+    <aura:attribute name="isNDCOffer" type="boolean" default="false" />
+    <aura:attribute name="isCustSpecific" type="boolean" default="false" />
+    <aura:attribute name="isGeneralOffer" type="boolean" />
+    <aura:attribute name="objectAPIName" type="string" />
+    <aura:attribute name="relatedTo" type="string" />
+    <aura:attribute name="lineItemsFamilies" type="string[]" />
+    <aura:attribute name="lineItemsCustomers" type="string[]" />
+    <aura:attribute name="offerTemplateList" type="Phoenix_Offer_Template__c[]" />
+    <aura:attribute name="defaultOfferName" type="string" />
+    <aura:attribute name="approvalStatus" type="string" />
+    <aura:attribute name="selectedTemplate" type="string" />
+    <aura:attribute name="selectedProductFamily" type="string" />
+    <aura:attribute name="selectedAccount" type="String" default = 'All' />
+    <aura:attribute name="isSuccess" type="boolean" />
+    <aura:attribute name="tableClass" type="Object" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:if isTrue="{!v.isOpen}">
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container customIndex">
+                        <header class="slds-modal__header">
+                            <lightning:buttonIcon iconName="utility:close"
+                                                  onclick="{! c.closeModel }"
+                                                  alternativeText="close"
+                                                  variant="bare-inverse"
+                                                  class="slds-modal__close"/>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Print Offer Document</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <!-- Modal for Offer Generation -->
+                            <lightning:recordEditForm recordId="{!v.recordId}" objectApiName="{!v.objectAPIName}">
+                                <lightning:inputField fieldName="Phoenix_Customer__c" disabled="true" />
+                                <lightning:inputField fieldName="Name" />
+                                <aura:if isTrue="{!v.isCustSpecific}">
+                                    <lightning:select label="Select Customer" aura:id="selectCustomer" value="{!v.selectedAccount}" onchange="{!c.handleSelectedCustomer}" required="true" disabled="{!v.isGeneralOffer}">
+                                        <option value=""></option>
+                                        <aura:iteration items="{!v.lineItemsCustomers}" var="cust">
+                                            <option value="{!cust.Id}" text="{!cust.Name}" />  
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </aura:if>
+                                <lightning:select label="Select Template" aura:id="select" name="select" value="{!v.selectedTemplate}" onchange="{!c.handleSelectedTemplate}" required="true">
+                                    		<option value=""></option>
+                                            <aura:iteration items="{!v.offerTemplateList}" var="off">
+                                                <option value="{!off.Phoenix_VF_Page_Name__c}" text="{!off.Name}" />  
+                                            </aura:iteration>
+                                </lightning:select>
+                                <aura:if isTrue="{!and(v.isWACOffer != true, v.isNDCOffer != true)}">
+                                    <lightning:select label="Print offer for Product Family" aura:id="selectfamily" value="{!v.selectedProductFamily}" onchange="{!c.handleSelectedProductFamily}" required="true">
+                                        <option value="All">All</option>
+                                        <aura:iteration items="{!v.lineItemsFamilies}" var="fam">
+                                            <option value="{!fam}" text="{!fam}" />  
+                                        </aura:iteration>
+                                    </lightning:select>
+                                </aura:if>
+                                <ui:inputText label="Document Name" value="{!v.defaultOfferName}" updateOn="keyup" required="true"/>
+                                
+                            </lightning:recordEditForm>
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral" 
+                                              label="Cancel"
+                                              title="Cancel"
+                                              onclick="{! c.closeModel }"/>
+                            <lightning:button variant="brand" 
+                                              label="Generate Offer Document"
+                                              title="Generate Offer Document"
+                                              onclick="{! c.generateDoc }"/>
+                        </footer>
+                    </div>
+                </section>
+        <div class="slds-backdrop slds-backdrop--open" id="backdrop"></div>
+        </aura:if>
+</aura:component>

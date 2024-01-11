@@ -1,0 +1,272 @@
+<aura:component controller="Phoenix_RejectedStatusCls" implements="flexipage:availableForAllPageTypes,force:hasRecordId,force:appHostable,lightning:isUrlAddressable" access="global">   
+    <aura:attribute name="recordId" type="Id" />
+    <aura:handler name="init" value="{!this}" action="{!c.initRecords}"/>
+    <aura:handler name="change" value="{!v.pageReference}" action="{!c.initRecords}"/>
+    <aura:attribute name="BidLineItemListAll" type="Phoenix_Bid_Line_Item__c[]"/>
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="objectAPIName" type="string" default=""/>
+    
+    <aura:attribute name="bidNumber" type="string"  />
+    <aura:attribute name="bidName" type="string"  />
+    <aura:attribute name="BidTypeVal" type="string"  />
+    
+    <aura:attribute name="isReBid" type="boolean" default="false" />
+    <aura:attribute name="tableRef" type="String" default=""/>
+    <aura:method name="rejectedStatusRefresh" action="{!c.initRecords}" />
+    <aura:handler name="oSelectedRecordEvent" event="c:selectedsObjectRecordsEvent" action="{!c.handleComponentEvent}"/>
+    <aura:attribute name="Message" type="String" default=""/>
+    
+    <aura:handler name="PDSelectedRecordEvent" event="c:ProductDirectorSearchEvent" action="{!c.handleComponentEventProdDir}"/>
+    <aura:attribute name="MessagePD" type="String" default=""/>
+    <lightning:navigation aura:id="navigationService" />
+    <aura:handler name="lightningEvent" event="c:RefreshBidLineItemCmpEvt" action="{!c.handleEvent}"/>
+    <lightning:card iconName="custom:custom90" title="{!(v.bidNumber+'-'+v.bidName)}">
+        <aura:set attribute="actions">
+            <lightning:buttonGroup>
+                <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+                    <div style="margin-right:8px;">  <lightning:button label="Export" onclick="{!c.downloadCsv}"/></div>
+                </aura:if>
+                <div><lightning:button variant="neutral" label="Back" title="Back" onclick="{! c.backToBid }"/>
+                </div>
+            </lightning:buttonGroup>
+        </aura:set>
+        <aura:if isTrue="{!(v.BidLineItemListAll.length > 0 )}">
+            
+            <div aura:id="mainDiv" style="height:400px;overflow:auto;margin-top:10px;" class=" slds-m-right_small slds-m-left_small">
+                <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                    <table aura:id="LineTable"  class="maintable slds-table slds-no-row-hover slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                        <thead>
+                            <tr> 
+                                <th></th>
+                                <th class="slds-truncate slds-cell-wrap">NDC</th>
+                                <th class="slds-truncate slds-cell-wrap">Product Name</th>
+                                <th class="slds-truncate slds-cell-wrap">Pkg Size</th>
+                                <th class="slds-truncate slds-cell-wrap">Product Family</th>
+                                <th class="slds-truncate slds-cell-wrap">Product Director</th>
+                                <th class="slds-truncate slds-cell-wrap">Throughput Cost</th>
+                                <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                    <th class="slds-truncate slds-cell-wrap">3 Months Annualized CVS Direct Selling Unit</th>
+                                    <th class="slds-truncate slds-cell-wrap">3 Months Annualized CVS Indirect Selling Unit</th>
+                                    <th class="slds-truncate slds-cell-wrap">3 Months Annualized Cardinal Selling Unit</th>
+                                    <th class="slds-truncate slds-cell-wrap">3 Months Annualized Major Selling Unit</th>
+                                    <th class="slds-truncate slds-cell-wrap">Override CVS Direct  Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">Override CVS Indirect  Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">Override Cardinal  Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">Override Major  Units</th>
+                                </aura:if>
+                                <th class="slds-truncate slds-cell-wrap">Proposed CVS Direct Units</th>
+                                <th class="slds-truncate slds-cell-wrap">Proposed CVS Indirect Units</th>
+                                <th class="slds-truncate slds-cell-wrap">Proposed Cardinal Units</th>
+                                <th class="slds-truncate slds-cell-wrap">Proposed Major Units</th>
+                                <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                    <th class="slds-truncate slds-cell-wrap">Current CVS Direct Contract Price</th>
+                                    <th class="slds-truncate slds-cell-wrap">Current Cardinal Contract Price</th>
+                                    <th class="slds-truncate slds-cell-wrap">Current Major Contract Price</th>
+                                    <th class="slds-truncate slds-cell-wrap">Current CVS Indirect Contract Price</th>
+                                </aura:if>
+                                <th class="slds-truncate slds-cell-wrap">Guidance Price/Acquisition costs</th>
+                                <th class="slds-truncate slds-cell-wrap">Proposed Sales CVS/Cardinal/Major Acquisition Costs/CVS Deadnet</th>
+                                <!-- <th class="slds-truncate slds-cell-wrap">Proposed Cardinal Sales Price</th>
+                                <th class="slds-truncate slds-cell-wrap">Proposed Major Sales Price</th>
+                                --><th class="slds-truncate slds-cell-wrap">Proposed Marketing CVS/Cardinal/Major Acquisition Costs/CVS Deadnet</th>
+                                <th class="slds-truncate slds-cell-wrap">Proposed CVS Direct  Contract Price</th>
+                                <th class="slds-truncate slds-cell-wrap">Proposed CVS Indirect Contract Price</th>
+                                <th class="slds-truncate slds-cell-wrap"> Proposed Cardinal Contract Price </th>
+                                <th class="slds-truncate slds-cell-wrap"> Proposed Major Contract Price </th>
+                                <th class="slds-truncate slds-cell-wrap">Internal CVS Direct Dead Net</th>
+                                <th class="slds-truncate slds-cell-wrap">Internal CVS Indirect Dead Net</th>
+                                <th class="slds-truncate slds-cell-wrap">Internal Cardinal Dead Net </th>
+                                <th class="slds-truncate slds-cell-wrap">Internal Major Dead Net </th>
+                                <th class="slds-truncate slds-cell-wrap">CVS Total Net Sales </th>
+                                <th class="slds-truncate slds-cell-wrap">CVS Total  TPT $ </th>
+                                <th class="slds-truncate slds-cell-wrap">CVS Total  TPT % </th>
+                                <th class="slds-truncate slds-cell-wrap">Cardinal Net Sales </th>
+                                <th class="slds-truncate slds-cell-wrap">Cardinal TPT $ </th>
+                                <th class="slds-truncate slds-cell-wrap">Cardinal TPT % </th>
+                                <th class="slds-truncate slds-cell-wrap">Major Net Sales </th>
+                                <th class="slds-truncate slds-cell-wrap">Major TPT $ </th>
+                                <th class="slds-truncate slds-cell-wrap">Major TPT % </th>
+                                <th class="slds-truncate slds-cell-wrap">Total RedOak Net Sales </th>
+                                <th class="slds-truncate slds-cell-wrap">Total RedOak TPT $ </th>
+                                <th class="slds-truncate slds-cell-wrap">Total RedOak TPT % </th>
+                                <th class="slds-truncate slds-cell-wrap">Budgeted ASP</th>
+                                 <aura:if isTrue="{!and(and(v.BidTypeVal!='Price Change',v.BidTypeVal!='New Product Launch'),and(v.BidTypeVal!='Sales Out Rebate',v.BidTypeVal!='Customer Rebate Change'))}">
+                                    <th class="slds-truncate slds-cell-wrap">SCM Approval (Y/N)</th>
+                                    <th class="slds-truncate slds-cell-wrap">SCM Rejection Reason</th>
+                                    <th class="slds-truncate slds-cell-wrap">Revisit Date</th>
+                                    <th class="slds-truncate slds-cell-wrap">Estimated Lead Time</th>
+                                    <th class="slds-truncate slds-cell-wrap">SCM Comments</th>
+                                </aura:if>
+                                <th class="slds-truncate slds-cell-wrap">Sales Notes</th>
+                                <aura:if isTrue="{!v.BidTypeVal !='Volume Review Only'}">
+                                <th class="slds-truncate slds-cell-wrap">Marketing Approval</th>
+                                </aura:if>
+                                <th class="slds-truncate slds-cell-wrap">Marketing Notes</th>
+                             <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='Sales Out Rebate')}">
+                                <th class="slds-truncate slds-cell-wrap">Marketing Lead Rx</th>
+                                 <th class="slds-truncate slds-cell-wrap">Marketing Lead SRx</th>
+                                 <th class="slds-truncate slds-cell-wrap">Marketing Lead OTC</th>
+                                <th class="slds-truncate slds-cell-wrap">Marketing Lead Comments</th>
+                                 <th class="slds-truncate slds-cell-wrap">Marketing Head Approval</th>
+                                 <th class="slds-truncate slds-cell-wrap">Marketing Head Comments</th>
+                                </aura:if>
+                                <aura:if isTrue="{!v.BidTypeVal !='Volume Review Only'}">
+                                <th class="slds-truncate slds-cell-wrap">Finance Approval</th>
+                                <th class="slds-truncate slds-cell-wrap">Finance Comments</th>
+                                </aura:if>
+                               <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='Sales Out Rebate')}">
+                                <th class="slds-truncate slds-cell-wrap">Sr Director / VP Finance Approval</th>
+                                <th class="slds-truncate slds-cell-wrap">Sr Director / VP Finance Comments</th>
+                                </aura:if>
+                                <th class="slds-truncate slds-cell-wrap">Contract Status</th>
+                                <th class="slds-truncate slds-cell-wrap">Contract Comments</th>
+                                <th class="slds-truncate slds-cell-wrap">Bid Status</th>
+                                <th class="slds-truncate slds-cell-wrap">Customer Decline Reasons</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <aura:iteration items="{!v.BidLineItemListAll}" var="singleRec" indexVar="sNo">
+                                <tr>
+                                    <th scope="row" class="{! v.showErrorClass == true ? 'slds-cell-edit slds-has-error' : 'slds-cell-edit'}">
+                                        
+                                    </th>
+                                    <th scope="row" class="{! v.showErrorClass == true ? 'slds-cell-edit slds-has-error' : 'slds-cell-edit'}">
+                                        <span class="slds-grid slds-grid_align-spread">
+                                            <span class="" title="NDC">{!singleRec.Phoenix_NDC__c}</span>
+                                        </span>
+                                    </th>
+                                    <th scope="row" >
+                                        <span class="slds-grid slds-grid_align-spread">
+                                            <span class="" title="Product">
+                                                <lightning:formattedUrl value="{!'/' + singleRec.Phoenix_Product__r.Id}"  label="{!singleRec.Phoenix_Product__r.Name}" target="_self" />  
+                                            </span>
+                                        </span>
+                                    </th>
+                                    <th scope="row" class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Pkg_Size__c}"/></th>
+    <th scope="row" >
+                                        <span class="slds-grid slds-grid_align-spread">
+                                            <span class="" title="Product Family">
+                                                <lightning:formattedUrl value="{!'/' + singleRec.Product_Family__c}"  label="{!singleRec.Product_Family__r.Name}" target="_self" />  
+                                            </span>
+                                        </span>
+                                        <!--{!singleRec.Phoenix_Product_Family__c}-->
+                                    </th>
+
+                                    <td>{!singleRec.Phoenix_Product_Director__c}</td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Throughput_cost__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                        <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Current_Retail_Direct_Units__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Current_Retail_Indirect_Units__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Current_Wholesaler_Units__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_3MonAnnualMajorSellingUnits__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Override_Current_Direct_Units__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Override_Current_Indirect_Units__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Override_Current_Units__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                        <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_OverrideMajorUnits__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                    </aura:if>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Proposed_Direct_Selling_Unit__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Proposed_Indirect_Selling_Unit__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Proposed_Cardinal_Units__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Proposed_Major_Units__c}" minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                    <aura:if isTrue="{!v.BidTypeVal !='New Product Launch'}">
+                                        <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Current_Direct_Price__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                        <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Current_Wholesaler_Price__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                        <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Current_Major_Contract_Price__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                        <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Current_Indirect_Price__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    </aura:if>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Guidance_Price__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_ProposedContract_Bid_Price_Sales__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    <!-- <td class="slds-text-align__right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Proposed_Cardinal_Sales_Price__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    <td class="slds-text-align__right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Proposed_Major_Sales_Price__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    --><td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_PropMarktCvsCardinalAcquisitCost__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Proposed_CvsDirectContractPrice__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_ProposedContractBidPriceMktng__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Wholesaler_Diff_Price_Indirect__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Proposed_Major_Contract_Price__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Direct_Dead_Net__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Indirect_Dead_Net__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Customer_Dead_Net1__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Internal_Major_Dead_Net__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_CVS_Total_Net_Sales__c}" style="currency" currencyCode="USD"
+                                                                                                  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_CVS_Total_TPT__c}" style="currency" currencyCode="USD"
+                                                                                                  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_CVS_Total_TPT_Per__c}" style="percent-fixed" maximumFractionDigits="2"/></td>
+                                    
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Wholesaler_Net_Sales__c}" style="currency" currencyCode="USD"
+                                                                                                  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Cardinal_TPT__c}" style="currency" currencyCode="USD"
+                                                                                                  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Cardinal_TPT_Per__c}" style="percent-fixed" maximumFractionDigits="2"/></td>
+                                    
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Major_Net_Sales__c}" style="currency" currencyCode="USD"
+                                                                                                  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Major_TPT__c}" style="currency" currencyCode="USD"
+                                                                                                  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Major_TPT_Per__c}" style="percent-fixed" maximumFractionDigits="2"/></td>
+                                    
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Net_Sales_Internal__c}" style="currency" currencyCode="USD" 
+                                                                                                  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Total_RedOak_TPT__c}" style="currency" currencyCode="USD"
+                                                                                                  minimumFractionDigits="0" maximumFractionDigits="0"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.BidLineItemsExtn__r[0].Phoenix_Total_RedOak_TPT_Per__c}" style="percent-fixed" maximumFractionDigits="2"/></td>
+                                    <td class="slds-text-align--right"><lightning:formattedNumber value="{!singleRec.Phoenix_Budgeted_ASP1__c}" style="currency" currencyCode="USD" maximumFractionDigits="2"/></td>
+ 									<aura:if isTrue="{!and(and(v.BidTypeVal!='Price Change',v.BidTypeVal!='New Product Launch'),and(v.BidTypeVal!='Sales Out Rebate',v.BidTypeVal!='Customer Rebate Change'))}">
+                                        <td>{!singleRec.Phoenix_SCM_Approval_Y_N__c}</td>
+                                        <td>{!singleRec.Phoenix_SCM_Rejection_Reason1__c}</td>
+                                        <td>
+                                            <span><lightning:formattedDateTime value="{!singleRec.Phoenix_Revisited_Date__c}" year="numeric" month="numeric" day="numeric" timeZone="UTC"></lightning:formattedDateTime></span>
+                                        </td>
+                                        <td>{!singleRec.Phoenix_Estimated_Lead_Time_Days__c}</td>
+                                        <td>{!singleRec.Phoenix_SCM_Notes__c}</td>
+                                    </aura:if>
+                                    <td>{!singleRec.Phoenix_Sales_Notes__c}</td>
+                                    <aura:if isTrue="{!v.BidTypeVal!='Volume Review Only'}">
+                                    <td>{!singleRec.Phoenix_Marketing_Approval__c}</td>
+                                    </aura:if>
+                                    <td>{!singleRec.Phoenix_Marketing_Notes__c}</td>
+                                     <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='Sales Out Rebate')}">
+
+                                    <td >{!singleRec.Phoenix_Marketing_Lead_Rx__c}</td>
+                                    <td >{!singleRec.Phoenix_Marketing_Lead_SRx__c}</td>
+                                    <td >{!singleRec.Phoenix_Marketing_Lead_OTC__c}</td>
+                                    <td >{!singleRec.Phoenix_Business_Head_Comments__c}</td>
+                                    <td>{!singleRec.Phoenix_Approval__c}</td>
+                                    <td>{!singleRec.Phoenix_Comments__c}</td>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.BidTypeVal!='Volume Review Only'}">
+                                    <td>{!singleRec.Phoenix_Finance_Approval__c}</td>
+                                    <td>{!singleRec.Phoenix_Finance_Comments__c}</td>
+                                    </aura:if>
+                                     <aura:if isTrue="{!and(v.BidTypeVal !='Volume Review Only',v.BidTypeVal !='Sales Out Rebate')}">
+
+                                    <td>{!singleRec.Phoenix_Sr_Director_VP_Finance_Approval__c}</td>
+            						<td>{!singleRec.Phoenix_Sr_Director_VP_Finance_Comments__c}</td>
+                                    </aura:if>
+                                    <td>{!singleRec.Phoenix_Contract_Approval__c}</td>
+                                    <td>{!singleRec.Phoenix_Contract_Comments__c}</td>
+                                    <td>{!singleRec.Phoenix_Bid_Status__c}</td>
+                                    <td>{!singleRec.Phoenix_Customer_Decline_Reasons__c}</td>
+                                </tr>    
+                                
+                            </aura:iteration>
+                        </tbody>
+                    </table>
+                </div> 
+            </div>
+            <br/>
+            <aura:set attribute="else">
+                <lightning:card >
+                    <center>
+                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                            <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                            </span>
+                            <h2>There are no line items for this bid</h2>
+                        </div>
+                    </center>
+                </lightning:card>
+            </aura:set>
+        </aura:if> 
+    </lightning:card> 
+</aura:component>

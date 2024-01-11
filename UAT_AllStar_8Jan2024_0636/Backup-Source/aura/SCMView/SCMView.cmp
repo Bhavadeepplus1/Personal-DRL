@@ -1,0 +1,706 @@
+<aura:component controller="Phoenix_SCMViewCls" implements="force:lightningQuickActionWithoutHeader,force:appHostable,force:hasRecordId,force:hasSObjectName" access="global" >
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="scmData" type="List" />
+    <aura:attribute name="updatedData" type="List"/>
+    <aura:attribute name="title" type="String" />
+    <aura:attribute name="isSpinnerLoad" type="boolean" default="false" />
+    <aura:attribute name="isClicked" type="boolean" default="false" />
+    <aura:attribute name="EstimatedDaysFieldValues" type="List" default="0,7,15,20,30,45,60,75,90,120,150,180,210" />
+    <aura:attribute name="SCMApprovalMap" type="Map" /> 
+    <aura:attribute name="SCMApprovalQtyMap" type="Map" /> 
+    <aura:attribute name="revisitedDateMap" type="Map" /> 
+    <aura:attribute name="nextReviewDateMap" type="Map" /> 
+    <aura:attribute name="EstimatedDaysMap" type="Map" /> 
+    <aura:attribute name="calculatedSCMQty" type="List" />
+    <aura:attribute name="SCMReJMap" type="Map" /> 
+    <aura:attribute name="SCMCommentsMap" type="Map" /> 
+    <aura:attribute name="initailOrderVolumeMap" type="Map" /> 
+    <aura:attribute name="initailOrderCommentsMap" type="Map" /> 
+    <aura:attribute name="isSCMApproved" type="boolean" default="false" />
+    <aura:attribute name="bidType" type="String" />
+    <!--added by har for approvals-->
+    <aura:attribute name="isSCMApprovePerson" type="boolean" /> 
+    <aura:attribute name="skuLength" type="integer" /> 
+    <aura:attribute name="approvedSKUSLen" type="integer" /> 
+    <aura:attribute name="rejectedSKUSLen" type="integer" />
+    <aura:attribute name="noactionTakenCount" type="integer" />
+    <aura:attribute name="isSubmit" type="boolean" />
+    <aura:attribute name="isAllRejSKU" type="boolean" />
+    <aura:attribute name="supplyChainPlannerId" type="string"/>
+    <aura:handler name="onchange" event="l_lookup:OnChange" action="{!c.handleChange}" />
+    <!--added by har for approvals-->
+    
+    <aura:attribute name="bidTemplate" type="string"/>
+    <aura:attribute name="bidRecord" type="String" />
+    
+    <!-- Winnability Attributes -->
+    <aura:attribute name="winnabilityPopup" type="boolean"  />
+    <aura:attribute name="winnabilityIgnored" type="boolean"  />
+    <aura:attribute name="lowWinnabilityScoreList" type="list"  />
+    <aura:attribute name="totalCOLO" type="Integer" />
+    
+    <!-- totalvalues -->
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> 
+    <aura:attribute name="scmRejactionReasonValues" type="List" default="FG Quality Issue, API Quality Issue, Raw Material/KSM Quality issue, Packing Material Quality Issue, API Supply Delay, Raw Material/KSM Supply issue, Packing Material Supply Issue, Manufacturing Delay, FG capacity constrained, API capacity constrained, Low FG Inventory on Hand,Planned Discontinuation, Others"/>
+    <aura:method name="scmRefresh" action="{!c.doInit}" />
+    <aura:method name="onloadSCM" action="{!c.onLoadingSCM}" />
+    <aura:attribute name="finalSCMApproval" type="boolean" default="false"/>
+    
+    <aura:html tag="style">
+        
+        
+        .tableDiv{
+        height : auto !important;
+        overflow : scroll !important;
+        }
+        
+        .scmcomment{
+        padding-right:25px !important;
+        padding-left:25px!important;
+        }
+        
+        .scmApproval{
+        padding-right:25px !important;
+        padding-left:25px!important;
+        }
+    </aura:html>
+    <lightning:card>
+        <aura:set attribute="title">
+            <div class="slds-col">
+                <span><lightning:icon iconName="custom:custom90" size="small"/>&nbsp;&nbsp;
+                    {!v.title}</span>
+            </div>
+        </aura:set>
+    </lightning:card>
+    <lightning:card class="slds-p-bottom_xx-large">
+        <aura:set attribute="actions">
+            
+        </aura:set>
+        <!--center><div class="slds-border_bottom slds-border_top slds-m-right_small slds-m-left_small" ><h1 style="font-size:1.5rem; font-weight:350;color:gray">SCM View</h1></div></center-->
+        <div aura:id="mainDiv" class=" slds-m-right_small slds-m-left_small">
+            <div class="slds-grid slds-gutters">
+                <div class="slds-col slds-size_6-of-12 slds-float_left">
+                    <span class="slds-m-right_small"><i>Total SKU's:&nbsp;{!v.skuLength}</i></span>
+                    <span class="slds-m-right_small"><i>Approved SKU's:&nbsp;{!v.approvedSKUSLen}</i></span>
+                    <span class="slds-m-right_small"><i>Rejected SKU's:&nbsp;{!v.rejectedSKUSLen}</i></span>
+                    <span class="slds-m-right_small"><i>No Action Taken SKU's:&nbsp;{!v.noactionTakenCount}</i></span>
+                </div>
+                <div class="slds-col slds-size_2-of-12 slds-float_center">
+                    <l_lookup:Lookup aura:id="customerLookup" label="Supply Chain Planner" 
+                                     objectType="User" selectedRecordId="{!v.supplyChainPlannerId}"
+                                     Placeholder="Search Supply Chain Planner..."/>
+                </div>
+                <div class="slds-col slds-size_4-of-12 slds-float_right">
+                    <span class="slds-float_right "><!--slds-m-bottom_xx-large-->
+                        <aura:if isTrue="{!or(v.updatedData[0].isSCMReview,v.updatedData[0].bidRecord.Phoenix_Is_Re_Bid__c == false)}">
+                            <aura:if isTrue="{!and(v.isSCMApprovePerson==true,and(not(v.finalSCMApproval), or(v.updatedData[0].bidRecord.Phoenix_Approval_Status__c  == 'SCM &amp; Marketing',v.scmData[0].bidRecord.Phoenix_Approval_Status__c  == 'Supply Chain')))}" >
+                                <!--,and(not(v.updatedData[0].finalSCMApproval), <div class="finalApproval slds-button slds-button_neutral" type="button" style="border:none;margin-bottom:8%;">-->
+                                <!-- <span style="display:inline;"><label>SCM Approval (Mark all as) :</label></span>-->
+                                
+                                <!--  <span style="display:inline;">-->
+                                <div class="slds-form slds-form_vertical" style="margin-top: -8%;"> 
+                                    <lightning:select label ='SCM Approval (Mark all as)'
+                                                      class="finalApproval slds-button_neutral slds-m-right_xx-small slds-form_horizontal"
+                                                      aura:id="headerSCMApproval"
+                                                      onchange="{!c.onApprovalChange}"
+                                                      >
+                                        <option class="slds-m-right_xx-small" value="None">None</option>
+                                        <aura:if isTrue="{!and(v.bidType != 'Good Dated OTB',and(v.bidType != 'Short Dated OTB',and(v.bidType != 'New Customer',v.bidType != 'New Product Launch')))}">
+                                            <option value="Y- Only Current Monthly Demand Approved">Y- Only Current Monthly Demand Approved</option>
+                                        </aura:if>
+                                        <option class="slds-m-right_xx-small" value="Y- Current + Inc Demand Approved">Y- Current + Inc Demand Approved</option>
+                                        <option class="slds-m-right_xx-small" value="N- Not Approved">N- Not Approved</option>
+                                    </lightning:select>
+                                </div>
+                                <!-- </span>-->
+                                <!--</div>,and(not(v.updatedData[0].finalSCMApproval)-->
+                            </aura:if>
+                        </aura:if>
+                    </span>
+                    <span class="slds-m-right_xx-small slds-float_right">  
+                        <aura:if isTrue="{!and(v.isSCMApprovePerson==true,and(not(v.finalSCMApproval),or(v.updatedData[0].bidRecord.Phoenix_Approval_Status__c  == 'SCM &amp; Marketing',v.scmData[0].bidRecord.Phoenix_Approval_Status__c  == 'Supply Chain')))}" >
+                            <aura:if isTrue="{!not(v.isClicked)}">
+                                <lightning:button  variant="brand" class="slds-m-bottom--xx-small" label="Submit" onclick="{! c.onApprovalSubmit}" />
+                            </aura:if>
+                        </aura:if></span>
+                    <span class="slds-m-right_xx-small slds-float_right"><aura:if isTrue="{!(v.updatedData.length > 0 )}">
+                        <lightning:button class="slds-m-bottom--xx-small" label="Export" onclick="{!c.downloadCsv}" />
+                        </aura:if>
+                    </span>
+                    <span class="slds-m-right_xx-small slds-float_right"><lightning:button class="slds-m-bottom--xx-small" label="Back" onclick="{! c.onClose}" /></span>
+                </div>
+                
+                
+                <!--    <div class="slds-col slds-hidden">
+                    <span><i>&nbsp;&nbsp;&nbsp;Total SKU's:&nbsp;{!v.skuLength}</i></span>
+                </div>
+                <div class="slds-col slds-hidden">
+                    <span><i>Total Approved SKU's:&nbsp;{!v.approvedSKUSLen}</i></span>
+                </div>
+                <div class="slds-col slds-hidden">
+                    <span><i>Total Rejected SKU's:&nbsp;{!v.rejectedSKUSLen}</i></span>
+                </div>
+                <div class="slds-col slds-hidden">
+                    <span><i>No Action Taken SKU's:&nbsp;{!v.noactionTakenCount}</i></span>
+                </div>
+                <aura:if isTrue="{!and(v.isSCMApprovePerson==true,and(not(v.updatedData[0].finalSCMApproval), or(v.updatedData[0].bidRecord.Phoenix_Approval_Status__c  == 'SCM &amp; Marketing',v.updatedData[0].bidRecord.Phoenix_Approval_Status__c  == 'Supply Chain')))}" >
+                    <aura:if isTrue="{!not(v.isClicked)}">
+                        <div class="slds-col slds-hidden">
+                            <span><i>Action Taken SKU's:&nbsp;{!v.noactionTakenCount}</i></span>
+                        </div>
+                    </aura:if>
+                    <aura:set attribute="else">
+                        <div class="slds-col slds-hidden">
+                            <span><i>Total SKU's:&nbsp;{!v.skuLength}</i></span>
+                        </div>
+                        <div class="slds-col slds-hidden">
+                            <span><i>No Action Taken:&nbsp;{!v.noactionTakenCount}</i></span>
+                        </div>
+                    </aura:set>
+                </aura:if>-->
+                
+                
+                
+                
+            </div>
+            <aura:if isTrue="{!v.updatedData.length > 0}" >
+                <aura:if isTrue="{!v.isClicked}">
+                    <div class="slds-align_absolute-center slds-m-top_small slds-m-bottom_small">        
+                        <lightning:button variant="neutral" label="Cancel" onclick="{! c.refreshSCM}" />      
+                        <lightning:button variant="brand" label="Save" onclick="{! c.saveClick }" />
+                    </div>
+                </aura:if>
+                <aura:if isTrue="{!v.isSpinnerLoad}">
+                    <div class="backgroundInverse">
+                        <lightning:spinner alternativeText="Loading" variant="brand" />
+                    </div>
+                </aura:if>
+                <aura:if isTrue="{!v.winnabilityPopup}">
+                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" 
+                             aria-modal="true" aria-describedby="modal-content-id-1" 
+                             class="slds-modal slds-fade-in-open">
+                        <div class="slds-modal__container" style="">
+                            <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1" style="width: 80%;margin:auto;">
+                                <div style="text-align: center;font-size: 16px;font-weight: bold; font-weight: 600;margin-bottom: 8px;">
+                                    <div style="display: inline-block;">Caution</div>
+                                    <div style="display: inline-block;float: right;">
+                                        <lightning:buttonIcon iconName="utility:close"
+                                                              onclick="{! c.closeWinnabilityPopup }"
+                                                              alternativeText="close"
+                                                              variant="bare-inverse"
+                                                              class="slds-modal__close winnabilityCloseIconCSS"/>
+                                    </div>
+                                </div>
+                                <p>
+                                    <div style="font-weight: bold; font-weight: 500;">
+                                        Before submitting, please review and consider that {!v.lowWinnabilityScoreList.length} out of {!v.updatedData.length} products currently have a winnability score below the threshold,
+                                        which could result in cost of lost opportunity presented in the table below.
+                                    </div>
+                                </p>
+                                <div style="padding-top: 20px; padding-bottom: 12px;width: 100%;overflow: auto;">
+                                    <table class="slds-table slds-table_cell-buffer slds-no-row-hover slds-table_bordered" style="border: 2px solid #d7d7d7;border-radius:4px;" >
+                                        <thead>
+                                            <tr class="slds-line-height_reset">
+                                                <th class="" scope="col">
+                                                    <div class="slds-truncate" title="Product Name">Product Name</div>
+                                                </th>
+                                                <th class="" scope="col" width="15%" style="text-align: right;">
+                                                    <div class="slds-truncate" title="Winnability Score">Winnability Score</div>
+                                                </th>
+                                                <th class="" scope="col" width="20%" style="text-align: right;">
+                                                    <div class="slds-truncate" title="COLO">COLO</div>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <aura:iteration items="{!v.lowWinnabilityScoreList}" var="lineItem">
+                                                <tr class="slds-hint-parent" style="font-weight: bold; font-weight: 500;">
+                                                    <td>
+                                                        <lightning:formattedUrl value="{!'/' + lineItem.bidLineObj.Phoenix_Product__c}"
+                                                                                label="{!lineItem.bidLineObj.Phoenix_Product__r.Name}" target="_blank" />
+                                                    </td>
+                                                    <td style="text-align: right;">
+                                                        <lightning:icon iconName="utility:info_alt" class="winnabilityIconCSS" title="" size="x-small"/>&nbsp;
+                                                        <lightning:formattedNumber value="{!lineItem.bidLineObj.Phoenix_Product__r.Winnability__c}" style="percent-fixed"  maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                                    </td>
+                                                    <td style="text-align: right;">
+                                                        <lightning:formattedNumber value="{!lineItem.bidLineObj.Phoenix_Net_Sales_Internal__c}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0"/>                                                        
+                                                    </td>
+                                                </tr>
+                                            </aura:iteration>
+                                            <tr style="background-color: #dcebf8; font-weight: bold;">
+                                                <td colspan="2" style="text-align: left;">Total</td>
+                                                <td style="text-align: right;">
+                                                    <lightning:formattedNumber value="{!v.totalCOLO}" style="currency" currencyCode="USD" maximumFractionDigits="0" minimumFractionDigits="0"/>                                                        
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div style="text-align: right;">
+                                    <lightning:button variant="neutral"
+                                                      label="Ignore and Submit"
+                                                      title="Ignore and Submit"
+                                                      onclick="{! c.ignoreAndSubmit }"/>&nbsp;
+                                    <lightning:button variant="brand"
+                                                      label="Reconsider and Modify"
+                                                      title="Reconsider and Modify"
+                                                      onclick="{!c.reconsideAndModify}"/>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <div class="slds-backdrop slds-backdrop_open"></div>
+                </aura:if>
+                <aura:if isTrue="{!not(v.isAllRejSKU)}"> 
+                    <div class="tableDiv slds-m-top_small slds-m-bottom_small" style="height:100vh;">
+                        
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-scrollable slds-scrollable_x" style="width:150px">
+                            
+                            <thead>
+                                <tr> 
+                                    <th class="slds-truncate slds-cell-wrap" >SAP Number</th>
+                                    <th class="slds-truncate slds-cell-wrap">Product</th>
+                                    <aura:if isTrue="{!v.updatedData[0].bidLineObj.Vision_sku_split_flag__c == 'True'}">
+                                        <th class="slds-truncate slds-cell-wrap">Supply Assurance</th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap" >Molecule</th>
+                                    <th class="slds-truncate slds-cell-wrap" >SCM Approver</th>
+                                    <th class="slds-truncate slds-cell-wrap">Pkg Size</th>
+                                    
+                                    <aura:if isTrue="{!or(v.bidType == 'Good Dated OTB',v.bidType == 'Short Dated OTB')}">
+                                        <th class="slds-truncate slds-cell-wrap">Annual Total Demand</th>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">Monthly Demand</th>
+                                    <th class="slds-truncate slds-cell-wrap">Monthly Additional Requirement</th>
+                                    <th class="slds-truncate slds-cell-wrap" >Monthly Total Revised Requirement</th>
+                                    <th class="slds-truncate slds-cell-wrap">Dollar Value</th>
+                                    <th class="slds-truncate slds-cell-wrap scmApproval" >SCM Approval (Y/N)</th>
+                                    <th class="slds-truncate slds-cell-wrap">SCM Approved - % of Incremental</th>
+                                    <aura:if isTrue="{!v.bidTemplate =='Walgreens'}" >
+                                        <aura:if isTrue="{!v.bidType == 'RFP Bids'}">
+                                            <th class="slds-truncate slds-cell-wrap">Winnability Score</th>
+                                        </aura:if>
+                                    </aura:if>
+                                    <th class="slds-truncate slds-cell-wrap">Current/SCM Approved Qty</th>
+                                    <!-- <aura:if isTrue="{!v.updatedData[0].bidRecord.Phoenix_Customer_Type__c == 'ROS'}">
+                                    <th class="slds-truncate slds-cell-wrap">CVS Direct Approved Selling Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">CVS Indirect Approved Selling Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">Cardinal Approved Selling Units</th>
+                                    <th class="slds-truncate slds-cell-wrap">Major Approved Selling Units</th>
+                                </aura:if>-->
+                                    <th class="slds-truncate slds-cell-wrap">Estimated Lead Time</th>
+                                    <th class="slds-truncate slds-cell-wrap">SCM Rejection Reason</th>
+                                    <th class="slds-truncate slds-cell-wrap">Revisit Date</th>
+                                    <!--<th >Next Review Date</th>-->
+                                    <th class="slds-truncate slds-cell-wrap scmcomment" >SCM Comments</th>
+                                    <aura:if isTrue="{!and(v.bidType != 'Good Dated OTB',v.bidType != 'Short Dated OTB')}">
+                                        <th class="slds-truncate slds-cell-wrap">Initial Stocking Order Volume</th>
+                                        <th class="slds-truncate slds-cell-wrap">Initial Stocking Order Comments</th>
+                                    </aura:if>
+                                </tr>
+                                
+                            </thead>
+                            <tbody>
+                                
+                                <aura:iteration items="{!v.updatedData}" var="data" indexVar='index'>
+                                    <tr>
+                                        <th scope="row" style="padding-bottom: 0.5%;">{!data.sapNumber} </th>
+                                        <td class="slds-truncate slds-cell-wrap" >{!data.productName} </td>
+                                        <aura:if isTrue="{!data.bidLineObj.Vision_sku_split_flag__c == 'True'}">
+                                            <td style="padding:0px;" scope="row">
+                                                <div style="width:85px;" onmouseover="{!c.showSAdetails}" onmouseout="{!c.hideSAdetails}"  id="{!data.bidLineObj.Id}" >
+                                                    <img src="{!$Resource.Vision_Supply_Assurance_logo}"/>
+                                                </div>
+                                            </td>
+                                        </aura:if>
+                                        <td class="slds-truncate slds-cell-wrap">
+                                            <div style="position:fixed;display:none;z-index:9999;top:45%;" id="{!data.bidLineObj.Id+'contact'}">
+                                                <div class="slds-popover slds-popover_tooltip" role="tooltip" id="help" >
+                                                    <div class="slds-popover__body slds-box" style="color:black;padding:0px;">
+                                                        <table class="slds-table slds-border_left slds-border_right slds-border_bottom" style="overflow:scroll;">
+                                                            <th class="hoverHeader" colSpan="4">
+                                                               <b>Product Name : {!data.productName}</b>
+                                                            </th>
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td class="hoverTable">
+                                                                        SCM Manager 
+                                                                    </td>
+                                                                    <td>
+                                                                        {!data.bidLineObj.Vision_scm_manager__c}
+                                                                    </td>
+                                                                    
+                                                                    <td class="hoverTable">
+                                                                         SCM Approved Date
+                                                                    </td>
+                                                                    <td>
+                                                                        <lightning:formattedDateTime value="{!data.bidLineObj.Vision_scm_approved_date__c}"  year="numeric" day="2-digit" month="long" hour="2-digit" minute="2-digit" timeZone="UTC"/>
+                                                                        
+                                                                        
+                                                                        
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td class="hoverTable">
+                                                                        Supply Requirement
+                                                                    </td>
+                                                                    <td>
+                                                                        {!data.bidLineObj.Vision_supply_requirement__c}
+                                                                        
+                                                                    </td>
+                                                                    <td class="hoverTable">
+                                                                        PM Confidence Level
+                                                                    </td>
+                                                                    <td>
+                                                                        {!data.bidLineObj.Vision_confidence_level__c}
+                                                                        
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td class="hoverTable">
+                                                                        Customer Expectation Lead Time (Months)
+                                                                    </td>
+                                                                    <td>
+                                                                        {!data.bidLineObj.Vision_customer_expectation_lead_time__c}
+                                                                        
+                                                                    </td>
+                                                                    <td class="hoverTable">
+                                                                     Supply Effective Date SCM
+                                                                    </td>
+                                                                    <td>
+                                                                        <lightning:formattedDateTime value="{!data.bidLineObj.Vision_supply_effectivedate_SCM__c}"  year="numeric" day="2-digit" month="long" hour="2-digit" minute="2-digit" timeZone="UTC"/>
+                                                                        
+                                                                    </td>
+                                                                </tr>
+                                                                
+                                                                
+                                                                <tr>
+                                                                    <td class="hoverTable">
+                                                                         Remarks by PM
+                                                                    </td>
+                                                                    <td>
+                                                                        {!data.bidLineObj.Vision_remarks_by_pm__c}
+                                                                        
+                                                                    </td>
+                                                                    <td class="hoverTable">
+                                                                        Remarks by SCM
+                                                                    </td>
+                                                                    <td>
+                                                                        {!data.bidLineObj.Vision_remarks_by_scm__c}
+                                                                        
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td class="hoverTable">
+                                                                        Total Incremental Volume By SCM
+                                                                    </td>
+                                                                    <td>
+                                                                        <lightning:formattedNumber value="{!data.bidLineObj.Vision_total_incremental_volume_by_scm__c}" title="Target Price * Total Target Volume"/>
+                                                                        
+                                                                    </td>
+                                                                    <td class="hoverTable">
+                                                                        Total Initial Order Quantity By SCM
+                                                                    </td>
+                                                                    <td>
+                                                                        
+                                                                        <lightning:formattedNumber value="{!data.bidLineObj.Vision_total_initial_order_quantity_by_s__c}" title="Target Price * Total Target Volume"
+                                                                                                   
+                                                                                                   />
+                                                                        
+                                                                        
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td class="hoverTable">
+                                                                        Supply Duration SCM (Months)
+                                                                    </td>
+                                                                    <td>
+                                                                        {!data.bidLineObj.Vision_supply_duration_scm__c}
+                                                                        
+                                                                    </td>
+                                                                    <td class="hoverTable">
+                                                                        SKU Split Flag
+                                                                    </td>
+                                                                    <td>
+                                                                        {!data.bidLineObj.Vision_sku_split_flag__c}
+                                                                        
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td class="hoverTable">
+                                                                         SKU Incremental Volume By SCM
+                                                                    </td>
+                                                                    <td>
+                                                                        <lightning:formattedNumber value="{!data.bidLineObj.Vision_incremental_volume_by_scm__c}" title="Target Price * Total Target Volume"
+                                                                                                   
+                                                                                                   />
+                                                                        
+                                                                        
+                                                                    </td>
+                                                                    <td class="hoverTable">
+                                                                        SKU Initial Order Volume By SCM
+                                                                    </td>
+                                                                    <td>
+                                                                        <lightning:formattedNumber value="{!data.bidLineObj.Vision_initialorder_volume_by_scm__c}" title="Target Price * Total Target Volume"
+                                                                                                   
+                                                                                                   />  
+                                                                        
+                                                                        
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td class="hoverTable">
+                                                                         India SCM Approved By
+                                                                    </td>
+                                                                    <td>
+                                                                        {!data.bidLineObj.Vision_india_scm_approved_by__c}
+                                                                        
+                                                                    </td>
+                                                                    <td class="hoverTable">
+                                                                        India SCM Approved On Date
+                                                                    </td>
+                                                                    <td>
+                                                                        <lightning:formattedDateTime value="{!data.bidLineObj.Vision_india_scm_approved_on_date__c}"  year="numeric" day="2-digit" month="long" hour="2-digit" minute="2-digit" timeZone="UTC"/>
+                                                                        
+                                                                        
+                                                                        
+                                                                    </td>
+                                                                </tr>
+                                                                
+                                                                <tr>
+                                                                    <td class="hoverTable">
+                                                                         India SCM Remarks
+                                                                    </td>
+                                                                    <td>
+                                                                        {!data.bidLineObj.Vision_india_scm_remarks__c}
+                                                                        
+                                                                    </td>
+                                                                    <td class="hoverTable">
+                                                                       Ext.Mfg.SCM Approved By
+                                                                    </td>
+                                                                    <td>
+                                                                        {!data.bidLineObj.Vision_ext_mfg_scm_approved_by__c}
+                                                                        
+                                                                    </td>
+                                                                </tr>
+                                                                
+                                                                <tr>
+                                                                    <td class="hoverTable">
+                                                                        Ext.Mfg.SCM Approved On Date
+                                                                    </td>
+                                                                    <td>
+                                                                        <lightning:formattedDateTime value="{!data.bidLineObj.Vision_ext_mfg_scm_approved_on_date__c}"  year="numeric" day="2-digit" month="long" hour="2-digit" minute="2-digit" timeZone="UTC"/>
+                                                                        
+                                                                    </td>
+                                                                    <td class="hoverTable">
+                                                                         Ext.Mfg.SCM Remarks
+                                                                    </td>
+                                                                    <td>
+                                                                        {!data.bidLineObj.Vision_ext_mfg_scm_remarks__c}
+                                                                        
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table> 
+                                                        
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- Added by Naseer to replace Product Family with Lookup-->
+                                            <aura:if isTrue="{!data.productFamilyName != null}">
+                                                <lightning:formattedUrl value="{!'/' + data.productFamilyId}"
+                                                                        label="{!data.productFamilyName}" target="_self" />
+                                            </aura:if>
+                                            <!-- End -->
+                                            <!--{!data.productFamily}-->
+                                        </td>
+                                        <td class="slds-truncate slds-cell-wrap">{!data.scmApproverName}</td>
+                                        <td style="text-align:right"><lightning:formattedNumber value="{!data.casePack}" maximumFractionDigits="2"/> </td>
+                                        <aura:if isTrue="{!or(v.bidType == 'Good Dated OTB',v.bidType == 'Short Dated OTB')}">
+                                            <td style="text-align:right"><lightning:formattedNumber value="{!data.finalsellingUnits}" maximumFractionDigits="0"/> </td>
+                                        </aura:if>
+                                        <td style="text-align:right"><lightning:formattedNumber value="{!data.monthlyDemand}" maximumFractionDigits="0"/> </td>
+                                        <td style="text-align:right"><lightning:formattedNumber value="{!data.additionalReq}" maximumFractionDigits="0"/> </td>
+                                        <td style="text-align:right"><lightning:formattedNumber value="{!data.totalRevisedReq}" maximumFractionDigits="0"/> </td>
+                                        <td style="text-align:right"><lightning:formattedNumber value="{!data.dollarValue}" maximumFractionDigits="2" style="currency" currencyCode="USD" /> </td>
+                                        <aura:if isTrue="{!or(data.isSCMApprovePerson!=true,data.finalSCMApproval)}" >
+                                            <td>{!data.scmApproval}</td>
+                                            <td style="text-align:right"><lightning:formattedNumber value="{!data.scmAprQtyPercent}" style="percent-fixed" /></td>
+                                            <!-- Added by Naseer for Winnability -->
+                                            <aura:if isTrue="{!v.bidTemplate =='Walgreens'}" >
+                                                <aura:if isTrue="{!v.bidType == 'RFP Bids'}">
+                                                    <td style="text-align: right;">
+                                                        <aura:if isTrue="{!or(v.bidRecord.Phoenix_Approval_Status__c=='SCM &amp; Marketing',v.bidRecord.Phoenix_Approval_Status__c=='Marketing')}">
+                                                            <aura:if isTrue="{!lessthan(data.bidLineObj.Phoenix_Product__r.Winnability__c, 80)}">
+                                                                <lightning:icon iconName="utility:info_alt" class="winnabilityIconCSS" title="{!data.formattedNetSalesInternal}" size="x-small"/>&nbsp;
+                                                                <lightning:formattedNumber value="{!data.bidLineObj.Phoenix_Product__r.Winnability__c}" style="percent-fixed"  maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                                                <aura:set attribute="else">
+                                                                    <lightning:formattedNumber value="{!data.bidLineObj.Phoenix_Product__r.Winnability__c}" style="percent-fixed"  maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                                                </aura:set>
+                                                            </aura:if>
+                                                        </aura:if>
+                                                    </td>
+                                                </aura:if>
+                                            </aura:if>
+                                            
+                                            <!-- Winnability -->
+                                            <td style="text-align:right" ><lightning:formattedNumber  aura:id="scmApprovedQty"  value="{!data.monthlyDemand+(data.additionalReq*(data.scmAprQtyPercent/100))}" maximumFractionDigits="0" /></td>
+                                            <td style="text-align:right">{!data.estimatedTime}</td>
+                                            <td>{!data.scmrejectionReason}</td>
+                                            <td>{!data.revisitedDate}</td> 
+                                            <td>{!data.scmcomments}</td>
+                                            
+                                            <aura:set attribute="else">
+                                                <aura:if isTrue="{!or(data.isSCMReview,v.updatedData[0].bidRecord.Phoenix_Is_Re_Bid__c == false)}">
+                                                    <td>
+                                                        <lightning:select aura:id="scmApprovalselect" name="{!data.currentRecordId}" title="SCM Approval" onchange="{! c.onScmApprovalChange }" >
+                                                            <aura:if isTrue="{!and(data.scmApproval != null, data.scmApproval != '')}" >
+                                                                <option value="{!data.scmApproval}">{!data.scmApproval}</option>
+                                                            </aura:if>
+                                                            <option value="None">None</option>
+                                                            <aura:if isTrue="{!and(v.bidType != 'Good Dated OTB',and(v.bidType != 'Short Dated OTB',and(v.bidType != 'New Customer',v.bidType != 'New Product Launch')))}">
+                                                                <aura:if isTrue="{!(data.scmApproval != 'Y- Only Current Monthly Demand Approved')}">
+                                                                    <option value="Y- Only Current Monthly Demand Approved">Y- Only Current Monthly Demand Approved</option>
+                                                                </aura:if>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!(data.scmApproval != 'Y- Current + Inc Demand Approved')}">
+                                                                <option value="Y- Current + Inc Demand Approved">Y- Current + Inc Demand Approved</option>
+                                                            </aura:if>
+                                                            <aura:if isTrue="{!(data.scmApproval != 'N- Not Approved')}">
+                                                                <option value="N- Not Approved">N- Not Approved</option>
+                                                            </aura:if>
+                                                        </lightning:select>
+                                                    </td>
+                                                    <td style="text-align:right" >
+                                                        <lightning:formattedNumber aura:id="scmApprovedQty" value="{!data.monthlyDemand+(data.additionalReq*(data.scmAprQtyPercent/100))}" maximumFractionDigits="0" /></td>
+                                                    <!-- Added by Naseer for Winnability -->
+                                                    <aura:if isTrue="{!v.bidTemplate =='Walgreens'}" >
+                                                        <aura:if isTrue="{!v.bidType == 'RFP Bids'}">
+                                                            <td style="text-align: right;">
+                                                                <aura:if isTrue="{!or(v.bidRecord.Phoenix_Approval_Status__c=='SCM &amp; Marketing',v.bidRecord.Phoenix_Approval_Status__c=='Marketing')}">
+                                                                    <aura:if isTrue="{!lessthan(data.bidLineObj.Phoenix_Product__r.Winnability__c, 80)}">
+                                                                        <lightning:icon iconName="utility:info_alt" class="winnabilityIconCSS" title="{!data.formattedNetSalesInternal}" size="x-small"/>&nbsp;
+                                                                        <lightning:formattedNumber value="{!data.bidLineObj.Phoenix_Product__r.Winnability__c}" style="percent-fixed"  maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                                                        <aura:set attribute="else">
+                                                                            <lightning:formattedNumber value="{!data.bidLineObj.Phoenix_Product__r.Winnability__c}" style="percent-fixed"  maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                                                        </aura:set>
+                                                                    </aura:if>
+                                                                </aura:if>
+                                                            </td>
+                                                        </aura:if>
+                                                    </aura:if>
+                                                    
+                                                    <!-- Winnability -->
+                                                    <td>
+                                                        <lightning:input aura:id="comment" type="number" name="{!data.currentRecordId}" disabled="true"
+                                                                         value="{!data.scmAprQtyPercent}" formatter="percent-fixed" title="SCM Approved % Quantity" onchange="{!c.onscmAprQtyPercent}"/>
+                                                    </td>
+                                                    <td>
+                                                        <lightning:select aura:id="estimatedTime" name="{!data.currentRecordId}" disabled="true" 
+                                                                          title="Estimated Lead Time" onchange="{! c.onestimatedTime }" >
+                                                            <option value="{!data.estimatedTime}">{!data.estimatedTime}</option>
+                                                            <aura:iteration items="{!v.EstimatedDaysFieldValues}" var="days">
+                                                                <aura:if isTrue="{!(days != data.estimatedTime)}">
+                                                                    <option value="{!days}">{!days}</option>
+                                                                </aura:if>
+                                                            </aura:iteration>
+                                                        </lightning:select>
+                                                    </td>
+                                                    <td>
+                                                        <lightning:select aura:id="rejectionReason" name="{!data.currentRecordId}" title="SCM Rejection Reason" 
+                                                                          onchange="{! c.onscmrejectionReasonChange}" disabled="true">
+                                                            <aura:if isTrue="{!and(data.scmrejectionReason != null, data.scmrejectionReason != '')}" >
+                                                                <option value="{!data.scmApproval}">{!data.scmrejectionReason}</option>
+                                                            </aura:if>
+                                                            <option value="None" >None</option>
+                                                            <aura:iteration items="{!v.scmRejactionReasonValues}" var="scmRejectionReason">
+                                                                <aura:if isTrue="{!(data.scmrejectionReason != scmRejectionReason)}" >
+                                                                    <option value="{!scmRejectionReason}">{!scmRejectionReason}</option>
+                                                                </aura:if>
+                                                            </aura:iteration>
+                                                        </lightning:select>
+                                                        <!--lightning:input aura:id="rejectionReason" name="{!data.currentRecordId}" value="{!data.scmrejectionReason}" title="SCM Rejection Reason" onchange="{! c.onscmrejectionReasonChange}" /-->
+                                                    </td>
+                                                    <td> 
+                                                        <ui:inputDate aura:id="revisitedDate" labelClass="{!data.currentRecordId}"  disabled="true"
+                                                                      class="field" value="{!data.revisitedDate}" displayDatePicker="true" change="{!c.revistedDateChange}"  />  
+                                                    </td>
+                                                    <td>
+                                                        <lightning:input aura:id="scmcomments" name="{!data.currentRecordId}" value="{!data.scmcomments}" 
+                                                                         title="SCM Comments" onchange="{! c.onScmCommentChange }"/>
+                                                    </td>
+                                                    <aura:set attribute="else">
+                                                        <td>{!data.scmApproval}</td>
+                                                        <td style="text-align:right"><lightning:formattedNumber value="{!data.scmAprQtyPercent}" style="percent-fixed" /></td>
+                                                        <!-- Added by Naseer for Winnability -->
+                                                        <aura:if isTrue="{!v.bidTemplate =='Walgreens'}" >
+                                                            <aura:if isTrue="{!v.bidType == 'RFP Bids'}">
+                                                                <td style="text-align: right;">
+                                                                    <aura:if isTrue="{!or(v.bidRecord.Phoenix_Approval_Status__c=='SCM &amp; Marketing',v.bidRecord.Phoenix_Approval_Status__c=='Marketing')}">
+                                                                        <aura:if isTrue="{!lessthan(data.bidLineObj.Phoenix_Product__r.Winnability__c, 80)}">
+                                                                            <lightning:icon iconName="utility:info_alt" class="winnabilityIconCSS" title="{!data.formattedNetSalesInternal}" size="x-small"/>&nbsp;
+                                                                            <lightning:formattedNumber value="{!data.bidLineObj.Phoenix_Product__r.Winnability__c}" style="percent-fixed"  maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                                                            <aura:set attribute="else">
+                                                                                <lightning:formattedNumber value="{!data.bidLineObj.Phoenix_Product__r.Winnability__c}" style="percent-fixed"  maximumFractionDigits="0" minimumFractionDigits="0"/>
+                                                                            </aura:set>
+                                                                        </aura:if>
+                                                                    </aura:if>
+                                                                </td>
+                                                            </aura:if>
+                                                        </aura:if>
+                                                        
+                                                        <!-- Winnability -->
+                                                        <td style="text-align:right" ><lightning:formattedNumber  aura:id="scmApprovedQty"  value="{!data.monthlyDemand+(data.additionalReq*(data.scmAprQtyPercent/100))}" maximumFractionDigits="0" /></td>
+                                                        <td style="text-align:right">{!data.estimatedTime}</td>
+                                                        <td>{!data.scmrejectionReason}</td>
+                                                        <td>{!data.revisitedDate}</td> 
+                                                        <td>{!data.scmcomments}</td>
+                                                    </aura:set>
+                                                </aura:if>
+                                            </aura:set>
+                                        </aura:if>
+                                        
+                                        <aura:if isTrue="{!and(v.bidType != 'Good Dated OTB',v.bidType != 'Short Dated OTB')}">
+                                            <!-- <aura:if isTrue="{!or(v.isSCMApprovePerson!=true,or(data.finalSCMApproval, and(v.updatedData[0].bidRecord.Phoenix_Approval_Status__c  != 'SCM &amp; Marketing',v.updatedData[0].bidRecord.Phoenix_Approval_Status__c  != 'Supply Chain')))}" >-->
+                                            <td style="text-align:right">{!data.initialStockingOrderVolume}</td>
+                                            <!--     <aura:set attribute="else">
+                                            <aura:if isTrue="{!or(data.isSCMReview,v.updatedData[0].bidRecord.Phoenix_Is_Re_Bid__c == false)}">
+                                                <td>
+                                                    <lightning:input type="number" aura:id="intialOrderVolume" name="{!data.currentRecordId}" value="{!data.initialStockingOrderVolume}" title="Initial Stocking Order Volume" onchange="{! c.onInitialVolumeChange}" />
+                                                </td>
+                                                <aura:set attribute="else">
+                                                    <td style="text-align:right">{!data.initialStockingOrderVolume}</td>
+                                                </aura:set> 
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>-->
+                                            <!--<aura:if isTrue="{!or(v.isSCMApprovePerson!=true,or(data.finalSCMApproval, and(v.updatedData[0].bidRecord.Phoenix_Approval_Status__c  != 'SCM &amp; Marketing',v.updatedData[0].bidRecord.Phoenix_Approval_Status__c  != 'Supply Chain')))}" >-->
+                                            <td>{!data.initialStockingOrderComments}</td>
+                                            <!--<aura:set attribute="else">
+                                            <aura:if isTrue="{!or(data.isSCMReview,v.updatedData[0].bidRecord.Phoenix_Is_Re_Bid__c == false)}">
+                                                <td>
+                                                    <lightning:input aura:id="intialOrdercomment" name="{!data.currentRecordId}" value="{!data.initialStockingOrderComments}" title="Initial Stocking Order Comments" onchange="{! c.onInitialCommentChange}" />
+                                                </td>
+                                                <aura:set attribute="else">
+                                                    <td>{!data.initialStockingOrderComments}</td>
+                                                </aura:set>
+                                            </aura:if>
+                                        </aura:set>
+                                    </aura:if>-->
+                                        </aura:if>
+                                    </tr>
+                                </aura:iteration>       
+                            </tbody>
+                        </table>
+                    </div>
+                </aura:if>
+                <aura:set attribute="else">
+                    <center><div style="margin-top:150px;"><h1 style="font-size:1.3rem; font-weight:350;color:gray">There are no line items for this bid</h1></div></center>
+                </aura:set>
+            </aura:if>
+        </div>
+    </lightning:card>
+    
+</aura:component>

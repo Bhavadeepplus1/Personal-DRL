@@ -1,0 +1,1004 @@
+<aura:component Controller="VIRCustomReportControllerCls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,lightning:isUrlAddressable" access="global" >
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="vipRebateData" type="list" />
+    <aura:attribute name="vipRebateDataSingle" type="list" />
+    <aura:attribute name="selectedVIPRebateRecord" type="Object" />
+    <aura:attribute name="selectedVIPRebate" type="String" />
+    <aura:attribute name="options" type="List" default="[]"/>
+    <aura:attribute name="vipRebateTierData" type="list" />
+    <aura:attribute name="loaded" type="boolean" />
+    <aura:attribute name="tableData" type="list" />
+    <aura:attribute name="tableDataLastYear" type="list" />
+    <aura:attribute name="currentType" type="String" />
+    <aura:attribute name="frequency" type="String" />
+    <aura:attribute name="chartObj" type="Object" access="public" />
+    <aura:attribute name="xLabels" type="list" />
+    <aura:attribute name="data" type="Object" />
+    <aura:attribute name="chartDataCurrent" type="list" />
+    <aura:attribute name="chartDataPrevious" type="list" />
+    <aura:attribute name="title" type="String" />
+    <aura:attribute name="label" type="String" />
+    <aura:attribute name="label1" type="String" />
+    <aura:attribute name="label2" type="String" />
+    <aura:attribute name="startDate" type="String" />
+    <aura:attribute name="endDate" type="String" />
+    <aura:attribute name="rebateType" type="String" />
+    <aura:attribute name="isProductsModalOpen" type="boolean" default="false" />
+    <aura:attribute name="header" type="String" />
+    <aura:attribute name="productData" type="list" />
+    <aura:attribute name="productRemovalPC" type="list" />
+    <aura:attribute name="productRemovalVRO" type="list" />
+    <aura:attribute name="productRemovalMPR" type="list" />
+    <aura:attribute name="productRemovalRFP" type="list" />
+    <aura:attribute name="totalObj" type="Object" />
+    <aura:attribute name="noRebates" type="boolean" default="false" />
+    <aura:attribute name="GCPUpdateDate" type="String" />
+    <aura:attribute name="DataAvailableTill" type="String" />
+    <aura:attribute name="VisionUpdateDate" type="String" />
+    <aura:attribute name="isModalOpen" type="boolean" default="false"/>
+    <aura:attribute name="isProcessed" type="boolean" default="false"/>
+    <aura:attribute name="showConfetti" type="boolean" default="false" />
+    <aura:attribute name="finalTier" type="Integer" />
+    <aura:attribute name="showMessage" type="boolean" default="false" />
+    <aura:attribute name="messageParam1" type="Integer" />
+    <aura:attribute name="messageParam2" type="string" />
+    <aura:attribute name="message" type="string" default="You need {dollarValue} more to reach the next Tier({Tier Name})"/>
+    <aura:attribute name="showInactiveMessage" type="boolean" default="false" />
+    <aura:attribute name="currentRate" type="Integer" />
+    
+    <ltng:require scripts="{!$Resource.ChartJS}" afterScriptsLoaded="{!c.doInit}"/>
+    <ltng:require scripts="{!$Resource.ChartJQuery}" />
+    
+    <aura:handler name="componentEventFired" event="c:VIRCustomReportEvent" action="{!c.handleEvent}"></aura:handler>
+    <aura:handler name="componentTierEventFired" event="c:VIRCustomReportTierEvt" action="{!c.handleTierEvent}"></aura:handler>
+    <!--<aura:handler name = "init" value ="{!this}" action = "{!c.doInit}"/>-->
+    
+    <aura:if isTrue="{! v.loaded }">
+        <center>
+            <section role="dialog" aura:id="modalBlockUI" tabindex="-1" aria-labelledby="modal-heading-01"
+                     aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">  
+                <div class="slds-modal__container" style="background-Color: transparent; border: 0;">  
+                    <div class="slds-modal__content slds-p-around_medium modalShadowRemove" style="background-Color: transparent; border: 0;">  
+                        <img src="{!$Resource.LoadingProgress}" />  
+                    </div>  
+                </div>  
+            </section>   
+            <div class="slds-backdrop slds-backdrop-open" aura:id="customModal-Back"></div>
+        </center>
+        <!--<div class="demo-only" >
+                <div class="slds-spinner_container slds-align_absolute-center" >
+                    <div role="status">
+                        <img src="{!$Resource.LoadingProgress}" />
+                    </div>
+                </div>
+            </div>-->
+    </aura:if>
+    <aura:if isTrue="{!v.isProcessed}">
+        <b><center>The Data Update Job for VIR Report is in Process. Please check after sometime for accurate results.</center></b>
+        <aura:set attribute="else">
+            <aura:if isTrue="{!v.noRebates}">
+                <lightning:card >
+                    <center>
+                        <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                            <span class="slds-icon_container slds-m-right_x-small" title="No data found for the selected rebate">
+                                <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                            </span>
+                            <h2>No active rebates found.</h2>
+                        </div>
+                    </center>
+                </lightning:card>
+                <aura:set attribute="else">
+                    <div style="margin: auto;">
+                        <div style="padding-top: 8px; color: black; width: 300px; font-weight: bold;padding-left: 4px;padding-right:16px; display:inline-block;">
+                            <lightning:combobox name="VIP Rebates" label="Select VIP Rebate" placeholder="Select VIP Rebate" options="{!v.options}" value="{!v.selectedVIPRebate}" onchange="{! c.handleChange }"/>
+                        </div>
+                        <div style="padding-top: 8px; color: black; font-weight: bold;padding-left: 4px; display:inline-block;">
+                            <aura:if isTrue="{!v.showConfetti}">
+                                <p><i>You have achieved the highest tier for this contract</i></p>
+                                <aura:set attribute="else">
+                                    <aura:if isTrue="{!v.showMessage}">
+                                        <p><i>You need <lightning:formattedNumber value="{!v.messageParam1}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/> more to reach {!v.messageParam2} at <lightning:formattedNumber value="{!v.currentRate}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>/Week.</i></p>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.showInactiveMessage}">
+                                        <p><i>{!v.message}</i></p>
+                                    </aura:if>
+                                </aura:set>
+                            </aura:if>
+                        </div>
+                        <lightning:accordion allowMultipleSectionsOpen="true" activeSectionName="" >
+                            <lightning:accordionSection name="VIP Performance" label="VIP Performance">
+                                <div style="margin: 0px 0px 16px 0px;font-weight: bold;">
+                                    <div style="min-width: 40%; display:inline-block;margin: 4px 8px 4px 0px;border: 1px solid #cdcdcd;border-radius: 6px;">
+                                        <!--<div style="padding: 8px;">
+                                                        <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="width: 100%;font-size: 16px;padding: 0px;">
+                                                            <thead>
+                                                                <tr style="background-color:#6f30a0;">
+                                                                    <th colspan="2" style="text-align: left;background-color:#6f30a0;color: white;">Contract</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td style="text-align: left;width: 50%;">Start Date</td>
+                                                                    <td style="text-align: right;width: 50%;">
+                                                                        {!v.startDate}
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td style="text-align: left;width: 50%;">End Date</td>
+                                                                    <td style="text-align: right;width: 50%;">
+                                                                        {!v.endDate}
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>-->
+                                        <div style="padding: 8px;">
+                                            <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="width: 100%;font-size: 16px;padding: 0px;">
+                                                <thead>
+                                                    <tr style="background-color:#6f30a0;">
+                                                        <th colspan="2" style="text-align: left;background-color:#6f30a0;color: white;">VIP Rebate Contract Details</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td style="text-align: left;width: 50%;">Rebate Name</td>
+                                                        <td style="text-align: right;width: 50%;">
+                                                            {!v.selectedVIPRebateRecord.Name}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="text-align: left;width: 50%;">Payment Frequency</td>
+                                                        <td style="text-align: right;width: 50%;">
+                                                            {!v.selectedVIPRebateRecord.Payment_Frequency__c}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="text-align: left;width: 50%;">Type</td>
+                                                        <td style="text-align: right;width: 50%;">
+                                                            {!v.selectedVIPRebateRecord.Phoenix_Type__c}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="text-align: left;width: 50%;">Net/Gross</td>
+                                                        <td style="text-align: right;width: 50%;">
+                                                            {!v.selectedVIPRebateRecord.Net_Contract__c}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="text-align: left;width: 50%;">Contract Status</td>
+                                                        <td style="text-align: right;width: 50%;">
+                                                            <aura:if isTrue="{!v.selectedVIPRebateRecord.Vision_Contract_Status__c != 'Active'}">
+                                                                <span style="color: red;">
+                                                                    {!v.selectedVIPRebateRecord.Vision_Contract_Status__c}
+                                                                </span>
+                                                                <aura:set attribute="else">
+                                                                    {!v.selectedVIPRebateRecord.Vision_Contract_Status__c}
+                                                                </aura:set>
+                                                            </aura:if>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="text-align: left;width: 50%;">Rx/SRx/OTC</td>
+                                                        <td style="text-align: right;width: 50%;">
+                                                            {!v.selectedVIPRebateRecord.Rx_SRx_OTC__c}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="text-align: left;width: 50%;">Start Date</td>
+                                                        <td style="text-align: right;width: 50%;">
+                                                            {!v.startDate}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="text-align: left;width: 50%;">End Date</td>
+                                                        <td style="text-align: right;width: 50%;">
+                                                            {!v.endDate}
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div style="padding: 8px;">
+                                            <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="width: 100%;font-size: 16px;padding: 0px;">
+                                                <thead>
+                                                    <tr style="background-color:#6f30a0;">
+                                                        <th colspan="2" style="text-align: left;background-color:#6f30a0;color: white;">Data Source</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td style="text-align: left;width: 50%;">Source</td>
+                                                        <td style="text-align: right;width: 50%;">
+                                                            Finance Manual Upload
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div style="padding: 8px;">
+                                            <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="width: 100%;font-size: 16px;padding: 0px;">
+                                                <thead>
+                                                    <tr style="background-color:#6f30a0;">
+                                                        <th colspan="2" style="text-align: left;background-color:#6f30a0;color: white;">Dates</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td style="text-align: left;width: 50%;">PRISM Update Date</td>
+                                                        <td style="text-align: right;width: 50%;">
+                                                            {!v.GCPUpdateDate}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="text-align: left;width: 50%;">VISION Update Date</td>
+                                                        <td style="text-align: right;width: 50%;">
+                                                            {!v.VisionUpdateDate}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="text-align: left;width: 50%;">Data Available till</td>
+                                                        <td style="text-align: right;width: 50%;">
+                                                            {!v.DataAvailableTill}
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div style="min-width: 30%; display:inline-block;margin: 4px 8px 4px 0px;border: 1px solid #cdcdcd;border-radius: 6px;">
+                                        <div style="padding: 8px;font-size: 16px;height: 536px;">
+                                            <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px;">
+                                                <thead>
+                                                    <tr class="slds-line-height_reset" style="background-color:#6f30a0;color: white;">
+                                                        <th class="" scope="col" style="padding-left: 8px;background-color:#6f30a0;color: white;">
+                                                            <div class="slds-truncate" title="Tiers">Tiers</div>
+                                                        </th>
+                                                        <th class="" scope="col" style="background-color:#6f30a0;color: white;">
+                                                            <div class="slds-truncate" title="From">From</div>
+                                                        </th>
+                                                        <th class="" scope="col" style="background-color:#6f30a0;color: white;">
+                                                            <div class="slds-truncate" title="To">To</div>
+                                                        </th>
+                                                        <th class="" scope="col" style="padding-right: 8px;background-color:#6f30a0;color: white;">
+                                                            <div class="slds-truncate" title="Discount %">Discount %</div>
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <aura:iteration items="{!v.vipRebateTierData}" var="item" indexVar="index">
+                                                        <aura:if isTrue="{!item.highlightTier}">
+                                                            <tr class="slds-hint-parent" style="background-color: #dedede;">
+                                                                <td scope="row" style="padding-left: 8px; text-align: center;">
+                                                                    <div class="slds-truncate" title="{!item.Phoenix_Tier__c}">
+                                                                        {!item.Phoenix_Tier__c}
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="slds-truncate slds-text-align_right">
+                                                                        <aura:if isTrue="{!item.Phoenix_VIP_Rebate__r.Phoenix_Type__c == 'Currency'}">
+                                                                            <lightning:formattedNumber value="{!item.Phoenix_Dollar_Value_From__c}" style="currency" currencyCode="USD" minimumFractionDigits="0"/>
+                                                                            <aura:set attribute="else">
+                                                                                <lightning:formattedNumber value="{!item.Phoenix_Unit_Volume_From__c}" maximumFractionDigits="0"/>
+                                                                            </aura:set>
+                                                                        </aura:if>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="slds-truncate slds-text-align_right">
+                                                                        <aura:if isTrue="{!item.Phoenix_VIP_Rebate__r.Phoenix_Type__c == 'Currency'}">
+                                                                            <lightning:formattedNumber value="{!item.Phoenix_Dollar_Value_To__c}" style="currency" currencyCode="USD" minimumFractionDigits="0"/>
+                                                                            <aura:set attribute="else">
+                                                                                <lightning:formattedNumber value="{!item.Phoenix_Unit_Volume_To__c}" maximumFractionDigits="0"/>
+                                                                            </aura:set>
+                                                                        </aura:if>
+                                                                    </div>
+                                                                </td>
+                                                                <td style="padding-right: 8px;">
+                                                                    <div class="slds-truncate slds-text-align_right">
+                                                                        <lightning:formattedNumber value="{!item.Phoenix_Discount_Rebate__c}" style="percent-fixed" minimumFractionDigits="2" maximumFractionDigits="2"/>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                            <aura:set attribute="else">
+                                                                <tr class="slds-hint-parent">
+                                                                    <td scope="row" style="padding-left: 8px; text-align: center;">
+                                                                        <div class="slds-truncate" title="{!item.Phoenix_Tier__c}">
+                                                                            {!item.Phoenix_Tier__c}
+                                                                        </div>
+                                                                    </td>
+                                                                    <td>
+                                                                        <div class="slds-truncate slds-text-align_right">
+                                                                            <aura:if isTrue="{!item.Phoenix_VIP_Rebate__r.Phoenix_Type__c == 'Currency'}">
+                                                                                <lightning:formattedNumber value="{!item.Phoenix_Dollar_Value_From__c}" style="currency" currencyCode="USD" minimumFractionDigits="0"/>
+                                                                                <aura:set attribute="else">
+                                                                                    <lightning:formattedNumber value="{!item.Phoenix_Unit_Volume_From__c}" maximumFractionDigits="0"/>
+                                                                                </aura:set>
+                                                                            </aura:if>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td>
+                                                                        <div class="slds-truncate slds-text-align_right">
+                                                                            <aura:if isTrue="{!item.Phoenix_VIP_Rebate__r.Phoenix_Type__c == 'Currency'}">
+                                                                                <lightning:formattedNumber value="{!item.Phoenix_Dollar_Value_To__c}" style="currency" currencyCode="USD" minimumFractionDigits="0"/>
+                                                                                <aura:set attribute="else">
+                                                                                    <lightning:formattedNumber value="{!item.Phoenix_Unit_Volume_To__c}" maximumFractionDigits="0"/>
+                                                                                </aura:set>
+                                                                            </aura:if>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td style="padding-right: 8px;">
+                                                                        <div class="slds-truncate slds-text-align_right">
+                                                                            <lightning:formattedNumber value="{!item.Phoenix_Discount_Rebate__c}" style="percent-fixed" minimumFractionDigits="2" maximumFractionDigits="2"/>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            </aura:set>
+                                                        </aura:if>
+                                                    </aura:iteration>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </lightning:accordionSection>
+                        </lightning:accordion>
+                    </div>
+                    <!--<div class="slds-box slds-wrap" style="border-radius:15px;background-color:#8c00ff;color: white;">
+                        <div class="slds-grid" style="font-weight:bold;text-align:center;">
+                            <div class="slds-col slds-size_4-of-12" style="">
+                                <div>
+                                    <h1 class="slds-page-header__title slds-align-middle slds-truncate">
+                                        Select VIP Rebate
+                                    </h1>
+                                </div>
+                                <div class="slds-align_absolute-center" style="padding-top: 8px; color: black; text-align: center;">
+                                    <lightning:combobox name="VIP Rebates" label="Select VIP Rebate" placeholder="Select VIP Rebate" options="{!v.options}" value="{!v.selectedVIPRebate}" variant="label-hidden" onchange="{! c.handleChange }"/>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_4-of-12"
+                                 style="">
+                                <div>
+                                    <h1 class="slds-page-header__title slds-align-middle slds-truncate">
+                                        Start Date
+                                    </h1>
+                                </div>
+                                <div style="font-size:2em; color: #fffaa0;">
+                                    {!v.startDate}
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_4-of-12" style="">
+                                <div>
+                                    <h1 class="slds-page-header__title slds-align-middle slds-truncate">
+                                        End Date
+                                    </h1>
+                                </div>
+                                <div style="font-size:2em; color: #fffaa0;">
+                                    {!v.endDate}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="slds-grid" style="font-weight:bold;text-align:center;border-top:1px solid white;margin-top:15px;padding-top:10px;">
+                            <div class="slds-col slds-size_3-of-12">
+                                <div>
+                                    <h1 class="slds-page-header__title slds-align-middle slds-truncate" style="font-size:16px;">
+                                        Payment Frequency
+                                    </h1>
+                                </div>
+                                <div style="font-size:2em; color: #fffaa0;">
+                                    {!v.selectedVIPRebateRecord.Payment_Frequency__c}
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_3-of-12">
+                                <div>
+                                    <h1 class="slds-page-header__title slds-align-middle slds-truncate" style="font-size:16px;">
+                                        Type
+                                    </h1>
+                                </div>
+                                <div style="font-size:2em; color: #fffaa0;">
+                                    <div>{!v.selectedVIPRebateRecord.Phoenix_Type__c}</div> 
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_3-of-12">
+                                <div>
+                                    <h1 class="slds-page-header__title slds-align-middle slds-truncate" style="font-size:16px;">
+                                        Net / Contract
+                                    </h1>
+                                </div>
+                                <div style="font-size:2em; color: #fffaa0;">
+                                    {!v.selectedVIPRebateRecord.Net_Contract__c} 
+                                </div>
+                            </div>
+                            <div class="slds-col slds-size_3-of-12">
+                                <div>
+                                    <h1 class="slds-page-header__title slds-align-middle slds-truncate" style="font-size:16px;">
+                                        Status
+                                    </h1>
+                                </div>
+                                <div style="font-size:2em; color: #fffaa0;">
+                                    {!v.selectedVIPRebateRecord.Vision_Contract_Status__c} 
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-grid" style="padding-top:10px;">
+                        <div class="slds-col slds-size_2-of-12" style="font-style: italic;">
+                            <span class="slds-p-left_medium"><b>Source:&nbsp;</b></span> Finance Manual Upload
+                        </div>
+                        <div class="slds-col slds-size_3-of-12" style="font-style: italic;">
+                            <span class="slds-p-left_medium"><b>PRISM Update Date:&nbsp;</b></span> {!v.GCPUpdateDate}
+                        </div>
+                        <div class="slds-col slds-size_3-of-12" style="font-style: italic;">
+                            <span class="slds-p-left_medium"><b>VISION Update Date:&nbsp;</b></span>{!v.VisionUpdateDate}
+                        </div>
+                        <div class="slds-col slds-size_3-of-12" style="font-style: italic;">
+                            <span class="slds-p-left_medium"><b>Data Available till:&nbsp;</b></span>{!v.DataAvailableTill}
+                        </div>
+                        <div class="slds-col slds-size_1-of-12">
+                            <span align="right" style="color:#5224B2;">Legends&nbsp;<lightning:icon class="purpleIcon" iconName="utility:in_app_assistant" size="small" onclick="{!c.openModal}"/></span>  
+                        </div>
+                    </div>-->
+                    <aura:if isTrue="{!v.tableData.length == 0}">
+                        <lightning:card >
+                            <center>
+                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                    <span class="slds-icon_container slds-m-right_x-small" title="No data found for the selected rebate">
+                                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                    </span>
+                                    <h2>No data found.</h2>
+                                </div>
+                            </center>
+                        </lightning:card>
+                        <aura:set attribute="else">
+                            <div class="" style="padding: 8px 4px;">
+                                <div class="slds-box" style="padding: 0px; margin-right: 8px; border: none;">
+                                    <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px; margin: auto;">
+                                        <thead>
+                                            <tr>
+                                                <th style="padding-left: 8px;"></th>
+                                                <th colspan="6" style="background: rgb(255, 179, 71, 0.4);">
+                                                    <div class="slds-truncate" style="text-align: center;" title="Current Year Performance">Present Performance</div>
+                                                </th>
+                                                <!--<th colspan="6" style="background: rgb(255, 250, 160, 0.4);padding-right: 8px;">
+                                            <div class="slds-truncate" style="text-align: center;" title="Last Year Performance">Past Performance</div>
+                                        </th>-->
+                                                <th colspan="7" style="background-color: #a3c2c2; color: white;">
+                                                    <div class="slds-truncate" style="text-align: center;">Bid Activities Impact</div>
+                                                </th>
+                                            </tr>
+                                            <tr class="slds-line-height_reset">
+                                                <th class="" scope="col" style="padding-left: 8px;text-align: center;">
+                                                    <div class="slds-truncate slds-cell-wrap" title="S No.">#</div>
+                                                </th>
+                                                <th class="" scope="col" style="background: #ffb347;">
+                                                    <div class="slds-truncate slds-cell-wrap" title="Month">Month</div>
+                                                </th>
+                                                <th class="" scope="col" style="background: #ffb347;">
+                                                    <aura:if isTrue="{!v.currentType == 'Currency'}">
+                                                        <div class="slds-truncate slds-cell-wrap" title="Sales ($)">Sales ($)</div>
+                                                        <aura:set attribute="else">
+                                                            <div class="slds-truncate slds-cell-wrap" title="Units (EU)">Units (EU)</div>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </th>
+                                                <th class="" scope="col" style="background: #ffb347;">
+                                                    <aura:if isTrue="{!v.currentType == 'Currency'}">
+                                                        <div class="slds-truncate slds-cell-wrap" title="Cumulative Actual Sales ($)">Cumulative Actual Sales ($)</div>
+                                                        <aura:set attribute="else">
+                                                            <div class="slds-truncate slds-cell-wrap" title="Cumulative Actual Units (EU)">Cumulative Actual Units (EU)</div>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </th>
+                                                <th class="" scope="col" style="background: #ffb347;">
+                                                    <aura:if isTrue="{!v.currentType == 'Currency'}">
+                                                        <div class="slds-truncate slds-cell-wrap" title="Projected Sales ($)">Projected Sales ($)</div>
+                                                        <aura:set attribute="else">
+                                                            <div class="slds-truncate slds-cell-wrap" title="Projected Units (EU)">Projected Units (EU)</div>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </th>
+                                                <th class="" scope="col" style="background: #ffb347;">
+                                                    <div class="slds-truncate slds-cell-wrap" title="Projected Attainment %">Projected Attainment %</div>
+                                                </th>
+                                                <th class="" scope="col" style="background: #ffb347;">
+                                                    <div class="slds-truncate slds-cell-wrap" title="VIP Tier">VIP Tier</div>
+                                                </th>
+                                                <th class="" scope="col" style="background: #669999; color: white;">
+                                                    <div class="slds-truncate slds-cell-wrap" title="Product Addition">Product Addition</div>
+                                                </th>
+                                                <th class="" scope="col" style="background: #669999; color: white;">
+                                                    <div class="slds-truncate slds-cell-wrap" title="Price Change">Price Change</div>
+                                                </th>
+                                                <th class="" scope="col" style="background: #669999; color: white;">
+                                                    <div class="slds-truncate slds-cell-wrap" title="Volume Review Only">Volume Review Only</div>
+                                                </th>
+                                                <th class="" scope="col" style="background: #669999; color: white;">
+                                                    <div class="slds-truncate slds-cell-wrap" title="Product Removal / Loss">Product Removal / Loss</div>
+                                                </th>
+                                                <th class="" scope="col" style="background: #669999; color: white;">
+                                                    <div class="slds-truncate slds-cell-wrap" title="New Product Launch">New Product Launch</div>
+                                                </th>
+                                                <th class="" scope="col" style="background: #669999; color: white;">
+                                                    <div class="slds-truncate slds-cell-wrap" title="Total Projected Sales">Total Projected Sales ($)</div>
+                                                </th>
+                                                <th class="" scope="col" style="background: #669999; color: white;">
+                                                    <div class="slds-truncate slds-cell-wrap" title="Tier">Tier</div>
+                                                </th>
+                                                <!--<th class="" scope="col" style="background: #ffb347;">
+                                                    <aura:if isTrue="{!v.currentType == 'Currency'}">
+                                                        <div class="slds-truncate slds-cell-wrap" title="Projected Sales - 2 ($)">Projected Sales - 2 ($)</div>
+                                                        <aura:set attribute="else">
+                                                            <div class="slds-truncate slds-cell-wrap" title="Projected Units - 2 (EU)">Projected Units - 2 (EU)</div>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </th>
+                                                <th class="" scope="col" style="background: #ffb347;">
+                                                    <div class="slds-truncate slds-cell-wrap" title="Projected Attainment - 2 %">Projected Attainment - 2 %</div>
+                                                </th>-->
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <aura:iteration items="{!v.tableData}" var="item" indexVar="index">
+                                                <c:VIRCustomReportChild item="{!item}" index="{!index}" currentType="{!v.currentType}" />
+                                            </aura:iteration>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <aura:if isTrue="{!v.isProductsModalOpen}">
+                                    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_large">
+                                        <div class="slds-modal__container">
+                                            <header class="slds-modal__header">
+                                                <lightning:buttonIcon iconName="utility:close"
+                                                                      onclick="{! c.closeModal }"
+                                                                      alternativeText="close"
+                                                                      variant="bare-inverse"
+                                                                      class="slds-modal__close"/>
+                                                <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{!v.header} ({!v.startDate} - {!v.endDate})</h2>
+                                            </header>
+                                            <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1">
+                                                <!-- Modal for Contracts Selection -->
+                                                <aura:if isTrue="{! v.popupLoaded }">
+                                                    <lightning:spinner alternativeText="Loading" />
+                                                </aura:if>
+                                                <div class="slds-media__body slds-m-top-medium">
+                                                    <!--<lightning:card >
+                                            <center>
+                                                <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info slds-m-left_xx-large slds-m-right_xx-large" role="alert" style="width:50%;">
+                                                    <span class="slds-icon_container slds-m-right_x-small" title="Please add line items to view the table">
+                                                        <lightning:icon iconName="utility:info" alternativeText="info" size="x-small" variant="inverse"/>
+                                                    </span>
+                                                    <h2>No Products found</h2>
+                                                </div>
+                                            </center>
+                                        </lightning:card>-->
+                                                    <div aura:id="mainDiv" style="max-height:400px;overflow:auto;margin-top:10px;">
+                                                        <div role="region" aria-labelledby="HeadersCol" tabindex="0" class="rowheaders">
+                                                            <aura:if isTrue="{!v.header == 'Product Removal / Loss'}">
+                                                                <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px; margin: auto;">
+                                                                    <thead class="headerOfTable">
+                                                                        <!--<tr>
+                                                                            <th></th>
+                                                                            <th></th>
+                                                                            <th colspan="2" style="text-align: center;">Quantity</th>
+                                                                            <th colspan="2" style="text-align: center;">Deadnet Price</th>
+                                                                            <th colspan="2" style="text-align: center;">Deadnet Sales</th>
+                                                                            <th></th>
+                                                                            <th></th>
+                                                                            <th></th>
+                                                                            <th></th>
+                                                                        </tr>-->
+                                                                        <tr>
+                                                                            <th class="" scope="col" style="background: #a0cae0;">
+                                                                                <div class="slds-truncate slds-cell-wrap" title="Product Description">Product Description</div>
+                                                                            </th>
+                                                                            <th class="" scope="col" style="background: #a0cae0;">
+                                                                                <div class="slds-truncate slds-cell-wrap" title="NDC">NDC</div>
+                                                                            </th>
+                                                                            <th class="" scope="col" style="background: #a0cae0;">
+                                                                                <div class="slds-truncate slds-cell-wrap" title="Bid No">Bid No</div>
+                                                                            </th>
+                                                                            <th class="" scope="col" style="background: #a0cae0;">
+                                                                                <div class="slds-truncate slds-cell-wrap" title="Contract">Contract</div>
+                                                                            </th>
+                                                                            <th class="" scope="col" style="background: #a0cae0;">
+                                                                                <div class="slds-truncate slds-cell-wrap" title="Deadnet Price($)">Deadnet Price($)</div>
+                                                                            </th>
+                                                                            <th class="" scope="col" style="background: #a0cae0;">
+                                                                                <div class="slds-truncate slds-cell-wrap" title="Quantity">Quantity</div>
+                                                                            </th>
+                                                                            <th class="" scope="col" style="background: #a0cae0;">
+                                                                                <div class="slds-truncate slds-cell-wrap" title="Sales($)">Sales($)</div>
+                                                                            </th>
+                                                                            <th class="" scope="col" style="background: #a0cae0;">
+                                                                                <div class="slds-truncate slds-cell-wrap" title="Effective Date">Effective Date</div>
+                                                                            </th>
+                                                                            <th class="" scope="col" style="background: #a0cae0;">
+                                                                                <div class="slds-truncate slds-cell-wrap" title="Impacted Months">Impacted Months</div>
+                                                                            </th>
+                                                                            <th class="" scope="col" style="background: #a0cae0;">
+                                                                                <div class="slds-truncate slds-cell-wrap" title="VIR Impact">VIR Impact ($)</div>
+                                                                            </th>
+                                                                            <th class="" scope="col" style="background: #a0cae0;">
+                                                                                <div class="slds-truncate slds-cell-wrap" title="FY Business Impact">FY Business Impact</div>
+                                                                            </th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        <aura:iteration items="{!v.productData}" var="item" indexVar="index">
+                                                                            <tr>
+                                                                                <td>{!item.lineItem.Phoenix_Product__r.Name}</td>
+                                                                                <td style="text-align: right;">{!item.lineItem.Phoenix_Product__r.Phoenix_NDC_11__c}</td>
+                                                                                <td>
+                                                                                    <lightning:formattedUrl  value="{!'/' + item.lineItem.Phoenix_Bid__c}" label="{!item.lineItem.Phoenix_Bid__r.Name}"  target="_blank" />
+                                                                                </td>
+                                                                                <td>
+                                                                                    <aura:if isTrue="{!item.lineItem.Phoenix_Contract__r != null}">
+                                                                                        <lightning:formattedUrl  value="{!'/' + item.lineItem.Phoenix_Contract__c}" label="{!item.lineItem.Phoenix_Contract__r.Name}"  target="_blank" />
+                                                                                    </aura:if>
+                                                                                </td>
+                                                                                <td style="text-align: right;">
+                                                                                    <lightning:formattedNumber value="{!item.previousDeadnet}" maximumFractionDigits="0"/>
+                                                                                </td>
+                                                                                <td style="text-align: right;">
+                                                                                    <lightning:formattedNumber value="{!item.previousQty}" maximumFractionDigits="0"/>
+                                                                                </td>
+                                                                                <td style="text-align: right;">
+                                                                                    <lightning:formattedNumber value="{!item.previousSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                </td>
+                                                                                <td style="text-align: right;">
+                                                                                    <aura:if isTrue="{!item.lineItem.BidLineItemsExtn__r != null}">
+                                                                                        <lightning:formattedUrl  value="{!'/' + item.lineItem.Phoenix_Bid__c}" label="{!item.lineItem.formattedEffectiveDate}"  target="_blank" />
+                                                                                    </aura:if>
+                                                                                </td>
+                                                                                <td style="text-align: right;">
+                                                                                    <lightning:formattedNumber value="{!item.lineItem.monthsRemaining}" maximumFractionDigits="2"  minimumFractionDigits="0"/>
+                                                                                </td>
+                                                                                <aura:if isTrue="{!greaterthan(item.lineItem.annualImpact,0)}">
+                                                                                    <td style="text-align: right; color: green;">
+                                                                                        <!--<ui:outputCurrency aura:id="curr" value="{!item.annualImpact}" format="$##,##,###,###"/>-->
+                                                                                        <lightning:formattedNumber value="{!item.lineItem.annualImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                    </td>
+                                                                                    <aura:set attribute="else">
+                                                                                        <td style="text-align: right; color: red;">
+                                                                                            <!--<ui:outputCurrency aura:id="curr" value="{!item.annualImpact}" format="$##,##,###,###"/>-->
+                                                                                            <lightning:formattedNumber value="{!item.lineItem.annualImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                        </td>
+                                                                                    </aura:set>
+                                                                                </aura:if>
+                                                                                <aura:if isTrue="{!greaterthan(item.lineItem.businessImpact,0)}">
+                                                                                    <td style="text-align: right; color: green;">
+                                                                                        <lightning:formattedNumber value="{!item.lineItem.businessImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                    </td>
+                                                                                    <aura:set attribute="else">
+                                                                                        <td style="text-align: right; color: red;">
+                                                                                            <lightning:formattedNumber value="{!item.lineItem.businessImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                        </td>
+                                                                                    </aura:set>
+                                                                                </aura:if>
+                                                                            </tr>
+                                                                        </aura:iteration>
+                                                                        <tr>
+                                                                            <td class="slds-text-align_left" style="background-color: #f0f0f0; color: #444444;">
+                                                                            </td>
+                                                                            <td class="slds-text-align_left" style="background-color: #f0f0f0; color: #444444;"></td>
+                                                                            <td class="slds-text-align_left" style="background-color: #f0f0f0; color: #444444;"></td>
+                                                                            <td class="slds-text-align_left" style="background-color: #f0f0f0; color: #444444;"></td>
+                                                                            <td class="slds-text-align_left" style="background-color: #f0f0f0; color: #444444;">
+                                                                                <b>
+                                                                                    Total
+                                                                                </b>
+                                                                            </td>
+                                                                            <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #444444;">
+                                                                                <b>
+                                                                                    <lightning:formattedNumber value="{!v.totalObj.totalPreviousQty}" maximumFractionDigits="0"/>
+                                                                                </b>
+                                                                            </td>
+                                                                            <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #444444;">
+                                                                                {!v.totalObj.totalPreviousSales}
+                                                                            </td>
+                                                                            <td class="slds-text-align_left" style="background-color: #f0f0f0; color: #444444;"></td>
+                                                                            <td class="slds-text-align_left" style="background-color: #f0f0f0; color: #444444;"></td>
+                                                                            <aura:if isTrue="{!greaterthan(v.totalObj.totalAnnualImpact,0)}">
+                                                                                <td style="text-align: right;background-color: #f0f0f0; color: green;">
+                                                                                    <b>
+                                                                                        <!--<ui:outputCurrency aura:id="curr" value="{!v.totalObj.totalAnnualImpact}" format="$##,##,###,###"/>-->
+                                                                                        <lightning:formattedNumber value="{!v.totalObj.totalAnnualImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                    </b>
+                                                                                </td>
+                                                                                <aura:set attribute="else">
+                                                                                    <td style="text-align: right;background-color: #f0f0f0; color: red;">
+                                                                                        <b>
+                                                                                            <!--<ui:outputCurrency aura:id="curr" value="{!v.totalObj.totalAnnualImpact}" format="$##,##,###,###"/>-->
+                                                                                            <lightning:formattedNumber value="{!v.totalObj.totalAnnualImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                        </b>
+                                                                                    </td>
+                                                                                </aura:set>
+                                                                            </aura:if>
+                                                                            <aura:if isTrue="{!greaterthan(v.totalObj.totalImpact,0)}">
+                                                                                <td style="text-align: right;background-color: #f0f0f0; color: green;">
+                                                                                    <b>
+                                                                                        <!--<ui:outputCurrency aura:id="curr" value="{!v.totalObj.totalImpact}" format="$##,##,###,###"/>-->
+                                                                                        <lightning:formattedNumber value="{!v.totalObj.totalImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                    </b>
+                                                                                </td>
+                                                                                <aura:set attribute="else">
+                                                                                    <td style="text-align: right;background-color: #f0f0f0; color: red;">
+                                                                                        <b>
+                                                                                            <!--<ui:outputCurrency aura:id="curr" value="{!v.totalObj.totalImpact}" format="$##,##,###,###"/>-->
+                                                                                            <lightning:formattedNumber value="{!v.totalObj.totalImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                        </b>
+                                                                                    </td>
+                                                                                </aura:set>
+                                                                            </aura:if>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                </table>
+                                                                <aura:set attribute="else">
+                                                                    <table class="slds-box slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-no-row-hover" style="padding: 0px; margin: auto;">
+                                                                        <thead class="headerOfTable">
+                                                                            <tr>
+                                                                                <th></th>
+                                                                                <th></th>
+                                                                                <th></th>
+                                                                                <th colspan="2" style="text-align: center;">Quantity</th>
+                                                                                <th colspan="2" style="text-align: center;">Deadnet Price</th>
+                                                                                <th colspan="2" style="text-align: center;">Deadnet Sales</th>
+                                                                                <th></th>
+                                                                                <th></th>
+                                                                                <th></th>
+                                                                                <th></th>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <th class="" scope="col" style="background: #a0cae0;">
+                                                                                    <div class="slds-truncate slds-cell-wrap" title="Product Description">Product Description</div>
+                                                                                </th>
+                                                                                <th class="" scope="col" style="background: #a0cae0;">
+                                                                                    <div class="slds-truncate slds-cell-wrap" title="NDC">NDC</div>
+                                                                                </th>
+                                                                                <th class="" scope="col" style="background: #a0cae0;">
+                                                                                    <div class="slds-truncate slds-cell-wrap" title="Bid No">Bid No</div>
+                                                                                </th>
+                                                                                <th class="" scope="col" style="background: #a0cae0;">
+                                                                                    <div class="slds-truncate slds-cell-wrap" title="Previous">Previous</div>
+                                                                                </th>
+                                                                                <th class="" scope="col" style="background: #a0cae0;">
+                                                                                    <div class="slds-truncate slds-cell-wrap" title="Awarded">Awarded</div>
+                                                                                </th>
+                                                                                <th class="" scope="col" style="background: #a0cae0;">
+                                                                                    <div class="slds-truncate slds-cell-wrap" title="Previous($)">Previous($)</div>
+                                                                                </th>
+                                                                                <th class="" scope="col" style="background: #a0cae0;">
+                                                                                    <div class="slds-truncate slds-cell-wrap" title="Proposed($)">Proposed($)</div>
+                                                                                </th>
+                                                                                <th class="" scope="col" style="background: #a0cae0;">
+                                                                                    <div class="slds-truncate slds-cell-wrap" title="Previous($)">Previous($)</div>
+                                                                                </th>
+                                                                                <th class="" scope="col" style="background: #a0cae0;">
+                                                                                    <div class="slds-truncate slds-cell-wrap" title="Proposed($)">Proposed($)</div>
+                                                                                </th>
+                                                                                <th class="" scope="col" style="background: #a0cae0;">
+                                                                                    <div class="slds-truncate slds-cell-wrap" title="Effective Date">Effective Date</div>
+                                                                                </th>
+                                                                                <th class="" scope="col" style="background: #a0cae0;">
+                                                                                    <div class="slds-truncate slds-cell-wrap" title="Impacted Months">Impacted Months</div>
+                                                                                </th>
+                                                                                <th class="" scope="col" style="background: #a0cae0;">
+                                                                                    <div class="slds-truncate slds-cell-wrap" title="VIR Impact">VIR Impact ($)</div>
+                                                                                </th>
+                                                                                <th class="" scope="col" style="background: #a0cae0;">
+                                                                                    <div class="slds-truncate slds-cell-wrap" title="FY Business Impact">FY Business Impact</div>
+                                                                                </th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            <aura:iteration items="{!v.productData}" var="item" indexVar="index">
+                                                                                <tr>
+                                                                                    <td>{!item.lineItem.Phoenix_Product__r.Name}</td>
+                                                                                    <td style="text-align: right;">{!item.lineItem.Phoenix_Product__r.Phoenix_NDC_11__c}</td>
+                                                                                    <td style="text-align: right;">
+                                                                                        <lightning:formattedUrl  value="{!'/' + item.lineItem.Phoenix_Bid__c}" label="{!item.lineItem.Phoenix_Bid__r.Name}"  target="_blank" />
+                                                                                    </td>
+                                                                                    <td style="text-align: right;">
+                                                                                        <lightning:formattedNumber value="{!item.previousQty}" maximumFractionDigits="0"/>
+                                                                                    </td>
+                                                                                    <td style="text-align: right;">
+                                                                                        <lightning:formattedNumber value="{!item.awardedQty}" maximumFractionDigits="0"/>
+                                                                                    </td>
+                                                                                    <td style="text-align: right;">
+                                                                                        <lightning:formattedNumber value="{!item.previousDeadnet}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="2"/>
+                                                                                    </td>
+                                                                                    <td style="text-align: right;">
+                                                                                        <lightning:formattedNumber value="{!item.proposedDeadnet}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="2"/>
+                                                                                    </td>
+                                                                                    <td style="text-align: right;">
+                                                                                        <lightning:formattedNumber value="{!item.previousSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                    </td>
+                                                                                    <td style="text-align: right;">
+                                                                                        <lightning:formattedNumber value="{!item.proposedSales}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                    </td>
+                                                                                    <td style="text-align: right;">
+                                                                                        <aura:if isTrue="{!item.lineItem.Customer_Response_Lines__r != null}">
+                                                                                            <lightning:formattedUrl  value="{!'/' + item.lineItem.Customer_Response_Lines__r[0].Id}" label="{!item.lineItem.formattedEffectiveDate}"  target="_blank" />
+                                                                                        </aura:if>
+                                                                                    </td>
+                                                                                    <td style="text-align: right;">
+                                                                                        <lightning:formattedNumber value="{!item.lineItem.monthsRemaining}" maximumFractionDigits="2"  minimumFractionDigits="0"/>
+                                                                                    </td>
+                                                                                    <aura:if isTrue="{!greaterthan(item.lineItem.annualImpact,0)}">
+                                                                                        <td style="text-align: right; color: green;">
+                                                                                            <!--<ui:outputCurrency aura:id="curr" value="{!item.annualImpact}" format="$##,##,###,###"/>-->
+                                                                                            <lightning:formattedNumber value="{!item.lineItem.annualImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                        </td>
+                                                                                        <aura:set attribute="else">
+                                                                                            <td style="text-align: right; color: red;">
+                                                                                                <!--<ui:outputCurrency aura:id="curr" value="{!item.annualImpact}" format="$##,##,###,###"/>-->
+                                                                                                <lightning:formattedNumber value="{!item.lineItem.annualImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                            </td>
+                                                                                        </aura:set>
+                                                                                    </aura:if>
+                                                                                    <aura:if isTrue="{!greaterthan(item.lineItem.businessImpact,0)}">
+                                                                                        <td style="text-align: right; color: green;">
+                                                                                            <lightning:formattedNumber value="{!item.lineItem.businessImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                        </td>
+                                                                                        <aura:set attribute="else">
+                                                                                            <td style="text-align: right; color: red;">
+                                                                                                <lightning:formattedNumber value="{!item.lineItem.businessImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                            </td>
+                                                                                        </aura:set>
+                                                                                    </aura:if>
+                                                                                </tr>
+                                                                            </aura:iteration>
+                                                                            <tr>
+                                                                                <td class="slds-text-align_left" style="background-color: #f0f0f0; color: #444444;">
+                                                                                </td>
+                                                                                <td class="slds-text-align_left" style="background-color: #f0f0f0; color: #444444;">
+                                                                                </td>
+                                                                                <td class="slds-text-align_left" style="background-color: #f0f0f0; color: #444444;">
+                                                                                    <b>
+                                                                                        Total
+                                                                                    </b>
+                                                                                </td>
+                                                                                <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #444444;">
+                                                                                    <b>
+                                                                                        <lightning:formattedNumber value="{!v.totalObj.totalPreviousQty}" maximumFractionDigits="0"/>
+                                                                                    </b>
+                                                                                </td>
+                                                                                <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #444444;">
+                                                                                    <b>
+                                                                                        <lightning:formattedNumber value="{!v.totalObj.totalProposedQty}" maximumFractionDigits="0"/>
+                                                                                    </b>
+                                                                                </td>
+                                                                                <td style="background-color: #f0f0f0; color: #444444;"></td>
+                                                                                <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #444444;">
+                                                                                    <b>
+                                                                                        <!--<lightning:formattedNumber value="{!v.totalObj.totalPrevPrice}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="2"/>-->
+                                                                                    </b>
+                                                                                </td>
+                                                                                <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #444444;">
+                                                                                    <b>
+                                                                                        <!--<lightning:formattedNumber value="{!v.totalObj.totalPrice}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="2"/>-->
+                                                                                    </b>
+                                                                                </td>
+                                                                                <aura:if isTrue="{!greaterthan(v.totalObj.totalAnnualImpact,0)}">
+                                                                                    <td style="text-align: right;background-color: #f0f0f0; color: green;">
+                                                                                        <b>
+                                                                                            <!--<ui:outputCurrency aura:id="curr" value="{!v.totalObj.totalAnnualImpact}" format="$##,##,###,###"/>-->
+                                                                                            <lightning:formattedNumber value="{!v.totalObj.totalAnnualImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                        </b>
+                                                                                    </td>
+                                                                                    <aura:set attribute="else">
+                                                                                        <td style="text-align: right;background-color: #f0f0f0; color: red;">
+                                                                                            <b>
+                                                                                                <!--<ui:outputCurrency aura:id="curr" value="{!v.totalObj.totalAnnualImpact}" format="$##,##,###,###"/>-->
+                                                                                                <lightning:formattedNumber value="{!v.totalObj.totalAnnualImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                            </b>
+                                                                                        </td>
+                                                                                    </aura:set>
+                                                                                </aura:if>
+                                                                                <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #444444;">
+                                                                                </td>
+                                                                                <td class="slds-text-align_right" style="background-color: #f0f0f0; color: #444444;">
+                                                                                </td>
+                                                                                <aura:if isTrue="{!greaterthan(v.totalObj.totalAnnualImpact,0)}">
+                                                                                    <td style="text-align: right;background-color: #f0f0f0; color: green;">
+                                                                                        <b>
+                                                                                            <!--<ui:outputCurrency aura:id="curr" value="{!v.totalObj.totalAnnualImpact}" format="$##,##,###,###"/>-->
+                                                                                            <lightning:formattedNumber value="{!v.totalObj.totalAnnualImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                        </b>
+                                                                                    </td>
+                                                                                    <aura:set attribute="else">
+                                                                                        <td style="text-align: right;background-color: #f0f0f0; color: red;">
+                                                                                            <b>
+                                                                                                <!--<ui:outputCurrency aura:id="curr" value="{!v.totalObj.totalAnnualImpact}" format="$##,##,###,###"/>-->
+                                                                                                <lightning:formattedNumber value="{!v.totalObj.totalAnnualImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                            </b>
+                                                                                        </td>
+                                                                                    </aura:set>
+                                                                                </aura:if>
+                                                                                <aura:if isTrue="{!greaterthan(v.totalObj.totalImpact,0)}">
+                                                                                    <td style="text-align: right;background-color: #f0f0f0; color: green;">
+                                                                                        <b>
+                                                                                            <!--<ui:outputCurrency aura:id="curr" value="{!v.totalObj.totalImpact}" format="$##,##,###,###"/>-->
+                                                                                            <lightning:formattedNumber value="{!v.totalObj.totalImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                        </b>
+                                                                                    </td>
+                                                                                    <aura:set attribute="else">
+                                                                                        <td style="text-align: right;background-color: #f0f0f0; color: red;">
+                                                                                            <b>
+                                                                                                <!--<ui:outputCurrency aura:id="curr" value="{!v.totalObj.totalImpact}" format="$##,##,###,###"/>-->
+                                                                                                <lightning:formattedNumber value="{!v.totalObj.totalImpact}" style="currency" currencyCode="USD" minimumFractionDigits="0" maximumFractionDigits="0"/>
+                                                                                            </b>
+                                                                                        </td>
+                                                                                    </aura:set>
+                                                                                </aura:if>
+                                                                            </tr>
+                                                                        </tbody>
+                                                                    </table>
+                                                                </aura:set>
+                                                            </aura:if>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <footer class="slds-modal__footer">
+                                                <lightning:button variant="neutral" 
+                                                                  label="Close"
+                                                                  title="Close"
+                                                                  onclick="{! c.closeModal }"/>
+                                            </footer>
+                                        </div>
+                                    </section>
+                                    <div class="slds-backdrop slds-backdrop--open" id="backdrop"></div>
+                                </aura:if>
+                                <!--<div class="slds-box slds-grid slds-wrap">
+                            <div class="slds-col slds-size_1-of-8">
+                                <b>Type:&nbsp;</b>{!v.rebateType}
+                            </div>
+                            <div class="slds-col slds-size_1-of-8">
+                                <b>Start Date:&nbsp;</b> {!v.startDate}
+                            </div>
+                            <div class="slds-col slds-size_1-of-8">
+                                <b>End Date:&nbsp;</b>{!v.endDate}
+                            </div>
+                        </div>
+                        <div class="slds-grid slds-wrap">
+                            <div class="slds-col slds-size_5-of-6">
+                                <canvas aura:id="chart1" id="chart11" height="80" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-6">
+                            </div>
+                        </div>-->
+                            </div>
+                            <aura:if isTrue="{! v.showConfetti }">
+                                <c:Confetti/>
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+                </aura:set>
+            </aura:if>
+        </aura:set>
+    </aura:if>
+    <aura:if isTrue="{!v.isModalOpen}">
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_small" aria-labelledby="modal-heading-01" aria-modal="true">
+            <div class="slds-modal__container">
+                <header class="slds-modal__content_headless" style="text-align: right;">
+                    <lightning:buttonIcon iconName="utility:close"
+                                          onclick="{! c.closeModal }"
+                                          alternativeText="close"
+                                          variant="bare-inverse"
+                                          class="slds-modal__close buttonCSS"/>
+                </header>
+                
+                <div class="slds-modal__content slds-p-around_medium slds-is-relative" id="modal-content-id-1" style="padding-left:10px;">
+                    <div style="padding:5px;">
+                        The Monthly Sales data is as provided by Finance. <br/>
+                        The Tiers are as per the modifications of the Contracts Team.<br/><br/>
+                        Data updated by Finance on 15th of every month. (For Sales consolidation till the end of previous month)
+                    </div> 
+                </div>
+            </div>
+            
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </aura:if> 
+</aura:component>
